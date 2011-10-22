@@ -1,27 +1,22 @@
 /**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
  * 
  */
-package net.eneter.messaging.messagingsystems.messagingsystembase;
-
-import org.perfectjpattern.core.api.behavioral.observer.data.*;
+package eneter.messaging.messagingsystems.messagingsystembase;
 
 /**
  * The event data available when the input channel receives a message.
- * 
- * @author vachix
- *
  */
-public final
-class ChannelMessageEventArgs 
-implements IEventData
+public final class ChannelMessageEventArgs 
 {
-    //------------------------------------------------------------------------
-    // public
-    //------------------------------------------------------------------------
 	/**
 	 * Constructs the event data from the input parameters.
-	 * @param channelId The channel identifier
-	 * @param message A message
+	 * 
+	 * @param channelId Channel identifier
+	 * @param message Message
 	 */
     public ChannelMessageEventArgs(String channelId, Object message)
     {
@@ -39,16 +34,12 @@ implements IEventData
 
     /**
      * Returns the message.
-     * @return Object
      */
     public Object GetMessage()
     {
     	return myMessage;
     }
     
-    //------------------------------------------------------------------------
-    // members
-    //------------------------------------------------------------------------
     /**
      * The channel identifier.
      */

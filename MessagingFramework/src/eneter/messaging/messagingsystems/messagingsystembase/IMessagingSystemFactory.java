@@ -1,4 +1,4 @@
-package net.eneter.messaging.messagingsystems.messagingsystembase;
+package eneter.messaging.messagingsystems.messagingsystembase;
 
 /**
  * The interface declares the factory that creates input and output channels.
