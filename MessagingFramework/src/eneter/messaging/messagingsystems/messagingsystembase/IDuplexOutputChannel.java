@@ -13,6 +13,8 @@ import eneter.net.system.Event;
 /**
  * Declares the duplex output channel that can send messages to the duplex input channel and receive response messages.
  * Notice, the duplex output channel works only with duplex input channel and not with input channel.
+ * 
+ * @author Ondrej Uzovic & Martin Valach
  */
 public interface IDuplexOutputChannel
 {

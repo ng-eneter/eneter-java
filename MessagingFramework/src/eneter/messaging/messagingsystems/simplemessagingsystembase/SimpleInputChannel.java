@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.messagingsystems.simplemessagingsystembase;
 
 import java.security.InvalidParameterException;
@@ -48,7 +56,7 @@ public class SimpleInputChannel implements IInputChannel
                 myMessagingSystem.registerMessageHandler(myChannelId, myHanedleMessageImpl);
                 myIsListeningFlag = true;
             }
-            catch (Exception err)
+            catch (RuntimeException err)
             {
                 // TODO: Trace error.
                 
@@ -60,8 +68,7 @@ public class SimpleInputChannel implements IInputChannel
                 {
                 }
                 
-                // TODO: How to rethrow?
-                //throw err;
+                throw err;
             }
         }
         

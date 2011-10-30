@@ -10,6 +10,8 @@ package eneter.messaging.messagingsystems.messagingsystembase;
 
 /**
  * Declares the output channel that can send messages to the input channel.
+ * 
+ * @author Ondrej Uzovic & Martin Valach
  */
 public interface IOutputChannel {
 	/**

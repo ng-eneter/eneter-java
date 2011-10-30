@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.messagingsystems.simplemessagingsystembase;
 
 import java.security.InvalidParameterException;
@@ -29,10 +37,10 @@ public class SimpleOutputChannel implements IOutputChannel
         {
             myMessagingSystem.sendMessage(myChannelId, message);
         }
-        catch (Exception err)
+        catch (RuntimeException err)
         {
             // ??? Trace error.
-            //throw err;
+            throw err;
         }
     }
     

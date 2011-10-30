@@ -9,9 +9,6 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase;
 
 import eneter.net.system.IMethod1;
 
-/**
- *
- */
 public interface IMessagingProvider
 {
     void sendMessage(String receiverId, Object message);
