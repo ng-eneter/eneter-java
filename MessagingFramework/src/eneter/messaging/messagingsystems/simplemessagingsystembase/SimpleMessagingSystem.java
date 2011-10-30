@@ -9,19 +9,19 @@ public class SimpleMessagingSystem implements IMessagingSystemBase
         myInputChannelMessaging = inputChannelMessaging;
     }
 
-    public void SendMessage(String channelId, Object message)
+    public void sendMessage(String channelId, Object message)
     {
-        myInputChannelMessaging.SendMessage(channelId, message);
+        myInputChannelMessaging.sendMessage(channelId, message);
     }
 
-    public void RegisterMessageHandler(String channelId, IMethod1<Object> messageHandler)
+    public void registerMessageHandler(String channelId, IMethod1<Object> messageHandler)
     {
-        myInputChannelMessaging.RegisterMessageHandler(channelId, messageHandler);
+        myInputChannelMessaging.registerMessageHandler(channelId, messageHandler);
     }
 
-    public void UnregisterMessageHandler(String channelId)
+    public void unregisterMessageHandler(String channelId)
     {
-        myInputChannelMessaging.UnregisterMessageHandler(channelId);
+        myInputChannelMessaging.unregisterMessageHandler(channelId);
     }
     
 

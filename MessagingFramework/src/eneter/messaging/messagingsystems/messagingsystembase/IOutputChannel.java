@@ -15,12 +15,12 @@ public interface IOutputChannel {
 	/**
 	 * Returns the id of the input channel where messages are sent.
 	 */
-    String GetChannelId();
+    String getChannelId();
 
     /**
      * Sends the message.
      * 
      * @param message Serialized message.
      */
-    void SendMessage(Object message);
+    void sendMessage(Object message);
 }

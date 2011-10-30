@@ -4,9 +4,9 @@ import eneter.net.system.IMethod1;
 
 public interface IMessagingSystemBase
 {
-    void SendMessage(String channelId, Object message);
+    void sendMessage(String channelId, Object message);
     
-    void RegisterMessageHandler(String channelId, IMethod1<Object> messageHandler);
+    void registerMessageHandler(String channelId, IMethod1<Object> messageHandler);
     
-    void UnregisterMessageHandler(String channelId);
+    void unregisterMessageHandler(String channelId);
 }

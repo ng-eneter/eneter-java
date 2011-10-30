@@ -18,16 +18,16 @@ public class SimpleOutputChannel implements IOutputChannel
         myMessagingSystem = messagingSystem;
     }
     
-    public String GetChannelId()
+    public String getChannelId()
     {
         return myChannelId;
     }
 
-    public void SendMessage(Object message)
+    public void sendMessage(Object message)
     {
         try
         {
-            myMessagingSystem.SendMessage(myChannelId, message);
+            myMessagingSystem.sendMessage(myChannelId, message);
         }
         catch (Exception err)
         {

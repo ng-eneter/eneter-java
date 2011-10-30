@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.messagingsystems.messagingsystembase;
 
 /**
@@ -16,7 +24,7 @@ public interface IMessagingSystemFactory
 	 * @param channelId identifies the receiving input channel
 	 * @return output channel
 	 */
-    IOutputChannel CreateOutputChannel(String channelId);
+    IOutputChannel createOutputChannel(String channelId);
 
     /**
      * Creates the input channel listening to messages on the specified channel id.
@@ -24,5 +32,5 @@ public interface IMessagingSystemFactory
      * @param channelId identifies this input channel
      * @return input channel
      */
-    IInputChannel CreateInputChannel(String channelId);
+    IInputChannel createInputChannel(String channelId);
 }

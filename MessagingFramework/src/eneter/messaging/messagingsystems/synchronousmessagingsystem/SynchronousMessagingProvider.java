@@ -7,7 +7,7 @@ import eneter.net.system.IMethod1;
 
 class SynchronousMessagingProvider implements IMessagingProvider
 {
-    public void SendMessage(String receiverId, Object message)
+    public void sendMessage(String receiverId, Object message)
     {
         // Get the message handler.
         IMethod1<Object> aMessageHandler = null;
@@ -32,7 +32,7 @@ class SynchronousMessagingProvider implements IMessagingProvider
         
     }
 
-    public void RegisterMessageHandler(String receiverId, IMethod1<Object> messageHandler)
+    public void registerMessageHandler(String receiverId, IMethod1<Object> messageHandler)
     {
         synchronized (myRegisteredMessageHandlers)
         {
@@ -47,7 +47,7 @@ class SynchronousMessagingProvider implements IMessagingProvider
         }
     }
 
-    public void UnregisterMessageHandler(String receiverId)
+    public void unregisterMessageHandler(String receiverId)
     {
         synchronized (myRegisteredMessageHandlers)
         {

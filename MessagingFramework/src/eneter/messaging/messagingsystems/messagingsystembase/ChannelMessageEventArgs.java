@@ -27,7 +27,7 @@ public final class ChannelMessageEventArgs
     /**
      * Returns the channel identifier.
      */
-    public String GetChannelId()
+    public String getChannelId()
     {
     	return myChannelId;
     }
@@ -35,7 +35,7 @@ public final class ChannelMessageEventArgs
     /**
      * Returns the message.
      */
-    public Object GetMessage()
+    public Object getMessage()
     {
     	return myMessage;
     }

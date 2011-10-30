@@ -15,12 +15,12 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         myMessagingSystem = new SimpleMessagingSystem(new SynchronousMessagingProvider());
     }
     
-    public IOutputChannel CreateOutputChannel(String channelId)
+    public IOutputChannel createOutputChannel(String channelId)
     {
         return new SimpleOutputChannel(channelId, myMessagingSystem);
     }
 
-    public IInputChannel CreateInputChannel(String channelId)
+    public IInputChannel createInputChannel(String channelId)
     {
         return new SimpleInputChannel(channelId, myMessagingSystem);
     }

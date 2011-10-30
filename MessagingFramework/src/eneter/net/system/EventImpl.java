@@ -54,7 +54,7 @@ public class EventImpl<T>
     /*
      * Returns true if nobody is subscribed.
      */
-    public boolean IsEmpty()
+    public boolean isEmpty()
     {
         synchronized (mySubscribedEventHandlers)
         {

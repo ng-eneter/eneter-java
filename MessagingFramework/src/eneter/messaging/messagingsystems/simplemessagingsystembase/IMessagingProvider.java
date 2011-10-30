@@ -1,4 +1,8 @@
 /**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
  * 
  */
 package eneter.messaging.messagingsystems.simplemessagingsystembase;
@@ -10,9 +14,9 @@ import eneter.net.system.IMethod1;
  */
 public interface IMessagingProvider
 {
-    void SendMessage(String receiverId, Object message);
+    void sendMessage(String receiverId, Object message);
     
-    void RegisterMessageHandler(String receiverId, IMethod1<Object> messageHandler);
+    void registerMessageHandler(String receiverId, IMethod1<Object> messageHandler);
 
-    void UnregisterMessageHandler(String receiverId);
+    void unregisterMessageHandler(String receiverId);
 }

@@ -23,21 +23,21 @@ public class SimpleInputChannel implements IInputChannel
     }
     
     
-    public Event<ChannelMessageEventArgs> MessageReceived()
+    public Event<ChannelMessageEventArgs> messageReceived()
     {
         return myMessageReceivedEventApi;
     }
 
-    public String GetChannelId()
+    public String getChannelId()
     {
         return myChannelId;
     }
 
-    public void StartListening()
+    public void startListening()
     {
         synchronized (myListeningManipulatorLock)
         {
-            if (IsListening())
+            if (isListening())
             {
                 // TODO: Trace error.
                 throw new IllegalStateException("The input channel is already listening.");
@@ -45,7 +45,7 @@ public class SimpleInputChannel implements IInputChannel
             
             try
             {
-                myMessagingSystem.RegisterMessageHandler(myChannelId, myHanedleMessageImpl);
+                myMessagingSystem.registerMessageHandler(myChannelId, myHanedleMessageImpl);
                 myIsListeningFlag = true;
             }
             catch (Exception err)
@@ -54,7 +54,7 @@ public class SimpleInputChannel implements IInputChannel
                 
                 try
                 {
-                    StopListening();
+                    stopListening();
                 }
                 catch (Exception err2)
                 {
@@ -67,13 +67,13 @@ public class SimpleInputChannel implements IInputChannel
         
     }
 
-    public void StopListening()
+    public void stopListening()
     {
         synchronized (myListeningManipulatorLock)
         {
             try
             {
-                myMessagingSystem.UnregisterMessageHandler(myChannelId);
+                myMessagingSystem.unregisterMessageHandler(myChannelId);
             }
             catch (Exception err)
             {
@@ -85,7 +85,7 @@ public class SimpleInputChannel implements IInputChannel
         }
     }
 
-    public boolean IsListening()
+    public boolean isListening()
     {
         synchronized (myListeningManipulatorLock)
         {
@@ -93,9 +93,9 @@ public class SimpleInputChannel implements IInputChannel
         }
     }
     
-    private void HandleMessage(Object message)
+    private void handleMessage(Object message)
     {
-        if (!myMessageReceivedEventImpl.IsEmpty())
+        if (!myMessageReceivedEventImpl.isEmpty())
         {
             try
             {
@@ -126,7 +126,7 @@ public class SimpleInputChannel implements IInputChannel
             {
                 public void invoke(Object message)
                 {
-                    HandleMessage(message);
+                    handleMessage(message);
                 }
             };
 
