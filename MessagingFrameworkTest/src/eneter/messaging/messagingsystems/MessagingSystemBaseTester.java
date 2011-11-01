@@ -11,6 +11,9 @@ import eneter.net.system.threading.ManualResetEvent;
 
 public abstract class MessagingSystemBaseTester
 {
+    //private class MessageReceivedHandler implements 
+    
+    
     public MessagingSystemBaseTester()
     {
         myChannelId = "Channel1";
@@ -31,7 +34,7 @@ public abstract class MessagingSystemBaseTester
     }
     
     
-    private void sendMessageViaOutputChannel(String channelId, Object message, int numberOfTimes, int timeOutForMessageProcessing)
+    private void sendMessageViaOutputChannel(final String channelId, final Object message, final int numberOfTimes, int timeOutForMessageProcessing)
             throws Exception
     {
         IOutputChannel anOutputChannel = myMessagingSystemFactory.createOutputChannel(channelId);
@@ -50,37 +53,25 @@ public abstract class MessagingSystemBaseTester
                 {
                     ++myNumberOfReceivedMessages;
 
-                    if (myChannelId != y.getChannelId() || (String)myMessage != (String)y.getMessage())
+                    if (myChannelId != y.getChannelId() || (String)message != (String)y.getMessage())
                     {
                         ++myNumberOfFailures;
                     }
 
                     // Release helper thread when all messages are received.
-                    if (myNumberOfReceivedMessages == myNumberOfTimes)
+                    if (myNumberOfReceivedMessages == numberOfTimes)
                     {
                         aMessagesSentEvent.set();
                     }
                 }
             }
             
-            public IMethod2<Object, ChannelMessageEventArgs> init(String channelId, Object message, int numberOfTimes)
-            {
-                myChannelId = channelId;
-                myMessage = message;
-                myNumberOfTimes = numberOfTimes;
-                
-                return this;
-            }
-            
-            public int myNumberOfReceivedMessages;
-            public int myNumberOfFailures;
-            
-            private String myChannelId;
-            private Object myMessage;
-            private int myNumberOfTimes;
+            // These 2 values will be read by using the reflection - only for testing purposes. 
+            private int myNumberOfReceivedMessages;
+            private int myNumberOfFailures;
             
             private Object myLock = new Object(); 
-        }.init(channelId, message, numberOfTimes);
+        };
         
         
         
@@ -110,7 +101,13 @@ public abstract class MessagingSystemBaseTester
             anInputChannel.stopListening();
         }
 
-        assertEquals(0, 0);
+        // Let's use reflection to read values from the anonymous class.
+        // Note: Using reflection is only for the testing purposes.
+        int aNumberOfFails = aMessageReceivedEventHandler.getClass().getField("myNumberOfFailures").getInt(aMessageReceivedEventHandler);
+        int aNumberOfReceived = aMessageReceivedEventHandler.getClass().getField("myNumberOfReceivedMessages").getInt(aMessageReceivedEventHandler);
+        
+        assertEquals(0, aNumberOfFails);
+        assertEquals(numberOfTimes, aNumberOfReceived);
     }
     
     
