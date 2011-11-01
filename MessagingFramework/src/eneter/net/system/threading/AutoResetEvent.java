@@ -19,18 +19,26 @@ public final class AutoResetEvent
         waitOne(0);
     }
     
-    public void waitOne(long timeout) throws InterruptedException
+    public boolean waitOne(long timeout) throws InterruptedException
     {
         synchronized (myMonitor)
         {
-            while (!myIsSetFlag)
+            if (!myIsSetFlag)
             {
                 // Release the lock and wait for the 'set' signal.
                 myMonitor.wait(timeout);
             }
             
-            // Close "doors" for other threads.
-            myIsSetFlag = false;
+            if (myIsSetFlag)
+            {
+                // Close "doors" for other threads.
+                myIsSetFlag = false;
+                
+                return true;
+            }
+            
+            // Return false if the waiting was interrupted because of timeout.
+            return false;
         }
     }
 

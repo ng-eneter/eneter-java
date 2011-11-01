@@ -19,15 +19,20 @@ public final class ManualResetEvent
         waitOne(0);
     }
     
-    public void waitOne(long timeout) throws InterruptedException
+    public boolean waitOne(long timeout) throws InterruptedException
     {
         synchronized (myMonitor)
         {
-            while (!myIsSetFlag)
+            if (!myIsSetFlag)
             {
                 // Release the lock and wait for the 'set' signal.
                 myMonitor.wait(timeout);
+                
+                // Return false if the waiting was interrupted because of timeout.
+                return myIsSetFlag; 
             }
+            
+            return true;
         }
     }
 
