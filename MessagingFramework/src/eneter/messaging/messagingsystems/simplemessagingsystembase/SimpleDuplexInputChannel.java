@@ -2,6 +2,8 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase;
 
 import java.security.InvalidParameterException;
 
+import eneter.messaging.dataprocessing.streaming.MessageStreamer;
+import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 
@@ -12,9 +14,8 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     {
         if (channelId == null || channelId == "")
         {
-            // TODO: Trace
-            //EneterTrace.Error(ErrorHandler.NullOrEmptyChannelId);
-            throw new InvalidParameterException("Input parameter channelId is null or empty string.");
+            EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
+            throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);
         }
         
         myDuplexInputChannelId = channelId;
@@ -48,15 +49,15 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
 
     @Override
     public void startListening()
+        throws Exception
     {
         synchronized (myListeningManipulatorLock)
         {
             if (isListening())
             {
-                // TODO: Trace.
-                //string aMessage = TracedObject + ErrorHandler.IsAlreadyListening;
-                //EneterTrace.Error(aMessage);
-                throw new IllegalStateException("The duplex input channel is already listening.");
+                String aMessage = TracedObject() + ErrorHandler.IsAlreadyListening;
+                EneterTrace.error(aMessage);
+                throw new IllegalStateException(aMessage);
             }
             
             try
@@ -65,18 +66,17 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
                 myMessageReceiverInputChannel.messageReceived().subscribe(myMessageReceivedHandler);
                 myMessageReceiverInputChannel.startListening();
             }
-            catch (RuntimeException err)
+            catch (Exception err)
             {
-                // TODO: Trace
+                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                stopListening();
                 
-                try
-                {
-                    stopListening();
-                }
-                catch (Exception err2)
-                {
-                    
-                }
+                throw err;
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                stopListening();
                 
                 throw err;
             }
@@ -97,7 +97,12 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
                 }
                 catch (Exception err)
                 {
-                    // TODO: Trace warning.
+                    EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
+                }
+                catch (Error err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.StopListeningFailure, err);
+                    throw err;
                 }
                 
                 myMessageReceiverInputChannel.messageReceived().unsubscribe(myMessageReceivedHandler);
@@ -117,23 +122,31 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
 
     @Override
     public void sendResponseMessage(String responseReceiverId, Object message)
+            throws Exception
     {
         try
         {
             IOutputChannel aResponseOutputChannel = myMessagingSystemFactory.createOutputChannel(responseReceiverId);
             aResponseOutputChannel.sendMessage(message);
         }
-        catch (RuntimeException err)
+        catch (Exception err)
         {
-            // TODO: Error trace
-            //EneterTrace.Error(TracedObject + ErrorHandler.SendResponseFailure, err);
+            EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
 
             // Sending the response message failed, therefore consider it as the disconnection with the reponse receiver.
             notifyResponseReceiverDisconnected(responseReceiverId);
 
             throw err;
         }
-        
+        catch (Error err)
+        {
+            EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+
+            // Sending the response message failed, therefore consider it as the disconnection with the reponse receiver.
+            notifyResponseReceiverDisconnected(responseReceiverId);
+
+            throw err;
+        }
     }
 
     @Override
@@ -143,15 +156,20 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
         {
             IOutputChannel aResponseOutputChannel = myMessagingSystemFactory.createOutputChannel(responseReceiverId);
 
-            // TODO: Investigate how to transfer OpenConnection, CloseConnection requests!!!
-            // Notify the response receiver about the disconnection.
-            //Object[] aCloseConnectionMessage = MessageStreamer.GetCloseConnectionMessage(responseReceiverId);
-            //aResponseOutputChannel.SendMessage(aCloseConnectionMessage);
+            // TODO: Investigate how to transfer OpenConnection, CloseConnection requests!!! So that they can be read by .NET application.
+            
+            //Notify the response receiver about the disconnection.
+            Object[] aCloseConnectionMessage = MessageStreamer.getCloseConnectionMessage(responseReceiverId);
+            aResponseOutputChannel.sendMessage(aCloseConnectionMessage);
         }
         catch (Exception err)
         {
-            // TODO: trace warning.
-            //EneterTrace.Warning(TracedObject + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
+            EneterTrace.warning(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
+        }
+        catch (Error err)
+        {
+            EneterTrace.error(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
+            throw err;
         }
         
     }
@@ -159,7 +177,36 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     
     private void onMessageReceived(Object o, ChannelMessageEventArgs e)
     {
-        
+        try
+        {
+            Object[] aMessage = (Object[])e.getMessage();
+
+            if (MessageStreamer.isOpenConnectionMessage(aMessage))
+            {
+                notifyResponseReceiverConnected((String)aMessage[1]);
+            }
+            else if (MessageStreamer.isCloseConnectionMessage(aMessage))
+            {
+                notifyResponseReceiverDisconnected((String)aMessage[1]);
+            }
+            else if (MessageStreamer.isRequestMessage(aMessage))
+            {
+                notifyMessageReceived(getChannelId(), aMessage[2], (String)aMessage[1]);
+            }
+            else
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+            }
+        }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
+        }
+        catch (Error err)
+        {
+            EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
+            throw err;
+        }
     }
     
     private void notifyResponseReceiverConnected(String responseReceiverId)
@@ -174,8 +221,12 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
             }
             catch (Exception err)
             {
-                // TODO: Trace warning.
-                //EneterTrace.Warning(TracedObject + ErrorHandler.DetectedException, err);
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                throw err;
             }
         }
     }
@@ -192,12 +243,39 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
             }
             catch (Exception err)
             {
-                // TODO: Trace warning.
-                //EneterTrace.Warning(TracedObject + ErrorHandler.DetectedException, err);
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                throw err;
             }
         }
     }
     
+    private void notifyMessageReceived(String channelId, Object message, String responseReceiverId)
+    {
+        if (!myMessageReceivedEventImpl.isEmpty())
+        {
+            try
+            {
+                myMessageReceivedEventImpl.update(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                throw err;
+            }
+        }
+        else
+        {
+            EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
+        }
+    }
     
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private Event<DuplexChannelMessageEventArgs> myMessageReceivedEvent = new Event<DuplexChannelMessageEventArgs>(myMessageReceivedEventImpl);
@@ -221,4 +299,10 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
             onMessageReceived(t1, t2);
         }
     };
+    
+    
+    private String TracedObject()
+    {
+        return "The duplex input channel '" + myDuplexInputChannelId + "' ";
+    }
 }

@@ -41,8 +41,9 @@ public interface IDuplexInputChannel
 
     /**
      * Starts listening to messages.
+     * @throws Exception The implementation should catch and trace all problems and then rethrow them.
      */
-    void startListening();
+    void startListening() throws Exception;
 
     /**
      * Stops listening to messages.
@@ -58,8 +59,9 @@ public interface IDuplexInputChannel
      * Sends the response message back to the connected IDuplexOutputChannel.
      * @param responseReceiverId Identifies the response receiver. The identifier comes with received messages.
      * @param message response message
+     * @throws Exception The implementation should catch and trace all problems and then rethrow them.
      */
-    void sendResponseMessage(String responseReceiverId, Object message);
+    void sendResponseMessage(String responseReceiverId, Object message) throws Exception;
 
     /**
      * Disconnects the response receiver.

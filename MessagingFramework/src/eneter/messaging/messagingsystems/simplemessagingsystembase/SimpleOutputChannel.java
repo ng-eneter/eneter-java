@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase;
 
 import java.security.InvalidParameterException;
 
+import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.IOutputChannel;
 
 public class SimpleOutputChannel implements IOutputChannel
@@ -18,8 +19,8 @@ public class SimpleOutputChannel implements IOutputChannel
     {
         if (channelId == null || channelId == "")
         {
-            // ??? Trace error
-            throw new InvalidParameterException("Input parameter channelId is null or empty string.");
+            EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
+            throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);
         }
         
         myChannelId = channelId;
@@ -32,18 +33,29 @@ public class SimpleOutputChannel implements IOutputChannel
     }
 
     public void sendMessage(Object message)
+        throws Exception
     {
         try
         {
             myMessagingSystem.sendMessage(myChannelId, message);
         }
-        catch (RuntimeException err)
+        catch (Exception err)
         {
-            // ??? Trace error.
+            EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
+            throw err;
+        }
+        catch (Error err)
+        {
+            EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
             throw err;
         }
     }
     
     private IMessagingSystemBase myMessagingSystem;
     private String myChannelId;
+    
+    private String TracedObject()
+    {
+        return "The output channel '" + myChannelId + "' ";
+    }
 }

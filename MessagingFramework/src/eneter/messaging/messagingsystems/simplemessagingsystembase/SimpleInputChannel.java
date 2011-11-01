@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase;
 
 import java.security.InvalidParameterException;
 
+import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.ChannelMessageEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
 import eneter.net.system.Event;
@@ -22,8 +23,8 @@ public class SimpleInputChannel implements IInputChannel
     {
         if (channelId == null || channelId == "")
         {
-         // TODO: Trace error.
-            throw new InvalidParameterException("Input parameter channelId is null or empty string.");
+            EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
+            throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);
         }
         
         myChannelId = channelId;
@@ -42,13 +43,15 @@ public class SimpleInputChannel implements IInputChannel
     }
 
     public void startListening()
+        throws Exception
     {
         synchronized (myListeningManipulatorLock)
         {
             if (isListening())
             {
-                // TODO: Trace error.
-                throw new IllegalStateException("The input channel is already listening.");
+                String aMessage = TracedObject() + ErrorHandler.IsAlreadyListening;
+                EneterTrace.error(aMessage);
+                throw new IllegalStateException(aMessage);
             }
             
             try
@@ -56,17 +59,17 @@ public class SimpleInputChannel implements IInputChannel
                 myMessagingSystem.registerMessageHandler(myChannelId, myHanedleMessageImpl);
                 myIsListeningFlag = true;
             }
-            catch (RuntimeException err)
+            catch (Exception err)
             {
-                // TODO: Trace error.
+                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                stopListening();
                 
-                try
-                {
-                    stopListening();
-                }
-                catch (Exception err2)
-                {
-                }
+                throw err;
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                stopListening();
                 
                 throw err;
             }
@@ -84,8 +87,12 @@ public class SimpleInputChannel implements IInputChannel
             }
             catch (Exception err)
             {
-                // TODO: Trace warning.
-                //EneterTrace.Warning(TracedObject + ErrorHandler.StopListeningFailure, err);
+                EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.StopListeningFailure, err);
+                throw err;
             }
 
             myIsListeningFlag = false;
@@ -110,13 +117,12 @@ public class SimpleInputChannel implements IInputChannel
             }
             catch (Exception err)
             {
-                // TODO: Trace warning, that the error from the handler was detected.
-                //EneterTrace.Warning(TracedObject + ErrorHandler.DetectedException, err);
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
             }
         }
         else
         {
-            // TODO: Trace warning
+            EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
         }
     }
     
@@ -137,4 +143,9 @@ public class SimpleInputChannel implements IInputChannel
                 }
             };
 
+            
+    private String TracedObject()
+    {
+        return "The input channel '" + myChannelId + "' ";
+    }
 }

@@ -29,8 +29,9 @@ public interface IInputChannel
 
     /**
      * Starts listening.
+     * @throws Exception The implementation should catch and trace all problems and then rethrow them. 
      */
-    void startListening();
+    void startListening() throws Exception;
 
     /**
      * Stops listening.

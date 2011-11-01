@@ -23,6 +23,7 @@ public interface IOutputChannel {
      * Sends the message.
      * 
      * @param message Serialized message.
+     * @throws Exception The implementation should catch and trace all problems and then rethrow them.
      */
-    void sendMessage(Object message);
+    void sendMessage(Object message) throws Exception;
 }
