@@ -11,7 +11,8 @@ import eneter.net.system.IMethod1;
 
 public interface IMessagingProvider
 {
-    void sendMessage(String receiverId, Object message);
+    void sendMessage(String receiverId, Object message)
+            throws Exception;
     
     void registerMessageHandler(String receiverId, IMethod1<Object> messageHandler);
 

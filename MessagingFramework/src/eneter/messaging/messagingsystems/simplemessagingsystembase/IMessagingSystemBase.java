@@ -12,7 +12,8 @@ import eneter.net.system.IMethod1;
 
 public interface IMessagingSystemBase
 {
-    void sendMessage(String channelId, Object message);
+    void sendMessage(String channelId, Object message)
+            throws Exception;
     
     void registerMessageHandler(String channelId, IMethod1<Object> messageHandler);
     

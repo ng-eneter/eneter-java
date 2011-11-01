@@ -16,6 +16,7 @@ import eneter.net.system.IMethod1;
 class SynchronousMessagingProvider implements IMessagingProvider
 {
     public void sendMessage(String receiverId, Object message)
+            throws Exception
     {
         // Get the message handler.
         IMethod1<Object> aMessageHandler = null;

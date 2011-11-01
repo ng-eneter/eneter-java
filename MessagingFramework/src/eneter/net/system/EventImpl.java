@@ -36,6 +36,7 @@ public class EventImpl<T>
     }
     
     public void update(Object sender, T eventArgs)
+            throws Exception
     {
         synchronized (mySubscribedEventHandlers)
         {

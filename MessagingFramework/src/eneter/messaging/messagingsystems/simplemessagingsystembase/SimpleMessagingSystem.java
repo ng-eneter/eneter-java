@@ -18,6 +18,7 @@ public class SimpleMessagingSystem implements IMessagingSystemBase
     }
 
     public void sendMessage(String channelId, Object message)
+            throws Exception
     {
         myInputChannelMessaging.sendMessage(channelId, message);
     }

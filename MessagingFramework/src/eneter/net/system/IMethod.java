@@ -2,5 +2,5 @@ package eneter.net.system;
 
 public interface IMethod
 {
-    void invoke();
+    void invoke() throws Exception;
 }
