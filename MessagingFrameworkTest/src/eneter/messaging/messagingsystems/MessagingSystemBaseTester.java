@@ -11,9 +11,6 @@ import eneter.net.system.threading.ManualResetEvent;
 
 public abstract class MessagingSystemBaseTester
 {
-    //private class MessageReceivedHandler implements 
-    
-    
     public MessagingSystemBaseTester()
     {
         myChannelId = "Channel1";
