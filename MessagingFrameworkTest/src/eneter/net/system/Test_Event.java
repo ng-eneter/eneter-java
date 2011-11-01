@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-public class EventUTest
+public class Test_Event
 {
     /*
      * Tests subscribing and unsubscribing from the event.
