@@ -12,6 +12,7 @@ public class EventUTest
 
     @Test
     public void testSubscribeUnsubscribe()
+            throws Exception
     {
         ClassWithEvent aClassWithEvent = new ClassWithEvent();
     

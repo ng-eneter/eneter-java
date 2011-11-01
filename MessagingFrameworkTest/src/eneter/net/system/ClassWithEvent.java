@@ -7,7 +7,7 @@ public class ClassWithEvent
         return myNameUpdatedEvent;
     }
     
-    public void SetName(String name)
+    public void SetName(String name) throws Exception
     {
         // Rise the event that the name was updated.
         myNameUpdatedEventImpl.update(this, name);
