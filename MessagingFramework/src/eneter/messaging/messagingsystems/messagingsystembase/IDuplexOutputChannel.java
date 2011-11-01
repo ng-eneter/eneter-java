@@ -57,13 +57,15 @@ public interface IDuplexOutputChannel
     
     /**
      * Sends the message to the address represented by ChannelId.
+     * @throws Exception The implementation should catch and trace all problems and then rethrow them.
      */
-    void sendMessage(Object message);
+    void sendMessage(Object message) throws Exception;
     
     /**
      * Opens the connection with the duplex input channel.
+     * @throws Exception The implementation should catch and trace all problems and then rethrow them.
      */
-    void openConnection();
+    void openConnection() throws Exception;
     
     /**
      * Closes the connection with the duplex input channel.

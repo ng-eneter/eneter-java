@@ -179,8 +179,14 @@ public final class MessageStreamer
     public static void writeRequestMessage(OutputStream writingStream, String responseReceiverId, Object message)
             throws IOException
     {
-        Object[] aMessage = { (byte)REQUEST, responseReceiverId, message };
+        Object[] aMessage = getRequestMessage(responseReceiverId, message);
         writeMessage(writingStream, aMessage);
+    }
+    
+    public static Object[] getRequestMessage(String responseReceiverId, Object message)
+    {
+        Object[] aMessage = { (byte)REQUEST, responseReceiverId, message };
+        return aMessage;
     }
     
     public static boolean isRequestMessage(Object message)
