@@ -23,6 +23,13 @@ public abstract class MessagingSystemBaseTester
         sendMessageViaOutputChannel(myChannelId, "Message", 1, 5000);
     }
     
+    @Test
+    public void A02_SendMessages500()
+            throws Exception
+    {
+        sendMessageViaOutputChannel(myChannelId, "Message", 500, 5000);
+    }
+    
     
     private void sendMessageViaOutputChannel(String channelId, Object message, int numberOfTimes, int timeOutForMessageProcessing)
             throws Exception
