@@ -8,15 +8,8 @@
 
 package eneter.messaging.messagingsystems.synchronousmessagingsystem;
 
-import eneter.messaging.messagingsystems.messagingsystembase.IDuplexInputChannel;
-import eneter.messaging.messagingsystems.messagingsystembase.IDuplexOutputChannel;
-import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
-import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
-import eneter.messaging.messagingsystems.messagingsystembase.IOutputChannel;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.IMessagingSystemBase;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.SimpleInputChannel;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.SimpleMessagingSystem;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.SimpleOutputChannel;
+import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.*;
 
 /**
  * The factory class implements the messaging system delivering messages synchronously in the caller thread.
@@ -69,19 +62,16 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      */
     public IDuplexOutputChannel CreateDuplexOutputChannel(String channelId)
     {
-        // TODO Auto-generated method stub
-        return null;
+        return new SimpleDuplexOutputChannel(channelId, null, this);
     }
 
     /**
      * Creates the duplex output channel communicating with the specified duplex input channel using synchronous local call.
      * The duplex output channel can send messages and receive response messages.
      */
-    public IDuplexOutputChannel CreateDuplexOutputChannel(String channelId,
-            String responseReceiverId)
+    public IDuplexOutputChannel CreateDuplexOutputChannel(String channelId, String responseReceiverId)
     {
-        // TODO Auto-generated method stub
-        return null;
+        return new SimpleDuplexOutputChannel(channelId, responseReceiverId, this);
     }
 
     /**
@@ -90,8 +80,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      */
     public IDuplexInputChannel CreateDuplexInputChannel(String channelId)
     {
-        // TODO Auto-generated method stub
-        return null;
+        return new SimpleDuplexInputChannel(channelId, this);
     }
     
     
