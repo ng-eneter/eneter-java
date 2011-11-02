@@ -8,8 +8,7 @@
 package eneter.messaging.diagnostic;
 
 import java.util.Date;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -257,7 +256,7 @@ public class EneterTrace implements AutoCloseable
      * If the value is set, the trace messages are written to the specified trace.
      * If the value is null, then messages are written only to the debug port.
      */
-    public static Writer getTraceLog()
+    public static PrintStream getTraceLog()
     {
         synchronized (myTraceLogLock)
         {
@@ -272,7 +271,7 @@ public class EneterTrace implements AutoCloseable
      * If the value is set, the trace messages are written to the specified trace.
      * If the value is null, then messages are written only to the debug port.
      */
-    public static void setTraceLog(Writer value)
+    public static void setTraceLog(PrintStream value)
     {
         synchronized (myTraceLogLock)
         {
@@ -415,23 +414,8 @@ public class EneterTrace implements AutoCloseable
                         // If a trace log is set, then write to it.
                         if (myTraceLog != null)
                         {
-                            try
-                            {
-                                myTraceLog.write(aMessage);
-                            } catch (IOException e)
-                            {
-                                e.printStackTrace();
-                            }
-                            finally
-                            {
-                                try
-                                {
-                                    myTraceLog.flush();
-                                } catch (IOException e)
-                                {
-                                    e.printStackTrace();
-                                }
-                            }   
+                            myTraceLog.println(aMessage);
+                            myTraceLog.flush();
                         }
                         else
                         {
@@ -465,7 +449,7 @@ public class EneterTrace implements AutoCloseable
 
     private static Object myTraceLogLock = new Object();
     
-    private static Writer myTraceLog;
+    private static PrintStream myTraceLog;
     
     private static Pattern myNameSpaceFilter;
 }
