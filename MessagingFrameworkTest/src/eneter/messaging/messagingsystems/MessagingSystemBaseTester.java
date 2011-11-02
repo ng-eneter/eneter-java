@@ -83,6 +83,9 @@ public abstract class MessagingSystemBaseTester
 
         final ManualResetEvent aMessagesSentEvent = new ManualResetEvent(false);
 
+        final int[] aNumberOfReceivedMessages = new int[1];
+        final int[] aNumberOfFailures = new int[1];
+        
         IMethod2<Object, ChannelMessageEventArgs> aMessageReceivedEventHandler = new IMethod2<Object, ChannelMessageEventArgs>()
         {
             @Override
@@ -92,24 +95,20 @@ public abstract class MessagingSystemBaseTester
                 // that results are put to the list synchronously.
                 synchronized(myLock)
                 {
-                    ++myNumberOfReceivedMessages;
+                    ++aNumberOfReceivedMessages[0];
 
                     if (myChannelId != y.getChannelId() || (String)message != (String)y.getMessage())
                     {
-                        ++myNumberOfFailures;
+                        ++aNumberOfFailures[0];
                     }
 
                     // Release helper thread when all messages are received.
-                    if (myNumberOfReceivedMessages == numberOfTimes)
+                    if (aNumberOfReceivedMessages[0] == numberOfTimes)
                     {
                         aMessagesSentEvent.set();
                     }
                 }
             }
-            
-            // These 2 values will be read by using the reflection - only for testing purposes. 
-            public int myNumberOfReceivedMessages;
-            public int myNumberOfFailures;
             
             private Object myLock = new Object(); 
         };
@@ -131,9 +130,7 @@ public abstract class MessagingSystemBaseTester
             EneterTrace.info("Send messages to '" + myChannelId + "' completed - waiting while they are processed.");
 
             // Wait until all messages are processed.
-            //assertTrue(aMessagesSentEvent.waitOne(timeOutForMessageProcessing));
-            //Assert.IsTrue(aMessagesSentEvent.WaitOne());
-            aMessagesSentEvent.waitOne();
+            assertTrue(aMessagesSentEvent.waitOne(timeOutForMessageProcessing));
 
             EneterTrace.info("Waiting for processing of messages on '" + myChannelId + "' completed.");
         }
@@ -142,13 +139,8 @@ public abstract class MessagingSystemBaseTester
             anInputChannel.stopListening();
         }
 
-        // Let's use reflection to read values from the anonymous class.
-        // Note: Using reflection is only for the testing purposes.
-        int aNumberOfFails = aMessageReceivedEventHandler.getClass().getField("myNumberOfFailures").getInt(aMessageReceivedEventHandler);
-        int aNumberOfReceived = aMessageReceivedEventHandler.getClass().getField("myNumberOfReceivedMessages").getInt(aMessageReceivedEventHandler);
-        
-        assertEquals(0, aNumberOfFails);
-        assertEquals(numberOfTimes, aNumberOfReceived);
+        assertEquals(0, aNumberOfFailures[0]);
+        assertEquals(numberOfTimes, aNumberOfReceivedMessages[0]);
     }
     
     
@@ -160,6 +152,9 @@ public abstract class MessagingSystemBaseTester
 
         final AutoResetEvent aMessagesSentEvent = new AutoResetEvent(false);
 
+        final int[] aNumberOfReceivedMessages = new int[1];
+        final int[] aNumberOfFailedMessages = new int[1];
+        
         IMethod2<Object, DuplexChannelMessageEventArgs> aMessageReceivedHandler = new IMethod2<Object, DuplexChannelMessageEventArgs>()
         {
             @Override
@@ -170,11 +165,11 @@ public abstract class MessagingSystemBaseTester
                 // that results are put to the list synchronously.
                 synchronized (amyMessageReceiverLock)
                 {
-                    ++amyNumberOfReceivedMessages;
+                    ++aNumberOfReceivedMessages[0];
 
                     if (channelId != y.getChannelId() || (String)message != (String)y.getMessage())
                     {
-                        ++amyNumberOfFailedMessages;
+                        ++aNumberOfFailedMessages[0];
                     }
                     else
                     {
@@ -185,12 +180,13 @@ public abstract class MessagingSystemBaseTester
             }
             
             private Object amyMessageReceiverLock = new Object();
-            public int amyNumberOfReceivedMessages;
-            public int amyNumberOfFailedMessages;
         };
         
         anInputChannel.messageReceived().subscribe(aMessageReceivedHandler);
         
+        
+        final int[] aNumberOfReceivedResponses = new int[1];
+        final int[] aNumberOfFailedResponses = new int[1];
         
         IMethod2<Object, DuplexChannelMessageEventArgs> aResponseReceivedHandler = new IMethod2<Object, DuplexChannelMessageEventArgs>()
         {
@@ -199,14 +195,14 @@ public abstract class MessagingSystemBaseTester
             {
                 synchronized (amyResponseReceiverLock)
                 {
-                    ++amyNumberOfReceivedResponses;
+                    ++aNumberOfReceivedResponses[0];
                     if ((String)resonseMessage != (String)y.getMessage())
                     {
-                        ++amyNumberOfFailedResponses;
+                        ++aNumberOfFailedResponses[0];
                     }
 
                     // Release helper thread when all messages are received.
-                    if (amyNumberOfReceivedResponses == numberOfTimes)
+                    if (aNumberOfReceivedResponses[0] == numberOfTimes)
                     {
                         aMessagesSentEvent.set();
                     }
@@ -214,8 +210,6 @@ public abstract class MessagingSystemBaseTester
             }
             
             private Object amyResponseReceiverLock = new Object();
-            public int amyNumberOfReceivedResponses;
-            public int amyNumberOfFailedResponses;
         };
 
         anOutputChannel.responseMessageReceived().subscribe(aResponseReceivedHandler);
@@ -237,9 +231,7 @@ public abstract class MessagingSystemBaseTester
             EneterTrace.info("Send messages to '" + myChannelId + "' completed - waiting while they are processed.");
 
             // Wait until all messages are processed.
-            //Assert.IsTrue(aMessagesSentEvent.WaitOne(timeOutForMessageProcessing));
-            //AssertTrue(aMessagesSentEvent.WaitOne());
-            aMessagesSentEvent.waitOne();
+            assertTrue(aMessagesSentEvent.waitOne(timeOutForMessageProcessing));
 
             EneterTrace.info("Waiting for processing of messages on '" + myChannelId + "' completed.");
         }
@@ -255,18 +247,10 @@ public abstract class MessagingSystemBaseTester
             }
         }
 
-        // Let's use reflection to read values from the anonymous class.
-        // Note: Using reflection is only for the testing purposes.
-        int aNumberOfFailedMessages = aMessageReceivedHandler.getClass().getField("amyNumberOfFailedMessages").getInt(aMessageReceivedHandler);
-        int aNumberOfFailedResponses = aResponseReceivedHandler.getClass().getField("amyNumberOfFailedResponses").getInt(aResponseReceivedHandler);
-        
-        int aNumberOfReceivedMessages = aMessageReceivedHandler.getClass().getField("amyNumberOfReceivedMessages").getInt(aMessageReceivedHandler);
-        int aNumberOfReceivedResponses = aResponseReceivedHandler.getClass().getField("amyNumberOfReceivedResponses").getInt(aResponseReceivedHandler);
-        
-        assertEquals("There are failed messages.", 0, aNumberOfFailedMessages);
-        assertEquals("There are failed response messages.", 0, aNumberOfFailedResponses);
-        assertEquals("Number of sent messages differs from number of received.", numberOfTimes, aNumberOfReceivedMessages);
-        assertEquals("Number of received responses differs from number of sent responses.", numberOfTimes, aNumberOfReceivedResponses);
+        assertEquals("There are failed messages.", 0, aNumberOfFailedMessages[0]);
+        assertEquals("There are failed response messages.", 0, aNumberOfFailedResponses[0]);
+        assertEquals("Number of sent messages differs from number of received.", numberOfTimes, aNumberOfReceivedMessages[0]);
+        assertEquals("Number of received responses differs from number of sent responses.", numberOfTimes, aNumberOfReceivedResponses[0]);
     }
     
 
