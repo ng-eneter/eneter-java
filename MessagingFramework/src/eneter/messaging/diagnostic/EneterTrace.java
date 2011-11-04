@@ -392,7 +392,7 @@ public class EneterTrace implements AutoCloseable
 
         // Get the calling method
         StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
-        StackTraceElement aCaller = aStackTraceElements[4];
+        StackTraceElement aCaller = aStackTraceElements[3];
         final String aMethodName = aCaller.getClassName() + "." + aCaller.getMethodName();        
         final String aMessage = String.format("%1$tH:%1$tM:%1$tS.%1$tL ~%2$3d %3$s %4$s %5$s",
             aDate,
