@@ -1,6 +1,11 @@
 package eneter.messaging.diagnostic;
 
+import static org.junit.Assert.*;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 import org.junit.Test;
 
@@ -118,42 +123,42 @@ public class Test_EneterTrace
 	}
 
 	
-	/*
 	@Test
-	public void FilterTest()
+	public void FilterTest() 
+			throws InterruptedException
 	{
-		EneterTrace.DetailLevel = EneterTrace.EDetailLevel.Debug;
+		EneterTrace.setDetailLevel(EneterTrace.EDetailLevel.Debug);
 		
 		// Write traces to the string.
-		EneterTrace.TraceLog = new StringWriter();
+		ByteArrayOutputStream aLog = new ByteArrayOutputStream();
+		EneterTrace.setTraceLog(new PrintStream(aLog));
 		
 		try
 		{
 			// Eneter trace.
-			EneterTrace.NameSpaceFilter = new Regex("^Eneter");
-			EneterTrace.Debug("This message shall be traced.");
-			Thread.Sleep(10);
-			string aMessage = EneterTrace.TraceLog.ToString();
-			Assert.IsTrue(aMessage.Contains("This message shall be traced."));
-			
+			EneterTrace.setNameSpaceFilter(Pattern.compile("^eneter.*"));
+			EneterTrace.debug("This message shall be traced.");
+			Thread.sleep(10);
+			assertTrue(aLog.toString().contains("This message shall be traced."));
 			
 			// Create the new "log".
-			EneterTrace.TraceLog = new StringWriter();
+			aLog = new ByteArrayOutputStream();
+			EneterTrace.setTraceLog(new PrintStream(aLog));
 			
 			// Eneter trace shall be filtered out.
-			EneterTrace.NameSpaceFilter = new Regex(@"^(?!\bEneter\b)");
-			EneterTrace.Debug("This message shall not be traced.");
-			Thread.Sleep(10);
-			Assert.AreEqual("", EneterTrace.TraceLog.ToString());
+			EneterTrace.setNameSpaceFilter(Pattern.compile("^(?!\beneter\b)"));
+			EneterTrace.debug("This message shall not be traced.");
+			Thread.sleep(10);
+			assertEquals("", aLog.toString());
 		}
 		finally
 		{
-			EneterTrace.TraceLog = null;
-			EneterTrace.NameSpaceFilter = null;
-			EneterTrace.DetailLevel = EneterTrace.EDetailLevel.Short;
+			EneterTrace.setTraceLog(null);
+			EneterTrace.setNameSpaceFilter(null);
+			EneterTrace.setDetailLevel(EneterTrace.EDetailLevel.Short);
 		}
 	}
-	*/
+
 
 	private void TestMethod1()
 	{
