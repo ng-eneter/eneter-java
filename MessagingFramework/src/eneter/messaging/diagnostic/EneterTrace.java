@@ -2,7 +2,7 @@
  * Project: Eneter.Messaging.Framework
  * Author: Martin Valach, Ondrej Uzovic
  * 
- * Copyright ï¿½ 2012 Martin Valach and Ondrej Uzovic
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
  * 
  */
 package eneter.messaging.diagnostic;
@@ -14,6 +14,14 @@ import java.util.regex.Pattern;
 
 import eneter.net.system.threading.ThreadPool;
 
+/**
+ * Implements the functionality for tracing messages.
+ * The EneterTrace allows to trace error messages, warning message, info messages and debug messages.
+ * It also allows to trace entering and leaving from a method and measures the time spent in the method.
+ * In order to trace entering - leaving and debug messages, you must set the detail level to 'Debug'.
+ * @author Ondrej Uzovic & Martin Valach
+ *
+ */
 public class EneterTrace
 {
     /**
@@ -27,10 +35,10 @@ public class EneterTrace
         None,
 
         // Info, Warning and Error messages.<br/>
-        // The debug messages and enetering - leaving messages are not traced.
+        // The debug messages and entering - leaving messages are not traced.
         Short,
 
-        // All messages.
+        // All messages are traced.
         Debug
     }
     
@@ -77,7 +85,7 @@ public class EneterTrace
     /**
      * Traces the info message.
      * 
-     * @param message
+     * @param message info message
      */
     public static void info(String message)
     {
@@ -91,8 +99,8 @@ public class EneterTrace
     /**
      * Traces the information message and details
      * 
-     * @param message
-     * @param details
+     * @param message info message
+     * @param details additional details
      */
     public static void info(String message, String details)
     {
@@ -122,7 +130,7 @@ public class EneterTrace
     /**
      * Traces the warning message.
      * 
-     * @param message
+     * @param message warning message
      */
     public static void warning(String message)
     {
@@ -136,8 +144,8 @@ public class EneterTrace
     /**
      * Traces the warning message and details
      * 
-     * @param message
-     * @param details
+     * @param message warning message
+     * @param details additional details
      */
     public static void warning(String message, String details)
     {
@@ -167,7 +175,7 @@ public class EneterTrace
     /**
      * Traces the error message.
      * 
-     * @param message
+     * @param message error message
      */
     public static void error(String message)
     {
@@ -181,8 +189,8 @@ public class EneterTrace
     /**
      * Traces the error message and details for the error.
      * 
-     * @param message
-     * @param errorDetails
+     * @param message error message
+     * @param errorDetails additional details
      */
     public static void error(String message, String errorDetails)
     {
@@ -214,7 +222,7 @@ public class EneterTrace
      * 
      * To trace debug messages, the detail level must be set to debug.
      * 
-     * @param message
+     * @param message debug message
      */
     public static void debug(String message)
     {

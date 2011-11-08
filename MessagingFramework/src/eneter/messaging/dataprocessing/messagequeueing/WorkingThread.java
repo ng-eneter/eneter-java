@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.dataprocessing.messagequeueing;
 
 import java.util.concurrent.ExecutorService;
@@ -6,13 +14,28 @@ import java.util.concurrent.Executors;
 import eneter.messaging.diagnostic.*;
 import eneter.net.system.IMethod1;
 
+/**
+ * Implements the thread that has the message queue.
+ * If a message is put to the queue, the thread removes it from the queue and calls a user defined
+ * method to handle it.
+ * @author Ondrej Uzovic & Martin Valach
+ *
+ * @param <_MessageType> type of the message processed by the thread
+ */
 public class WorkingThread<_MessageType>
 {
+    /**
+     * Constructs the working thread.
+     */
     public WorkingThread()
     {
         this("");
     }
     
+    /**
+     * Constructs the working thread with the specified name.
+     * @param workingThreadName name of the working thread
+     */
     public WorkingThread(String workingThreadName)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -26,6 +49,10 @@ public class WorkingThread<_MessageType>
         }
     }
     
+    /**
+     * Registers the method handling messages from the queue and starts the thread reading messages from the queue.
+     * @param messageHandler Callback called from the working thread to process the message
+     */
     public void registerMessageHandler(IMethod1<_MessageType> messageHandler)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -52,6 +79,10 @@ public class WorkingThread<_MessageType>
         }
     }
     
+    
+    /**
+     * Unregisters the method handling messages from the queue and stops the thread reading messages.
+     */
     public void unregisterMessageHandler()
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -87,6 +118,10 @@ public class WorkingThread<_MessageType>
         }
     }
     
+    /**
+     * Puts the message to the queue.
+     * @param message message
+     */
     public void enqueueMessage(final _MessageType message)
     {
         EneterTrace aTrace = EneterTrace.entering();

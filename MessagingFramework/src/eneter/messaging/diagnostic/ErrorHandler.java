@@ -1,5 +1,18 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.diagnostic;
 
+/**
+ * Internal helper class to trace typical messags.
+ * @author Ondrej Uzovic & Martin Valach
+ *
+ */
 public final class ErrorHandler
 {
     public static final String NullOrEmptyChannelId = "Channel id is null or empty string.";

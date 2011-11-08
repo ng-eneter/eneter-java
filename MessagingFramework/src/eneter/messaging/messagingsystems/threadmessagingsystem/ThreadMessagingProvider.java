@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.messagingsystems.threadmessagingsystem;
 
 import java.util.HashMap;

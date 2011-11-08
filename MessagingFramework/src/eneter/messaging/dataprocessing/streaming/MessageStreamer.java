@@ -1,216 +1,423 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.dataprocessing.streaming;
 
 import java.io.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
+/**
+ * Provides functionality to read and write specific messages internaly used by duplex channels.
+ * @author Ondrej Uzovic & Martin Valach
+ *
+ */
 public final class MessageStreamer
 {
+    /**
+     * Reads the message from the stream.
+     * @param readingStream stream to be read
+     * @return message
+     * @throws IOException if the reading of the stream fails.
+     */
     public static Object readMessage(InputStream readingStream) throws IOException
     {
-        ObjectInputStream aStreamReader = new ObjectInputStream(readingStream);
-        Object aMessage = readMessage(aStreamReader);
-        
-        return aMessage;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ObjectInputStream aStreamReader = new ObjectInputStream(readingStream);
+            Object aMessage = readMessage(aStreamReader);
+            
+            return aMessage;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
     private static Object readMessage(ObjectInputStream reader) throws IOException
     {
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            byte aType = reader.readByte();
-            
-            // Read the count.x
-            int aNumberOfParts = 0;
-            if (aType == OBJECTS || aType == BYTES || aType == CHARS)
+            try
             {
-                aNumberOfParts = reader.readInt();
-                if (aNumberOfParts <= 0)
-                {
-                    // If the stream was closed
-                    return null;
-                }
+                byte aType = reader.readByte();
                 
-                // Read the content.
-                if (aType == OBJECTS)
+                // Read the count.x
+                int aNumberOfParts = 0;
+                if (aType == OBJECTS || aType == BYTES || aType == CHARS)
                 {
-                    Object[] anObjects = new Object[aNumberOfParts];
-
-                    for (int i = 0; i < aNumberOfParts; ++i)
+                    aNumberOfParts = reader.readInt();
+                    if (aNumberOfParts <= 0)
                     {
-                        anObjects[i] = readMessage(reader);
-
                         // If the stream was closed
-                        if (anObjects[i] == null)
-                        {
-                            return null;
-                        }
+                        return null;
                     }
-
-                    return anObjects;
-                }
-                else if (aType == BYTES)
-                {
-                    byte[] aBytes = new byte[aNumberOfParts];
-                    reader.read(aBytes);
-                    return aBytes;
-                }
-                else if (aType == BYTE)
-                {
-                    byte aByte = reader.readByte();
-                    return aByte;
-                }
-                else if (aType == STRING)
-                {
-                    String aString = reader.readUTF();
-                    return aString;
+                    
+                    // Read the content.
+                    if (aType == OBJECTS)
+                    {
+                        Object[] anObjects = new Object[aNumberOfParts];
+    
+                        for (int i = 0; i < aNumberOfParts; ++i)
+                        {
+                            anObjects[i] = readMessage(reader);
+    
+                            // If the stream was closed
+                            if (anObjects[i] == null)
+                            {
+                                return null;
+                            }
+                        }
+    
+                        return anObjects;
+                    }
+                    else if (aType == BYTES)
+                    {
+                        byte[] aBytes = new byte[aNumberOfParts];
+                        reader.read(aBytes);
+                        return aBytes;
+                    }
+                    else if (aType == BYTE)
+                    {
+                        byte aByte = reader.readByte();
+                        return aByte;
+                    }
+                    else if (aType == STRING)
+                    {
+                        String aString = reader.readUTF();
+                        return aString;
+                    }
                 }
             }
+            catch (EOFException err)
+            {
+                return null;
+            }
+            
+            String anErrorMessage = "Reading the message from the stream failed. If the serialized message consists of more serialized parts these parts must be object[] or byte[] or string or char[].";
+            EneterTrace.error(anErrorMessage);
+            throw new IllegalStateException(anErrorMessage);
         }
-        catch (EOFException err)
+        finally
         {
-            return null;
+            EneterTrace.leaving(aTrace);
         }
-        
-        String anErrorMessage = "Reading the message from the stream failed. If the serialized message consists of more serialized parts these parts must be object[] or byte[] or string or char[].";
-        EneterTrace.error(anErrorMessage);
-        throw new IllegalStateException(anErrorMessage);
     }
     
+    
+    /**
+     * Writes the message to the specified stream.
+     * @param writingStream stream where the message will be put
+     * @param message message
+     * @throws IOException if the writing to the stream fails.
+     */
     public static void writeMessage(OutputStream writingStream, Object message) throws IOException
     {
-        ObjectOutputStream aStreamWriter = new ObjectOutputStream(writingStream);
-        writeMessage(aStreamWriter, message);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ObjectOutputStream aStreamWriter = new ObjectOutputStream(writingStream);
+            writeMessage(aStreamWriter, message);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
     private static void writeMessage(ObjectOutputStream writer, Object message) throws IOException
     {
-        if (message instanceof Object[])
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            int aNumberOfParts = ((Object[])message).length;
-            
-            writer.writeByte(BYTES);
-            writer.writeInt(aNumberOfParts);
-            
-            // Go recursively down through all parts of the message.
-            for (Object o : (Object[])message)
+            if (message instanceof Object[])
             {
-                writeMessage(writer, o);
+                int aNumberOfParts = ((Object[])message).length;
+                
+                writer.writeByte(BYTES);
+                writer.writeInt(aNumberOfParts);
+                
+                // Go recursively down through all parts of the message.
+                for (Object o : (Object[])message)
+                {
+                    writeMessage(writer, o);
+                }
+            }
+            else if (message instanceof byte[])
+            {
+                int aNumberOfParts = ((byte[])message).length;
+                
+                writer.writeByte(BYTES);
+                writer.writeInt(aNumberOfParts);
+                writer.write((byte[])message);
+            }
+            else if (message instanceof String)
+            {
+                writer.writeByte(BYTES);
+                writer.writeUTF((String)message);
+            }
+            else if (message instanceof Byte)
+            {
+                writer.writeByte(BYTE);
+                writer.writeByte((Byte)message);
+            }
+            else
+            {
+                String anErrorMessage = "Writing of message to the stream failed because the message is not serialized to String or Byte[]";
+                EneterTrace.error(anErrorMessage);
+                throw new IllegalStateException(anErrorMessage);
             }
         }
-        else if (message instanceof byte[])
+        finally
         {
-            int aNumberOfParts = ((byte[])message).length;
-            
-            writer.writeByte(BYTES);
-            writer.writeInt(aNumberOfParts);
-            writer.write((byte[])message);
-        }
-        else if (message instanceof String)
-        {
-            writer.writeByte(BYTES);
-            writer.writeUTF((String)message);
-        }
-        else if (message instanceof Byte)
-        {
-            writer.writeByte(BYTE);
-            writer.writeByte((Byte)message);
-        }
-        else
-        {
-            String anErrorMessage = "Writing of message to the stream failed because the message is not serialized to String or Byte[]";
-            EneterTrace.error(anErrorMessage);
-            throw new IllegalStateException(anErrorMessage);
+            EneterTrace.leaving(aTrace);
         }
     }
     
+    /**
+     * Writes the message used by duplex output channels to open connection with the duplex input channel.
+     * @param writingStream Stream where the message is written.
+     * @param responseReceiverId Id of receiver of response messages.
+     * @throws IOException if writing to the stream fails
+     */
     public static void writeOpenConnectionMessage(OutputStream writingStream, String responseReceiverId)
             throws IOException
     {
-        Object[] aMessage = getOpenConnectionMessage(responseReceiverId);
-        writeMessage(writingStream, aMessage);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            Object[] aMessage = getOpenConnectionMessage(responseReceiverId);
+            writeMessage(writingStream, aMessage);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
+    /**
+     * Returns the low level communication message used by duplex output channels to open connection with duplex input channel.
+     * @param responseReceiverId id of receiver of response messages.
+     * @return open connection message
+     */
     public static Object[] getOpenConnectionMessage(String responseReceiverId)
     {
-        Object[] aMessage = { (byte)OPENCONNECION, responseReceiverId };
-        return aMessage;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            Object[] aMessage = { (byte)OPENCONNECION, responseReceiverId };
+            return aMessage;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
+    /**
+     * Returns true if the given message is the open connection message used by the duplex output channel to open connection.
+     * @param message message
+     * @return true if the given message is open connection message
+     */
     public static boolean isOpenConnectionMessage(Object message)
     {
-        if (message instanceof Object[] &&
-            ((Object[])message).length == 2 && ((Object[])message)[0] instanceof Byte &&
-            (Byte)((Object[])message)[0] == OPENCONNECION)
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            return true;
+            if (message instanceof Object[] &&
+                ((Object[])message).length == 2 && ((Object[])message)[0] instanceof Byte &&
+                (Byte)((Object[])message)[0] == OPENCONNECION)
+            {
+                return true;
+            }
+    
+            return false;
         }
-
-        return false;
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
-    
+    /**
+     * Writes the message used by the duplex output channel to close the connection with the duplex input channel.
+     * @param writingStream Stream where the message is written.
+     * @param responseReceiverId Id of receiver of response messages.
+     * @throws IOException if writing to the stream fails.
+     */
     public static void writeCloseConnectionMessage(OutputStream writingStream, String responseReceiverId)
         throws IOException
     {
-        Object[] aMessage = getCloseConnectionMessage(responseReceiverId);
-        writeMessage(writingStream, aMessage);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            Object[] aMessage = getCloseConnectionMessage(responseReceiverId);
+            writeMessage(writingStream, aMessage);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
+    /**
+     * Returns the low level communication message used by duplex output channel to close the connection with duplex input channel.
+     * @param responseReceiverId
+     * @return
+     */
     public static Object[] getCloseConnectionMessage(String responseReceiverId)
     {
-        Object[] aMessage = { (byte)CLOSECONNECTION, responseReceiverId };
-        return aMessage;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            Object[] aMessage = { (byte)CLOSECONNECTION, responseReceiverId };
+            return aMessage;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
+    /**
+     * Returns true if the given message is the message used by the duplex output channel to close the connection.
+     * @param message
+     * @return true if the given message is the close connection message
+     */
     public static boolean isCloseConnectionMessage(Object message)
     {
-        if (message instanceof Object[] &&
-            ((Object[])message).length == 2 && ((Object[])message)[0] instanceof Byte &&
-            (Byte)((Object[])message)[0] == CLOSECONNECTION)
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            return true;
+            if (message instanceof Object[] &&
+                ((Object[])message).length == 2 && ((Object[])message)[0] instanceof Byte &&
+                (Byte)((Object[])message)[0] == CLOSECONNECTION)
+            {
+                return true;
+            }
+    
+            return false;
         }
-
-        return false;
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
-    
+    /**
+     * Writes the request message used by the duplex output channel to send to the duplex input channel.
+     * @param writingStream Stream where the message is written.
+     * @param responseReceiverId Id of receiver of response messages.
+     * @param message Request message.
+     * @throws IOException if writing to the stream fails.
+     */
     public static void writeRequestMessage(OutputStream writingStream, String responseReceiverId, Object message)
             throws IOException
     {
-        Object[] aMessage = getRequestMessage(responseReceiverId, message);
-        writeMessage(writingStream, aMessage);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            Object[] aMessage = getRequestMessage(responseReceiverId, message);
+            writeMessage(writingStream, aMessage);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
+    /**
+     * Returns the request message used by the duplex output channel to send to the duplex input channel.
+     * @param responseReceiverId Id of receiver of response messages.
+     * @param message Request message.
+     * @return request message encoded to be understood by the duplex input channel.
+     */
     public static Object[] getRequestMessage(String responseReceiverId, Object message)
     {
-        Object[] aMessage = { (byte)REQUEST, responseReceiverId, message };
-        return aMessage;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            Object[] aMessage = { (byte)REQUEST, responseReceiverId, message };
+            return aMessage;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
+    /**
+     * Returns true if the given message is the request message used by the duplex output channel to send
+     * a message to the duplex input channel.
+     * @param message
+     * @return
+     */
     public static boolean isRequestMessage(Object message)
     {
-        if (message instanceof Object[] &&
-            ((Object[])message).length == 3 && ((Object[])message)[0] instanceof Byte &&
-            (Byte)((Object[])message)[0] == REQUEST)
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            return true;
-        }
+            if (message instanceof Object[] &&
+                ((Object[])message).length == 3 && ((Object[])message)[0] instanceof Byte &&
+                (Byte)((Object[])message)[0] == REQUEST)
+            {
+                return true;
+            }
 
-        return false;
+            return false;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
-    
+    /**
+     * Writes the message used by the duplex output channel to poll response messages from the
+     * duplex input channel. The message is used in case of Http messaging.
+     * @param writingStream Stream where the message is written.
+     * @param responseReceiverId Id of receiver of response messages.
+     * @throws IOException if writing to the stream fails.
+     */
     public static void writePollResponseMessage(OutputStream writingStream, String responseReceiverId)
             throws IOException
     {
-        writeMessage(writingStream, responseReceiverId);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            writeMessage(writingStream, responseReceiverId);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
+    /**
+     * Returns true if the given message is the essage used by the duplex output channel to poll
+     * messages from the duplex input channel. (in case of Http)
+     * @param message
+     * @return
+     */
     public static boolean isPollResponseMessage(Object message)
     {
-        return message instanceof String;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return message instanceof String;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
     
