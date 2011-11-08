@@ -20,7 +20,7 @@ class ThreadPoolMessagingProvider implements IMessagingProvider
     public void sendMessage(String receiverId, Object message)
             throws Exception
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             // Get the message handler
@@ -61,13 +61,13 @@ class ThreadPoolMessagingProvider implements IMessagingProvider
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
 
     public void registerMessageHandler(String receiverId, IMethod1<Object> messageHandler)
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             synchronized (myRegisteredMessageHandlers)
@@ -84,13 +84,13 @@ class ThreadPoolMessagingProvider implements IMessagingProvider
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
 
     public void unregisterMessageHandler(String receiverId)
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             synchronized (myRegisteredMessageHandlers)
@@ -100,7 +100,7 @@ class ThreadPoolMessagingProvider implements IMessagingProvider
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
 

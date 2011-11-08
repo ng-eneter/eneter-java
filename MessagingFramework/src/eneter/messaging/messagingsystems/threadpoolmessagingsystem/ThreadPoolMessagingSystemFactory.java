@@ -26,14 +26,14 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
 {
     public ThreadPoolMessagingSystemFactory()
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myMessagingSystem = new SimpleMessagingSystem(new ThreadPoolMessagingProvider());
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
     
@@ -44,14 +44,14 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     @Override
     public IOutputChannel createOutputChannel(String channelId)
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             return new SimpleOutputChannel(channelId, myMessagingSystem);
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
 
@@ -63,14 +63,14 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     @Override
     public IInputChannel createInputChannel(String channelId)
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             return new SimpleInputChannel(channelId, myMessagingSystem);
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
 
@@ -87,14 +87,14 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     @Override
     public IDuplexOutputChannel CreateDuplexOutputChannel(String channelId)
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             return new SimpleDuplexOutputChannel(channelId, null, this);
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
 
@@ -113,14 +113,14 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     public IDuplexOutputChannel CreateDuplexOutputChannel(String channelId,
             String responseReceiverId)
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             return new SimpleDuplexOutputChannel(channelId, responseReceiverId, this);
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
 
@@ -134,14 +134,14 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     @Override
     public IDuplexInputChannel CreateDuplexInputChannel(String channelId)
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             return new SimpleDuplexInputChannel(channelId, this);
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
 

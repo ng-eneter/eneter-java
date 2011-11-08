@@ -10,7 +10,7 @@ public class WorkingThread<_MessageType>
 {
     public void RegisterMessageHandler(IMethod1<_MessageType> messageHandler)
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             synchronized (myHandlerLock)
@@ -30,13 +30,13 @@ public class WorkingThread<_MessageType>
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
     
     public void UnregisterMessageHandler()
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             synchronized (myHandlerLock)
@@ -65,13 +65,13 @@ public class WorkingThread<_MessageType>
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
     
     public void EnqueueMessage(final _MessageType message)
     {
-        AutoCloseable aTrace = EneterTrace.entering();
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
             synchronized (myHandlerLock)
@@ -93,7 +93,7 @@ public class WorkingThread<_MessageType>
                     @Override
                     public void run()
                     {
-                        AutoCloseable aTrace = EneterTrace.entering();
+                        EneterTrace aTrace = EneterTrace.entering();
                         try
                         {
                             if (aMyHandler != null)
@@ -114,7 +114,7 @@ public class WorkingThread<_MessageType>
                         }
                         finally
                         {
-                            if (aTrace != null) aTrace.close();
+                            EneterTrace.leaving(aTrace);
                         }
                     }
                 });
@@ -122,7 +122,7 @@ public class WorkingThread<_MessageType>
         }
         finally
         {
-            if (aTrace != null) aTrace.close();
+            EneterTrace.leaving(aTrace);
         }
     }
     
