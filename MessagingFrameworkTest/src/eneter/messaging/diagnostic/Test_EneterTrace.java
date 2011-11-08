@@ -69,7 +69,7 @@ public class Test_EneterTrace
 		//EneterTrace.TraceLog = Console.Out;
 		EneterTrace.setDetailLevel(EneterTrace.EDetailLevel.Debug);
 		
-		AutoCloseable aTrace = EneterTrace.entering();
+		EneterTrace aTrace = EneterTrace.entering();
 		try
 		{
 			//EneterTrace.Info("Hello");
@@ -77,7 +77,7 @@ public class Test_EneterTrace
 		}
 		finally
 		{
-			aTrace.close();
+		    EneterTrace.leaving(aTrace);
 		}
 
 		EneterTrace.setDetailLevel(EneterTrace.EDetailLevel.Short);
