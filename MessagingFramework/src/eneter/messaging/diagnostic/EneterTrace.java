@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 
 import eneter.net.system.threading.ThreadPool;
 
-public class EneterTrace implements AutoCloseable
+public class EneterTrace
 {
     /**
      * 
@@ -38,14 +38,14 @@ public class EneterTrace implements AutoCloseable
     /**
      *  Traces entering-leaving the method.
      * 
-     *  The enetering information for the method calling this constructor is put to the trace
+     *  The entering information for the method calling this constructor is put to the trace
      *  and the measuring of the time starts.
      *  In order to trace entering-leaving, the detail level must be set to 'Debug'.
      *  
-     *  @return
+     *  @return EneterTrace
      * 
      */
-    public static AutoCloseable entering()
+    public static EneterTrace entering()
     {
         EneterTrace aTraceObject = null;
 
@@ -61,40 +61,15 @@ public class EneterTrace implements AutoCloseable
         return aTraceObject;
     }
     
-    
     /**
-     * Traces the leaving from the method including the duration time.
-     * 
-     * (non-Javadoc)
-     * @see eneter.messaging.diagnostic.AutoCloseable#close()
+     * Traces the leaving from the method.
+     * @param trace The reference obtained during the entering the method.
      */
-    @Override
-    public void close()
+    public static void leaving(EneterTrace trace)
     {
-        try
+        if (trace != null)
         {
-            if (myEnteringTime != Long.MIN_VALUE)
-            {
-                long aDurationMillis = System.currentTimeMillis() - myEnteringTime;
-                
-                long aDays = TimeUnit.MILLISECONDS.toDays(aDurationMillis);
-                aDurationMillis -= TimeUnit.DAYS.toMillis(aDays);
-                long aHours = TimeUnit.MILLISECONDS.toHours(aDurationMillis);
-                aDurationMillis -= TimeUnit.HOURS.toMillis(aHours);
-                long aMinutes = TimeUnit.MILLISECONDS.toMinutes(aDurationMillis);
-                aDurationMillis -= TimeUnit.MINUTES.toMillis(aMinutes);
-                long aSeconds = TimeUnit.MILLISECONDS.toSeconds(aDurationMillis);
-
-                writeMessage("<--", String.format("[%1$2d:%2$2d:%3$2d.%4$3dms]",
-                    aHours,
-                    aMinutes,
-                    aSeconds,
-                    aDurationMillis));
-            }
-        }
-        catch(Exception exception)
-        {
-            // Any exception in this Dispose method is irrelevant.
+            trace.leaving();
         }
     }
     
@@ -431,14 +406,44 @@ public class EneterTrace implements AutoCloseable
     }
     
     
-    /// <summary>
-    /// Private helper constructor.
-    /// </summary>
-    /// <remarks>
-    /// The constructor is private, so the class can be instantiating only via the 'Entering' method.
-    /// </remarks>
+    /**
+     * Private helper constructor.
+     * The constructor is private, so the class can be instantiating only via the 'Entering' method.
+     */
     private EneterTrace()
     {
+    }
+
+    /**
+     * Traces the leaving from a method.
+     */
+    private void leaving()
+    {
+        try
+        {
+            if (myEnteringTime != Long.MIN_VALUE)
+            {
+                long aDurationMillis = System.currentTimeMillis() - myEnteringTime;
+                
+                long aDays = TimeUnit.MILLISECONDS.toDays(aDurationMillis);
+                aDurationMillis -= TimeUnit.DAYS.toMillis(aDays);
+                long aHours = TimeUnit.MILLISECONDS.toHours(aDurationMillis);
+                aDurationMillis -= TimeUnit.HOURS.toMillis(aHours);
+                long aMinutes = TimeUnit.MILLISECONDS.toMinutes(aDurationMillis);
+                aDurationMillis -= TimeUnit.MINUTES.toMillis(aMinutes);
+                long aSeconds = TimeUnit.MILLISECONDS.toSeconds(aDurationMillis);
+
+                writeMessage("<--", String.format("[%1$2d:%2$2d:%3$2d.%4$3dms]",
+                    aHours,
+                    aMinutes,
+                    aSeconds,
+                    aDurationMillis));
+            }
+        }
+        catch(Exception exception)
+        {
+            // Any exception in this Dispose method is irrelevant.
+        }
     }
     
     
