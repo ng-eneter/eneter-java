@@ -157,8 +157,8 @@ public abstract class MessagingSystemBaseTester
     public void A09_OpenCloseConnection()
         throws Throwable
     {
-        IDuplexInputChannel anInputChannel = myMessagingSystemFactory.CreateDuplexInputChannel(myChannelId);
-        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.CreateDuplexOutputChannel(myChannelId);
+        IDuplexInputChannel anInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
+        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
         final AutoResetEvent aResponseReceiverConnectedEvent = new AutoResetEvent(false);
         final String[] aConnectedReceiver = new String[1];
@@ -256,7 +256,7 @@ public abstract class MessagingSystemBaseTester
     @Test
     public void A10_OpenConnectionIfDuplexInputChannelNotStarted()
     {
-        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.CreateDuplexOutputChannel(myChannelId);
+        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
         try
         {
@@ -272,8 +272,8 @@ public abstract class MessagingSystemBaseTester
     @Test
     public void A11_DuplexInputChannelSuddenlyStopped()
     {
-        IDuplexInputChannel anInputChannel = myMessagingSystemFactory.CreateDuplexInputChannel(myChannelId);
-        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.CreateDuplexOutputChannel(myChannelId);
+        IDuplexInputChannel anInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
+        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
         boolean isSomeException = false;
 
@@ -327,7 +327,7 @@ public abstract class MessagingSystemBaseTester
         final boolean[] aResponseMessageReceivedFlag = new boolean[1];
 
         // Create duplex input channel.
-        IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.CreateDuplexInputChannel(myChannelId);
+        IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
         aDuplexInputChannel.responseReceiverConnected().subscribe(new IMethod2<Object, ResponseReceiverEventArgs>()
         {
             @Override
@@ -351,7 +351,7 @@ public abstract class MessagingSystemBaseTester
         
 
         // Create duplex output channel.
-        IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.CreateDuplexOutputChannel(myChannelId);
+        IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
         aDuplexOutputChannel.responseMessageReceived().subscribe(new IMethod2<Object, DuplexChannelMessageEventArgs>()
         {
             @Override
@@ -407,10 +407,10 @@ public abstract class MessagingSystemBaseTester
     public void A13_DuplexOutputChannelClosesConnection()
         throws Exception
     {
-        IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.CreateDuplexInputChannel(myChannelId);
+        IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
 
-        IDuplexOutputChannel aDuplexOutputChannel1 = myMessagingSystemFactory.CreateDuplexOutputChannel(myChannelId);
-        IDuplexOutputChannel aDuplexOutputChannel2 = myMessagingSystemFactory.CreateDuplexOutputChannel(myChannelId);
+        IDuplexOutputChannel aDuplexOutputChannel1 = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+        IDuplexOutputChannel aDuplexOutputChannel2 = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
         final AutoResetEvent aResponseReceiverConnectedEvent = new AutoResetEvent(false);
         final String[] aConnectedResponseReceiver = new String[1];
@@ -502,8 +502,8 @@ public abstract class MessagingSystemBaseTester
     public void A14_DuplexOutputChannelDisconnected_OpenFromCloseHandler()
         throws Exception
     {
-        final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.CreateDuplexInputChannel(myChannelId);
-        final IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.CreateDuplexOutputChannel(myChannelId);
+        final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
+        final IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
 
         final AutoResetEvent aConnectionReopenEvent = new AutoResetEvent(false);
@@ -553,8 +553,8 @@ public abstract class MessagingSystemBaseTester
     public void A15_DuplexOutputChannelConnected_CloseFromOpenHandler()
         throws Exception
     {
-        final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.CreateDuplexInputChannel(myChannelId);
-        final IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.CreateDuplexOutputChannel(myChannelId);
+        final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
+        final IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
         final boolean[] isOpenedFlag = {false};
         aDuplexOutputChannel.connectionOpened().subscribe(new IMethod2<Object, DuplexChannelEventArgs>()
@@ -605,8 +605,8 @@ public abstract class MessagingSystemBaseTester
     public void A16_DuplexOutputChannelConnectionOpened_DisconnectFromOpenHandler()
         throws Exception
     {
-        final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.CreateDuplexInputChannel(myChannelId);
-        final IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.CreateDuplexOutputChannel(myChannelId);
+        final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
+        final IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
         final String[] aConnectedResponseReceiver = {""};
         aDuplexInputChannel.responseReceiverConnected().subscribe(new IMethod2<Object, ResponseReceiverEventArgs>()
@@ -727,8 +727,8 @@ public abstract class MessagingSystemBaseTester
     private void sendMessageReceiveResponse(final String channelId, final Object message, final Object resonseMessage, final int numberOfTimes, int timeOutForMessageProcessing)
             throws Exception
     {
-        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.CreateDuplexOutputChannel(channelId);
-        final IDuplexInputChannel anInputChannel = myMessagingSystemFactory.CreateDuplexInputChannel(channelId);
+        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(channelId);
+        final IDuplexInputChannel anInputChannel = myMessagingSystemFactory.createDuplexInputChannel(channelId);
 
         final AutoResetEvent aMessagesSentEvent = new AutoResetEvent(false);
 

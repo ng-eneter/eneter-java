@@ -32,16 +32,16 @@ public class Test_WorkingThread
             }
         };
                 
-        aWorkingThread.RegisterMessageHandler(aProcessingCallback);
+        aWorkingThread.registerMessageHandler(aProcessingCallback);
 
-        aWorkingThread.EnqueueMessage("Message1");
-        aWorkingThread.EnqueueMessage("Message2");
-        aWorkingThread.EnqueueMessage("Message3");
+        aWorkingThread.enqueueMessage("Message1");
+        aWorkingThread.enqueueMessage("Message2");
+        aWorkingThread.enqueueMessage("Message3");
 
         // Wait until all messages are processed.
         assertTrue("Message queue did not process messages in 1 second", aQueueCompleted.waitOne(1000));
         
-        aWorkingThread.UnregisterMessageHandler();
+        aWorkingThread.unregisterMessageHandler();
         
         assertEquals(3, aReceivedMessages.size());
         assertEquals("Message1", aReceivedMessages.get(0));
