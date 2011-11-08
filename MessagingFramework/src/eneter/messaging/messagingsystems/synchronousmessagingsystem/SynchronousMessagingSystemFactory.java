@@ -60,7 +60,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      * Creates the duplex output channel communicating with the specified duplex input channel using synchronous local call.
      * The duplex output channel can send messages and receive response messages. 
      */
-    public IDuplexOutputChannel CreateDuplexOutputChannel(String channelId)
+    public IDuplexOutputChannel createDuplexOutputChannel(String channelId)
     {
         return new SimpleDuplexOutputChannel(channelId, null, this);
     }
@@ -69,7 +69,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      * Creates the duplex output channel communicating with the specified duplex input channel using synchronous local call.
      * The duplex output channel can send messages and receive response messages.
      */
-    public IDuplexOutputChannel CreateDuplexOutputChannel(String channelId, String responseReceiverId)
+    public IDuplexOutputChannel createDuplexOutputChannel(String channelId, String responseReceiverId)
     {
         return new SimpleDuplexOutputChannel(channelId, responseReceiverId, this);
     }
@@ -78,7 +78,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      * Creates the duplex input channel listening to messages on the specified channel id.
      * The duplex input channel can send response messages back to the duplex output channel.
      */
-    public IDuplexInputChannel CreateDuplexInputChannel(String channelId)
+    public IDuplexInputChannel createDuplexInputChannel(String channelId)
     {
         return new SimpleDuplexInputChannel(channelId, this);
     }

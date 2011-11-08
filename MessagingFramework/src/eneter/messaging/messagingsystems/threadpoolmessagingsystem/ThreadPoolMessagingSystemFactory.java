@@ -85,7 +85,7 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
      * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
      */
     @Override
-    public IDuplexOutputChannel CreateDuplexOutputChannel(String channelId)
+    public IDuplexOutputChannel createDuplexOutputChannel(String channelId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -110,7 +110,7 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
      * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
      */
     @Override
-    public IDuplexOutputChannel CreateDuplexOutputChannel(String channelId,
+    public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
             String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -132,7 +132,7 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
      * The duplex input channel can communicate only with the duplex output channel and not with the output channel.
      */
     @Override
-    public IDuplexInputChannel CreateDuplexInputChannel(String channelId)
+    public IDuplexInputChannel createDuplexInputChannel(String channelId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

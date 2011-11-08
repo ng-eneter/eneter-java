@@ -8,7 +8,25 @@ import eneter.net.system.IMethod1;
 
 public class WorkingThread<_MessageType>
 {
-    public void RegisterMessageHandler(IMethod1<_MessageType> messageHandler)
+    public WorkingThread()
+    {
+        this("");
+    }
+    
+    public WorkingThread(String workingThreadName)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myWorkingThreadName = workingThreadName;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public void registerMessageHandler(IMethod1<_MessageType> messageHandler)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -34,7 +52,7 @@ public class WorkingThread<_MessageType>
         }
     }
     
-    public void UnregisterMessageHandler()
+    public void unregisterMessageHandler()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -69,7 +87,7 @@ public class WorkingThread<_MessageType>
         }
     }
     
-    public void EnqueueMessage(final _MessageType message)
+    public void enqueueMessage(final _MessageType message)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -126,6 +144,12 @@ public class WorkingThread<_MessageType>
         }
     }
     
+    private String getWorkingThreadName()
+    {
+        return myWorkingThreadName;
+    }
+    
+    private String myWorkingThreadName;
     
     private ExecutorService myThreadPool;
     
@@ -135,6 +159,6 @@ public class WorkingThread<_MessageType>
     
     private String TracedObject()
     {
-        return "The Working Thread ";
+        return "The Working Thread with the name '" + getWorkingThreadName() + "' ";
     }
 }

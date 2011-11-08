@@ -45,7 +45,7 @@ public interface IMessagingSystemFactory
      * @param channelId identifies the receiving duplex input channel
      * @return duplex output channel
      */
-    IDuplexOutputChannel CreateDuplexOutputChannel(String channelId);
+    IDuplexOutputChannel createDuplexOutputChannel(String channelId);
     
     /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
@@ -61,7 +61,7 @@ public interface IMessagingSystemFactory
      * @param responseReceiverId unique identifier of the response receiver represented by this duplex output channel.
      * @return duplex output channel
      */
-    IDuplexOutputChannel CreateDuplexOutputChannel(String channelId, String responseReceiverId);
+    IDuplexOutputChannel createDuplexOutputChannel(String channelId, String responseReceiverId);
     
     /**
      * Creates the duplex input channel receiving messages from the duplex output channel and sending back response messages.
@@ -72,5 +72,5 @@ public interface IMessagingSystemFactory
      * @param channelId identifies the address, the duplex input channel listens to
      * @return duplex input channel
      */
-    IDuplexInputChannel CreateDuplexInputChannel(String channelId);
+    IDuplexInputChannel createDuplexInputChannel(String channelId);
 }
