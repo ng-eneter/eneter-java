@@ -28,7 +28,7 @@ public interface IAttachableDuplexInputChannel
 	 * 
 	 * @see IDuplexInputChannel
 	 */
-	void attachDuplexInputChannel(IDuplexInputChannel duplexInputChannel);
+	void attachDuplexInputChannel(IDuplexInputChannel duplexInputChannel) throws Exception;
 	
 
 	/**

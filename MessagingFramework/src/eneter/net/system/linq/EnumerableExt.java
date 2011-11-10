@@ -40,4 +40,20 @@ public class EnumerableExt
         
         return null;
     }
+    
+    public static <T> boolean any(Iterable<T> iterable, IFunction1<Boolean, T> match)
+            throws Exception
+    {
+        for (Iterator<T> i = iterable.iterator(); i.hasNext();)
+        {
+            T anItem = i.next();
+            
+            if (match.invoke(anItem).booleanValue())
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
 }

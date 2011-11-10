@@ -23,9 +23,10 @@ public interface IAttachableMultipleDuplexInputChannels
 	 * Attaches the duplex input channel nad starts listening to messages.
 	 * 
 	 * @param duplexInputChannel
+	 * @throws Exception 
 	 * @see IDuplexInputChannel
 	 */
-	void attachDuplexInputChannel(IDuplexInputChannel duplexInputChannel);
+	void attachDuplexInputChannel(IDuplexInputChannel duplexInputChannel) throws Exception;
 	
 
 	/**
@@ -38,15 +39,16 @@ public interface IAttachableMultipleDuplexInputChannels
 	/**
 	 * Returns true if the duplex input channel is attached.
 	 */
-	Boolean isDuplexInputChannelAttached();
+	boolean isDuplexInputChannelAttached();
 	
 
 	/**
 	 * Detaches the duplex input channel.
 	 * 
 	 * @param channelId
+	 * @throws Exception 
 	 */
-	void detachDuplexInputChannel(String channelId);
+	void detachDuplexInputChannel(String channelId) throws Exception;
 	
 
 	/**

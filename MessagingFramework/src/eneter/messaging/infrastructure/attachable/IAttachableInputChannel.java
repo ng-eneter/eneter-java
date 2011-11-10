@@ -27,7 +27,7 @@ public interface IAttachableInputChannel
 	 * 
 	 * @see IInputChannel
 	 */
-	void attachInputChannel(IInputChannel inputChannel);
+	void attachInputChannel(IInputChannel inputChannel) throws Exception;
 	
 	
 	/**
