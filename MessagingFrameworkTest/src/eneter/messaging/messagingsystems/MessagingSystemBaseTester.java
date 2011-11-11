@@ -117,9 +117,9 @@ public abstract class MessagingSystemBaseTester
                     {
                         try
                         {
-                        Thread.sleep(1); // To mix the order of threads. (othewise it would go thread by thread)
-                        long aThreadId = Thread.currentThread().getId();
-                        anOutputChannel.sendMessage(String.valueOf(aThreadId));
+                            Thread.sleep(1); // To mix the order of threads. (othewise it would go thread by thread)
+                            long aThreadId = Thread.currentThread().getId();
+                            anOutputChannel.sendMessage(String.valueOf(aThreadId));
                         }
                         catch (Exception err)
                         {
