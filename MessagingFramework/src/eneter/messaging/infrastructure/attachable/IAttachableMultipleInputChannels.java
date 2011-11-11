@@ -57,7 +57,7 @@ public interface IAttachableMultipleInputChannels
 	 * 
 	 * @return
 	 */
-	Boolean isInputChannelAttached();
+	boolean isInputChannelAttached();
 	
 	
 	/**

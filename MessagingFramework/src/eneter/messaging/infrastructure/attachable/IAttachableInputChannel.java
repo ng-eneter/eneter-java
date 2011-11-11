@@ -47,7 +47,7 @@ public interface IAttachableInputChannel
 	 * 
 	 * @return
 	 */
-	Boolean isInputChannelAttached();
+	boolean isInputChannelAttached();
 	
 
 	/**

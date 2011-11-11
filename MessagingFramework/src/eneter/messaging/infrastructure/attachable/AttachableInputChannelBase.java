@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.infrastructure.attachable;
 
 import eneter.messaging.diagnostic.EneterTrace;
@@ -83,7 +91,7 @@ public abstract class AttachableInputChannelBase implements IAttachableInputChan
         }
     }
 
-    public Boolean isInputChannelAttached()
+    public boolean isInputChannelAttached()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

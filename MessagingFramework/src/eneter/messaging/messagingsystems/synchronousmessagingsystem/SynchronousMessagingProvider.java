@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.synchronousmessagingsystem;
 
 import java.util.HashMap;
 
+import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.IMessagingProvider;
 import eneter.net.system.IMethod1;
 
@@ -33,9 +34,8 @@ class SynchronousMessagingProvider implements IMessagingProvider
         }
         else
         {
-            // TODO: Trace error.
-            //string anError = "The receiver '" + receiverId + "' does not exist.";
-            //EneterTrace.Error(anError);
+            String anError = "The receiver '" + receiverId + "' does not exist.";
+            EneterTrace.error(anError);
             throw new IllegalStateException("The receiver '" + receiverId + "' does not exist.");
         }
         

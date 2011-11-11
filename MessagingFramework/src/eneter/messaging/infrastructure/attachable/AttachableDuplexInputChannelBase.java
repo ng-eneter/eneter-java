@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Martin Valach, Ondrej Uzovic
+ * 
+ * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.infrastructure.attachable;
 
 import java.security.InvalidParameterException;
@@ -73,7 +81,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
         }
     }
 
-    public Boolean isDuplexInputChannelAttached()
+    public boolean isDuplexInputChannelAttached()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

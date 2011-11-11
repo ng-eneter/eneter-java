@@ -40,7 +40,7 @@ public interface IAttachableOutputChannel
 	 * If the output channel is attached it means the object that has attached the channel
 	 * can send messages.
 	 */
-	Boolean isOutputChannelAttached();
+	boolean isOutputChannelAttached();
 	
 
 	/**

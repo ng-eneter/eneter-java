@@ -48,7 +48,7 @@ public interface IAttachableMultipleOutputChannels
 	 * can send messages.
 	 * Multiple output channel attachable means that the object can send messages to more receivers.
 	 */
-	Boolean isOutputChannelAttached();
+	boolean isOutputChannelAttached();
 	
 
 	/**

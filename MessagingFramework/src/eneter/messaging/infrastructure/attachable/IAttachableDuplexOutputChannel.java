@@ -46,7 +46,7 @@ public interface IAttachableDuplexOutputChannel
      *   
      * @return
      */
-    Boolean isDuplexOutputChannelAttached();
+    boolean isDuplexOutputChannelAttached();
 
 
     /**

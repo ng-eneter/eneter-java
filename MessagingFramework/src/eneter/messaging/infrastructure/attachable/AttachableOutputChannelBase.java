@@ -20,7 +20,7 @@ public abstract class AttachableOutputChannelBase implements IAttachableOutputCh
         {
             synchronized(myLock)
             {
-                if (getIsOutputChannelAttached())
+                if (isOutputChannelAttached())
                 {
                     String aMessage = "The output channel is already attached. The currently attached channel id is '" + myAttachedOutputChannel.getChannelId() + "'.";
                     EneterTrace.error(aMessage);
@@ -52,7 +52,7 @@ public abstract class AttachableOutputChannelBase implements IAttachableOutputCh
         }
     }
 
-    public Boolean getIsOutputChannelAttached()
+    public boolean isOutputChannelAttached()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
