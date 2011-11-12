@@ -11,7 +11,7 @@ package eneter.messaging.endpoints.stringmessages;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.infrastructure.attachable.AttachableOutputChannelBase;
 
-final class StringMessageSender extends AttachableOutputChannelBase 
+class StringMessageSender extends AttachableOutputChannelBase 
                                        implements IStringMessageSender
 {
     @Override

@@ -13,7 +13,7 @@ import eneter.messaging.infrastructure.attachable.AttachableInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.ChannelMessageEventArgs;
 import eneter.net.system.*;
 
-final class StringMessageReceiver extends AttachableInputChannelBase
+class StringMessageReceiver extends AttachableInputChannelBase
                                          implements IStringMessageReceiver
 {
 
