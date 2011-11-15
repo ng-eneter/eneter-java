@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.net.system.IFunction1;
 
 public class XmlStringSerializer implements ISerializer
 {
@@ -13,7 +14,7 @@ public class XmlStringSerializer implements ISerializer
     {
         public class TElement
         {
-            public String myName;
+            public String myName = "";
             public int myValueStartPosition;
             public int myValueLength;
             public int myNextElementStartPosition;
@@ -35,7 +36,7 @@ public class XmlStringSerializer implements ISerializer
                 anElements.add(anElement);
                 
                 // Set the position to the beginning of the next element.
-                anIdx += anElement.myValueLength;
+                anIdx = anElement.myNextElementStartPosition;
             }
             
             return anElements;
@@ -44,7 +45,7 @@ public class XmlStringSerializer implements ISerializer
         public TElement getElement(int startIdx)
         {
             // Get the starting of the element. '<'
-            int anIdx = getNextNonwhiteChar(startIdx);
+            int anIdx = getNonwhitePosition(startIdx);
             if (anIdx == -1)
             {
                 throw new IllegalStateException("The provided string is not xml.");
@@ -120,7 +121,7 @@ public class XmlStringSerializer implements ISerializer
                 }
                 // If the character matches with the character indicating the possibility
                 // that it can be a beginning of the recursive element.
-                else if (c == aBeginningElement.charAt(anEqualToEndingIdx))
+                else if (c == aBeginningElement.charAt(anEqualToBeginningIdx))
                 {
                     // Indicate that character matched.
                     ++anEqualToBeginningIdx;
@@ -176,8 +177,59 @@ public class XmlStringSerializer implements ISerializer
             return anElement;
         }
         
+        public String getStringValue(int startIdx, int length)
+        {
+            return myXmlString.substring(startIdx, startIdx + length);
+        }
         
-        public int getNextNonwhiteChar(int startIdx)
+        public boolean getBooleanValue(int startIdx, int length)
+        {
+            String aValueStr = myXmlString.substring(startIdx, startIdx + length);
+            return Boolean.parseBoolean(aValueStr);
+        }
+        
+        public byte getByteValue(int startIdx, int length)
+        {
+            String aValueStr = myXmlString.substring(startIdx, startIdx + length);
+            return Byte.parseByte(aValueStr);
+        }
+        
+        public char getCharValue(int startIdx)
+        {
+            return myXmlString.charAt(startIdx);
+        }
+        
+        public int getIntValue(int startIdx, int length)
+        {
+            String aValueStr = myXmlString.substring(startIdx, startIdx + length);
+            return Integer.parseInt(aValueStr);
+        }
+        
+        public long getLongValue(int startIdx, int length)
+        {
+            String aValueStr = myXmlString.substring(startIdx, startIdx + length);
+            return Long.parseLong(aValueStr);
+        }
+        
+        public short getShortValue(int startIdx, int length)
+        {
+            String aValueStr = myXmlString.substring(startIdx, startIdx + length);
+            return Short.parseShort(aValueStr);
+        }
+        
+        public double getDoubleValue(int startIdx, int length)
+        {
+            String aValueStr = myXmlString.substring(startIdx, startIdx + length);
+            return Double.parseDouble(aValueStr);
+        }
+        
+        public float getFloatValue(int startIdx, int length)
+        {
+            String aValueStr = myXmlString.substring(startIdx, startIdx + length);
+            return Float.parseFloat(aValueStr);
+        }
+        
+        private int getNonwhitePosition(int startIdx)
         {
             for (int i = startIdx; i < myXmlString.length(); ++i)
             {
@@ -192,7 +244,7 @@ public class XmlStringSerializer implements ISerializer
             return -1;
         }
         
-        public char getChar(int idx)
+        private char getChar(int idx)
         {
             if (idx < myXmlString.length())
             {
@@ -203,7 +255,7 @@ public class XmlStringSerializer implements ISerializer
             return Character.MIN_VALUE;
         }
         
-        public boolean isWhiteCharacter(char c)
+        private boolean isWhiteCharacter(char c)
         {
             return c == ' ' || c == '\t' || c == '\n' || c == '\f' || c == '\r';
         }
@@ -260,23 +312,230 @@ public class XmlStringSerializer implements ISerializer
     private <T> T deserializeElement(XmlBrowser anXmlBrowser, int elementStartPosition, int length, Class<T> clazz)
         throws Exception
     {
-        // Create the instance of deserialized object via default constructor.
-        T aDeserializedObject = clazz.newInstance();
+        String aDeserializedTypeName = clazz.getSimpleName();
         
-        // Get values belonging to the element.
-        ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
-        
-        // Get public fields of the deserialized object.
-        Field[] aFields = aDeserializedObject.getClass().getFields();
-        
-        // Go through fields and deserialize them.
-        for (Field aField : aFields)
+        // If it is a simple type (not a custom class) then the field contains the value.
+        if (aDeserializedTypeName.equals("boolean") || aDeserializedTypeName.equals("Boolean"))
         {
+            Boolean aValue = anXmlBrowser.getBooleanValue(elementStartPosition, length);
+            return (T)aValue;
+        }
+        else if (aDeserializedTypeName.equals("byte") || aDeserializedTypeName.equals("Byte"))
+        {
+            Byte aValue = anXmlBrowser.getByteValue(elementStartPosition, length);
+            return (T)aValue;
+        }
+        else if (aDeserializedTypeName.equals("char") || aDeserializedTypeName.equals("Character"))
+        {
+            Character aValue = anXmlBrowser.getCharValue(elementStartPosition);
+            return (T)aValue;
+        }
+        else if (aDeserializedTypeName.equals("int") || aDeserializedTypeName.equals("Integer"))
+        {
+            Integer aValue = anXmlBrowser.getIntValue(elementStartPosition, length);
+            return (T)aValue;
+        }
+        else if (aDeserializedTypeName.equals("long") || aDeserializedTypeName.equals("Long"))
+        {
+            Long aValue = anXmlBrowser.getLongValue(elementStartPosition, length);
+            return (T)aValue;
+        }
+        else if (aDeserializedTypeName.equals("short") || aDeserializedTypeName.equals("Short"))
+        {
+            Short aValue = anXmlBrowser.getShortValue(elementStartPosition, length);
+            return (T)aValue;
+        }
+        else if (aDeserializedTypeName.equals("float") || aDeserializedTypeName.equals("Float"))
+        {
+            Float aValue = anXmlBrowser.getFloatValue(elementStartPosition, length);
+            return (T)aValue;
+        }
+        else if (aDeserializedTypeName.equals("double") || aDeserializedTypeName.equals("Double"))
+        {
+            Double aValue = anXmlBrowser.getDoubleValue(elementStartPosition, length);
+            return (T)aValue;
+        }
+        else if (aDeserializedTypeName.equals("String"))
+        {
+            String aValue = anXmlBrowser.getStringValue(elementStartPosition, length);
+            return (T)aValue;
+        }
+        // If it is an array
+        else if (aDeserializedTypeName.equals("boolean[]") || aDeserializedTypeName.equals("Boolean[]"))
+        {
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            boolean[] anItems = new boolean[anElements.size()];
+            for (int i = 0; i < anItems.length; ++i)
+            {
+                XmlBrowser.TElement anElement = anElements.get(i);
+                boolean aValue = anXmlBrowser.getBooleanValue(anElement.myValueStartPosition, anElement.myValueLength);
+                anItems[i] = aValue;
+            }
             
+            return (T)anItems;
+        }
+        else if (aDeserializedTypeName.equals("byte[]") || aDeserializedTypeName.equals("Byte[]"))
+        {
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            byte[] anItems = new byte[anElements.size()];
+            for (int i = 0; i < anItems.length; ++i)
+            {
+                XmlBrowser.TElement anElement = anElements.get(i);
+                byte aValue = anXmlBrowser.getByteValue(anElement.myValueStartPosition, anElement.myValueLength);
+                anItems[i] = aValue;
+            }
+            
+            return (T)anItems;
+        }
+        else if (aDeserializedTypeName.equals("char[]") || aDeserializedTypeName.equals("Character[]"))
+        {
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            char[] anItems = new char[anElements.size()];
+            for (int i = 0; i < anItems.length; ++i)
+            {
+                XmlBrowser.TElement anElement = anElements.get(i);
+                char aValue = anXmlBrowser.getCharValue(anElement.myValueStartPosition);
+                anItems[i] = aValue;
+            }
+            
+            return (T)anItems;
+        }
+        else if (aDeserializedTypeName.equals("int[]") || aDeserializedTypeName.equals("Integer[]"))
+        {
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            int[] anItems = new int[anElements.size()];
+            for (int i = 0; i < anItems.length; ++i)
+            {
+                XmlBrowser.TElement anElement = anElements.get(i);
+                int aValue = anXmlBrowser.getIntValue(anElement.myValueStartPosition, anElement.myValueLength);
+                anItems[i] = aValue;
+            }
+            
+            return (T)anItems;
+        }
+        else if (aDeserializedTypeName.equals("long[]") || aDeserializedTypeName.equals("Long[]"))
+        {
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            long[] anItems = new long[anElements.size()];
+            for (int i = 0; i < anItems.length; ++i)
+            {
+                XmlBrowser.TElement anElement = anElements.get(i);
+                long aValue = anXmlBrowser.getLongValue(anElement.myValueStartPosition, anElement.myValueLength);
+                anItems[i] = aValue;
+            }
+            
+            return (T)anItems;
+        }
+        else if (aDeserializedTypeName.equals("short[]") || aDeserializedTypeName.equals("Short[]"))
+        {
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            short[] anItems = new short[anElements.size()];
+            for (int i = 0; i < anItems.length; ++i)
+            {
+                XmlBrowser.TElement anElement = anElements.get(i);
+                short aValue = anXmlBrowser.getShortValue(anElement.myValueStartPosition, anElement.myValueLength);
+                anItems[i] = aValue;
+            }
+            
+            return (T)anItems;
+        }
+        else if (aDeserializedTypeName.equals("double[]") || aDeserializedTypeName.equals("Double[]"))
+        {
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            double[] anItems = new double[anElements.size()];
+            for (int i = 0; i < anItems.length; ++i)
+            {
+                XmlBrowser.TElement anElement = anElements.get(i);
+                double aValue = anXmlBrowser.getDoubleValue(anElement.myValueStartPosition, anElement.myValueLength);
+                anItems[i] = aValue;
+            }
+            
+            return (T)anItems;
+        }
+        else if (aDeserializedTypeName.equals("float[]") || aDeserializedTypeName.equals("Float[]"))
+        {
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            float[] anItems = new float[anElements.size()];
+            for (int i = 0; i < anItems.length; ++i)
+            {
+                XmlBrowser.TElement anElement = anElements.get(i);
+                float aValue = anXmlBrowser.getFloatValue(anElement.myValueStartPosition, anElement.myValueLength);
+                anItems[i] = aValue;
+            }
+            
+            return (T)anItems;
+        }
+        else if (aDeserializedTypeName.equals("String[]"))
+        {
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            String[] anItems = new String[anElements.size()];
+            for (int i = 0; i < anItems.length; ++i)
+            {
+                XmlBrowser.TElement anElement = anElements.get(i);
+                String aValue = anXmlBrowser.getStringValue(anElement.myValueStartPosition, anElement.myValueLength);
+                anItems[i] = aValue;
+            }
+            
+            return (T)anItems;
+        }
+        else
+        {
+            // Get value of the element.
+            ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
+            
+            // Create the instance of deserialized object via default constructor.
+            Constructor[] aConstructors = clazz.getConstructors();
+            T aDeserializedObject = (T) clazz.getConstructors()[0].newInstance(null);
+            
+            // Get public fields of the deserialized object.
+            Field[] aFields = aDeserializedObject.getClass().getFields();
+            
+            // Go through fields and deserialize them.
+            int aSearchIdx = 0;
+            for (Field aField : aFields)
+            {
+                String aFieldName = aField.getName();
+                
+                // Find the element containing the value.
+                // Note: To avoid the looping complexity - searching again and again from the very beginning,
+                //       the loop behaves as cycle. The last position is remembered and the
+                //       next search starts from this position.
+                XmlBrowser.TElement anElement = null;
+                for (int aSearchedLength = 0; aSearchedLength < anElements.size(); ++aSearchedLength)
+                {
+                    XmlBrowser.TElement anTmpElement = anElements.get(aSearchIdx);
+                    
+                    if (anTmpElement.myName.equals(aFieldName))
+                    {
+                        anElement = anTmpElement;
+                        break;
+                    }
+                    
+                    ++aSearchIdx;
+                    
+                    // If we are at the end, then start from the beginning.
+                    if (aSearchIdx == anElements.size())
+                    {
+                        aSearchIdx = 0;
+                    }
+                }
+                
+                // If the element was not found, then there is an error.
+                if (anElement == null)
+                {
+                    throw new IllegalStateException("Class field was not found during the deserialization.");
+                }
+                
+                // Recursively deserialize the object for the field.
+                Object aValue = deserializeElement(anXmlBrowser, anElement.myValueStartPosition, anElement.myValueLength, aField.getType());
+                
+                // Set the created object to the field.
+                aDeserializedObject.getClass().getField(aFieldName).set(aDeserializedObject, aValue);
+            }
         }
         
         
-        return aDeserializedObject;
+        return null;
     }
     
     private void buildXml(String xmlElementName, Object dataToSerialize, StringBuilder xmlResult)
