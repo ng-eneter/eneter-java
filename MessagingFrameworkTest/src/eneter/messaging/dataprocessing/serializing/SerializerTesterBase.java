@@ -2,6 +2,8 @@ package eneter.messaging.dataprocessing.serializing;
 
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
+
 import org.junit.*;
 
 public abstract class SerializerTesterBase
@@ -30,11 +32,12 @@ public abstract class SerializerTesterBase
     {
         String aData = "hello world";
         Object aSerializedData = TestedSerializer.serialize(aData, String.class);
-        //String aDeserializedData = TestedSerializer.Deserialize<String>(aSerializedData);
-
-        //Assert.AreEqual(aData, aDeserializedData);
         
         assertEquals("<String>hello world</String>", (String)aSerializedData);
+        
+        String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
+
+        assertEquals(aData, aDeserializedData);
     }
     
     @Test
@@ -44,6 +47,10 @@ public abstract class SerializerTesterBase
         Object aSerializedData = TestedSerializer.serialize(a, int.class);
         
         assertEquals("<int>10</int>", (String)aSerializedData);
+        
+        int aDeserializedData = TestedSerializer.deserialize(aSerializedData, int.class);
+
+        assertEquals(a, aDeserializedData);
     }
     
     @Test
@@ -53,6 +60,10 @@ public abstract class SerializerTesterBase
         Object aSerializedData = TestedSerializer.serialize(a, int[].class);
         
         assertEquals("<int[]><int>1</int><int>2</int><int>3</int></int[]>", (String)aSerializedData);
+        
+        int[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, int[].class);
+
+        assertTrue(Arrays.equals(a, aDeserializedData));
     }
     
     @Test
@@ -62,6 +73,11 @@ public abstract class SerializerTesterBase
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass1.class);
         
         assertEquals("<MyTestClass1><k>100</k><str>Hello</str></MyTestClass1>", (String)aSerializedData);
+        
+        //MyTestClass1 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass1.class);
+        
+        //assertEquals(aClass.k, aDeserializedData.k);
+        //assertEquals(aClass.str, aDeserializedData.str);
     }
     
     @Test
@@ -71,6 +87,8 @@ public abstract class SerializerTesterBase
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
         assertEquals("<MyTestClass2><kk>111</kk><vv><k>100</k><str>Hello</str></vv></MyTestClass2>", (String)aSerializedData);
+        
+        
     }
     
     @Test
