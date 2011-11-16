@@ -20,7 +20,7 @@ public interface ISerializer
      * @param dataToSerialize Data to be serialized.
      * @param clazz represents the serialized type.
      * @return Object representing the serialized data. Typically it can be byte[] or string.
-     * @throws Exception 
+     * @throws Exception If the serialization fails.
      */
     <T> Object serialize(T dataToSerialize, Class<T> clazz) throws Exception;
     
@@ -28,7 +28,7 @@ public interface ISerializer
      * Deserializes data into the specified type.
      * @param serializedData Data to be deserialized.
      * @return Deserialized object.
-     * @throws Exception 
+     * @throws Exception If the deserialization fails.
      */
     <T> T deserialize(Object serializedData, Class<T> clazz) throws Exception;
 }
