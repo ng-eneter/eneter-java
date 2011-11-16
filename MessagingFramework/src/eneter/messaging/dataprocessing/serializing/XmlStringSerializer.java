@@ -484,8 +484,7 @@ public class XmlStringSerializer implements ISerializer
             ArrayList<XmlBrowser.TElement> anElements = anXmlBrowser.getElements(elementStartPosition, length);
             
             // Create the instance of deserialized object via default constructor.
-            Constructor[] aConstructors = clazz.getConstructors();
-            T aDeserializedObject = (T) clazz.getConstructors()[0].newInstance(null);
+            T aDeserializedObject = (T) clazz.newInstance();
             
             // Get public fields of the deserialized object.
             Field[] aFields = aDeserializedObject.getClass().getFields();
@@ -507,7 +506,18 @@ public class XmlStringSerializer implements ISerializer
                     
                     if (anTmpElement.myName.equals(aFieldName))
                     {
+                        // Store found element.
                         anElement = anTmpElement;
+                        
+                        // Next search start from the next position.
+                        ++aSearchIdx;
+                        
+                        // If we are at the end, then the next search will start from the beginning.
+                        if (aSearchIdx == anElements.size())
+                        {
+                            aSearchIdx = 0;
+                        }
+                        
                         break;
                     }
                     
@@ -532,10 +542,12 @@ public class XmlStringSerializer implements ISerializer
                 // Set the created object to the field.
                 aDeserializedObject.getClass().getField(aFieldName).set(aDeserializedObject, aValue);
             }
+            
+            return aDeserializedObject;
         }
         
         
-        return null;
+        //return null;
     }
     
     private void buildXml(String xmlElementName, Object dataToSerialize, StringBuilder xmlResult)
