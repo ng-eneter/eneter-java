@@ -8,25 +8,7 @@ import org.junit.*;
 
 public abstract class SerializerTesterBase
 {
-    private class MyTestClass1
-    {
-        @SuppressWarnings("unused")
-        public int k = 100;
-        
-        @SuppressWarnings("unused")
-        public String str = "Hello";
-    }
-    
-    private class MyTestClass2
-    {
-        @SuppressWarnings("unused")
-        public int kk = 111;
-        
-        @SuppressWarnings("unused")
-        public MyTestClass1 vv = new MyTestClass1();
-    }
-    
-    
+   
     @Test
     public void SerializeDeserialize() throws Exception
     {
@@ -70,14 +52,17 @@ public abstract class SerializerTesterBase
     public void SerializeClass() throws Exception
     {
         MyTestClass1 aClass = new MyTestClass1();
+        aClass.k = -10;
+        aClass.str = "Eneter";
+        
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass1.class);
         
-        assertEquals("<MyTestClass1><k>100</k><str>Hello</str></MyTestClass1>", (String)aSerializedData);
+        assertEquals("<MyTestClass1><k>-10</k><str>Eneter</str></MyTestClass1>", (String)aSerializedData);
         
-        //MyTestClass1 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass1.class);
+        MyTestClass1 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass1.class);
         
-        //assertEquals(aClass.k, aDeserializedData.k);
-        //assertEquals(aClass.str, aDeserializedData.str);
+        assertEquals(aClass.k, aDeserializedData.k);
+        assertEquals(aClass.str, aDeserializedData.str);
     }
     
     @Test
