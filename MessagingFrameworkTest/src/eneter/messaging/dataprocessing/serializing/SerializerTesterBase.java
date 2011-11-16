@@ -8,9 +8,26 @@ import org.junit.*;
 
 public abstract class SerializerTesterBase
 {
-   
+    public static class MyTestClass1
+    {
+        public int k = 100;
+        public String str = "Hello";
+    }
+    
+    public static class MyTestClass2
+    {
+        public int kk = 111;
+        public MyTestClass1 vv = new MyTestClass1();
+    }
+    
+    public static class MyGenericClass<T>
+    {
+        public T myItem;
+    }
+    
+    
     @Test
-    public void SerializeDeserialize() throws Exception
+    public void serializeDeserialize() throws Exception
     {
         String aData = "hello world";
         Object aSerializedData = TestedSerializer.serialize(aData, String.class);
@@ -23,7 +40,7 @@ public abstract class SerializerTesterBase
     }
     
     @Test
-    public void SerializeInt() throws Exception
+    public void serializeInt() throws Exception
     {
         int a = 10;
         Object aSerializedData = TestedSerializer.serialize(a, int.class);
@@ -36,12 +53,12 @@ public abstract class SerializerTesterBase
     }
     
     @Test
-    public void SerializeArray() throws Exception
+    public void serializeArray() throws Exception
     {
         int[] a = {1,2,3};
         Object aSerializedData = TestedSerializer.serialize(a, int[].class);
         
-        assertEquals("<int[]><int>1</int><int>2</int><int>3</int></int[]>", (String)aSerializedData);
+        assertEquals("<ArrayOfInt><int>1</int><int>2</int><int>3</int></ArrayOfInt>", (String)aSerializedData);
         
         int[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, int[].class);
 
@@ -49,7 +66,7 @@ public abstract class SerializerTesterBase
     }
     
     @Test
-    public void SerializeClass() throws Exception
+    public void serializeClass() throws Exception
     {
         MyTestClass1 aClass = new MyTestClass1();
         aClass.k = -10;
@@ -66,27 +83,39 @@ public abstract class SerializerTesterBase
     }
     
     @Test
-    public void SerializeCompositeClass() throws Exception
+    public void serializeCompositeClass() throws Exception
     {
         MyTestClass2 aClass = new MyTestClass2();
+        aClass.kk = 1000;
+        aClass.vv.k = 5;
+        aClass.vv.str = "Eneter";
+        
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
-        assertEquals("<MyTestClass2><kk>111</kk><vv><k>100</k><str>Hello</str></vv></MyTestClass2>", (String)aSerializedData);
+        assertEquals("<MyTestClass2><kk>1000</kk><vv><k>5</k><str>Eneter</str></vv></MyTestClass2>", (String)aSerializedData);
         
+        MyTestClass2 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass2.class);
         
+        assertEquals(aClass.kk, aDeserializedData.kk);
+        assertEquals(aClass.vv.k, aDeserializedData.vv.k);
+        assertEquals(aClass.vv.str, aDeserializedData.vv.str);
     }
     
     @Test
-    public void SerializeNull() throws Exception
+    public void serializeNull() throws Exception
     {
         MyTestClass2 aClass = null;
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
         assertEquals("<MyTestClass2></MyTestClass2>", (String)aSerializedData);
+        
+        MyTestClass2 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass2.class);
+        
+        assertNull(aDeserializedData);
     }
     
     @Test
-    public void SerializeClassWithNullField() throws Exception
+    public void serializeClassWithNullField() throws Exception
     {
         MyTestClass2 aClass = new MyTestClass2();
         aClass.vv = null;
@@ -94,6 +123,23 @@ public abstract class SerializerTesterBase
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
         assertEquals("<MyTestClass2><kk>111</kk><vv></vv></MyTestClass2>", (String)aSerializedData);
+        
+        MyTestClass2 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass2.class);
+        
+        assertEquals(aClass.kk, aDeserializedData.kk);
+        assertNull(aClass.vv);
+    }
+    
+    @Test
+    public void serializeXmlKeywords() throws Exception
+    {
+        String s = "& < > \" '";
+        Object aSerializedData = TestedSerializer.serialize(s, String.class);
+        assertEquals("<String>&amp; &lt; &gt; &quot; &apos;</String>", (String)aSerializedData);
+        
+        String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
+        
+        assertEquals(s, aDeserializedData);
     }
     
     protected ISerializer TestedSerializer;
