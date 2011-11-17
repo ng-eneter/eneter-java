@@ -20,9 +20,16 @@ public abstract class SerializerTesterBase
         public MyTestClass1 vv = new MyTestClass1();
     }
     
-    public static class MyGenericClass<T>
+    public static enum MyEnum
     {
-        public T myItem;
+        Monday,
+        Tuesday,
+        Wednwsday
+    }
+    
+    public static class MyTestClass3
+    {
+        public MyEnum myEnum = MyEnum.Monday;
     }
     
     
@@ -131,16 +138,31 @@ public abstract class SerializerTesterBase
     }
     
     @Test
-    public void serializeXmlKeywords() throws Exception
+    public void serializeEnum() throws Exception
     {
-        String s = "& < > \" '";
-        Object aSerializedData = TestedSerializer.serialize(s, String.class);
-        assertEquals("<String>&amp; &lt; &gt; &quot; &apos;</String>", (String)aSerializedData);
+        MyEnum aData = MyEnum.Tuesday;
+        Enum<MyEnum> aa = Enum.valueOf(MyEnum.class, "Tuesday");
         
-        String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
-        
-        assertEquals(s, aDeserializedData);
+        Object aSerializedData = TestedSerializer.serialize(aData, MyEnum.class);
+        assertEquals("<MyEnum>Tuesday</MyEnum>", (String)aSerializedData);
+
+        MyEnum aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyEnum.class);
+        assertTrue(aData == aDeserializedData);
     }
+    
+    @Test
+    public void serializeClassWithEnum() throws Exception
+    {
+        MyTestClass3 aTestClass = new MyTestClass3();
+        aTestClass.myEnum = MyEnum.Tuesday;
+        
+        Object aSerializedData = TestedSerializer.serialize(aTestClass, MyTestClass3.class);
+        assertEquals("<MyTestClass3><myEnum>Tuesday</myEnum></MyTestClass3>", (String)aSerializedData);
+
+        MyTestClass3 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass3.class);
+        assertEquals(aTestClass.myEnum, aDeserializedData.myEnum);
+    }
+    
     
     protected ISerializer TestedSerializer;
 }
