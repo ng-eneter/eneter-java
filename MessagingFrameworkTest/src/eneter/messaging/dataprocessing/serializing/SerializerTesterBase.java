@@ -79,6 +79,29 @@ public abstract class SerializerTesterBase
     }
     
     @Test
+    public void serializeArrayOfCustomClass() throws Exception
+    {
+        MyTestClass1[] aClasses = { new MyTestClass1(), new MyTestClass1(), new MyTestClass1() };
+        aClasses[0].k = 1;
+        aClasses[1].k = 2;
+        aClasses[2].k = 3;
+        
+        Object aSerializedData = TestedSerializer.serialize(aClasses, MyTestClass1[].class);
+        
+        assertEquals("<ArrayOfMyTestClass1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><MyTestClass1><k>1</k><str>Hello</str></MyTestClass1><MyTestClass1><k>2</k><str>Hello</str></MyTestClass1><MyTestClass1><k>3</k><str>Hello</str></MyTestClass1></ArrayOfMyTestClass1>", (String)aSerializedData);
+        
+        MyTestClass1[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass1[].class);
+
+        assertEquals(aClasses.length, aDeserializedData.length);
+        assertEquals(aClasses[0].k, aDeserializedData[0].k);
+        assertEquals(aClasses[0].str, aDeserializedData[0].str);
+        assertEquals(aClasses[1].k, aDeserializedData[1].k);
+        assertEquals(aClasses[1].str, aDeserializedData[1].str);
+        assertEquals(aClasses[2].k, aDeserializedData[2].k);
+        assertEquals(aClasses[2].str, aDeserializedData[2].str);
+    }
+    
+    @Test
     public void serializeClass() throws Exception
     {
         MyTestClass1 aClass = new MyTestClass1();
