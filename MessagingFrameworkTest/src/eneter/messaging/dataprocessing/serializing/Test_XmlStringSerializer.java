@@ -18,7 +18,7 @@ public class Test_XmlStringSerializer extends SerializerTesterBase
     {
         String s = "& < > \" '";
         Object aSerializedData = TestedSerializer.serialize(s, String.class);
-        assertEquals("<String>&amp; &lt; &gt; &quot; &apos;</String>", (String)aSerializedData);
+        assertEquals("<String xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">&amp; &lt; &gt; &quot; &apos;</String>", (String)aSerializedData);
         
         String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
         assertEquals(s, aDeserializedData);
@@ -29,7 +29,7 @@ public class Test_XmlStringSerializer extends SerializerTesterBase
     {
         char c = 'A';
         Object aSerializedData = TestedSerializer.serialize(c, char.class);
-        assertEquals("<char>65</char>", (String)aSerializedData);
+        assertEquals("<char xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">65</char>", (String)aSerializedData);
         
         char aDeserializedData = TestedSerializer.deserialize(aSerializedData, char.class);
         assertEquals(c, aDeserializedData);

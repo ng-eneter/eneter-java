@@ -18,6 +18,7 @@ public abstract class SerializerTesterBase
     {
         public int kk = 111;
         public MyTestClass1 vv = new MyTestClass1();
+        public int mm = 222;
     }
     
     public static enum MyEnum
@@ -32,6 +33,11 @@ public abstract class SerializerTesterBase
         public MyEnum myEnum = MyEnum.Monday;
     }
     
+    public static class MyGenericClass<T>
+    {
+        public T myItem;
+    }
+    
     
     @Test
     public void serializeDeserialize() throws Exception
@@ -39,7 +45,7 @@ public abstract class SerializerTesterBase
         String aData = "hello world";
         Object aSerializedData = TestedSerializer.serialize(aData, String.class);
         
-        assertEquals("<String>hello world</String>", (String)aSerializedData);
+        assertEquals("<String xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">hello world</String>", (String)aSerializedData);
         
         String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
 
@@ -52,7 +58,7 @@ public abstract class SerializerTesterBase
         int a = 10;
         Object aSerializedData = TestedSerializer.serialize(a, int.class);
         
-        assertEquals("<int>10</int>", (String)aSerializedData);
+        assertEquals("<int xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">10</int>", (String)aSerializedData);
         
         int aDeserializedData = TestedSerializer.deserialize(aSerializedData, int.class);
 
@@ -65,7 +71,7 @@ public abstract class SerializerTesterBase
         int[] a = {1,2,3};
         Object aSerializedData = TestedSerializer.serialize(a, int[].class);
         
-        assertEquals("<ArrayOfInt><int>1</int><int>2</int><int>3</int></ArrayOfInt>", (String)aSerializedData);
+        assertEquals("<ArrayOfInt xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><int>1</int><int>2</int><int>3</int></ArrayOfInt>", (String)aSerializedData);
         
         int[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, int[].class);
 
@@ -81,7 +87,7 @@ public abstract class SerializerTesterBase
         
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass1.class);
         
-        assertEquals("<MyTestClass1><k>-10</k><str>Eneter</str></MyTestClass1>", (String)aSerializedData);
+        assertEquals("<MyTestClass1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><k>-10</k><str>Eneter</str></MyTestClass1>", (String)aSerializedData);
         
         MyTestClass1 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass1.class);
         
@@ -96,16 +102,18 @@ public abstract class SerializerTesterBase
         aClass.kk = 1000;
         aClass.vv.k = 5;
         aClass.vv.str = "Eneter";
+        aClass.mm = 2000;
         
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
-        assertEquals("<MyTestClass2><kk>1000</kk><vv><k>5</k><str>Eneter</str></vv></MyTestClass2>", (String)aSerializedData);
+        assertEquals("<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><kk>1000</kk><vv><k>5</k><str>Eneter</str></vv><mm>2000</mm></MyTestClass2>", (String)aSerializedData);
         
         MyTestClass2 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass2.class);
         
         assertEquals(aClass.kk, aDeserializedData.kk);
         assertEquals(aClass.vv.k, aDeserializedData.vv.k);
         assertEquals(aClass.vv.str, aDeserializedData.vv.str);
+        assertEquals(aClass.mm, aDeserializedData.mm);
     }
     
     @Test
@@ -114,7 +122,7 @@ public abstract class SerializerTesterBase
         MyTestClass2 aClass = null;
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
-        assertEquals("<MyTestClass2></MyTestClass2>", (String)aSerializedData);
+        assertEquals("<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/>", (String)aSerializedData);
         
         MyTestClass2 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass2.class);
         
@@ -129,7 +137,7 @@ public abstract class SerializerTesterBase
         
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
-        assertEquals("<MyTestClass2><kk>111</kk><vv></vv></MyTestClass2>", (String)aSerializedData);
+        assertEquals("<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><kk>111</kk><vv xsi:nil=\"true\"/><mm>222</mm></MyTestClass2>", (String)aSerializedData);
         
         MyTestClass2 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass2.class);
         
@@ -141,10 +149,9 @@ public abstract class SerializerTesterBase
     public void serializeEnum() throws Exception
     {
         MyEnum aData = MyEnum.Tuesday;
-        Enum<MyEnum> aa = Enum.valueOf(MyEnum.class, "Tuesday");
         
         Object aSerializedData = TestedSerializer.serialize(aData, MyEnum.class);
-        assertEquals("<MyEnum>Tuesday</MyEnum>", (String)aSerializedData);
+        assertEquals("<MyEnum xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">Tuesday</MyEnum>", (String)aSerializedData);
 
         MyEnum aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyEnum.class);
         assertTrue(aData == aDeserializedData);
@@ -157,10 +164,25 @@ public abstract class SerializerTesterBase
         aTestClass.myEnum = MyEnum.Tuesday;
         
         Object aSerializedData = TestedSerializer.serialize(aTestClass, MyTestClass3.class);
-        assertEquals("<MyTestClass3><myEnum>Tuesday</myEnum></MyTestClass3>", (String)aSerializedData);
+        assertEquals("<MyTestClass3 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><myEnum>Tuesday</myEnum></MyTestClass3>", (String)aSerializedData);
 
         MyTestClass3 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass3.class);
         assertEquals(aTestClass.myEnum, aDeserializedData.myEnum);
+    }
+    
+    //@Test
+    public void serializeGenericClass() throws Exception
+    {
+        MyGenericClass<Double> aTestClass = new MyGenericClass<Double>();
+        aTestClass.myItem = 10.0;
+        
+        Object aSerializedData = TestedSerializer.serialize(aTestClass, MyGenericClass.class);
+        assertEquals("<MyGenericClass xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><myItem>10.0</myItem></MyGenericClass>", (String)aSerializedData);
+
+        MyGenericClass<String> aReferenceClass = new MyGenericClass<String>();
+        aReferenceClass.myItem = "";
+        MyGenericClass<String> aDeserializedData = TestedSerializer.deserialize(aSerializedData, aReferenceClass.getClass());
+        assertEquals(aTestClass.myItem, aDeserializedData.myItem);
     }
     
     
