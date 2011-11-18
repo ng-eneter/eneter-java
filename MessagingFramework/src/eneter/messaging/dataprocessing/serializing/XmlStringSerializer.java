@@ -32,6 +32,7 @@ public class XmlStringSerializer implements ISerializer
             public int myValueStartPosition;
             public int myValueLength;
             public int myNextElementStartPosition;
+            public boolean myIsNull;
         }
 
         public XmlDataBrowser(String xmlString) 
@@ -81,13 +82,11 @@ public class XmlStringSerializer implements ISerializer
                 int anIdx = getNonwhitePosition(startIdx);
                 if (anIdx == -1)
                 {
-                    throw new IllegalStateException(
-                            "The provided string is not xml.");
+                    throw new IllegalStateException("The provided string is not xml.");
                 }
                 if (myXmlString.charAt(anIdx) != '<')
                 {
-                    throw new IllegalStateException(
-                            "The xml string does not start with '<' character.");
+                    throw new IllegalStateException("The xml string does not start with '<' character.");
                 }
     
                 TElement anElement = new TElement();
@@ -108,9 +107,9 @@ public class XmlStringSerializer implements ISerializer
                     c = myXmlString.charAt(anIdx);
                 }
     
-                // If we did not find '>'. Then there was a space and attributes can
-                // follow.
-                // We must just find the end.
+                // If we did not find '>'. Then there was a space and attributes can follow.
+                // Check if there is a nil attribute set to true. -> it means the value is null.
+                int anAttributeCheckIdx = 0;
                 while (c != '>')
                 {
                     ++anIdx;
@@ -120,8 +119,28 @@ public class XmlStringSerializer implements ISerializer
                         throw new IllegalStateException("'>' is missing for '"
                                 + anElement.myName + "'.");
                     }
+                    
+                    // Check if there is a nil attribute.
+                    if (anElement.myIsNull == false && c == NILLATTRIBUTE.charAt(anAttributeCheckIdx))
+                    {
+                        ++anAttributeCheckIdx;
+                        if (anAttributeCheckIdx == NILLATTRIBUTE.length())
+                        {
+                            anElement.myIsNull = true;
+                        }
+                    }
                 }
-    
+
+                // If the element is null.
+                if (anElement.myIsNull)
+                {
+                    anElement.myNextElementStartPosition = anIdx + 1;
+                    anElement.myValueStartPosition = anIdx + 1;
+                    anElement.myValueLength = 0;
+                    
+                    return anElement;
+                }
+                
                 // Store the position to first character behind '>'
                 anElement.myValueStartPosition = anIdx + 1;
     
@@ -141,8 +160,7 @@ public class XmlStringSerializer implements ISerializer
                     c = getChar(anIdx);
                     if (c == Character.MIN_VALUE)
                     {
-                        throw new IllegalStateException(
-                                "The reading of the xml string failed.");
+                        throw new IllegalStateException("The reading of the xml string failed.");
                     }
     
                     // If there is a beginning of the sub element with the same name
@@ -166,7 +184,8 @@ public class XmlStringSerializer implements ISerializer
                     {
                         // Indicate that character matched.
                         ++anEqualToBeginningIdx;
-                    } else
+                    }
+                    else
                     {
                         // Character did not match, so start detecting of the
                         // recursive
@@ -657,7 +676,10 @@ public class XmlStringSerializer implements ISerializer
         }
 
         private String myXmlString;
+        
+        private final String NILLATTRIBUTE = "xsi:nil=\"true\"";
     }
+
     /**
      * Serializes data to the xml string.
      */
@@ -676,45 +698,44 @@ public class XmlStringSerializer implements ISerializer
             String aRootName = clazz.getSimpleName();
             
             // Correct the name according to .NET
-            if (aRootName.equals("boolean[]") || aRootName.equals("Boolean[]"))
+            if (clazz == boolean[].class || clazz == Boolean[].class)
             {
                 aRootName = "ArrayOfBoolean";
             }
-            else if (aRootName.equals("char[]") || aRootName.equals("Character[]"))
+            else if (clazz == char[].class || clazz == Character[].class)
             {
                 aRootName = "ArrayOfChar";
             }
-            else if (aRootName.equals("byte[]") || aRootName.equals("Byte[]"))
+            else if (clazz == byte[].class || clazz == Byte[].class)
             {
-                // TODO: This is a bit complicated in .NET, so investigate and correct accordingly.
-                //aRootName = "???";
+                aRootName = "base64Binary";
             }
-            else if (aRootName.equals("int[]") || aRootName.equals("Integer[]"))
+            else if (clazz == int[].class || clazz == Integer[].class)
             {
                 aRootName = "ArrayOfInt";
             }
-            else if (aRootName.equals("long[]") || aRootName.equals("Long[]"))
+            else if (clazz == long[].class || clazz == Long[].class)
             {
                 aRootName = "ArrayOfLong";
             }
-            else if (aRootName.equals("short[]") || aRootName.equals("Short[]"))
+            else if (clazz == short[].class || clazz == Short[].class)
             {
                 aRootName = "ArrayOfShort";
             }
-            else if (aRootName.equals("double[]") || aRootName.equals("Double[]"))
+            else if (clazz == double[].class || clazz == Double[].class)
             {
                 aRootName = "ArrayOfDouble";
             }
-            else if (aRootName.equals("float[]") || aRootName.equals("Float[]"))
+            else if (clazz == float[].class || clazz == Float[].class)
             {
                 aRootName = "ArrayOfFloat";
             }
-                
-            
-            serializeElement(aRootName, dataToSerialize, aSerializedObjectStr);
+
+            serializeElement(aRootName, " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"", dataToSerialize, aSerializedObjectStr);
 
             return aSerializedObjectStr.toString();
-        } finally
+        }
+        finally
         {
             EneterTrace.leaving(aTrace);
         }
@@ -765,7 +786,7 @@ public class XmlStringSerializer implements ISerializer
         {
             if (clazz.getTypeParameters().length > 0)
             {
-                throw new IllegalStateException("Serializer does not support generic types.");
+                //throw new IllegalStateException("Serializer does not support generic types.");
             }
     
             // If the value is empty, then deserialized object is null.
@@ -988,7 +1009,8 @@ public class XmlStringSerializer implements ISerializer
                 T aDeserializedObject = (T) clazz.newInstance();
     
                 // Get public fields of the deserialized object.
-                Field[] aFields = aDeserializedObject.getClass().getFields();
+                //Field[] aFields = aDeserializedObject.getClass().getFields();
+                Field[] aFields = clazz.getFields();
     
                 // Go through fields and deserialize them.
                 int aSearchIdx = 0;
@@ -1000,8 +1022,7 @@ public class XmlStringSerializer implements ISerializer
                     // Note: To avoid the looping complexity - searching again and
                     // again from the very beginning,
                     // the loop behaves as cycle. The last position is remembered
-                    // and the
-                    // next search starts from this position.
+                    // and the next search starts from this position.
                     XmlDataBrowser.TElement anElement = null;
                     for (int aSearchedLength = 0; aSearchedLength < anElements.size(); ++aSearchedLength)
                     {
@@ -1056,21 +1077,29 @@ public class XmlStringSerializer implements ISerializer
         }
     }
 
-    private void serializeElement(String xmlElementName, Object dataToSerialize, StringBuilder xmlResult) throws Exception
+    private void serializeElement(String xmlElementName, String attributeSection, Object dataToSerialize, StringBuilder xmlResult) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            xmlResult.append("<");
-            xmlResult.append(xmlElementName);
-            xmlResult.append(">");
-    
+            // If it is null then put there the null attribute.
             if (dataToSerialize == null)
             {
-                // Do nothing, just write the end of element tag at the end.
+                xmlResult.append("<");
+                xmlResult.append(xmlElementName);
+                xmlResult.append(attributeSection);
+                xmlResult.append(" xsi:nil=\"true\"/>");
+                
+                return;
             }
+            
+            xmlResult.append("<");
+            xmlResult.append(xmlElementName);
+            xmlResult.append(attributeSection);
+            xmlResult.append(">");
+    
             // If it is string then special characters must be replaced.
-            else if (dataToSerialize instanceof String)
+            if (dataToSerialize instanceof String)
             {
                 serializeString((String) dataToSerialize, xmlResult);
             }
@@ -1112,7 +1141,7 @@ public class XmlStringSerializer implements ISerializer
                     Field[] aFields = dataToSerialize.getClass().getFields();
                     for (Field aField : aFields)
                     {
-                        serializeElement(aField.getName(), aField.get(dataToSerialize), xmlResult);
+                        serializeElement(aField.getName(), "", aField.get(dataToSerialize), xmlResult);
                     }
                 }
             }
@@ -1255,8 +1284,7 @@ public class XmlStringSerializer implements ISerializer
             {
                 for (Object anItem : (Object[]) array)
                 {
-                    serializeElement(anItem.getClass().getSimpleName(), anItem,
-                            xmlResult);
+                    serializeElement(anItem.getClass().getSimpleName(), "", anItem, xmlResult);
                 }
             }
         }
@@ -1276,8 +1304,7 @@ public class XmlStringSerializer implements ISerializer
             {
                 T anItem = it.next();
     
-                serializeElement(anItem.getClass().getSimpleName(), anItem,
-                        xmlResult);
+                serializeElement(anItem.getClass().getSimpleName(), "", anItem, xmlResult);
             }
         }
         finally
