@@ -2,6 +2,7 @@ package eneter.messaging.dataprocessing.serializing;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.junit.*;
@@ -36,6 +37,11 @@ public abstract class SerializerTesterBase
     public static class MyGenericClass<T>
     {
         public T myItem;
+    }
+    
+    public static class MyClassWithGenericField
+    {
+        public MyGenericClass<Integer> myGenericField = new MyGenericClass<Integer>();
     }
     
     
@@ -192,22 +198,6 @@ public abstract class SerializerTesterBase
         MyTestClass3 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass3.class);
         assertEquals(aTestClass.myEnum, aDeserializedData.myEnum);
     }
-    
-    //@Test
-    public void serializeGenericClass() throws Exception
-    {
-        MyGenericClass<Double> aTestClass = new MyGenericClass<Double>();
-        aTestClass.myItem = 10.0;
-        
-        Object aSerializedData = TestedSerializer.serialize(aTestClass, MyGenericClass.class);
-        assertEquals("<MyGenericClass xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><myItem>10.0</myItem></MyGenericClass>", (String)aSerializedData);
-
-        MyGenericClass<String> aReferenceClass = new MyGenericClass<String>();
-        aReferenceClass.myItem = "";
-        MyGenericClass<String> aDeserializedData = TestedSerializer.deserialize(aSerializedData, aReferenceClass.getClass());
-        assertEquals(aTestClass.myItem, aDeserializedData.myItem);
-    }
-    
     
     protected ISerializer TestedSerializer;
 }
