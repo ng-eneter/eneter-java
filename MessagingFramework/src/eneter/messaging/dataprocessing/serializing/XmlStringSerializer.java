@@ -10,7 +10,6 @@ package eneter.messaging.dataprocessing.serializing;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
