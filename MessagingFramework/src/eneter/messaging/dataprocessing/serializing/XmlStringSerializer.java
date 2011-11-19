@@ -21,6 +21,7 @@ import eneter.messaging.diagnostic.EneterTrace;
  * 
  * @author Ondrej Uzovic & Martin Valach
  * 
+ * TODO: Encoding/Decoding UTF-8. (.NET works with UTF-8, Java works with UTF-16).
  */
 public class XmlStringSerializer implements ISerializer
 {
@@ -82,11 +83,15 @@ public class XmlStringSerializer implements ISerializer
                 int anIdx = getNonwhitePosition(startIdx);
                 if (anIdx == -1)
                 {
-                    throw new IllegalStateException("The provided string is not xml.");
+                    String anErrorMsg = "Incorrect xml format.";
+                    EneterTrace.error(anErrorMsg);
+                    throw new IllegalStateException(anErrorMsg);
                 }
                 if (myXmlString.charAt(anIdx) != '<')
                 {
-                    throw new IllegalStateException("The xml string does not start with '<' character.");
+                    String anErrorMsg = "The xml string does not start with '<' character.";
+                    EneterTrace.error(anErrorMsg);
+                    throw new IllegalStateException(anErrorMsg);
                 }
     
                 TElement anElement = new TElement();
@@ -96,8 +101,9 @@ public class XmlStringSerializer implements ISerializer
                 char c = getChar(anIdx);
                 if (c == Character.MIN_VALUE || isWhiteCharacter(c))
                 {
-                    throw new IllegalStateException(
-                            "Unexpected space character after '<'.");
+                    String anErrorMsg = "Unexpected space character after '<'.";
+                    EneterTrace.error(anErrorMsg);
+                    throw new IllegalStateException(anErrorMsg);
                 }
                 while (c != '>' && !isWhiteCharacter(c))
                 {
@@ -116,8 +122,9 @@ public class XmlStringSerializer implements ISerializer
                     c = getChar(anIdx);
                     if (c == Character.MIN_VALUE)
                     {
-                        throw new IllegalStateException("'>' is missing for '"
-                                + anElement.myName + "'.");
+                        String anErrorMsg = "'>' is missing for '" + anElement.myName + "'.";
+                        EneterTrace.error(anErrorMsg);
+                        throw new IllegalStateException(anErrorMsg);
                     }
                     
                     // Check if there is a nil attribute.
@@ -160,7 +167,9 @@ public class XmlStringSerializer implements ISerializer
                     c = getChar(anIdx);
                     if (c == Character.MIN_VALUE)
                     {
-                        throw new IllegalStateException("The reading of the xml string failed.");
+                        String anErrorMsg = "The reading of the xml string failed.";
+                        EneterTrace.error(anErrorMsg);
+                        throw new IllegalStateException(anErrorMsg);
                     }
     
                     // If there is a beginning of the sub element with the same name
@@ -538,8 +547,7 @@ public class XmlStringSerializer implements ISerializer
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                String aValueStr = myXmlString.substring(startIdx, startIdx
-                        + length);
+                String aValueStr = myXmlString.substring(startIdx, startIdx + length);
                 return Boolean.parseBoolean(aValueStr);
             }
             finally
@@ -567,8 +575,7 @@ public class XmlStringSerializer implements ISerializer
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                String aValueStr = myXmlString.substring(startIdx, startIdx
-                        + length);
+                String aValueStr = myXmlString.substring(startIdx, startIdx + length);
                 return Integer.parseInt(aValueStr);
             }
             finally
@@ -642,8 +649,7 @@ public class XmlStringSerializer implements ISerializer
                 {
                     char c = myXmlString.charAt(i);
     
-                    if (c != ' ' && c != '\t' && c != '\n' && c != '\f'
-                            && c != '\r')
+                    if (c != ' ' && c != '\t' && c != '\n' && c != '\f' && c != '\r')
                     {
                         return i;
                     }
@@ -739,7 +745,7 @@ public class XmlStringSerializer implements ISerializer
                 }
             }
             
-            // Note: keep the space at the beginning of the name-space string!!!
+            // Note: keep the space character at the beginning of the name-space string!!!
             serializeElement(aRootName, " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"", dataToSerialize, aSerializedObjectStr);
 
             return aSerializedObjectStr.toString();
@@ -762,12 +768,16 @@ public class XmlStringSerializer implements ISerializer
         {
             if (serializedData == null)
             {
-                throw new IllegalArgumentException("Input parameter 'serializedData' is null.");
+                String anErrorMsg = "The input parameter 'serializedData' is null.";
+                EneterTrace.error(anErrorMsg);
+                throw new IllegalStateException(anErrorMsg);
             }
-    
+            
             if (serializedData instanceof String == false)
             {
-                throw new IllegalArgumentException("Input parameter 'serializedData' is not String.");
+                String anErrorMsg = "Input parameter 'serializedData' is not String.";
+                EneterTrace.error(anErrorMsg);
+                throw new IllegalStateException(anErrorMsg);
             }
     
             // Create browser to read the xml from the string.
@@ -787,7 +797,8 @@ public class XmlStringSerializer implements ISerializer
         }
     }
 
-    private void serializeElement(String xmlElementName, String attributeSection, Object dataToSerialize, StringBuilder xmlResult) throws Exception
+    private void serializeElement(String xmlElementName, String attributeSection, Object dataToSerialize, StringBuilder xmlResult)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -810,6 +821,14 @@ public class XmlStringSerializer implements ISerializer
     
             Class<?> aSerializedType = dataToSerialize.getClass();
             
+            // Generic types are not supported. :-(
+            if (aSerializedType.getTypeParameters().length > 0)
+            {
+                String anErrorMsg = "The XmlStringSerializer does not support generic types.";
+                EneterTrace.error(anErrorMsg);
+                throw new IllegalStateException(anErrorMsg);
+            }
+            
             // If it is string then special characters must be replaced.
             if (dataToSerialize instanceof String)
             {
@@ -827,10 +846,6 @@ public class XmlStringSerializer implements ISerializer
                      aSerializedType == Double.class)
             {
                 serializePrimitiveType(dataToSerialize, xmlResult);
-            }
-            else if (dataToSerialize instanceof Iterable<?>)
-            {
-                serializeIterable((Iterable<?>) dataToSerialize, xmlResult);
             }
             else if (aSerializedType.isArray())
             {
@@ -879,7 +894,9 @@ public class XmlStringSerializer implements ISerializer
             
             if (clazz.getTypeParameters().length > 0)
             {
-                //throw new IllegalStateException("Serializer does not support generic types.");
+                String anErrorMsg = "The XmlStringSerializer does not support generic types.";
+                EneterTrace.error(anErrorMsg);
+                throw new IllegalStateException(anErrorMsg);
             }
     
             // If it is a simple type (not a custom class) then the field contains the value.
@@ -905,10 +922,6 @@ public class XmlStringSerializer implements ISerializer
             {
                 return deserializeArray(xmlBrowser, xmlElement.myValueStartPosition, xmlElement.myValueLength, clazz);
             }
-            else if (clazz == ArrayList.class)
-            {
-                return deserializeArrayList(xmlBrowser, xmlElement.myValueStartPosition, xmlElement.myValueLength, clazz);
-            }
             // If it is an enum.
             else if (clazz.isEnum())
             {
@@ -924,8 +937,11 @@ public class XmlStringSerializer implements ISerializer
                     }
                 }
                 
-                throw new IllegalStateException("Uknown enum value found during the deserialization.");
+                String anErrorMsg = "Uknown enum value found during the deserialization.";
+                EneterTrace.error(anErrorMsg);
+                throw new IllegalStateException(anErrorMsg);
             }
+            // Ok, then it is some class
             else
             {
                 // Get value of the element.
@@ -935,7 +951,6 @@ public class XmlStringSerializer implements ISerializer
                 T aDeserializedObject = (T) clazz.newInstance();
     
                 // Get public fields of the deserialized object.
-                //Field[] aFields = aDeserializedObject.getClass().getFields();
                 Field[] aFields = clazz.getFields();
     
                 // Go through fields and deserialize them.
@@ -984,9 +999,11 @@ public class XmlStringSerializer implements ISerializer
                     // If the element was not found, then there is an error.
                     if (anElement == null)
                     {
-                        throw new IllegalStateException("Class field was not found during the deserialization.");
+                        String anErrorMsg = "Field '" + aFieldName + "' is missing.";
+                        EneterTrace.error(anErrorMsg);
+                        throw new IllegalStateException(anErrorMsg);
                     }
-    
+                    
                     // Recursively deserialize the object for the field.
                     Object aValue = deserializeElement(xmlBrowser, anElement, aField.getType());
     
@@ -1102,12 +1119,13 @@ public class XmlStringSerializer implements ISerializer
                 }
             } else if (array instanceof byte[])
             {
-                for (byte anItem : (byte[]) array)
-                {
-                    xmlResult.append("<byte>");
-                    xmlResult.append(anItem);
-                    xmlResult.append("</byte>");
-                }
+             // TODO: investigate how .NET puts byte[] values to xml.
+                //for (byte anItem : (byte[]) array)
+                //{
+                    //xmlResult.append("<byte>");
+                    //xmlResult.append(anItem);
+                    //xmlResult.append("</byte>");
+                //}
             } else if (array instanceof char[])
             {
                 for (char anItem : (char[]) array)
@@ -1162,25 +1180,6 @@ public class XmlStringSerializer implements ISerializer
                 {
                     serializeElement(anItem.getClass().getSimpleName(), "", anItem, xmlResult);
                 }
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    private <T> void serializeIterable(Iterable<T> iterable,
-            StringBuilder xmlResult) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            for (Iterator<T> it = iterable.iterator(); it.hasNext();)
-            {
-                T anItem = it.next();
-    
-                serializeElement(anItem.getClass().getSimpleName(), "", anItem, xmlResult);
             }
         }
         finally
@@ -1276,9 +1275,10 @@ public class XmlStringSerializer implements ISerializer
                 byte[] anItems = new byte[anElements.size()];
                 for (int i = 0; i < anItems.length; ++i)
                 {
-                    XmlDataBrowser.TElement anElement = anElements.get(i);
-                    byte aValue = xmlBrowser.getByteValue(anElement.myValueStartPosition, anElement.myValueLength);
-                    anItems[i] = aValue;
+                 // TODO: investigate how .NET puts byte[] values to xml.
+                    //XmlDataBrowser.TElement anElement = anElements.get(i);
+                    //byte aValue = xmlBrowser.getByteValue(anElement.myValueStartPosition, anElement.myValueLength);
+                    //anItems[i] = aValue;
                 }
     
                 return (T) anItems;
@@ -1389,19 +1389,4 @@ public class XmlStringSerializer implements ISerializer
         }
     }
 
-    private <T> T deserializeArrayList(XmlDataBrowser xmlBrowser, int elementStartPosition, int length, Class<T> clazz)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            ArrayList<XmlDataBrowser.TElement> anElements = xmlBrowser.getElements(elementStartPosition, length);
-            
-            // TODO: Investigate if it is possible to serialize/deserialize ArrayList<> same as List<> from .NET. 
-            return null;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
 }
