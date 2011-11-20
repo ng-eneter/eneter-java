@@ -344,27 +344,41 @@ public class EneterTrace
             return "";
         }
         
-        return err.toString();
 
-        /*
         // Get the exception details.
         StringBuilder aDetails = new StringBuilder();
-        aDetails.AppendFormat(CultureInfo.InvariantCulture, "Exception:\r\n{0}: {1}\r\n{2}", err.GetType(), err.Message, err.StackTrace);
-
+        aDetails.append(String.format("Exception:\r\n%s: %s\r\n%s", err.getClass().getName(), err.getMessage(), getStackTraceString(err.getStackTrace())));
+        
         // Get all inner exceptions.
-        Exception anInnerException = err.InnerException;
+        Throwable anInnerException = err.getCause();
         while (anInnerException != null)
         {
-            aDetails.AppendFormat(CultureInfo.InvariantCulture, "\r\n\r\n{0}: {1}\r\n{2}", anInnerException.GetType(), anInnerException.Message, anInnerException.StackTrace);
+            aDetails.append(String.format("\r\n\r\n%s: %s\r\n%s", anInnerException.getClass().getName(), anInnerException.getMessage(), getStackTraceString(anInnerException.getStackTrace())));
 
             // Get the next inner exception.
-            anInnerException = anInnerException.InnerException;
+            anInnerException = anInnerException.getCause();
         }
 
-        aDetails.Append("\r\n==========\r\n");
+        aDetails.append("\r\n==========\r\n");
 
-        return aDetails.ToString();
-        */
+        return aDetails.toString();
+    }
+    
+    private static String getStackTraceString(StackTraceElement[] stackTrace)
+    {
+        String aResult = "";
+        for (int i = 0; i < stackTrace.length; ++i)
+        {
+            aResult += stackTrace[i].toString();
+            
+            // If it is not the last element then add the next line.
+            if (i < stackTrace.length - 1)
+            {
+                aResult += "\r\n";
+            }
+        }
+        
+        return aResult;
     }
     
     
