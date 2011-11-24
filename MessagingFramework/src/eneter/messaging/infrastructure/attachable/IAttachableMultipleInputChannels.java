@@ -27,10 +27,11 @@ public interface IAttachableMultipleInputChannels
 	 * It stores the reference to the input channel and starts the listening.
 	 * 
 	 * @param inputChannel
+	 * @throws Exception 
 	 * 
 	 * @see IInputChannel
 	 */
-	void attachInputChannel(IInputChannel inputChannel);
+	void attachInputChannel(IInputChannel inputChannel) throws Exception;
 	
 
 	/**
