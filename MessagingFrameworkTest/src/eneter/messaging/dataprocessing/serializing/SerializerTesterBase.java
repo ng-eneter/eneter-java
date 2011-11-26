@@ -90,7 +90,13 @@ public abstract class SerializerTesterBase
         
         Object[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, Object[].class);
 
-        assertTrue(Arrays.equals(a, aDeserializedData));
+        assertEquals(3, aDeserializedData.length);
+        assertEquals(Integer.class, aDeserializedData[0].getClass());
+        assertEquals(1, aDeserializedData[0]);
+        assertEquals(String.class, aDeserializedData[1].getClass());
+        assertEquals("Hello", aDeserializedData[1]);
+        assertEquals(Character.class, aDeserializedData[2].getClass());
+        assertEquals('A', aDeserializedData[2]);
     }
     
     @Test
@@ -115,6 +121,7 @@ public abstract class SerializerTesterBase
         assertEquals(aClasses[2].k, aDeserializedData[2].k);
         assertEquals(aClasses[2].str, aDeserializedData[2].str);
     }
+    
     
     @Test
     public void serializeClass() throws Exception
