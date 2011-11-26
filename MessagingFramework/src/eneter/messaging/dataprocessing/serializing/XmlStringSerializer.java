@@ -76,6 +76,10 @@ public class XmlStringSerializer implements ISerializer
                 {
                     aRootName = "ArrayOfFloat";
                 }
+                else if (clazz == Object[].class)
+                {
+                    aRootName = "ArrayOfAnyType";
+                }
                 else
                 {
                     String aClassItemTypeName = clazz.getComponentType().getSimpleName();
@@ -366,8 +370,7 @@ public class XmlStringSerializer implements ISerializer
         }
     }
     
-    
-    
+        
 
 
     private void serializeString(String s, StringBuilder xmlResult)
@@ -410,6 +413,137 @@ public class XmlStringSerializer implements ISerializer
                 {
                     xmlResult.append(aCh);
                 }
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void serializePrimitiveType(Object dataToSerialize, StringBuilder xmlResult)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // If it is a character, then write the numeric code to the xml
+            if (dataToSerialize instanceof Character)
+            {
+                int aCharValue = (int)((Character)dataToSerialize);
+                xmlResult.append(String.valueOf(aCharValue));
+            }
+            // If it is a wrapper of a primitive type then write its value.
+            else if (dataToSerialize instanceof Boolean
+                    || dataToSerialize instanceof Byte
+                    || dataToSerialize instanceof Double
+                    || dataToSerialize instanceof Float
+                    || dataToSerialize instanceof Integer
+                    || dataToSerialize instanceof Long
+                    || dataToSerialize instanceof Short)
+            {
+                xmlResult.append(dataToSerialize.toString());
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void serializeArray(Object array, StringBuilder xmlResult) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (array instanceof boolean[])
+            {
+                for (boolean anItem : (boolean[]) array)
+                {
+                    xmlResult.append("<boolean>");
+                    xmlResult.append(anItem);
+                    xmlResult.append("</boolean>");
+                }
+            }
+            else if (array instanceof byte[])
+            {
+             // TODO: investigate how .NET puts byte[] values to xml.
+                //for (byte anItem : (byte[]) array)
+                //{
+                    //xmlResult.append("<byte>");
+                    //xmlResult.append(anItem);
+                    //xmlResult.append("</byte>");
+                //}
+            }
+            else if (array instanceof char[])
+            {
+                for (char anItem : (char[]) array)
+                {
+                    xmlResult.append("<char>");
+                    xmlResult.append(anItem);
+                    xmlResult.append("</char>");
+                }
+            }
+            else if (array instanceof double[])
+            {
+                for (double anItem : (double[]) array)
+                {
+                    xmlResult.append("<double>");
+                    xmlResult.append(anItem);
+                    xmlResult.append("</double>");
+                }
+            }
+            else if (array instanceof float[])
+            {
+                for (float anItem : (float[]) array)
+                {
+                    xmlResult.append("<float>");
+                    xmlResult.append(anItem);
+                    xmlResult.append("</float>");
+                }
+            }
+            else if (array instanceof int[])
+            {
+                for (int anItem : (int[]) array)
+                {
+                    xmlResult.append("<int>");
+                    xmlResult.append(anItem);
+                    xmlResult.append("</int>");
+                }
+            }
+            else if (array instanceof long[])
+            {
+                for (long anItem : (long[]) array)
+                {
+                    xmlResult.append("<long>");
+                    xmlResult.append(anItem);
+                    xmlResult.append("</long>");
+                }
+            }
+            else if (array instanceof short[])
+            {
+                for (short anItem : (short[]) array)
+                {
+                    xmlResult.append("<short>");
+                    xmlResult.append(anItem);
+                    xmlResult.append("</short>");
+                }
+            }
+            // If it as an array declared as Object[]
+            else if (array.getClass() == Object[].class)
+            {
+                for (Object anItem : (Object[]) array)
+                {
+                    String anAttributes = getAttributes(anItem, Object.class);
+                    serializeElement("anyType", anAttributes, anItem, xmlResult);
+                }
+            }
+            // If it is an array declared with som custom class. e.g. MyClass[].
+            else if (array instanceof Object[])
+            {
+                for (Object anItem : (Object[]) array)
+                {
+                    serializeElement(anItem.getClass().getSimpleName(), "", anItem, xmlResult);
                 }
             }
         }
@@ -487,118 +621,9 @@ public class XmlStringSerializer implements ISerializer
         }
     }
     
-    private void serializePrimitiveType(Object dataToSerialize, StringBuilder xmlResult)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            // If it is a character, then write the numeric code to the xml
-            if (dataToSerialize instanceof Character)
-            {
-                int aCharValue = (int)((Character)dataToSerialize);
-                xmlResult.append(String.valueOf(aCharValue));
-            }
-            // If it is a wrapper of a primitive type then write its value.
-            else if (dataToSerialize instanceof Boolean
-                    || dataToSerialize instanceof Byte
-                    || dataToSerialize instanceof Double
-                    || dataToSerialize instanceof Float
-                    || dataToSerialize instanceof Integer
-                    || dataToSerialize instanceof Long
-                    || dataToSerialize instanceof Short)
-            {
-                xmlResult.append(dataToSerialize.toString());
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
+    
 
-    private void serializeArray(Object array, StringBuilder xmlResult) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            if (array instanceof boolean[])
-            {
-                for (boolean anItem : (boolean[]) array)
-                {
-                    xmlResult.append("<boolean>");
-                    xmlResult.append(anItem);
-                    xmlResult.append("</boolean>");
-                }
-            } else if (array instanceof byte[])
-            {
-             // TODO: investigate how .NET puts byte[] values to xml.
-                //for (byte anItem : (byte[]) array)
-                //{
-                    //xmlResult.append("<byte>");
-                    //xmlResult.append(anItem);
-                    //xmlResult.append("</byte>");
-                //}
-            } else if (array instanceof char[])
-            {
-                for (char anItem : (char[]) array)
-                {
-                    xmlResult.append("<char>");
-                    xmlResult.append(anItem);
-                    xmlResult.append("</char>");
-                }
-            } else if (array instanceof double[])
-            {
-                for (double anItem : (double[]) array)
-                {
-                    xmlResult.append("<double>");
-                    xmlResult.append(anItem);
-                    xmlResult.append("</double>");
-                }
-            } else if (array instanceof float[])
-            {
-                for (float anItem : (float[]) array)
-                {
-                    xmlResult.append("<float>");
-                    xmlResult.append(anItem);
-                    xmlResult.append("</float>");
-                }
-            } else if (array instanceof int[])
-            {
-                for (int anItem : (int[]) array)
-                {
-                    xmlResult.append("<int>");
-                    xmlResult.append(anItem);
-                    xmlResult.append("</int>");
-                }
-            } else if (array instanceof long[])
-            {
-                for (long anItem : (long[]) array)
-                {
-                    xmlResult.append("<long>");
-                    xmlResult.append(anItem);
-                    xmlResult.append("</long>");
-                }
-            } else if (array instanceof short[])
-            {
-                for (short anItem : (short[]) array)
-                {
-                    xmlResult.append("<short>");
-                    xmlResult.append(anItem);
-                    xmlResult.append("</short>");
-                }
-            } else if (array instanceof Object[])
-            {
-                for (Object anItem : (Object[]) array)
-                {
-                    serializeElement(anItem.getClass().getSimpleName(), "", anItem, xmlResult);
-                }
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
+    
 
     
     @SuppressWarnings("unchecked")
