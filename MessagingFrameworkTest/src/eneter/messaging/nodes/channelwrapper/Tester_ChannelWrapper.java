@@ -94,7 +94,7 @@ public class Tester_ChannelWrapper
 
         // Check
         assertEquals(aMessage1, aReceivedMessage1[0]);
-        assertEquals("", aReceivedMessage2);
+        assertEquals("", aReceivedMessage2[0]);
 
         // Send the second message
         aReceivedMessage1[0] = "";

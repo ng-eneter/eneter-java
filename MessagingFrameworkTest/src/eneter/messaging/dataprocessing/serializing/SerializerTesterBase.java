@@ -81,6 +81,19 @@ public abstract class SerializerTesterBase
     }
     
     @Test
+    public void serializeObjectArray() throws Exception
+    {
+        Object[] a = {(int)1,"Hello",(char)'A'};
+        Object aSerializedData = TestedSerializer.serialize(a, Object[].class);
+        
+        assertEquals("<ArrayOfAnyType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><anyType xsi:type=\"xsd:int\">1</anyType><anyType xsi:type=\"xsd:string\">Hello</anyType><anyType xmlns:q1=\"http://microsoft.com/wsdl/types/\" xsi:type=\"q1:char\">65</anyType></ArrayOfAnyType>", (String)aSerializedData);
+        
+        Object[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, Object[].class);
+
+        assertTrue(Arrays.equals(a, aDeserializedData));
+    }
+    
+    @Test
     public void serializeArrayOfCustomClass() throws Exception
     {
         MyTestClass1[] aClasses = { new MyTestClass1(), new MyTestClass1(), new MyTestClass1() };
