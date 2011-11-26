@@ -693,7 +693,7 @@ class XmlDataBrowser
     private final String STRING_ATTRIBUTE = ":string\"";
     
     private Class<?>[] myClazzes = {boolean.class, char.class, byte.class,
-                                    int.class, short.class, long.class,
+                                    short.class, int.class, long.class,
                                     float.class, double.class,
                                     String.class};
   
