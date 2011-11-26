@@ -34,15 +34,11 @@ public abstract class SerializerTesterBase
         public MyEnum myEnum = MyEnum.Monday;
     }
     
-    public static class MyGenericClass<T>
+    public static class MyClassWithObject
     {
-        public T myItem;
+        public Object myItem;
     }
     
-    public static class MyClassWithGenericField
-    {
-        public MyGenericClass<Integer> myGenericField = new MyGenericClass<Integer>();
-    }
     
     
     @Test
@@ -197,6 +193,21 @@ public abstract class SerializerTesterBase
 
         MyTestClass3 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass3.class);
         assertEquals(aTestClass.myEnum, aDeserializedData.myEnum);
+    }
+    
+    @Test
+    public void serializeClassWithObjectField() throws Exception
+    {
+        MyClassWithObject aClass = new MyClassWithObject();
+        aClass.myItem = "Hello"; // assign string to the object
+        
+        Object aSerializedData = TestedSerializer.serialize(aClass, MyClassWithObject.class);
+        
+        assertEquals("<MyClassWithObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><myItem xsi:type=\"xsd:string\">Hello</myItem></MyClassWithObject>", (String)aSerializedData);
+        
+        MyClassWithObject aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyClassWithObject.class);
+        
+        assertEquals(aClass.myItem, aDeserializedData.myItem);
     }
     
     protected ISerializer TestedSerializer;
