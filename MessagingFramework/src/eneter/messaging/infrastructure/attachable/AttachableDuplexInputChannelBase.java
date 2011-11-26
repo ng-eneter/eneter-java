@@ -140,11 +140,11 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
     }
 
 
-    protected abstract void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e);
+    protected abstract void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e) throws Exception;
 
     protected abstract void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e);
 
-    protected abstract void onResponseReceiverDisconnected(Object sender, ResponseReceiverEventArgs e);
+    protected abstract void onResponseReceiverDisconnected(Object sender, ResponseReceiverEventArgs e) throws Exception;
 
 
     public IDuplexInputChannel getAttachedDuplexInputChannel()

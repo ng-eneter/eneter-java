@@ -28,7 +28,7 @@ public class DataWrapper
      * @return
      * @throws Exception
      */
-    public static Object Wrap(Object addedData, Object originalData, ISerializer serializer) throws Exception
+    public static Object wrap(Object addedData, Object originalData, ISerializer serializer) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

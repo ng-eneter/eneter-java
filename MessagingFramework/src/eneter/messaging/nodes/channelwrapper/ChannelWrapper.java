@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2012 Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.nodes.channelwrapper;
 
 import eneter.messaging.dataprocessing.serializing.*;
@@ -154,7 +162,7 @@ class ChannelWrapper extends AttachableOutputChannelBase
         {
             try
             {
-                Object aMessage = DataWrapper.Wrap(e.getChannelId(), e.getMessage(), mySerializer);
+                Object aMessage = DataWrapper.wrap(e.getChannelId(), e.getMessage(), mySerializer);
                 getAttachedOutputChannel().sendMessage(aMessage);
             }
             catch (Exception err)

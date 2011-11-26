@@ -1,9 +1,22 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2012 Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.nodes.channelwrapper;
 
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
 
+/**
+ * Implements the factory for creating channel wrapper and unwrapper.
+ * @author Ondrej Uzovic
+ *
+ */
 public class ChannelWrapperFactory implements IChannelWrapperFactory
 {
     public ChannelWrapperFactory()
@@ -53,5 +66,34 @@ public class ChannelWrapperFactory implements IChannelWrapperFactory
         }
     }
 
+
+    @Override
+    public IDuplexChannelWrapper createDuplexChannelWrapper()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new DuplexChannelWrapper(mySerializer);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    @Override
+    public IDuplexChannelUnwrapper createDuplexChannelUnwrapper(IMessagingSystemFactory outputMessagingSystem)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new DuplexChannelUnwrapper(outputMessagingSystem, mySerializer);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     private ISerializer mySerializer;
 }
