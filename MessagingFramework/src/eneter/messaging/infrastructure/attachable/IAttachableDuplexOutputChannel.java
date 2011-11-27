@@ -25,16 +25,18 @@ public interface IAttachableDuplexOutputChannel
 	 * Attaches the duplex output channel and opens the connection for listening to response messages.
 	 * 
 	 * @param duplexOutputChannel Duplex output channel to be attached.
+	 * @throws Exception 
 	 * 
 	 * @see IDuplexOutputChannel
 	 */
-    void attachDuplexOutputChannel(IDuplexOutputChannel duplexOutputChannel);
+    void attachDuplexOutputChannel(IDuplexOutputChannel duplexOutputChannel) throws Exception;
 
 
     /**
      * Detaches the duplex output channel and stops listening to response messages.
+     * @throws Exception 
      */
-    void detachDuplexOutputChannel();
+    void detachDuplexOutputChannel() throws Exception;
 
 
     /**

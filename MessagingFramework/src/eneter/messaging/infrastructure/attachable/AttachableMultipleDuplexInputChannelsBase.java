@@ -104,7 +104,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                                         TDuplexInputChannelContext x)
                                         throws Exception
                                 {
-                                    return x.getAttachedDuplexInputChannel().getChannelId() == duplexInputChannel.getChannelId();
+                                    return x.getAttachedDuplexInputChannel().getChannelId().equals(duplexInputChannel.getChannelId());
                                 }
                             });
 
@@ -135,7 +135,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                             public Boolean invoke(TDuplexInputChannelContext x)
                                     throws Exception
                             {
-                                return x.getAttachedDuplexInputChannel().getChannelId() == channelId;
+                                return x.getAttachedDuplexInputChannel().getChannelId().equals(channelId);
                             }
                         });
                         
@@ -162,7 +162,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                                             TDuplexInputChannelContext x)
                                             throws Exception
                                     {
-                                        return x.getAttachedDuplexInputChannel().getChannelId() == aDuplexInputChannelContext.getAttachedDuplexInputChannel().getChannelId();
+                                        return x.getAttachedDuplexInputChannel().getChannelId().equals(aDuplexInputChannelContext.getAttachedDuplexInputChannel().getChannelId());
                                     }
                                 });
                     }
@@ -262,7 +262,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     public Boolean invoke(TConnection x)
                             throws Exception
                     {
-                        return x.getConnectedDuplexOutputChannel().getChannelId() == duplexOutputChannelId;
+                        return x.getConnectedDuplexOutputChannel().getChannelId().equals(duplexOutputChannelId);
                     }
                 };
                 
@@ -338,7 +338,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                                             public Boolean invoke(TConnection xx)
                                                     throws Exception
                                             {
-                                                return xx.getConnectedDuplexOutputChannel().getResponseReceiverId() == duplexOutputChannelResponseReceiverId;
+                                                return xx.getConnectedDuplexOutputChannel().getResponseReceiverId().equals(duplexOutputChannelResponseReceiverId);
                                             }
                                         });
                                         
@@ -414,7 +414,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                             public Boolean invoke(TDuplexInputChannelContext x)
                                     throws Exception
                             {
-                                return x.getAttachedDuplexInputChannel().getChannelId() == duplexInputChannel.getChannelId();
+                                return x.getAttachedDuplexInputChannel().getChannelId().equals(duplexInputChannel.getChannelId());
                             }
                             
                         }))
@@ -452,7 +452,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                             public Boolean invoke(TDuplexInputChannelContext x)
                                     throws Exception
                             {
-                                return x.getAttachedDuplexInputChannel().getChannelId() == duplexInputChannelId;
+                                return x.getAttachedDuplexInputChannel().getChannelId().contains(duplexInputChannelId);
                             }
                         });
                         
@@ -470,7 +470,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                             public Boolean invoke(TConnection x)
                                     throws Exception
                             {
-                                return x.getResponseReceiverId() == responseReceiverId && x.getConnectedDuplexOutputChannel().getChannelId() == duplexOutputChannelId;
+                                return x.getResponseReceiverId().equals(responseReceiverId) &&
+                                        x.getConnectedDuplexOutputChannel().getChannelId().equals(duplexOutputChannelId);
                             }
                         });
                         
@@ -552,7 +553,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     public Boolean invoke(TConnection x)
                             throws Exception
                     {
-                        return x.getResponseReceiverId() == e.getResponseReceiverId();
+                        return x.getResponseReceiverId().equals(e.getResponseReceiverId());
                     }
                 };
                 

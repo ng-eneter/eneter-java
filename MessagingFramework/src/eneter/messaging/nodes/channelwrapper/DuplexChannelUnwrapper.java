@@ -113,7 +113,8 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                         public Boolean invoke(TDuplexConnection x)
                                 throws Exception
                         {
-                            return x.getDuplexOutputChannel().getChannelId() == aMessageReceiverId && x.getResponseReceiverId() == ee.getResponseReceiverId();
+                            return x.getDuplexOutputChannel().getChannelId().equals(aMessageReceiverId) &&
+                                   x.getResponseReceiverId().equals(ee.getResponseReceiverId());
                         }
                     });
 
@@ -223,7 +224,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                             public Boolean invoke(TDuplexConnection x)
                                     throws Exception
                             {
-                                return x.getResponseReceiverId() == ee.getResponseReceiverId();
+                                return x.getResponseReceiverId().equals(ee.getResponseReceiverId());
                             }
                     
                         });
@@ -248,7 +249,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                             public Boolean invoke(TDuplexConnection x)
                                     throws Exception
                             {
-                                return x.getResponseReceiverId() == ee.getResponseReceiverId();
+                                return x.getResponseReceiverId().equals(ee.getResponseReceiverId());
                             }
                     
                         });
@@ -296,10 +297,8 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                                 public Boolean invoke(TDuplexConnection x)
                                         throws Exception
                                 {
-                                    // TODO Auto-generated method stub
                                     return x.getDuplexOutputChannel() == (IDuplexOutputChannel)aSender;
                                 }
-                        
                             });
                 }
 
