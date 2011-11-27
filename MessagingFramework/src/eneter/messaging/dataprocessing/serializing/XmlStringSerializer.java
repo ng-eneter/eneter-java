@@ -24,6 +24,18 @@ import eneter.messaging.diagnostic.EneterTrace;
  */
 public class XmlStringSerializer implements ISerializer
 {
+    public XmlStringSerializer()
+    {
+        int i=0;
+        for (char c='A'; c<='Z'; c++) map1[i++] = c;
+        for (char c='a'; c<='z'; c++) map1[i++] = c;
+        for (char c='0'; c<='9'; c++) map1[i++] = c;
+        map1[i++] = '+'; map1[i++] = '/';
+        
+        for (i=0; i<map2.length; i++) map2[i] = -1;
+        for (i=0; i<64; i++) map2[map1[i]] = (byte)i; 
+    }
+    
     /**
      * Serializes data to the xml string.
      */
@@ -467,13 +479,7 @@ public class XmlStringSerializer implements ISerializer
             }
             else if (array instanceof byte[])
             {
-             // TODO: investigate how .NET puts byte[] values to xml.
-                //for (byte anItem : (byte[]) array)
-                //{
-                    //xmlResult.append("<byte>");
-                    //xmlResult.append(anItem);
-                    //xmlResult.append("</byte>");
-                //}
+                encodeByteArray((byte[])array, xmlResult);
             }
             else if (array instanceof char[])
             {
@@ -552,6 +558,7 @@ public class XmlStringSerializer implements ISerializer
             EneterTrace.leaving(aTrace);
         }
     }
+    
     
     private String getAttributes(Object dataToSerialize, Class<?> declaredType)
     {
@@ -693,7 +700,9 @@ public class XmlStringSerializer implements ISerializer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            ArrayList<XmlDataBrowser.TElement> anElements = xmlBrowser.getElements(elementStartPosition, length);
+            // Note: everybody needs this except byte array.
+            ArrayList<XmlDataBrowser.TElement> anElements = (clazz != byte[].class && clazz != Byte[].class)
+                    ? xmlBrowser.getElements(elementStartPosition, length) : null;
             
             if (clazz == boolean[].class || clazz == Boolean[].class)
             {
@@ -709,14 +718,7 @@ public class XmlStringSerializer implements ISerializer
             }
             else if (clazz == byte[].class || clazz == Byte[].class)
             {
-                byte[] anItems = new byte[anElements.size()];
-                for (int i = 0; i < anItems.length; ++i)
-                {
-                 // TODO: investigate how .NET puts byte[] values to xml.
-                    //XmlDataBrowser.TElement anElement = anElements.get(i);
-                    //byte aValue = xmlBrowser.getByteValue(anElement.myValueStartPosition, anElement.myValueLength);
-                    //anItems[i] = aValue;
-                }
+                byte[] anItems = decodeByteArray(xmlBrowser, elementStartPosition, length);
     
                 return (T) anItems;
             }
@@ -826,4 +828,104 @@ public class XmlStringSerializer implements ISerializer
         }
     }
 
+    // Encodes a byte array into Base64 format. 
+    private void encodeByteArray(byte[] bytes, StringBuilder xmlResult)
+    {
+        int oDataLen = (bytes.length * 4 + 2) / 3; // output length without padding
+       
+        int ip = 0;
+        int iEnd = bytes.length ;
+        int op = 0;
+        while (ip < iEnd)
+        {
+            int i0 = bytes[ip++] & 0xff;
+            int i1 = ip < iEnd ? bytes[ip++] & 0xff : 0;
+            int i2 = ip < iEnd ? bytes[ip++] & 0xff : 0;
+            int o0 = i0 >>> 2;
+            int o1 = ((i0 & 3) << 4) | (i1 >>> 4);
+            int o2 = ((i1 & 0xf) << 2) | (i2 >>> 6);
+            int o3 = i2 & 0x3F;
+            
+            xmlResult.append(map1[o0]);
+            ++op;
+            
+            xmlResult.append(map1[o1]);
+            ++op;
+            
+            xmlResult.append(op < oDataLen ? map1[o2] : '=');
+            ++op;
+            
+            xmlResult.append(op < oDataLen ? map1[o3] : '=');
+            ++op;
+        }
+    }
+    
+    // Decodes a byte array from Base64 format. 
+    private byte[] decodeByteArray(XmlDataBrowser xmlBrowser, int elementStartPosition, int length)
+    {
+        int iLen = length;
+        
+        if (iLen % 4 != 0)
+        {
+            throw new IllegalArgumentException ("Length of Base64 encoded input string is not a multiple of 4.");
+        }
+        
+        while (iLen > 0 && xmlBrowser.getCharValue(elementStartPosition + iLen-1) == '=')
+        {
+            iLen--;
+        }
+        
+        int oLen = (iLen * 3) / 4;
+        byte[] out = new byte[oLen];
+        
+        int ip = elementStartPosition;
+        int iEnd = elementStartPosition + iLen;
+        int op = 0;
+        while (ip < iEnd)
+        {
+            int i0 = xmlBrowser.getCharValue(ip++);
+            int i1 = xmlBrowser.getCharValue(ip++);
+            int i2 = ip < iEnd ? xmlBrowser.getCharValue(ip++) : 'A';
+            int i3 = ip < iEnd ? xmlBrowser.getCharValue(ip++) : 'A';
+            
+            if (i0 > 127 || i1 > 127 || i2 > 127 || i3 > 127)
+            {
+                throw new IllegalArgumentException ("Illegal character in Base64 encoded data.");
+            }
+            
+            int b0 = map2[i0];
+            int b1 = map2[i1];
+            int b2 = map2[i2];
+            int b3 = map2[i3];
+            
+            if (b0 < 0 || b1 < 0 || b2 < 0 || b3 < 0)
+            {
+                throw new IllegalArgumentException ("Illegal character in Base64 encoded data.");
+            }
+            
+            int o0 = ( b0 <<2) | (b1>>>4);
+            int o1 = ((b1 & 0xf)<<4) | (b2>>>2);
+            int o2 = ((b2 & 3)<<6) | b3;
+            out[op++] = (byte)o0;
+            
+            if (op<oLen)
+            {
+                out[op++] = (byte)o1;
+            }
+            
+            if (op<oLen)
+            {
+                out[op++] = (byte)o2;
+            }
+        }
+        
+        return out;
+    }
+    
+    
+ // Mapping table from 6-bit nibbles to Base64 characters.
+    private final char[] map1 = new char[64];
+  
+    // Mapping table from Base64 characters to 6-bit nibbles.
+    private final byte[] map2 = new byte[128];
 }

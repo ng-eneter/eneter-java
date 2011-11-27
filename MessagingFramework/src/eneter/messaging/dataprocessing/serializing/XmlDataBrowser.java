@@ -551,6 +551,20 @@ class XmlDataBrowser
         }
     }
 
+    public char getCharValue(int startIdx)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            char c = myXmlString.charAt(startIdx);
+            return c;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     public byte getByteValue(int startIdx, int length)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -635,6 +649,18 @@ class XmlDataBrowser
         }
     }
 
+    // Note: Do not put trace into this method.
+    private char getChar(int idx)
+    {
+        if (idx < myXmlString.length())
+        {
+            char c = myXmlString.charAt(idx);
+            return c;
+        }
+
+        return Character.MIN_VALUE;
+    }
+    
     private int getNonwhitePosition(int startIdx)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -658,17 +684,7 @@ class XmlDataBrowser
         }
     }
 
-    // Note: Do not put trace into this method.
-    private char getChar(int idx)
-    {
-        if (idx < myXmlString.length())
-        {
-            char c = myXmlString.charAt(idx);
-            return c;
-        }
-
-        return Character.MIN_VALUE;
-    }
+    
 
     // Note: Do not put trace into this method.
     private boolean isWhiteCharacter(char c)
