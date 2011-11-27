@@ -81,6 +81,39 @@ public abstract class SerializerTesterBase
     }
     
     @Test
+    public void serializeByteArray() throws Exception
+    {
+        byte[] a = {0, 1, 2, 3, (byte)255};
+        Object aSerializedData = TestedSerializer.serialize(a, byte[].class);
+        
+        assertEquals("<base64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">AAECA/8=</base64Binary>", (String)aSerializedData);
+        
+        byte[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, byte[].class);
+
+        assertTrue(Arrays.equals(a, aDeserializedData));
+        
+        // Serialize empty byte array.
+        byte[] aa = {};
+        aSerializedData = TestedSerializer.serialize(aa, byte[].class);
+        
+        assertEquals("<base64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"></base64Binary>", (String)aSerializedData);
+        
+        aDeserializedData = TestedSerializer.deserialize(aSerializedData, byte[].class);
+
+        assertEquals(0, aDeserializedData.length);
+        assertTrue(Arrays.equals(aa, aDeserializedData));
+        
+        // Serialize null byte array.
+        aSerializedData = TestedSerializer.serialize(null, byte[].class);
+        
+        assertEquals("<base64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/>", (String)aSerializedData);
+        
+        aDeserializedData = TestedSerializer.deserialize(aSerializedData, byte[].class);
+
+        assertNull(aDeserializedData);
+    }
+    
+    @Test
     public void serializeObjectArray() throws Exception
     {
         Object[] a = {(int)1,"Hello",(char)'A'};
