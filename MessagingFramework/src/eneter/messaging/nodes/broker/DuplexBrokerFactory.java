@@ -19,57 +19,59 @@ import eneter.messaging.nodes.channelwrapper.*;
  * The broker is the component that provides functionality for publish-subscribe scenarios.
  * IDuplexBrokerClient provides functionality to send notification messages to the broker
  * and also to subscribe for desired messages.
- * <pre>
+ * <br/>
+ * <br/>
  * The example shows how to create and use the broker communicating via TCP.
- * {@code
+ * <pre class="brush: java">
  * // Create Tcp based messaging.
  * IMessagingSystemFactory aMessagingFactory = new TcpMessagingSystemFactory();
- * 
+ * <br/> 
  * // Create duplex input channel listening to messages.
  * IDuplexInputChannel anInputChannel = aMessagingFactory.CreateDuplexInputChannel("tcp://127.0.0.1:7980/");
- * 
+ * <br/>
  * // Create the factory for the broker.
  * IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory();
- * 
+ * <br/>
  * // Create the broker.
  * IDuplexBroker aBroker = aBrokerFactory.CreateBroker();
- * 
+ * <br/>
  * // Attach the Tcp duplex input channel to the broker and start listening.
  * aBroker.AttachDuplexInputChannel(anInputChannel);
- * }
+ * <br/>
+ * </pre>
+ * <br/>
  * 
- * {@code
  * Subscribing for the notification messages.
- * 
+ * <pre class="brush: java">
+ * <br/>
  * // Create Tcp based messaging for the silverlight client.
  * IMessagingSystemFactory aTcpMessagingFactory = new TcpMessagingSystemFactory();
- * 
+ * <br/>
  * // Create duplex output channel to send and receive messages.
  * myOutputChannel = aTcpMessagingFactory.CreateDuplexOutputChannel("tcp://127.0.0.1:7980/");
- * 
+ * <br/>
  * // Create the broker client
  * IDuplexBrokerFactory aDuplexBrokerFactory = new DuplexBrokerFactory();
  * myBrokerClient = aDuplexBrokerFactory.CreateBrokerClient();
- * 
+ * <br/>
  * // Handler to process notification messages.
  * myBrokerClient.BrokerMessageReceived += NotifyMessageReceived;
- * 
+ * <br/>
  * // Attach the channel to the broker client to be able to send and receive messages.
  * myBrokerClient.AttachDuplexOutputChannel(myOutputChannel);
- * 
+ * <br/>
  * // Subscribe in broker to receive chat messages.
  * myBrokerClient.Subscribe("MyChatMessageType");
- * 
- * 
+ * <br/>
+ * <br/>
  * ...
- * 
- * 
+ * <br/>
+ * <br/>
  * // Send message to the broker. The broker will then forward it to all subscribers.
  * XmlStringSerializer anXmlSerializer = new XmlStringSerializer();
  * object aSerializedChatMessage = anXmlSerializer.Serialize&lt;ChatMessage&gt;(aChatMessage);
  * myBrokerClient.SendMessage("MyChatMessageType", aSerializedChatMessage);
- * 
- * }
+ * <br/>
  * 
  * </pre>
  * 
