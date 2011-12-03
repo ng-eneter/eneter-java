@@ -16,7 +16,7 @@ public class EnumerableExt
         {
             T anItem = i.next();
             
-            if (match.invoke(anItem).booleanValue())
+            if (match.invoke(anItem) == true)
             {
                 aMachedItems.add(anItem);
             }
@@ -32,7 +32,7 @@ public class EnumerableExt
         {
             T anItem = i.next();
             
-            if (match.invoke(anItem).booleanValue())
+            if (match.invoke(anItem) == true)
             {
                 return anItem;
             }
@@ -48,12 +48,24 @@ public class EnumerableExt
         {
             T anItem = i.next();
             
-            if (match.invoke(anItem).booleanValue())
+            if (match.invoke(anItem) == true)
             {
                 return true;
             }
         }
         
         return false;
+    }
+
+    public static <T> ArrayList<T> toList(Iterable<T> iterable)
+    {
+        ArrayList<T> aResult = new ArrayList<T>();
+        
+        for (T anItem : iterable)
+        {
+            aResult.add(anItem);
+        }
+        
+        return aResult;
     }
 }

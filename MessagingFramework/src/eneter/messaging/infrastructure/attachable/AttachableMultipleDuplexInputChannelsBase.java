@@ -342,7 +342,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                                             }
                                         });
                                         
-                                return anAssociatedConnection != null;
+                                return anAssociatedConnection[0] != null;
                             }
                     
                         });
@@ -578,6 +578,11 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
     protected IMessagingSystemFactory getMessagingSystemFactory()
     {
         return myMessagingSystemFactory;
+    }
+    
+    protected void setMessagingSystemFactory(IMessagingSystemFactory messagingSystem)
+    {
+        myMessagingSystemFactory = messagingSystem;
     }
 
     private Object myDuplexInputChannelContextManipulatorLock = new Object();

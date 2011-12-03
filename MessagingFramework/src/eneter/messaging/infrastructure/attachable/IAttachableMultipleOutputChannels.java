@@ -21,10 +21,11 @@ public interface IAttachableMultipleOutputChannels
 {
 	/**
 	 * Attaches the output channel.
+	 * @throws Exception 
 	 * 
 	 * @see IOutputChannel
 	 */
-	void attachOutputChannel(IOutputChannel outputChannel);
+	void attachOutputChannel(IOutputChannel outputChannel) throws Exception;
 	
 
 	/**
@@ -37,8 +38,9 @@ public interface IAttachableMultipleOutputChannels
 	 * Detaches the output channel.
 	 * 
 	 * @param channelId
+	 * @throws Exception 
 	 */
-	void detachOutputChannel(String channelId);
+	void detachOutputChannel(String channelId) throws Exception;
 	
 
 	/**

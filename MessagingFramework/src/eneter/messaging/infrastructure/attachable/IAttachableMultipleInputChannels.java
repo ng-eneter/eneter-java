@@ -45,8 +45,9 @@ public interface IAttachableMultipleInputChannels
 	 * Detaches the input channel.
 	 * 
 	 * @param channelId
+	 * @throws Exception 
 	 */
-	void detachInputChannel(String channelId);
+	void detachInputChannel(String channelId) throws Exception;
 	
 
 	/**
