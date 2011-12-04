@@ -252,6 +252,16 @@ abstract class TcpInputChannelBase
                     });
                 }
             }
+            catch (SocketException err)
+            {
+                // If the server is not listening, then this exception occurred because the listening
+                // was stopped and tracing is not desired.
+                // If the server still listens, then there is some other problem that must be traced.
+                if (myServerSocket != null)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+                }
+            }
             catch (Exception err)
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);

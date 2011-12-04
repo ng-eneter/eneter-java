@@ -76,20 +76,39 @@ class TcpInputChannel extends TcpInputChannelBase
                         // Source stream.
                         InputStream anInputStream = clientSocket.getInputStream();
 
-
                         // First read the message to the buffer.
                         Object aMessage = null;
-                        
-                        BufferedInputStream aMemStream = new BufferedInputStream(anInputStream);
+                        byte[] aStreamedMessage;
+                        ByteArrayOutputStream anOutputMemStream = new ByteArrayOutputStream();
                         try
                         {
-                            aMessage = MessageStreamer.readMessage(aMemStream);
+                            int aSize = 0;
+                            byte[] aBuffer = new byte[32768];
+                            while ((aSize = anInputStream.read(aBuffer, 0, aBuffer.length)) != -1)
+                            {
+                                anOutputMemStream.write(aBuffer, 0, aSize);
+                            }
                         }
                         finally
                         {
-                            aMemStream.close();
+                            anOutputMemStream.close();
                         }
-                        
+
+                        // Second, read the message from the buffer.
+                        // Note: This approach is much faster than reading directly from socket's input stream.
+                        //       It is also faster than using buffered streams.
+                        aStreamedMessage = anOutputMemStream.toByteArray();
+                        ByteArrayInputStream anInputMemStream = new ByteArrayInputStream(aStreamedMessage);
+                        try
+                        {
+                            // Read the message from the buffer.
+                            aMessage = MessageStreamer.readMessage(anInputMemStream);
+                        }
+                        finally
+                        {
+                            anInputMemStream.close();
+                        }
+
                         if (!myStopTcpListeningRequested && aMessage != null)
                         {
                             // Put the message to the queue from where the working thread removes it to notify

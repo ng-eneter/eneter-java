@@ -61,7 +61,6 @@ class TcpOutputChannel implements IOutputChannel
                 {
                     // Store the message in the buffer
                     byte[] aBufferedMessage = null;
-                    
                     ByteArrayOutputStream aMemStream = new ByteArrayOutputStream();
                     try
                     {
@@ -90,6 +89,7 @@ class TcpOutputChannel implements IOutputChannel
                 }
                 finally
                 {
+                    aTcpClient.getOutputStream().close();
                     aTcpClient.close();
                 }
             }

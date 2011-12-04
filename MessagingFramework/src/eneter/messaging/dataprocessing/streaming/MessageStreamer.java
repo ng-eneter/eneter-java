@@ -30,7 +30,7 @@ public final class MessageStreamer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            ObjectInputStream aStreamReader = new ObjectInputStream(readingStream);
+            DataInputStream aStreamReader = new DataInputStream(readingStream);
             Object aMessage = readMessage(aStreamReader);
             
             return aMessage;
@@ -41,7 +41,7 @@ public final class MessageStreamer
         }
     }
     
-    private static Object readMessage(ObjectInputStream reader) throws IOException
+    private static Object readMessage(DataInputStream reader) throws IOException
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -52,7 +52,7 @@ public final class MessageStreamer
                 
                 // Read the count.x
                 int aNumberOfParts = 0;
-                if (aType == OBJECTS || aType == BYTES || aType == CHARS)
+                if (aType == OBJECTS || aType == BYTES)
                 {
                     aNumberOfParts = reader.readInt();
                     if (aNumberOfParts <= 0)
@@ -90,11 +90,12 @@ public final class MessageStreamer
                         byte aByte = reader.readByte();
                         return aByte;
                     }
-                    else if (aType == STRING)
-                    {
-                        String aString = reader.readUTF();
-                        return aString;
-                    }
+                }
+                
+                if (aType == STRING)
+                {
+                    String aString = reader.readUTF();
+                    return aString;
                 }
             }
             catch (EOFException err)
@@ -124,7 +125,7 @@ public final class MessageStreamer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            ObjectOutputStream aStreamWriter = new ObjectOutputStream(writingStream);
+            DataOutputStream aStreamWriter = new DataOutputStream(writingStream);
             writeMessage(aStreamWriter, message);
         }
         finally
@@ -133,7 +134,7 @@ public final class MessageStreamer
         }
     }
     
-    private static void writeMessage(ObjectOutputStream writer, Object message) throws IOException
+    private static void writeMessage(DataOutputStream writer, Object message) throws IOException
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -142,7 +143,7 @@ public final class MessageStreamer
             {
                 int aNumberOfParts = ((Object[])message).length;
                 
-                writer.writeByte(BYTES);
+                writer.writeByte(OBJECTS);
                 writer.writeInt(aNumberOfParts);
                 
                 // Go recursively down through all parts of the message.
@@ -161,7 +162,7 @@ public final class MessageStreamer
             }
             else if (message instanceof String)
             {
-                writer.writeByte(BYTES);
+                writer.writeByte(STRING);
                 writer.writeUTF((String)message);
             }
             else if (message instanceof Byte)
