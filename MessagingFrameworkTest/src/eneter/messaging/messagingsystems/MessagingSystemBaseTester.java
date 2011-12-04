@@ -22,7 +22,7 @@ public abstract class MessagingSystemBaseTester
     public void A01_SendMessage()
             throws Exception
     {
-        sendMessageViaOutputChannel(myChannelId, "Message", 1, 5000);
+        sendMessageViaOutputChannel(myChannelId, "Message", 1, 50000);
     }
     
     @Test
@@ -677,7 +677,7 @@ public abstract class MessagingSystemBaseTester
                 {
                     ++aNumberOfReceivedMessages[0];
 
-                    if (myChannelId != y.getChannelId() || (String)message != (String)y.getMessage())
+                    if (!myChannelId.equals(y.getChannelId()) || !message.equals(y.getMessage()))
                     {
                         ++aNumberOfFailures[0];
                     }
