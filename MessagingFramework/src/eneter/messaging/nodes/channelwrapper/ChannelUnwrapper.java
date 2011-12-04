@@ -58,11 +58,11 @@ class ChannelUnwrapper extends AttachableInputChannelBase
             {
                 String anOutputChannelId = (String)aWrappedData.myAddedData;
 
-                // Get the output channel according to the channel id.
-                IOutputChannel anOutputChannel = myOutputMessagingFactory.createOutputChannel(anOutputChannelId);
-
                 try
                 {
+                 // Get the output channel according to the channel id.
+                    IOutputChannel anOutputChannel = myOutputMessagingFactory.createOutputChannel(anOutputChannelId);
+                    
                     // Send the unwrapped message.
                     anOutputChannel.sendMessage(aWrappedData.myOriginalData);
                 }

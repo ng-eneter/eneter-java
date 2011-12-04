@@ -22,16 +22,18 @@ public interface IMessagingSystemFactory
 	 * 
 	 * @param channelId identifies the receiving input channel
 	 * @return output channel
+	 * @throws Exception 
 	 */
-    IOutputChannel createOutputChannel(String channelId);
+    IOutputChannel createOutputChannel(String channelId) throws Exception;
 
     /**
      * Creates the input channel listening to messages on the specified channel id.
      * 
      * @param channelId identifies this input channel
      * @return input channel
+     * @throws Exception 
      */
-    IInputChannel createInputChannel(String channelId);
+    IInputChannel createInputChannel(String channelId) throws Exception;
     
     /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
@@ -45,7 +47,7 @@ public interface IMessagingSystemFactory
      * @param channelId identifies the receiving duplex input channel
      * @return duplex output channel
      */
-    IDuplexOutputChannel createDuplexOutputChannel(String channelId);
+    IDuplexOutputChannel createDuplexOutputChannel(String channelId) throws Exception;
     
     /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
@@ -61,7 +63,7 @@ public interface IMessagingSystemFactory
      * @param responseReceiverId unique identifier of the response receiver represented by this duplex output channel.
      * @return duplex output channel
      */
-    IDuplexOutputChannel createDuplexOutputChannel(String channelId, String responseReceiverId);
+    IDuplexOutputChannel createDuplexOutputChannel(String channelId, String responseReceiverId) throws Exception;
     
     /**
      * Creates the duplex input channel receiving messages from the duplex output channel and sending back response messages.
@@ -72,5 +74,5 @@ public interface IMessagingSystemFactory
      * @param channelId identifies the address, the duplex input channel listens to
      * @return duplex input channel
      */
-    IDuplexInputChannel createDuplexInputChannel(String channelId);
+    IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception;
 }

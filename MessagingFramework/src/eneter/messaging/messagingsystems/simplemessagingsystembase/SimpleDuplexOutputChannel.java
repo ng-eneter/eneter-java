@@ -11,7 +11,7 @@ import eneter.net.system.threading.ThreadPool;
 
 public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
 {
-    public SimpleDuplexOutputChannel(String channelId, String responseReceiverId, IMessagingSystemFactory messagingFactory)
+    public SimpleDuplexOutputChannel(String channelId, String responseReceiverId, IMessagingSystemFactory messagingFactory) throws Exception
     {
         if (channelId == null || channelId.isEmpty())
         {

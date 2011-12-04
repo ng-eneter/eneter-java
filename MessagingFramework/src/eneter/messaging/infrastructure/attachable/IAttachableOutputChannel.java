@@ -25,13 +25,13 @@ public interface IAttachableOutputChannel
 	 * 
 	 * @see IOutputChannel
 	 */
-	void attachOutputChannel(IOutputChannel outputChannel);
+	void attachOutputChannel(IOutputChannel outputChannel) throws Exception;
 	
 
 	/**
 	 * Detaches the output channel.
 	 */
-	void detachOutputChannel();
+	void detachOutputChannel() throws Exception;
 	
 
 	/**

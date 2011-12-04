@@ -35,7 +35,7 @@ public interface IAttachableInputChannel
 	 * It cleans the reference to the input channel and stops the listening.
 	 * 
 	 */
-	void detachInputChannel();
+	void detachInputChannel() throws Exception;
 	
 
 	/**

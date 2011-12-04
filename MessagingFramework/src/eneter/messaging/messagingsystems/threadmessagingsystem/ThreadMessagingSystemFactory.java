@@ -93,9 +93,10 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
      * This method generates the unique response receiver id automatically.
      * <br/><br/>
      * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
+     * @throws Exception 
      */
     @Override
-    public IDuplexOutputChannel createDuplexOutputChannel(String channelId)
+    public IDuplexOutputChannel createDuplexOutputChannel(String channelId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -118,10 +119,11 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
      * id is supposed to be unique.
      * <br/><br/>
      * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
+     * @throws Exception 
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
-            String responseReceiverId)
+            String responseReceiverId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
