@@ -13,7 +13,7 @@ import eneter.net.system.threading.AutoResetEvent;
 
 public abstract class TypedRequestResponseBaseTester
 {
-    protected void setup(IMessagingSystemFactory messagingSystemFactory, String channelId, ISerializer serializer)
+    protected void setup(IMessagingSystemFactory messagingSystemFactory, String channelId, ISerializer serializer) throws Exception
     {
         MessagingSystemFactory = messagingSystemFactory;
 

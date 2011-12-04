@@ -10,7 +10,7 @@ import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousM
 public class Test_TypedMessages_SynchronousMessaging_XmlStringSerializer extends TypedMessagesBaseTester
 {
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
         IMessagingSystemFactory aMessagingSystem = new SynchronousMessagingSystemFactory();
         String aChannelId = "Channel1";

@@ -12,7 +12,7 @@ import eneter.net.system.IMethod2;
 public class Tester_ChannelWrapper
 {
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
         myGlobalMessagingSystem = new SynchronousMessagingSystemFactory();
         myGlobalOutputChannel = myGlobalMessagingSystem.createOutputChannel("MainChannel");

@@ -12,7 +12,7 @@ import eneter.net.system.IMethod2;
 public class Tester_DuplexChannelWrapper
 {
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
         myGlobalMessaging = new SynchronousMessagingSystemFactory();
         myDuplexGlobalOutputChannel = myGlobalMessaging.createDuplexOutputChannel("MainChannel");

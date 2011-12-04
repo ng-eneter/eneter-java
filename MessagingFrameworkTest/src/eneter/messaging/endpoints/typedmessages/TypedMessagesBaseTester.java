@@ -16,7 +16,7 @@ import eneter.net.system.threading.ManualResetEvent;
 
 public abstract class TypedMessagesBaseTester
 {
-    protected void setup(IMessagingSystemFactory messagingSystemFactory, String channelId, ISerializer serializer)
+    protected void setup(IMessagingSystemFactory messagingSystemFactory, String channelId, ISerializer serializer) throws Exception
     {
         MessagingSystemFactory = messagingSystemFactory;
 

@@ -10,7 +10,7 @@ public class Test_TypedRequestResponse_SynchronousMessaging_XmlStringSerializer
     extends TypedRequestResponseBaseTester
 {
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
         IMessagingSystemFactory aMessagingSystem = new SynchronousMessagingSystemFactory();
         String aChannelId = "Channel1";

@@ -254,7 +254,7 @@ public abstract class MessagingSystemBaseTester
     }
     
     @Test
-    public void A10_OpenConnectionIfDuplexInputChannelNotStarted()
+    public void A10_OpenConnectionIfDuplexInputChannelNotStarted() throws Exception
     {
         IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
@@ -270,7 +270,7 @@ public abstract class MessagingSystemBaseTester
     }
     
     @Test
-    public void A11_DuplexInputChannelSuddenlyStopped()
+    public void A11_DuplexInputChannelSuddenlyStopped() throws Exception
     {
         IDuplexInputChannel anInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
         IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);

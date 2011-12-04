@@ -8,7 +8,7 @@ import eneter.messaging.messagingsystems.threadmessagingsystem.ThreadMessagingSy
 public class Test_StringMessages_ThreadMessaging extends StringMessagesBaseTester
 {
     @Before
-    public void Setup()
+    public void Setup() throws Exception
     {
         IMessagingSystemFactory aMessagingSystem = new ThreadMessagingSystemFactory();
         String aChannelId = "Channel1";

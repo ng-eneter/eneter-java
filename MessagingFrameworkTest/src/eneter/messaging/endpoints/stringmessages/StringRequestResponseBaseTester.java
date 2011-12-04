@@ -12,7 +12,7 @@ import eneter.net.system.threading.*;
 
 public abstract class StringRequestResponseBaseTester
 {
-    protected void setup(IMessagingSystemFactory messagingSystemFactory, String channelId)
+    protected void setup(IMessagingSystemFactory messagingSystemFactory, String channelId) throws Exception
     {
         myMessagingSystemFactory = messagingSystemFactory;
 

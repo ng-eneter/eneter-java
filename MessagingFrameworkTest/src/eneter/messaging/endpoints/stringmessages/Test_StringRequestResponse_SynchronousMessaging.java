@@ -8,7 +8,7 @@ import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousM
 public class Test_StringRequestResponse_SynchronousMessaging extends StringRequestResponseBaseTester
 {
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
         IMessagingSystemFactory aMessagingSystem = new SynchronousMessagingSystemFactory();
         String aChannelId = "Channel1";

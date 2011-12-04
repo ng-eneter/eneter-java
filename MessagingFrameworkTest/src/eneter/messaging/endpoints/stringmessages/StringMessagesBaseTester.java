@@ -11,7 +11,7 @@ import eneter.net.system.threading.*;
 
 public abstract class StringMessagesBaseTester
 {
-    protected void setup(IMessagingSystemFactory messagingSystemFactory, String channelId)
+    protected void setup(IMessagingSystemFactory messagingSystemFactory, String channelId) throws Exception
     {
         myMessagingSystemFactory = messagingSystemFactory;
 
@@ -142,7 +142,7 @@ public abstract class StringMessagesBaseTester
     }
 
     @Test(expected = IllegalStateException.class)
-    public void attachOutputChannelAgain()
+    public void attachOutputChannelAgain() throws Exception
     {
         try
         {
