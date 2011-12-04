@@ -8,8 +8,8 @@
 package eneter.messaging.diagnostic;
 
 import java.util.Date;
+import java.util.Locale;
 import java.io.PrintStream;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import eneter.net.system.threading.ThreadPool;
@@ -61,9 +61,9 @@ public class EneterTrace
         {
             aTraceObject = new EneterTrace();
 
-            writeMessage("-->", null);
+            writeMessage("-->", "", 3);
 
-            aTraceObject.myEnteringTime = System.currentTimeMillis();
+            aTraceObject.myEnteringTime = System.nanoTime();
         }
 
         return aTraceObject;
@@ -91,7 +91,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" I:", message);
+            writeMessage(" I:", message, 3);
         }
     }
     
@@ -106,7 +106,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" I:", message + "\r\nDetails: " + details);
+            writeMessage(" I:", message + "\r\nDetails: " + details, 3);
         }
     }
 
@@ -122,7 +122,7 @@ public class EneterTrace
         if (myDetailLevel != EDetailLevel.None)
         {
             String aDetails = getDetailsFromException(err);
-            writeMessage(" I:", message + "\r\n" + aDetails);
+            writeMessage(" I:", message + "\r\n" + aDetails, 3);
         }
     }
 
@@ -136,7 +136,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" W:", message);
+            writeMessage(" W:", message, 3);
         }
     }
 
@@ -151,7 +151,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" W:", message + "\r\nDetails: " + details);
+            writeMessage(" W:", message + "\r\nDetails: " + details, 3);
         }
     }
 
@@ -167,7 +167,7 @@ public class EneterTrace
         if (myDetailLevel != EDetailLevel.None)
         {
             String aDetails = getDetailsFromException(err);
-            writeMessage(" W:", message + "\r\n" + aDetails);
+            writeMessage(" W:", message + "\r\n" + aDetails, 3);
         }
     }
 
@@ -181,7 +181,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" E:", message);
+            writeMessage(" E:", message, 3);
         }
     }
 
@@ -196,7 +196,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" E:", message + "\r\nDetails: " + errorDetails);
+            writeMessage(" E:", message + "\r\nDetails: " + errorDetails, 3);
         }
     }
 
@@ -212,7 +212,7 @@ public class EneterTrace
         if (myDetailLevel != EDetailLevel.None)
         {
             String aDetails = getDetailsFromException(err);
-            writeMessage(" E:", message + "\r\n" + aDetails);
+            writeMessage(" E:", message + "\r\n" + aDetails, 3);
         }
     }
 
@@ -228,7 +228,7 @@ public class EneterTrace
     {
         if (myDetailLevel == EDetailLevel.Debug)
         {
-            writeMessage(" D:", message);
+            writeMessage(" D:", message, 3);
         }
     }
 
@@ -347,13 +347,13 @@ public class EneterTrace
 
         // Get the exception details.
         StringBuilder aDetails = new StringBuilder();
-        aDetails.append(String.format("Exception:\r\n%s: %s\r\n%s", err.getClass().getName(), err.getMessage(), getStackTraceString(err.getStackTrace())));
+        aDetails.append(String.format(Locale.ROOT, "Exception:\r\n%s: %s\r\n%s", err.getClass().getName(), err.getMessage(), getStackTraceString(err.getStackTrace())));
         
         // Get all inner exceptions.
         Throwable anInnerException = err.getCause();
         while (anInnerException != null)
         {
-            aDetails.append(String.format("\r\n\r\n%s: %s\r\n%s", anInnerException.getClass().getName(), anInnerException.getMessage(), getStackTraceString(anInnerException.getStackTrace())));
+            aDetails.append(String.format(Locale.ROOT, "\r\n\r\n%s: %s\r\n%s", anInnerException.getClass().getName(), anInnerException.getMessage(), getStackTraceString(anInnerException.getStackTrace())));
 
             // Get the next inner exception.
             anInnerException = anInnerException.getCause();
@@ -382,16 +382,16 @@ public class EneterTrace
     }
     
     
-    private static void writeMessage(String prefix, String message)
+    private static void writeMessage(String prefix, String message, int callStackIdx)
     {
         //get current date time with Date()
         Date aDate = new Date();
 
         // Get the calling method
         StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
-        StackTraceElement aCaller = aStackTraceElements[3];
+        StackTraceElement aCaller = aStackTraceElements[callStackIdx];
         final String aMethodName = aCaller.getClassName() + "." + aCaller.getMethodName();        
-        final String aMessage = String.format("%1$tH:%1$tM:%1$tS.%1$tL ~%2$3d %3$s %4$s %5$s",
+        final String aMessage = String.format(Locale.ROOT, "%1$tH:%1$tM:%1$tS.%1$tL ~%2$3d %3$s %4$s %5$s",
             aDate,
             Thread.currentThread().getId(),
             prefix, aMethodName, message);
@@ -445,21 +445,28 @@ public class EneterTrace
         {
             if (myEnteringTime != Long.MIN_VALUE)
             {
-                long aDurationMillis = System.currentTimeMillis() - myEnteringTime;
+                long anElapsedTime = System.nanoTime() - myEnteringTime;
                 
-                long aDays = TimeUnit.MILLISECONDS.toDays(aDurationMillis);
-                aDurationMillis -= TimeUnit.DAYS.toMillis(aDays);
-                long aHours = TimeUnit.MILLISECONDS.toHours(aDurationMillis);
-                aDurationMillis -= TimeUnit.HOURS.toMillis(aHours);
-                long aMinutes = TimeUnit.MILLISECONDS.toMinutes(aDurationMillis);
-                aDurationMillis -= TimeUnit.MINUTES.toMillis(aMinutes);
-                long aSeconds = TimeUnit.MILLISECONDS.toSeconds(aDurationMillis);
+                long aHours = (long) (anElapsedTime / (60.0 * 60.0 * 1000000000.0));
+                anElapsedTime -= aHours * 60 * 60 * 1000000000;
+                
+                long aMinutes = (long) (anElapsedTime / (60.0 * 1000000000.0));
+                anElapsedTime -= aMinutes * 60 * 1000000000;
+                
+                long aSeconds = anElapsedTime / 1000000000;
+                anElapsedTime -= aSeconds * 1000000000;
+                
+                long aMiliseconds = anElapsedTime / 1000000;
+                anElapsedTime -= aMiliseconds * 1000000;
+                
+                double aMicroseconds = anElapsedTime / 1000.0;
 
-                writeMessage("<--", String.format("[%1$2d:%2$2d:%3$2d.%4$3dms]",
+                writeMessage("<--", String.format(Locale.ROOT, "[%d:%d:%d %dms %.1fus]",
                     aHours,
                     aMinutes,
                     aSeconds,
-                    aDurationMillis));
+                    aMiliseconds,
+                    aMicroseconds), 4);
             }
         }
         catch(Exception exception)
@@ -470,6 +477,7 @@ public class EneterTrace
     
     
     private long myEnteringTime = Long.MIN_VALUE;
+    
     
     // Trace Info, Warning and Error by default.
     private static EDetailLevel myDetailLevel = EDetailLevel.Short;
