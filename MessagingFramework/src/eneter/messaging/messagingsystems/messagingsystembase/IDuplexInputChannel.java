@@ -53,7 +53,7 @@ public interface IDuplexInputChannel
     /**
      * Returns true if the duplex input channel is listening.
      */
-    Boolean isListening();
+    boolean isListening();
 
     /**
      * Sends the response message back to the connected IDuplexOutputChannel.
@@ -66,6 +66,7 @@ public interface IDuplexInputChannel
     /**
      * Disconnects the response receiver.
      * @param responseReceiverId response receiver to be disconnected.
+     * @throws Exception 
      */
-    void disconnectResponseReceiver(String responseReceiverId);
+    void disconnectResponseReceiver(String responseReceiverId) throws Exception;
 }

@@ -124,7 +124,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
     }
 
     @Override
-    public Boolean isConnected()
+    public boolean isConnected()
     {
         synchronized (myConnectionManipulatorLock)
         {

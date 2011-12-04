@@ -133,6 +133,11 @@ class TcpInputChannel extends TcpInputChannelBase
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.ProcessingHttpConnectionFailure, err);
             }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingHttpConnectionFailure, err);
+                throw err;
+            }
         }
         finally
         {

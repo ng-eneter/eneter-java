@@ -75,5 +75,5 @@ public interface IDuplexOutputChannel
     /**
      * Returns true if the duplex output channel is connected to the duplex input channel and listens to response messages.
      */
-    Boolean isConnected();
+    boolean isConnected();
 }
