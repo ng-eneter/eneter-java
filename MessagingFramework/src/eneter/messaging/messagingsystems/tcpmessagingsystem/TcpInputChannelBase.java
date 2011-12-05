@@ -163,7 +163,7 @@ abstract class TcpInputChannelBase
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.warning(TracedObject() + "detected an exception during waiting for the thread. The thread id = " + myTcpListeningThread.getId());
+                        EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myTcpListeningThread.getId());
                     }
                     
                     if (myTcpListeningThread.getState() != Thread.State.TERMINATED)
