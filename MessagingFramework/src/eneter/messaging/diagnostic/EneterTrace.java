@@ -10,9 +10,10 @@ package eneter.messaging.diagnostic;
 import java.util.Date;
 import java.util.Locale;
 import java.io.PrintStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
-import eneter.net.system.threading.ThreadPool;
 
 /**
  * Implements the functionality for tracing messages.
@@ -424,7 +425,7 @@ public class EneterTrace
             }
         };
 
-        ThreadPool.queueUserWorkItem(aDoWrite);
+        myWritingThread.execute(aDoWrite);
     }
     
     
@@ -487,4 +488,7 @@ public class EneterTrace
     private static PrintStream myTraceLog;
     
     private static Pattern myNameSpaceFilter;
+    
+    // Ensures sequential writing of messages. 
+    private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor();
 }

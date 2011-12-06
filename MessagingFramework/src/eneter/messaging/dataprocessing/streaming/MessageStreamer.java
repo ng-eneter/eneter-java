@@ -85,17 +85,17 @@ public final class MessageStreamer
                         reader.read(aBytes);
                         return aBytes;
                     }
-                    else if (aType == BYTE)
-                    {
-                        byte aByte = reader.readByte();
-                        return aByte;
-                    }
                 }
                 
                 if (aType == STRING)
                 {
                     String aString = reader.readUTF();
                     return aString;
+                }
+                else if (aType == BYTE)
+                {
+                    byte aByte = reader.readByte();
+                    return aByte;
                 }
             }
             catch (EOFException err)

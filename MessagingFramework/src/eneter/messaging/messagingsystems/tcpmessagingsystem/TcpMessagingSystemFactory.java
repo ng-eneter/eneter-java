@@ -35,25 +35,46 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     @Override
-    public IDuplexOutputChannel createDuplexOutputChannel(String channelId)
+    public IDuplexOutputChannel createDuplexOutputChannel(String channelId) throws Exception
     {
-        // TODO Auto-generated method stub
-        return null;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new TcpDuplexOutputChannel(channelId, null);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
-            String responseReceiverId)
+            String responseReceiverId) throws Exception
     {
-        // TODO Auto-generated method stub
-        return null;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new TcpDuplexOutputChannel(channelId, responseReceiverId);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
-    public IDuplexInputChannel createDuplexInputChannel(String channelId)
+    public IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception
     {
-        // TODO Auto-generated method stub
-        return null;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new TcpDuplexInputChannel(channelId);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
 }
