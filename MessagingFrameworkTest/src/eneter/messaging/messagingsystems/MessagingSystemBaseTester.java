@@ -36,14 +36,14 @@ public abstract class MessagingSystemBaseTester
     public void A05_SendMessageReceiveResponse()
             throws Exception
     {
-        sendMessageReceiveResponse(myChannelId, "Message", "Response", 1, 1000);
+        sendMessageReceiveResponse(myChannelId, "Message", "Response", 1, 5000);
     }
     
     @Test
     public void A06_SendMessageReceiveResponse500()
             throws Exception
     {
-        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 500, 1000);
+        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 500, 5000);
     }
     
     @Test(expected = IllegalStateException.class)
@@ -248,8 +248,8 @@ public abstract class MessagingSystemBaseTester
             anInputChannel.stopListening();
         }
         
-        assertTrue(aConnectedReceiver[0] != "");
-        assertTrue(aDisconnectedReceiver[0] != "");
+        assertTrue(!aConnectedReceiver[0].equals(""));
+        assertTrue(!aDisconnectedReceiver[0].equals(""));
         assertEquals(aConnectedReceiver[0], aDisconnectedReceiver[0]);
     }
     
@@ -747,7 +747,7 @@ public abstract class MessagingSystemBaseTester
                 {
                     ++aNumberOfReceivedMessages[0];
 
-                    if (channelId != y.getChannelId() || (String)message != (String)y.getMessage())
+                    if (!channelId.equals(y.getChannelId()) || !message.equals(y.getMessage()))
                     {
                         ++aNumberOfFailedMessages[0];
                     }
@@ -776,7 +776,7 @@ public abstract class MessagingSystemBaseTester
                 synchronized (amyResponseReceiverLock)
                 {
                     ++aNumberOfReceivedResponses[0];
-                    if ((String)resonseMessage != (String)y.getMessage())
+                    if (!resonseMessage.equals(y.getMessage()))
                     {
                         ++aNumberOfFailedResponses[0];
                     }
