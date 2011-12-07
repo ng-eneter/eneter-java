@@ -10,6 +10,7 @@ import eneter.messaging.dataprocessing.streaming.MessageStreamer;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
+import eneter.net.system.threading.ManualResetEvent;
 import eneter.net.system.threading.ThreadPool;
 
 class TcpDuplexOutputChannel implements IDuplexOutputChannel
@@ -173,6 +174,13 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
 
                     myResponseReceiverThread = new Thread(myResponseListeningRunnable);
                     myResponseReceiverThread.start();
+                    
+                    // Wait until the thread is really started.
+                    if (!myListeningToResponsesStartedEvent.waitOne(500))
+                    {
+                        // The listening thread did not start.
+                        throw new IllegalStateException("The thread listening to response messages did not start.");
+                    }
 
                     // Send open connection message with receiver id.
                     MessageStreamer.writeOpenConnectionMessage(myTcpClient.getOutputStream(), getResponseReceiverId());
@@ -315,7 +323,9 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            // Indicate, the listening thread is running.
             myIsListeningToResponses = true;
+            myListeningToResponsesStartedEvent.set();
 
             try
             {
@@ -507,6 +517,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
     private Thread myResponseReceiverThread;
     private volatile boolean myStopReceivingRequestedFlag;
     private volatile boolean myIsListeningToResponses;
+    private ManualResetEvent myListeningToResponsesStartedEvent = new ManualResetEvent(false);
     
     private WorkingThread<Object> myMessageProcessingThread = new WorkingThread<Object>();
     

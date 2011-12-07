@@ -106,6 +106,8 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             {
                 try
                 {
+                    // Store the message in the buffer before sending.
+                    // So that the message can be sent at once.
                     byte[] aBufferedMessage = null;
                     ByteArrayOutputStream aMemStream = new ByteArrayOutputStream();
                     try

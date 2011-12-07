@@ -56,6 +56,7 @@ class TcpOutputChannel implements IOutputChannel
             {
                 // Creates the socket and connect it to the port.
                 Socket aTcpClient = new Socket(InetAddress.getByName(myUri.getHost()), myUri.getPort());
+                aTcpClient.setTcpNoDelay(true);
 
                 try
                 {
