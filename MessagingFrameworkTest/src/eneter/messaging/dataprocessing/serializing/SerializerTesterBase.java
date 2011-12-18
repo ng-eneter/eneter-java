@@ -2,7 +2,6 @@ package eneter.messaging.dataprocessing.serializing;
 
 import static org.junit.Assert.*;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.junit.*;
