@@ -33,7 +33,7 @@ public class XmlStringSerializer implements ISerializer
         map1[i++] = '+'; map1[i++] = '/';
         
         for (i=0; i<map2.length; i++) map2[i] = -1;
-        for (i=0; i<64; i++) map2[map1[i]] = (byte)i; 
+        for (i=0; i<64; i++) map2[map1[i]] = (byte)i;
     }
     
     /**
@@ -97,6 +97,10 @@ public class XmlStringSerializer implements ISerializer
                     String aClassItemTypeName = clazz.getComponentType().getSimpleName();
                     aRootName = "ArrayOf" + aClassItemTypeName;
                 }
+            }
+            else if (clazz == Integer.class)
+            {
+                aRootName = "int";
             }
             
             // Note: keep the space character at the beginning of the name-space string!!!
@@ -923,7 +927,7 @@ public class XmlStringSerializer implements ISerializer
     }
     
     
- // Mapping table from 6-bit nibbles to Base64 characters.
+    // Mapping table from 6-bit nibbles to Base64 characters.
     private final char[] map1 = new char[64];
   
     // Mapping table from Base64 characters to 6-bit nibbles.
