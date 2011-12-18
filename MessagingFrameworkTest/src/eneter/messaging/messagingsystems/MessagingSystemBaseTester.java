@@ -22,7 +22,7 @@ public abstract class MessagingSystemBaseTester
     public void A01_SendMessage()
             throws Exception
     {
-        sendMessageViaOutputChannel(myChannelId, "Message", 1, 50000);
+        sendMessageViaOutputChannel(myChannelId, "Message", 1, 5000);
     }
     
     @Test
@@ -798,7 +798,7 @@ public abstract class MessagingSystemBaseTester
         {
             // Input channel starts listening
             anInputChannel.startListening();
-
+            
             // Output channel connects in order to be able to receive response messages.
             anOutputChannel.openConnection();
 

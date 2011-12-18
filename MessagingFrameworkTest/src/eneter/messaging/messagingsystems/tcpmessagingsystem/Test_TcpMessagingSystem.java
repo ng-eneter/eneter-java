@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Random;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -22,8 +23,11 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
     {
         //EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
+        Random aRandomPort = new Random();
+        int aPort = 7000 + aRandomPort.nextInt(1000);
+        
         myMessagingSystemFactory = new TcpMessagingSystemFactory();
-        myChannelId = "tcp://127.0.0.1:8091/";
+        myChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
     }
     
     @Test(expected = SocketException.class)
