@@ -9,6 +9,8 @@
 package eneter.messaging.messagingsystems.threadmessagingsystem;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.*;
 
@@ -36,10 +38,16 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
      */
     public ThreadMessagingSystemFactory()
     {
+        this(new EneterProtocolFormatter());
+    }
+    
+    public ThreadMessagingSystemFactory(IProtocolFormatter<?> protocolFormatter)
+    {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myMessagingSystem = new SimpleMessagingSystem(new ThreadMessagingProvider());
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -101,7 +109,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleDuplexOutputChannel(channelId, null, this);
+            return new SimpleDuplexOutputChannel(channelId, null, this, myProtocolFormatter);
         }
         finally
         {
@@ -128,7 +136,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleDuplexOutputChannel(channelId, responseReceiverId, this);
+            return new SimpleDuplexOutputChannel(channelId, responseReceiverId, this, myProtocolFormatter);
         }
         finally
         {
@@ -149,7 +157,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleDuplexInputChannel(channelId, this);
+            return new SimpleDuplexInputChannel(channelId, this, myProtocolFormatter);
         }
         finally
         {
@@ -159,4 +167,5 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
 
     
     private IMessagingSystemBase myMessagingSystem;
+    private IProtocolFormatter<?> myProtocolFormatter;
 }

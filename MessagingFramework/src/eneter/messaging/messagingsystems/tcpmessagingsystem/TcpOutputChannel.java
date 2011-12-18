@@ -3,14 +3,15 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 import java.io.*;
 import java.net.*;
 
-import eneter.messaging.dataprocessing.streaming.MessageStreamer;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.StringExt;
 
 class TcpOutputChannel implements IOutputChannel
 {
-    public TcpOutputChannel(String ipAddressAndPort) throws Exception
+    public TcpOutputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -33,6 +34,7 @@ class TcpOutputChannel implements IOutputChannel
             }
 
             myChannelId = ipAddressAndPort;
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -60,23 +62,13 @@ class TcpOutputChannel implements IOutputChannel
 
                 try
                 {
-                    // Store the message in the buffer
-                    byte[] aBufferedMessage = null;
-                    ByteArrayOutputStream aMemStream = new ByteArrayOutputStream();
-                    try
-                    {
-                        MessageStreamer.writeMessage(aMemStream, message);
-                        aBufferedMessage = aMemStream.toByteArray();
-                    }
-                    finally
-                    {
-                        aMemStream.close();
-                    }
-
+                    // Encode the message.
+                    byte[] anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
+                    
                     OutputStream aSendStream = aTcpClient.getOutputStream();
 
                     // Send the message from the buffer.
-                    aSendStream.write(aBufferedMessage);
+                    aSendStream.write(anEncodedMessage);
                 }
                 catch (Exception err)
                 {
@@ -107,6 +99,7 @@ class TcpOutputChannel implements IOutputChannel
     private Object myLock = new Object();
     
     private String myChannelId;
+    private IProtocolFormatter<byte[]> myProtocolFormatter;
     
     private String TracedObject()
     {

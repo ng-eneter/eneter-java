@@ -5,7 +5,9 @@ import java.net.*;
 
 import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.net.system.*;
+import eneter.net.system.threading.ManualResetEvent;
 import eneter.net.system.threading.ThreadPool;
 
 abstract class TcpInputChannelBase
@@ -37,7 +39,7 @@ abstract class TcpInputChannelBase
             }
             
             myChannelId = ipAddressAndPort;
-            myMessageProcessingThread = new WorkingThread<Object>(ipAddressAndPort);
+            myMessageProcessingThread = new WorkingThread<ProtocolMessage>(ipAddressAndPort);
         }
         finally
         {
@@ -77,6 +79,12 @@ abstract class TcpInputChannelBase
                     // Listen in another thread.
                     myTcpListeningThread = new Thread(myDoTcpListeningRunnable);
                     myTcpListeningThread.start();
+                    
+                    // Wait until the thread really started the listening.
+                    if (!myListeningStartedEvent.waitOne(5000))
+                    {
+                        throw new IllegalStateException("The thread listening to messages did not start.");
+                    }
                 }
                 catch (Exception err)
                 {
@@ -233,6 +241,8 @@ abstract class TcpInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myListeningStartedEvent.set();
+            
             try
             {
                 // Listening loop.
@@ -266,6 +276,8 @@ abstract class TcpInputChannelBase
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
             }
+            
+            myListeningStartedEvent.reset();
         }
         finally
         {
@@ -278,7 +290,7 @@ abstract class TcpInputChannelBase
     
     protected abstract void handleConnection(Socket clientSocket);
     
-    protected abstract void messageHandler(Object message);
+    protected abstract void messageHandler(ProtocolMessage message);
     
     private URI myUri;
     protected String myChannelId = "";
@@ -286,8 +298,9 @@ abstract class TcpInputChannelBase
     private ServerSocket myServerSocket;
     private Thread myTcpListeningThread;
     protected volatile boolean myStopTcpListeningRequested;
+    private ManualResetEvent myListeningStartedEvent = new ManualResetEvent(false);
     
-    protected WorkingThread<Object> myMessageProcessingThread;
+    protected WorkingThread<ProtocolMessage> myMessageProcessingThread;
     
     protected Object myListeningManipulatorLock = new Object();
     
@@ -301,10 +314,10 @@ abstract class TcpInputChannelBase
         }
     };
     
-    private IMethod1<Object> myMessageHandlerHandler = new IMethod1<Object>()
+    private IMethod1<ProtocolMessage> myMessageHandlerHandler = new IMethod1<ProtocolMessage>()
     {
         @Override
-        public void invoke(Object message) throws Exception
+        public void invoke(ProtocolMessage message) throws Exception
         {
             messageHandler(message);
         }

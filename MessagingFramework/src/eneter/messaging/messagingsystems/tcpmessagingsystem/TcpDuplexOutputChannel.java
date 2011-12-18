@@ -1,13 +1,12 @@
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
-import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.net.*;
 import java.util.UUID;
 
 import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
-import eneter.messaging.dataprocessing.streaming.MessageStreamer;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.threading.ManualResetEvent;
@@ -15,7 +14,8 @@ import eneter.net.system.threading.ThreadPool;
 
 class TcpDuplexOutputChannel implements IDuplexOutputChannel
 {
-    public TcpDuplexOutputChannel(String ipAddressAndPort, String responseReceiverId) throws Exception
+    public TcpDuplexOutputChannel(String ipAddressAndPort, String responseReceiverId,
+                                  IProtocolFormatter<byte[]> protocolFormatter) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -40,6 +40,8 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
             myChannelId = ipAddressAndPort;
 
             myResponseReceiverId = (StringExt.isNullOrEmpty(responseReceiverId)) ? ipAddressAndPort + "_" + UUID.randomUUID().toString() : responseReceiverId;
+            
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -76,61 +78,6 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
     public String getResponseReceiverId()
     {
         return myResponseReceiverId;
-    }
-
-    @Override
-    public void sendMessage(Object message) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            synchronized (myConnectionManipulatorLock)
-            {
-                if (!isConnected())
-                {
-                    String aMessage = TracedObject() + ErrorHandler.SendMessageNotConnectedFailure;
-                    EneterTrace.error(aMessage);
-                    throw new IllegalStateException(aMessage);
-                }
-
-                try
-                {
-                    Object[] aMessage = MessageStreamer.getRequestMessage(getResponseReceiverId(), message); 
-
-                    // Store the message in the buffer
-                    byte[] aBufferedMessage = null;
-                    ByteArrayOutputStream aMemStream = new ByteArrayOutputStream();
-                    try
-                    {
-                        MessageStreamer.writeMessage(aMemStream, aMessage);
-                        aBufferedMessage = aMemStream.toByteArray();
-                    }
-                    finally
-                    {
-                        aMemStream.close();
-                    }
-
-                    OutputStream aSendStream = myTcpClient.getOutputStream();
-                    
-                    // Send the message from the buffer.
-                    aSendStream.write(aBufferedMessage);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                    throw err;
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                    throw err;
-                }
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
     }
 
     @Override
@@ -182,8 +129,11 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                         throw new IllegalStateException("The thread listening to response messages did not start.");
                     }
 
+                    // Encode the request to open the connection.
+                    byte[] anEncodedMessage = myProtocolFormatter.encodeOpenConnectionMessage(getResponseReceiverId());
+                    
                     // Send open connection message with receiver id.
-                    MessageStreamer.writeOpenConnectionMessage(myTcpClient.getOutputStream(), getResponseReceiverId());
+                    myTcpClient.getOutputStream().write(anEncodedMessage);
 
                     // Invoke the event notifying, the connection was opened.
                     notifyConnectionOpened();
@@ -229,8 +179,11 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     {
                         try
                         {
-                            Object[] aMessage = MessageStreamer.getCloseConnectionMessage(getResponseReceiverId());
-                            MessageStreamer.writeMessage(myTcpClient.getOutputStream(), aMessage);
+                            // Encode the message to close the connection.
+                            byte[] anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(getResponseReceiverId());
+
+                            // Send the message.
+                            myTcpClient.getOutputStream().write(anEncodedMessage);
                         }
                         catch (Exception err)
                         {
@@ -299,6 +252,48 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    @Override
+    public void sendMessage(Object message) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                if (!isConnected())
+                {
+                    String aMessage = TracedObject() + ErrorHandler.SendMessageNotConnectedFailure;
+                    EneterTrace.error(aMessage);
+                    throw new IllegalStateException(aMessage);
+                }
+
+                try
+                {
+                    byte[] anEncodedMessage = myProtocolFormatter.encodeMessage(getResponseReceiverId(), message); 
+
+                    OutputStream aSendStream = myTcpClient.getOutputStream();
+                    
+                    // Send the message from the buffer.
+                    aSendStream.write(anEncodedMessage);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
+                    throw err;
+                }
+                catch (Error err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
+                    throw err;
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     @Override
     public boolean isConnected()
@@ -331,15 +326,16 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
             {
                 while (!myStopReceivingRequestedFlag)
                 {
-                    Object aMessage = MessageStreamer.readMessage(myTcpClient.getInputStream());
+                    // Decode the incoming message.
+                    ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(myTcpClient.getInputStream());
 
-                    if (!myStopReceivingRequestedFlag && aMessage != null)
+                    if (!myStopReceivingRequestedFlag && aProtocolMessage != null)
                     {
-                        myMessageProcessingThread.enqueueMessage(aMessage);
+                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
                     }
 
                     // If disconnected
-                    if (aMessage == null || myTcpClient == null || !myTcpClient.isConnected())
+                    if (aProtocolMessage == null || myTcpClient == null || !myTcpClient.isConnected())
                     {
                         EneterTrace.warning(TracedObject() + "detected the duplex input channel is not available. The connection will be closed.");
                         break;
@@ -373,9 +369,10 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
             }
 
 
+            myListeningToResponsesStartedEvent.reset();
             myIsListeningToResponses = false;
 
-            // Notify the listening to messages stoped.
+            // Notify the listening to messages stopped.
             notifyConnectionClosed();
         }
         finally
@@ -384,16 +381,22 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void messageHandler(Object message)
+    private void messageHandler(ProtocolMessage protocolMessage)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (protocolMessage.MessageType != EProtocolMessageType.MessageReceived)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+                return;
+            }
+            
             if (myResponseMessageReceivedEventImpl.isEmpty() == false)
             {
                 try
                 {
-                    myResponseMessageReceivedEventImpl.update(this, new DuplexChannelMessageEventArgs(getChannelId(), message, getResponseReceiverId()));
+                    myResponseMessageReceivedEventImpl.update(this, new DuplexChannelMessageEventArgs(getChannelId(), protocolMessage.Message, getResponseReceiverId()));
                 }
                 catch (Exception err)
                 {
@@ -519,7 +522,9 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
     private volatile boolean myIsListeningToResponses;
     private ManualResetEvent myListeningToResponsesStartedEvent = new ManualResetEvent(false);
     
-    private WorkingThread<Object> myMessageProcessingThread = new WorkingThread<Object>();
+    private WorkingThread<ProtocolMessage> myMessageProcessingThread = new WorkingThread<ProtocolMessage>();
+    
+    private IProtocolFormatter<byte[]> myProtocolFormatter;
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
@@ -541,10 +546,10 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
         }
     };
     
-    private IMethod1<Object> myMessageHandlerHandler = new IMethod1<Object>()
+    private IMethod1<ProtocolMessage> myMessageHandlerHandler = new IMethod1<ProtocolMessage>()
             {
                 @Override
-                public void invoke(Object message) throws Exception
+                public void invoke(ProtocolMessage message) throws Exception
                 {
                     messageHandler(message);
                 }

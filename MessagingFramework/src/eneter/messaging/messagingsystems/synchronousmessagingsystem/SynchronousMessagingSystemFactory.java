@@ -8,6 +8,8 @@
 
 package eneter.messaging.messagingsystems.synchronousmessagingsystem;
 
+import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.*;
 
@@ -31,7 +33,21 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      */
     public SynchronousMessagingSystemFactory()
     {
-        myMessagingSystem = new SimpleMessagingSystem(new SynchronousMessagingProvider());
+        this(new EneterProtocolFormatter());
+    }
+    
+    public SynchronousMessagingSystemFactory(IProtocolFormatter<?> protocolFromatter)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myMessagingSystem = new SimpleMessagingSystem(new SynchronousMessagingProvider());
+            myProtocolFormatter = protocolFromatter;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
     /**
@@ -42,7 +58,15 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      */
     public IOutputChannel createOutputChannel(String channelId)
     {
-        return new SimpleOutputChannel(channelId, myMessagingSystem);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new SimpleOutputChannel(channelId, myMessagingSystem);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     /**
@@ -53,7 +77,15 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      */
     public IInputChannel createInputChannel(String channelId)
     {
-        return new SimpleInputChannel(channelId, myMessagingSystem);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new SimpleInputChannel(channelId, myMessagingSystem);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     /**
@@ -63,7 +95,15 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      */
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId) throws Exception
     {
-        return new SimpleDuplexOutputChannel(channelId, null, this);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new SimpleDuplexOutputChannel(channelId, null, this, myProtocolFormatter);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     /**
@@ -73,7 +113,15 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      */
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId, String responseReceiverId) throws Exception
     {
-        return new SimpleDuplexOutputChannel(channelId, responseReceiverId, this);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new SimpleDuplexOutputChannel(channelId, responseReceiverId, this, myProtocolFormatter);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     /**
@@ -82,9 +130,18 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      */
     public IDuplexInputChannel createDuplexInputChannel(String channelId)
     {
-        return new SimpleDuplexInputChannel(channelId, this);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new SimpleDuplexInputChannel(channelId, this, myProtocolFormatter);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
     
     private IMessagingSystemBase myMessagingSystem;
+    private IProtocolFormatter<?> myProtocolFormatter;
 }

@@ -4,21 +4,23 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import eneter.messaging.dataprocessing.streaming.MessageStreamer;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 
 class TcpInputChannel extends TcpInputChannelBase
                       implements IInputChannel
 {
-    public TcpInputChannel(String ipAddressAndPort) throws Exception
+    public TcpInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter)
+            throws Exception
     {
         super(ipAddressAndPort);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -77,8 +79,7 @@ class TcpInputChannel extends TcpInputChannelBase
                         InputStream anInputStream = clientSocket.getInputStream();
 
                         // First read the message to the buffer.
-                        Object aMessage = null;
-                        byte[] aStreamedMessage;
+                        ProtocolMessage aProtocolMessage = null;
                         ByteArrayOutputStream anOutputMemStream = new ByteArrayOutputStream();
                         try
                         {
@@ -94,27 +95,15 @@ class TcpInputChannel extends TcpInputChannelBase
                             anOutputMemStream.close();
                         }
 
-                        // Second, read the message from the buffer.
-                        // Note: This approach is much faster than reading directly from socket's input stream.
-                        //       It is also faster than using buffered streams.
-                        aStreamedMessage = anOutputMemStream.toByteArray();
-                        ByteArrayInputStream anInputMemStream = new ByteArrayInputStream(aStreamedMessage);
-                        try
-                        {
-                            // Read the message from the buffer.
-                            aMessage = MessageStreamer.readMessage(anInputMemStream);
-                        }
-                        finally
-                        {
-                            anInputMemStream.close();
-                        }
+                        // Decode the incoming message.
+                        aProtocolMessage = myProtocolFormatter.decodeMessage(anOutputMemStream.toByteArray());
 
-                        if (!myStopTcpListeningRequested && aMessage != null)
+                        if (!myStopTcpListeningRequested && aProtocolMessage != null)
                         {
                             // Put the message to the queue from where the working thread removes it to notify
                             // subscribers of the input channel.
                             // Note: therfore subscribers of the input channel are notified allways in one thread.
-                            myMessageProcessingThread.enqueueMessage(aMessage);
+                            myMessageProcessingThread.enqueueMessage(aProtocolMessage);
                         }
                     }
                 }
@@ -146,16 +135,22 @@ class TcpInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void messageHandler(Object message)
+    protected void messageHandler(ProtocolMessage protocolMessage)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (protocolMessage.MessageType != EProtocolMessageType.MessageReceived)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+                return;
+            }
+            
             if (myMessageReceivedEventImpl.isEmpty() == false)
             {
                 try
                 {
-                    myMessageReceivedEventImpl.update(this, new ChannelMessageEventArgs(getChannelId(), message));
+                    myMessageReceivedEventImpl.update(this, new ChannelMessageEventArgs(getChannelId(), protocolMessage.Message));
                 }
                 catch (Exception err)
                 {
@@ -181,6 +176,8 @@ class TcpInputChannel extends TcpInputChannelBase
     
     
     private ArrayList<Socket> myConnectedSenders = new ArrayList<Socket>();
+    private IProtocolFormatter<byte[]> myProtocolFormatter;
+    
     
     private EventImpl<ChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<ChannelMessageEventArgs>();
     private Event<ChannelMessageEventArgs> myMessageReceivedEventApi = new Event<ChannelMessageEventArgs>(myMessageReceivedEventImpl);

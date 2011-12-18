@@ -1,10 +1,28 @@
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 public class TcpMessagingSystemFactory implements IMessagingSystemFactory
 {
+    public TcpMessagingSystemFactory()
+    {
+        this(new EneterProtocolFormatter());
+    }
+
+    public TcpMessagingSystemFactory(IProtocolFormatter<byte[]> protocolFormatter)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myProtocolFormatter = protocolFormatter;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     @Override
     public IOutputChannel createOutputChannel(String channelId) throws Exception
@@ -12,7 +30,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpOutputChannel(channelId);
+            return new TcpOutputChannel(channelId, myProtocolFormatter);
         }
         finally
         {
@@ -26,7 +44,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpInputChannel(channelId);
+            return new TcpInputChannel(channelId, myProtocolFormatter);
         }
         finally
         {
@@ -40,7 +58,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpDuplexOutputChannel(channelId, null);
+            return new TcpDuplexOutputChannel(channelId, null, myProtocolFormatter);
         }
         finally
         {
@@ -55,7 +73,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpDuplexOutputChannel(channelId, responseReceiverId);
+            return new TcpDuplexOutputChannel(channelId, responseReceiverId, myProtocolFormatter);
         }
         finally
         {
@@ -69,12 +87,15 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpDuplexInputChannel(channelId);
+            return new TcpDuplexInputChannel(channelId, myProtocolFormatter);
         }
         finally
         {
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    
+    private IProtocolFormatter<byte[]> myProtocolFormatter;
 
 }
