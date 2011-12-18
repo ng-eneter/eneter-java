@@ -53,6 +53,7 @@ public class SimpleOutputChannel implements IOutputChannel
     
     private IMessagingSystemBase myMessagingSystem;
     private String myChannelId;
+   
     
     private String TracedObject()
     {

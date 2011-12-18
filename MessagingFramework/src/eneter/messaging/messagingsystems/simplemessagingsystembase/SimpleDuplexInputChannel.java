@@ -2,15 +2,16 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase;
 
 import java.security.InvalidParameterException;
 
-import eneter.messaging.dataprocessing.streaming.MessageStreamer;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 
 
 public class SimpleDuplexInputChannel implements IDuplexInputChannel
 {
-    public SimpleDuplexInputChannel(String channelId, IMessagingSystemFactory messagingFactory)
+    public SimpleDuplexInputChannel(String channelId, IMessagingSystemFactory messagingFactory,
+                                    IProtocolFormatter<?> protocolFormatter)
     {
         if (channelId == null || channelId == "")
         {
@@ -20,6 +21,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
         
         myDuplexInputChannelId = channelId;
         myMessagingSystemFactory = messagingFactory;
+        myProtocolFormatter = protocolFormatter;
     }
     
     
@@ -127,7 +129,11 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
         try
         {
             IOutputChannel aResponseOutputChannel = myMessagingSystemFactory.createOutputChannel(responseReceiverId);
-            aResponseOutputChannel.sendMessage(message);
+            
+            // Encode the response message.
+            Object anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
+            
+            aResponseOutputChannel.sendMessage(anEncodedMessage);
         }
         catch (Exception err)
         {
@@ -156,11 +162,10 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
         {
             IOutputChannel aResponseOutputChannel = myMessagingSystemFactory.createOutputChannel(responseReceiverId);
 
-            // TODO: Investigate how to transfer OpenConnection, CloseConnection requests!!! So that they can be read by .NET application.
+            // Encode the message for closing the connection with the client.
+            Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(responseReceiverId);
             
-            //Notify the response receiver about the disconnection.
-            Object[] aCloseConnectionMessage = MessageStreamer.getCloseConnectionMessage(responseReceiverId);
-            aResponseOutputChannel.sendMessage(aCloseConnectionMessage);
+            aResponseOutputChannel.sendMessage(anEncodedMessage);
         }
         catch (Exception err)
         {
@@ -179,19 +184,20 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     {
         try
         {
-            Object[] aMessage = (Object[])e.getMessage();
+            // Decode the incoming message.
+            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(e.getMessage());
 
-            if (MessageStreamer.isOpenConnectionMessage(aMessage))
+            if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
             {
-                notifyResponseReceiverConnected((String)aMessage[1]);
+                notifyResponseReceiverConnected(aProtocolMessage.ResponseReceiverId);
             }
-            else if (MessageStreamer.isCloseConnectionMessage(aMessage))
+            else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
             {
-                notifyResponseReceiverDisconnected((String)aMessage[1]);
+                notifyResponseReceiverDisconnected(aProtocolMessage.ResponseReceiverId);
             }
-            else if (MessageStreamer.isRequestMessage(aMessage))
+            else if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
             {
-                notifyMessageReceived(getChannelId(), aMessage[2], (String)aMessage[1]);
+                notifyMessageReceived(getChannelId(), aProtocolMessage.Message, aProtocolMessage.ResponseReceiverId);
             }
             else
             {
@@ -276,6 +282,10 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
             EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
         }
     }
+    
+    
+    private IProtocolFormatter<?> myProtocolFormatter;
+    
     
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private Event<DuplexChannelMessageEventArgs> myMessageReceivedEvent = new Event<DuplexChannelMessageEventArgs>(myMessageReceivedEventImpl);

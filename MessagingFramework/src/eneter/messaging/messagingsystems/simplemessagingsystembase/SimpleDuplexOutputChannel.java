@@ -3,15 +3,16 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase;
 import java.security.InvalidParameterException;
 import java.util.UUID;
 
-import eneter.messaging.dataprocessing.streaming.MessageStreamer;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.threading.ThreadPool;
 
 public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
 {
-    public SimpleDuplexOutputChannel(String channelId, String responseReceiverId, IMessagingSystemFactory messagingFactory) throws Exception
+    public SimpleDuplexOutputChannel(String channelId, String responseReceiverId, IMessagingSystemFactory messagingFactory,
+                                     IProtocolFormatter<?> protocolFormatter) throws Exception
     {
         if (channelId == null || channelId.isEmpty())
         {
@@ -29,6 +30,8 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
         myMessagingFactory.createInputChannel(myResponseReceiverId);
 
         myMessageSenderOutputChannel = myMessagingFactory.createOutputChannel(channelId);
+        
+        myProtocolFormatter = protocolFormatter;
     }
     
     @Override
@@ -82,8 +85,8 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
                 myResponseReceiverInputChannel.startListening();
 
                 // Send open connection message with receiver id.
-                Object[] anOpenConnectionMessage = MessageStreamer.getOpenConnectionMessage(myResponseReceiverId);
-                myMessageSenderOutputChannel.sendMessage(anOpenConnectionMessage);
+                Object anEncodedMessage = myProtocolFormatter.encodeOpenConnectionMessage(myResponseReceiverId); 
+                myMessageSenderOutputChannel.sendMessage(anEncodedMessage);
                 
                 // Invoke the event notifying, the connection was opened.
                 notifyConnectionOpened();
@@ -108,8 +111,8 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
             {
                 try
                 {
-                    Object[] aCloseConnectionMessage = MessageStreamer.getCloseConnectionMessage(myResponseReceiverId);
-                    myMessageSenderOutputChannel.sendMessage(aCloseConnectionMessage);
+                    Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(myResponseReceiverId);
+                    myMessageSenderOutputChannel.sendMessage(anEncodedMessage);
                 }
                 catch (Exception err)
                 {
@@ -147,8 +150,8 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
 
             try
             {
-                Object[] aMessage = MessageStreamer.getRequestMessage(myResponseReceiverInputChannel.getChannelId(), message);
-                myMessageSenderOutputChannel.sendMessage(aMessage);
+                Object anEncodedMessage = myProtocolFormatter.encodeMessage(myResponseReceiverId, message); 
+                myMessageSenderOutputChannel.sendMessage(anEncodedMessage);
             }
             catch (Exception err)
             {
@@ -166,10 +169,11 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
 
     private void onResponseMessageReceived(Object sender, ChannelMessageEventArgs e)
     {
-        Object aMessage = e.getMessage();
+        // Decode the incoming message.
+        ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(e.getMessage());
 
         // If the message indicates the disconnection.
-        if (MessageStreamer.isCloseConnectionMessage(aMessage))
+        if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
         {
             // Stop listening to the input channel for the response message.
             // Note: The duplex input channel notifies that this duplex output channel is disconnected.
@@ -184,7 +188,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
         {
             try
             {
-                myResponseMessageReceivedEventImpl.update(this, new DuplexChannelMessageEventArgs(getChannelId(), aMessage, myResponseReceiverId));
+                myResponseMessageReceivedEventImpl.update(this, new DuplexChannelMessageEventArgs(getChannelId(), aProtocolMessage.Message, myResponseReceiverId));
             }
             catch (Exception err)
             {
@@ -282,6 +286,9 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
     private String myResponseReceiverId;
 
     private Object myConnectionManipulatorLock = new Object();
+    
+    private IProtocolFormatter<?> myProtocolFormatter;
+    
 
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private Event<DuplexChannelMessageEventArgs> myResponseMessageReceivedEvent = new Event<DuplexChannelMessageEventArgs>(myResponseMessageReceivedEventImpl);

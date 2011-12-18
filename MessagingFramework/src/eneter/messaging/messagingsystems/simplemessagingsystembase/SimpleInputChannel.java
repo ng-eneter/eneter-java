@@ -132,6 +132,9 @@ public class SimpleInputChannel implements IInputChannel
     
     private Object myListeningManipulatorLock = new Object();
     
+    
+    
+    
     private EventImpl<ChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<ChannelMessageEventArgs>();
     private Event<ChannelMessageEventArgs> myMessageReceivedEventApi = new Event<ChannelMessageEventArgs>(myMessageReceivedEventImpl);
     
