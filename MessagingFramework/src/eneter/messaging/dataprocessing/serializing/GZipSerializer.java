@@ -1,6 +1,7 @@
 package eneter.messaging.dataprocessing.serializing;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.zip.*;
 
@@ -8,16 +9,76 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 public class GZipSerializer implements ISerializer
 {
-
+    public GZipSerializer(ISerializer underlyingSerializer)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myUnderlyingSerializer = underlyingSerializer;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    
     @Override
     public <T> Object serialize(T dataToSerialize, Class<T> clazz)
             throws Exception
     {
-        // TODO Auto-generated method stub
-        return null;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Use underlying serializer to serialize data.
+            Object aSerializedData = myUnderlyingSerializer.serialize(dataToSerialize, clazz);
+            
+            ByteArrayOutputStream aCompressedData = new ByteArrayOutputStream();
+            
+            GZIPOutputStream aGzipOutputStream = new GZIPOutputStream(aCompressedData);
+            
+            // Compress serialized data.
+            if (aSerializedData instanceof String)
+            {
+                String aSerializedStr = (String)aSerializedData;
+                
+                // Note: UTF-16 Big Endian is native Java encoding.
+                Charset aCharset = Charset.forName("UTF-16BE");
+                ByteBuffer aByteBuffer = aCharset.encode(aSerializedStr);
+                byte[] aDataToCompress = aByteBuffer.array();
+                
+                // Write info that compressed data is UTF16 Big Endian.
+                aGzipOutputStream.write(STRING_UTF16_BE_ID);
+                
+                // Compress data.
+                aGzipOutputStream.write(aDataToCompress);
+            }
+            else if (aSerializedData instanceof byte[] ||
+                     aSerializedData instanceof Byte[])
+            {
+                // Write info, that compressed data is array of bytes.
+                aGzipOutputStream.write(BYTES_ID);
+                
+                // Compress data.
+                aGzipOutputStream.write((byte[])aSerializedData);
+            }
+            else
+            {
+                String anErrorMessage = TracedObject() + "failed to compress data because the underlying serializer serializes data into incorrect type.";
+                EneterTrace.error(anErrorMessage);
+                throw new IllegalAccessError(anErrorMessage);
+            }
+            
+            
+            aGzipOutputStream.finish();
+            return aCompressedData.toByteArray();
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T> T deserialize(Object serializedData, Class<T> clazz)
             throws Exception
@@ -65,32 +126,31 @@ public class GZipSerializer implements ISerializer
             if (aDataType == STRING_UTF8_ID)
             {
                 Charset aCharset = Charset.forName("UTF-8");
-                String aDeserializedData = new String(aDecompressedBytes.toByteArray(), aCharset);
-                return (T)aDeserializedData;
+                aDecompressedData = new String(aDecompressedBytes.toByteArray(), aCharset);
             }
-            
-            if (aDataType == STRING_UTF16_LE_ID)
+            else if (aDataType == STRING_UTF16_LE_ID)
             {
                 Charset aCharset = Charset.forName("UTF-16LE");
-                String aDeserializedData = new String(aDecompressedBytes.toByteArray(), aCharset);
-                return (T)aDeserializedData;
+                aDecompressedData = new String(aDecompressedBytes.toByteArray(), aCharset);
             }
-            
-            if (aDataType == STRING_UTF16_BE_ID)
+            else if (aDataType == STRING_UTF16_BE_ID)
             {
                 Charset aCharset = Charset.forName("UTF-16BE");
-                String aDeserializedData = new String(aDecompressedBytes.toByteArray(), aCharset);
-                return (T)aDeserializedData;
+                aDecompressedData = new String(aDecompressedBytes.toByteArray(), aCharset);
+            }
+            else if (aDataType == BYTES_ID)
+            {
+                aDecompressedData = aDecompressedBytes.toByteArray();
+            }
+            else
+            {
+                String anErrorMessage = TracedObject() + "failed to deserialize the object because of incorrect data fromat.";
+                EneterTrace.error(anErrorMessage);
+                throw new IllegalStateException(anErrorMessage);
             }
             
-            if (aDataType == BYTES_ID)
-            {
-                return (T)aDecompressedBytes.toByteArray();
-            }
-
-            String anErrorMessage = TracedObject() + "failed to deserialize the object because of incorrect data fromat.";
-            EneterTrace.error(anErrorMessage);
-            throw new IllegalStateException(anErrorMessage);
+            // Use underlying serializer to deserialize data.
+            return myUnderlyingSerializer.deserialize(aDecompressedData, clazz);
         }
         finally
         {
