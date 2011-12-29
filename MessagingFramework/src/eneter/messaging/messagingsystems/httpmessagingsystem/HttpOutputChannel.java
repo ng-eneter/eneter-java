@@ -1,22 +1,22 @@
-package eneter.messaging.messagingsystems.tcpmessagingsystem;
+package eneter.messaging.messagingsystems.httpmessagingsystem;
 
-import java.io.*;
+import java.io.OutputStream;
 import java.net.*;
 
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.messagingsystems.connectionprotocols.*;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.StringExt;
 
-class TcpOutputChannel implements IOutputChannel
+public class HttpOutputChannel implements IOutputChannel
 {
-    public TcpOutputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter)
+    public HttpOutputChannel(String channelId, IProtocolFormatter<byte[]> protocolFormatter)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (StringExt.isNullOrEmpty(ipAddressAndPort))
+            if (StringExt.isNullOrEmpty(channelId))
             {
                 EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
                 throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
@@ -24,8 +24,7 @@ class TcpOutputChannel implements IOutputChannel
 
             try
             {
-                // just check if the address is valid
-                myUri = new URI(ipAddressAndPort);
+                myUrl = new URL(channelId);
             }
             catch (Exception err)
             {
@@ -33,7 +32,7 @@ class TcpOutputChannel implements IOutputChannel
                 throw err;
             }
 
-            myChannelId = ipAddressAndPort;
+            myChannelId = channelId;
             myProtocolFormatter = protocolFormatter;
         }
         finally
@@ -41,6 +40,7 @@ class TcpOutputChannel implements IOutputChannel
             EneterTrace.leaving(aTrace);
         }
     }
+    
 
     @Override
     public String getChannelId()
@@ -58,24 +58,29 @@ class TcpOutputChannel implements IOutputChannel
             {
                 try
                 {
-                    // Creates the socket and connect it to the port.
-                    Socket aTcpClient = new Socket(InetAddress.getByName(myUri.getHost()), myUri.getPort());
-                    aTcpClient.setTcpNoDelay(true);
-                    
+                    OutputStream aSender = null;
                     try
                     {
+                        URLConnection aConnection = myUrl.openConnection();
+                        aConnection.setDoOutput(true);
+                        aConnection.setRequestProperty("Accept-Charset", "UTF-8");
+                        aConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + "UTF-8");
+
+                        aConnection.connect();
+                        
                         // Encode the message.
                         byte[] anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
                         
-                        OutputStream aSendStream = aTcpClient.getOutputStream();
-
-                        // Send the message from the buffer.
-                        aSendStream.write(anEncodedMessage);
+                        // Send the message.
+                        aSender = aConnection.getOutputStream();
+                        aSender.write(anEncodedMessage);
                     }
                     finally
                     {
-                        aTcpClient.getOutputStream().close();
-                        aTcpClient.close();
+                        if (aSender != null)
+                        {
+                            aSender.close();
+                        }
                     }
                 }
                 catch (Exception err)
@@ -98,14 +103,15 @@ class TcpOutputChannel implements IOutputChannel
 
     
     
-    private URI myUri;
+    private URL myUrl;
     private Object myLock = new Object();
     
     private String myChannelId;
     private IProtocolFormatter<byte[]> myProtocolFormatter;
     
+    
     private String TracedObject()
     {
-        return "The Tcp output channel '" + getChannelId() + "' "; 
+        return "The Http output channel '" + getChannelId() + "' "; 
     }
 }

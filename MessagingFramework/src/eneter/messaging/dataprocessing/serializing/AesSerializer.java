@@ -79,12 +79,12 @@ public class AesSerializer implements ISerializer
             byte[] anEncryptedData = (byte[])serializedData;
 
             // Put encrypted data to the stream.
-            ByteArrayInputStream aCompressedStream = new ByteArrayInputStream(anEncryptedData);
+            ByteArrayInputStream anEncryptedDataStream = new ByteArrayInputStream(anEncryptedData);
             
             // Create stream decrypting the data.
             Cipher aCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             aCipher.init(Cipher.DECRYPT_MODE, myKey, myInitializeVector);
-            CipherInputStream aDecryptor = new CipherInputStream(aCompressedStream, aCipher);
+            CipherInputStream aDecryptor = new CipherInputStream(anEncryptedDataStream, aCipher);
 
             // Deserialize the encrypted data.
             return myEncoderDecoder.deserialize(aDecryptor, clazz);

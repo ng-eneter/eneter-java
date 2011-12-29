@@ -10,7 +10,7 @@ import eneter.net.system.*;
 import eneter.net.system.threading.ManualResetEvent;
 import eneter.net.system.threading.ThreadPool;
 
-abstract class TcpInputChannelBase
+public abstract class TcpInputChannelBase
 {
     public TcpInputChannelBase(String ipAddressAndPort) throws Exception
     {
