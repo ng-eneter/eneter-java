@@ -232,14 +232,14 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             {
                 String aResponseReceiverId = ""; // will be set when the 1st message is received.
 
-                InputStream anInputOutputStream = null;
+                InputStream anInputStream = null;
 
                 try
                 {
                     // If the end is requested.
                     if (!myStopTcpListeningRequested)
                     {
-                        anInputOutputStream = clientSocket.getInputStream();
+                        anInputStream = clientSocket.getInputStream();
                         
 
                         // While the stop of listening is not requested and the connection is not closed.
@@ -247,7 +247,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                         while (!myStopTcpListeningRequested && !isConnectionClosed)
                         {
                             // Block until a message is received or the connection is closed.
-                            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputOutputStream);
+                            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
 
                             if (!myStopTcpListeningRequested)
                             {
@@ -328,9 +328,9 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                     }
 
                     // Close the connection.
-                    if (anInputOutputStream != null)
+                    if (anInputStream != null)
                     {
-                        anInputOutputStream.close();
+                        anInputStream.close();
                     }
                     clientSocket.close();
                 }

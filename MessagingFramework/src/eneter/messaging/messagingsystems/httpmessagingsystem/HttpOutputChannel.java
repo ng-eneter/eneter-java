@@ -58,28 +58,34 @@ public class HttpOutputChannel implements IOutputChannel
             {
                 try
                 {
-                    OutputStream aSender = null;
+                    HttpURLConnection aConnection = (HttpURLConnection)myUrl.openConnection();
                     try
                     {
-                        URLConnection aConnection = myUrl.openConnection();
                         aConnection.setDoOutput(true);
-                        aConnection.setRequestProperty("Accept-Charset", "UTF-8");
-                        aConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + "UTF-8");
+                        aConnection.setRequestMethod("POST");
 
-                        aConnection.connect();
-                        
                         // Encode the message.
                         byte[] anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
                         
-                        // Send the message.
-                        aSender = aConnection.getOutputStream();
+                        // Write the message to the stream.
+                        OutputStream aSender = aConnection.getOutputStream();
                         aSender.write(anEncodedMessage);
+                        
+                        // Fire the message.
+                        // Note: requesting the response code will fire the message.
+                        int aResponseCode = aConnection.getResponseCode();
+                        if (aResponseCode != 200)
+                        {
+                            String aResponseMessage = aConnection.getResponseMessage();
+                            throw new IllegalStateException(aResponseMessage);
+                        }
+                       
                     }
                     finally
                     {
-                        if (aSender != null)
+                        if (aConnection != null)
                         {
-                            aSender.close();
+                            aConnection.disconnect();
                         }
                     }
                 }

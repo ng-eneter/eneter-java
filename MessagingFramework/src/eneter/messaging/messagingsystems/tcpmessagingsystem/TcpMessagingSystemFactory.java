@@ -97,5 +97,4 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     
     
     private IProtocolFormatter<byte[]> myProtocolFormatter;
-
 }
