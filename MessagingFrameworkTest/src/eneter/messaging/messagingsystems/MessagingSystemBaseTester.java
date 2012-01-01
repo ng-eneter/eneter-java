@@ -710,7 +710,8 @@ public abstract class MessagingSystemBaseTester
             EneterTrace.info("Send messages to '" + myChannelId + "' completed - waiting while they are processed.");
 
             // Wait until all messages are processed.
-            assertTrue(aMessagesSentEvent.waitOne(timeOutForMessageProcessing));
+            //assertTrue(aMessagesSentEvent.waitOne(timeOutForMessageProcessing));
+            assertTrue(aMessagesSentEvent.waitOne(60000));
 
             EneterTrace.info("Waiting for processing of messages on '" + myChannelId + "' completed.");
         }
