@@ -58,36 +58,11 @@ public class HttpOutputChannel implements IOutputChannel
             {
                 try
                 {
-                    HttpURLConnection aConnection = (HttpURLConnection)myUrl.openConnection();
-                    try
-                    {
-                        aConnection.setDoOutput(true);
-                        aConnection.setRequestMethod("POST");
-
-                        // Encode the message.
-                        byte[] anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
-                        
-                        // Write the message to the stream.
-                        OutputStream aSender = aConnection.getOutputStream();
-                        aSender.write(anEncodedMessage);
-                        
-                        // Fire the message.
-                        // Note: requesting the response code will fire the message.
-                        int aResponseCode = aConnection.getResponseCode();
-                        if (aResponseCode != 200)
-                        {
-                            String aResponseMessage = aConnection.getResponseMessage();
-                            throw new IllegalStateException(aResponseMessage);
-                        }
-                       
-                    }
-                    finally
-                    {
-                        if (aConnection != null)
-                        {
-                            aConnection.disconnect();
-                        }
-                    }
+                    // Encode the message.
+                    byte[] anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
+                    
+                    // Send the message.
+                    HttpRequestSender.send(myUrl, anEncodedMessage);
                 }
                 catch (Exception err)
                 {

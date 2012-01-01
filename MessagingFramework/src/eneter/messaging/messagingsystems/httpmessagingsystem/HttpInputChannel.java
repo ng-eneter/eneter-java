@@ -68,12 +68,9 @@ class HttpInputChannel extends TcpInputChannelBase
                         // So skip the HTTP part and find the beginning of the ENETER message.
                         // Note: The content of the HTTP message should start after empty line.
                         DataInputStream aReader = new DataInputStream(anInputStream);
-                        String s = "";
                         while (true)
                         {
                             int aValue = aReader.read();
-                            
-                            s += (char)((byte)aValue);
                             
                             // End of some line
                             if (aValue == 13)
@@ -100,8 +97,6 @@ class HttpInputChannel extends TcpInputChannelBase
                             }
                         }
                         
-                        EneterTrace.info(s);
-
                         // Decode the incoming message.
                         ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
                         

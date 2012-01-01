@@ -1,0 +1,646 @@
+package eneter.messaging.messagingsystems.httpmessagingsystem;
+
+import java.io.*;
+import java.lang.Thread.State;
+import java.net.*;
+import java.util.UUID;
+
+import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
+import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
+import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.net.system.*;
+import eneter.net.system.threading.*;
+
+class HttpDuplexOutputChannel implements IDuplexOutputChannel
+{
+    public HttpDuplexOutputChannel(String channelId, String responseReceiverId, int pullingFrequencyMiliseconds, IProtocolFormatter<byte[]> protocolFormatter)
+            throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (StringExt.isNullOrEmpty(channelId))
+            {
+                EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
+                throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
+            }
+
+            try
+            {
+                myUrl = new URL(channelId);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
+                throw err;
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
+                throw err;
+            }
+
+
+            myChannelId = channelId;
+            myPollingFrequencyMiliseconds = pullingFrequencyMiliseconds;
+
+            // Creates the working thread with the message queue for processing incoming response messages.
+            myResponseMessageWorkingThread = new WorkingThread<ProtocolMessage>(getChannelId());
+
+            myResponseReceiverId = (StringExt.isNullOrEmpty(responseReceiverId)) ? channelId + "_" + UUID.randomUUID().toString() : responseReceiverId;
+
+            myProtocolFormatter = protocolFormatter;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+
+    @Override
+    public Event<DuplexChannelMessageEventArgs> responseMessageReceived()
+    {
+        return myResponseMessageReceivedEventApi;
+    }
+
+    @Override
+    public Event<DuplexChannelEventArgs> connectionOpened()
+    {
+        return myConnectionOpenedEventApi;
+    }
+
+    @Override
+    public Event<DuplexChannelEventArgs> connectionClosed()
+    {
+        return myConnectionClosedEventApi;
+    }
+
+    @Override
+    public String getChannelId()
+    {
+        return myChannelId;
+    }
+
+    @Override
+    public String getResponseReceiverId()
+    {
+        return myResponseReceiverId;
+    }
+
+    @Override
+    public void openConnection() throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                if (isConnected())
+                {
+                    String aMessage = TracedObject() + ErrorHandler.IsAlreadyConnected;
+                    EneterTrace.error(aMessage);
+                    throw new IllegalStateException(aMessage);
+                }
+
+                // If it is needed clean after the previous connection.
+                if (myWebClientForPollingResponseMessages != null)
+                {
+                    try
+                    {
+                        closeConnection();
+                    }
+                    catch (Exception err)
+                    {
+                        // We tried to clean after the previous connection. The exception can be ignored.
+                    }
+                }
+
+                try
+                {
+                    myStopHttpResponseListeningRequested = false;
+
+                    // Register the method handling messages from the working with the queue.
+                    // Note: Received responses are put to the message queue. This thread takes
+                    //       messages from the queue and calls the registered method to process them.
+                    myResponseMessageWorkingThread.registerMessageHandler(myMessageHandlerHandler);
+
+                    myWebClientForPollingResponseMessages = (HttpURLConnection)myUrl.openConnection();
+
+                    // Create thread responsible for the loop listening to response messages coming from
+                    // the Http duplex input channel.
+                    myStopPollingWaitingEvent.reset();
+                    myResponseListener = new Thread(myPollingRunnable);
+                    myResponseListener.start();
+
+                    // Encode the open connection message.
+                    byte[] anEncodedMessage = myProtocolFormatter.encodeOpenConnectionMessage(getResponseReceiverId());
+
+                    // Send the request to open the connection.
+                    HttpRequestSender.send(myUrl, anEncodedMessage);
+
+                    // Invoke the event notifying, the connection was opened.
+                    notifyConnectionOpened();
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.OpenConnectionFailure, err);
+
+                    try
+                    {
+                        closeConnection();
+                    }
+                    catch (Exception err2)
+                    {
+                        // We tried to clean after failure. The exception can be ignored.
+                    }
+
+                    throw err;
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    @Override
+    public void closeConnection()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                // Indicate that the processing of response messages should stop.
+                // Note: Thread listening to response messages checks this flag and stops the looping.
+                myStopHttpResponseListeningRequested = true;
+                myStopPollingWaitingEvent.set();
+
+                // Try to notify the server that the connection is closed.
+                try
+                {
+                    if (!StringExt.isNullOrEmpty(getResponseReceiverId()))
+                    {
+                        // Encode the message to close the connection.
+                        byte[] anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(getResponseReceiverId());
+
+                        // Send the request to close the connection.
+                        HttpRequestSender.send(myUrl, anEncodedMessage);
+                    }
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
+                }
+                catch (Error err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
+                    throw err;
+                }
+
+                // Close the webclient.
+                if (myWebClientForPollingResponseMessages != null)
+                {
+                    try
+                    {
+                        myWebClientForPollingResponseMessages.disconnect();
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + "failed to disconnect from the server.", err);
+                    }
+                    catch (Error err)
+                    {
+                        EneterTrace.error(TracedObject() + "failed to disconnect from the server.", err);
+                        throw err;
+                    }
+
+                    myWebClientForPollingResponseMessages = null;
+                }
+
+                // Wait until the polling stops.
+                if (myResponseListener != null && myResponseListener.getState() != State.NEW)
+                {
+                    try
+                    {
+                        myResponseListener.join(5000);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myResponseListener.getId());
+                    }
+                    
+                    if (myResponseListener.getState() != Thread.State.TERMINATED)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myResponseListener.getId());
+
+                        try
+                        {
+                            myResponseListener.stop();
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                        }
+                        catch (Error err)
+                        {
+                            EneterTrace.error(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                            throw err;
+                        }
+                    }
+                }
+                myResponseListener = null;
+
+                // Stop the thread processing polled message.
+                try
+                {
+                    myResponseMessageWorkingThread.unregisterMessageHandler();
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.UnregisterMessageHandlerThreadFailure, err);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    @Override
+    public boolean isConnected()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                return myWebClientForPollingResponseMessages != null && myIsListeningToResponses;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    
+    @Override
+    public void sendMessage(Object message) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                if (!isConnected())
+                {
+                    String aMessage = TracedObject() + ErrorHandler.SendMessageNotConnectedFailure;
+                    EneterTrace.error(aMessage);
+                    throw new IllegalStateException(aMessage);
+                }
+
+                try
+                {
+                    // Encode the message.
+                    byte[] anEncodedMessage = myProtocolFormatter.encodeMessage(getResponseReceiverId(), message);
+                    
+                    // Send the message.
+                    HttpRequestSender.send(myUrl, anEncodedMessage);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
+                    throw err;
+                }
+                catch (Error err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
+                    throw err;
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void doPolling()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myIsListeningToResponses = true;
+
+            try
+            {
+                while (!myStopHttpResponseListeningRequested)
+                {
+                    // Send the polling request and get messages.
+                    myWebClientForPollingResponseMessages.setDoOutput(true);
+                    myWebClientForPollingResponseMessages.setRequestMethod("POST");
+                    
+                    // Encode the request for polling messages.
+                    byte[] anEncodedMessage = myProtocolFormatter.encodePollRequest(getResponseReceiverId());
+                    
+                    OutputStream anOutputStream = myWebClientForPollingResponseMessages.getOutputStream();
+                    anOutputStream.write(anEncodedMessage);
+                    
+                    // Get the response.
+                    if (myWebClientForPollingResponseMessages.getResponseCode() == 200)
+                    {
+                        if (!myStopHttpResponseListeningRequested)
+                        {
+                            InputStream anInputStream = myWebClientForPollingResponseMessages.getInputStream();
+                            
+                            // Skip HTTP part and find the ENETER message.
+                            DataInputStream aReader = new DataInputStream(anInputStream);
+                            while (true)
+                            {
+                                int aValue = aReader.read();
+                                
+                                // End of some line
+                                if (aValue == 13)
+                                {
+                                    aValue = aReader.read();
+                                    if (aValue == 10)
+                                    {
+                                        // Follows empty line.
+                                        aValue = aReader.read();
+                                        if (aValue == 13)
+                                        {
+                                            aValue = aReader.read();
+                                            if (aValue == 10)
+                                            {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                if (aValue == -1)
+                                {
+                                    throw new IllegalStateException("Unexpected end of the input stream.");
+                                }
+                            }
+                            
+                            // Decode incoming messages.
+                            int aSize = myWebClientForPollingResponseMessages.getHeaderFieldInt("content-length", 0);
+                            if (aSize > 0)
+                            {
+                                byte[] aBuffer = new byte[aSize];
+                                anInputStream.read(aBuffer);
+                                ByteArrayInputStream aBufferedMessages = new ByteArrayInputStream(aBuffer);
+                                
+                                // Decode message by message.
+                                // Note: available() returns count - pos  in case of ByteArrayInputStream.
+                                ProtocolMessage aProtocolMessage = null;
+                                while (aBufferedMessages.available() > 0 &&
+                                       (aProtocolMessage = myProtocolFormatter.decodeMessage(aBufferedMessages)) != null)
+                                {
+                                    // Put the message to the message queue from where it will be processed
+                                    // by the working thread.
+                                    myResponseMessageWorkingThread.enqueueMessage(aProtocolMessage);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        String anErrorMessage = myWebClientForPollingResponseMessages.getResponseMessage();
+                        throw new IllegalStateException(anErrorMessage);
+                    }
+
+                    myStopPollingWaitingEvent.waitOne(myPollingFrequencyMiliseconds);
+                }
+            }
+            catch (Exception err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+                throw err;
+            }
+
+            // Stop the thread processing polled message.
+            try
+            {
+                myResponseMessageWorkingThread.unregisterMessageHandler();
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.UnregisterMessageHandlerThreadFailure, err);
+            }
+
+            myIsListeningToResponses = false;
+
+            // Notify the listening to messages stoped.
+            notifyConnectionClosed();
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void handleResponseMessage(ProtocolMessage protocolMessage)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (protocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
+            {
+                // Close connection with the duplex input channel.
+                // Note: The Close() must be called from the different thread because
+                //       it will try to stop this thread (thread processing messages).
+                Runnable aConnectionClosing = new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        closeConnection();
+                    }
+                };
+                ThreadPool.queueUserWorkItem(aConnectionClosing);
+            }
+            else if (protocolMessage.MessageType != EProtocolMessageType.MessageReceived)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+            }
+            else if (myResponseMessageReceivedEventImpl.isEmpty() == false)
+            {
+                try
+                {
+                    DuplexChannelMessageEventArgs anEvent = new DuplexChannelMessageEventArgs(getChannelId(), protocolMessage.Message, getResponseReceiverId());
+                    myResponseMessageReceivedEventImpl.update(this, anEvent);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+            else
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void notifyConnectionOpened()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ThreadPool.queueUserWorkItem(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    EneterTrace aTrace = EneterTrace.entering();
+                    try
+                    {
+                        try
+                        {
+                            if (myConnectionOpenedEventImpl.isEmpty() == false)
+                            {
+                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
+                                myConnectionOpenedEventImpl.update(this, aMsg);
+                            }
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                        }
+                        catch (Error err)
+                        {
+                            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                            throw err;
+                        }
+                    }
+                    finally
+                    {
+                        EneterTrace.leaving(aTrace);
+                    }
+                }
+            });
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void notifyConnectionClosed()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Execute the callback in a different thread.
+            // The problem is, the event handler can call back to the duplex output channel - e.g. trying to open
+            // connection - and since this closing is not finished and this thread would be blocked, .... => problems.
+            ThreadPool.queueUserWorkItem(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    EneterTrace aTrace = EneterTrace.entering();
+                    try
+                    {
+                        try
+                        {
+                            if (myConnectionClosedEventImpl.isEmpty() == false)
+                            {
+                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
+                                myConnectionClosedEventImpl.update(this, aMsg);
+                            }
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                        }
+                        catch (Error err)
+                        {
+                            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                            throw err;
+                        }
+                    }
+                    finally
+                    {
+                        EneterTrace.leaving(aTrace);
+                    }
+                }
+            });
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    
+    private String myChannelId;
+    private String myResponseReceiverId;
+    
+    private HttpURLConnection myWebClientForPollingResponseMessages;
+    
+    private IProtocolFormatter<byte[]> myProtocolFormatter;
+
+    private Object myConnectionManipulatorLock = new Object();
+
+    private Thread myResponseListener;
+    private volatile boolean myStopHttpResponseListeningRequested;
+    private volatile boolean myIsListeningToResponses;
+    
+    private WorkingThread<ProtocolMessage> myResponseMessageWorkingThread;
+    
+    private URL myUrl;
+    
+    private int myPollingFrequencyMiliseconds;
+    private ManualResetEvent myStopPollingWaitingEvent = new ManualResetEvent(false);
+    
+    
+    private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
+    private Event<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventApi = new Event<DuplexChannelMessageEventArgs>(myResponseMessageReceivedEventImpl);
+    
+    private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private Event<DuplexChannelEventArgs> myConnectionOpenedEventApi = new Event<DuplexChannelEventArgs>(myConnectionOpenedEventImpl);
+    
+    private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private Event<DuplexChannelEventArgs> myConnectionClosedEventApi = new Event<DuplexChannelEventArgs>(myConnectionClosedEventImpl);
+    
+    
+    private Runnable myPollingRunnable = new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    doPolling();
+                }
+            };
+    
+    private IMethod1<ProtocolMessage> myMessageHandlerHandler = new IMethod1<ProtocolMessage>()
+            {
+                @Override
+                public void invoke(ProtocolMessage message) throws Exception
+                {
+                    handleResponseMessage(message);
+                }
+            };
+    
+    
+    private String TracedObject()
+    {
+        return "Http duplex output channel '" + getChannelId() + "' "; 
+    }
+}
