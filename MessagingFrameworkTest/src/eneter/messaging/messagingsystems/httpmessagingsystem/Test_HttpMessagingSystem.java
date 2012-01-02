@@ -2,6 +2,8 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 
 import static org.junit.Assert.*;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.net.ConnectException;
 import java.util.*;
 
@@ -31,8 +33,9 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
     
     
     @Before
-    public void Setup()
+    public void Setup() throws Exception
     {
+        //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
         //EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
         Random aRandomPort = new Random();

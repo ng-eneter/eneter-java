@@ -782,6 +782,8 @@ public abstract class MessagingSystemBaseTester
                         ++aNumberOfFailedResponses[0];
                     }
 
+                    //EneterTrace.info("Responses: " + aNumberOfReceivedResponses[0]);
+                    
                     // Release helper thread when all messages are received.
                     if (aNumberOfReceivedResponses[0] == numberOfTimes)
                     {
