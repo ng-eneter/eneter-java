@@ -62,7 +62,7 @@ public class HttpOutputChannel implements IOutputChannel
                     byte[] anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
                     
                     // Send the message.
-                    HttpRequestSender.send(myUrl, anEncodedMessage);
+                    HttpClient.sendOnewayRequest(myUrl, anEncodedMessage);
                 }
                 catch (Exception err)
                 {

@@ -306,7 +306,7 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
                                                         return x.getResponseReceiverId().equals(aProtocolMessage.ResponseReceiverId);
                                                     }
                                                 });
-                                                
+                                        
                                         if (aResponsesForParticularReceiver != null)
                                         {
                                             // Update the polling time.
@@ -328,11 +328,11 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
                                                     
                                                     aSizeOfResponseMessages += aResponseMessage.length;
                                                 }
-                                                
-                                                // Everything ok.
-                                                anHttpStatusCode = 200;
                                             }
                                         }
+                                        
+                                        // Everything ok.
+                                        anHttpStatusCode = 200;
                                     }
                                 }
                                 catch (Exception err)
@@ -497,7 +497,7 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
                     // If the timer is not running, then start it.
                     if (myResponseMessages.size() == 1)
                     {
-                        myResponseReceiverInactivityTimer.schedule(myTimerHandler, myResponseReceiverInactivityTimeout);
+                        myResponseReceiverInactivityTimer.schedule(getTimerTask(), myResponseReceiverInactivityTimeout);
                     }
                 }
 
@@ -632,7 +632,7 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
 
                 if (myResponseMessages.size() > 0)
                 {
-                    myResponseReceiverInactivityTimer.schedule(myTimerHandler, myResponseReceiverInactivityTimeout);
+                    myResponseReceiverInactivityTimer.schedule(getTimerTask(), myResponseReceiverInactivityTimeout);
                 }
             }
         }
@@ -640,6 +640,25 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
         {
             EneterTrace.leaving(aTrace);
         }
+    }
+    
+    /*
+     * Helper method to get the new instance of the timer task.
+     * The problem is, the timer does not allow to reschedule the same instance of the TimerTask
+     * and the exception is thrown.
+     */
+    private TimerTask getTimerTask()
+    {
+        TimerTask aTimerTask = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                onConnectionCheckTimer();
+            }
+        };
+        
+        return aTimerTask;
     }
     
     
@@ -660,15 +679,6 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     private Event<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverDisconnectedEventImpl);
     
-    
-    private TimerTask myTimerHandler = new TimerTask()
-    {
-        @Override
-        public void run()
-        {
-            onConnectionCheckTimer();
-        }
-    };
     
     
     @Override

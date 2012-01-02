@@ -68,8 +68,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            throw new UnsupportedOperationException();
-            //return new HttpDuplexOutputChannel(channelId, null, myPollingFrequency, myProtocolFormatter);
+            return new HttpDuplexOutputChannel(channelId, null, myPollingFrequency, myProtocolFormatter);
         }
         finally
         {
@@ -84,8 +83,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            throw new UnsupportedOperationException();
-            //return new HttpDuplexOutputChannel(channelId, responseReceiverId, myPollingFrequency, myProtocolFormatter);
+            return new HttpDuplexOutputChannel(channelId, responseReceiverId, myPollingFrequency, myProtocolFormatter);
         }
         finally
         {

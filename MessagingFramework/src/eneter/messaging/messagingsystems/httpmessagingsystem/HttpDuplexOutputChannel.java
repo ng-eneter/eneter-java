@@ -104,19 +104,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                     throw new IllegalStateException(aMessage);
                 }
 
-                // If it is needed clean after the previous connection.
-                if (myWebClientForPollingResponseMessages != null)
-                {
-                    try
-                    {
-                        closeConnection();
-                    }
-                    catch (Exception err)
-                    {
-                        // We tried to clean after the previous connection. The exception can be ignored.
-                    }
-                }
-
                 try
                 {
                     myStopHttpResponseListeningRequested = false;
@@ -125,8 +112,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                     // Note: Received responses are put to the message queue. This thread takes
                     //       messages from the queue and calls the registered method to process them.
                     myResponseMessageWorkingThread.registerMessageHandler(myMessageHandlerHandler);
-
-                    myWebClientForPollingResponseMessages = (HttpURLConnection)myUrl.openConnection();
 
                     // Create thread responsible for the loop listening to response messages coming from
                     // the Http duplex input channel.
@@ -138,7 +123,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                     byte[] anEncodedMessage = myProtocolFormatter.encodeOpenConnectionMessage(getResponseReceiverId());
 
                     // Send the request to open the connection.
-                    HttpRequestSender.send(myUrl, anEncodedMessage);
+                    HttpClient.sendOnewayRequest(myUrl, anEncodedMessage);
 
                     // Invoke the event notifying, the connection was opened.
                     notifyConnectionOpened();
@@ -188,7 +173,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                         byte[] anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(getResponseReceiverId());
 
                         // Send the request to close the connection.
-                        HttpRequestSender.send(myUrl, anEncodedMessage);
+                        HttpClient.sendOnewayRequest(myUrl, anEncodedMessage);
                     }
                 }
                 catch (Exception err)
@@ -199,26 +184,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
                     throw err;
-                }
-
-                // Close the webclient.
-                if (myWebClientForPollingResponseMessages != null)
-                {
-                    try
-                    {
-                        myWebClientForPollingResponseMessages.disconnect();
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + "failed to disconnect from the server.", err);
-                    }
-                    catch (Error err)
-                    {
-                        EneterTrace.error(TracedObject() + "failed to disconnect from the server.", err);
-                        throw err;
-                    }
-
-                    myWebClientForPollingResponseMessages = null;
                 }
 
                 // Wait until the polling stops.
@@ -279,7 +244,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
         {
             synchronized (myConnectionManipulatorLock)
             {
-                return myWebClientForPollingResponseMessages != null && myIsListeningToResponses;
+                return myIsListeningToResponses;
             }
         }
         finally
@@ -310,7 +275,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                     byte[] anEncodedMessage = myProtocolFormatter.encodeMessage(getResponseReceiverId(), message);
                     
                     // Send the message.
-                    HttpRequestSender.send(myUrl, anEncodedMessage);
+                    HttpClient.sendOnewayRequest(myUrl, anEncodedMessage);
                 }
                 catch (Exception err)
                 {
@@ -341,81 +306,27 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
             {
                 while (!myStopHttpResponseListeningRequested)
                 {
-                    // Send the polling request and get messages.
-                    myWebClientForPollingResponseMessages.setDoOutput(true);
-                    myWebClientForPollingResponseMessages.setRequestMethod("POST");
-                    
                     // Encode the request for polling messages.
                     byte[] anEncodedMessage = myProtocolFormatter.encodePollRequest(getResponseReceiverId());
-                    
-                    OutputStream anOutputStream = myWebClientForPollingResponseMessages.getOutputStream();
-                    anOutputStream.write(anEncodedMessage);
-                    
-                    // Get the response.
-                    if (myWebClientForPollingResponseMessages.getResponseCode() == 200)
+                   
+                    byte[] aResponseMessages = HttpClient.sendRequest(myUrl, anEncodedMessage);
+                    if (aResponseMessages != null && aResponseMessages.length > 0)
                     {
-                        if (!myStopHttpResponseListeningRequested)
+                        ByteArrayInputStream aBufferedMessages = new ByteArrayInputStream(aResponseMessages);
+                        
+                        // Decode message by message.
+                        // Note: available() returns count - pos  in case of ByteArrayInputStream.
+                        ProtocolMessage aProtocolMessage = null;
+                        while (aBufferedMessages.available() > 0 &&
+                               (aProtocolMessage = myProtocolFormatter.decodeMessage(aBufferedMessages)) != null)
                         {
-                            InputStream anInputStream = myWebClientForPollingResponseMessages.getInputStream();
-                            
-                            // Skip HTTP part and find the ENETER message.
-                            DataInputStream aReader = new DataInputStream(anInputStream);
-                            while (true)
-                            {
-                                int aValue = aReader.read();
-                                
-                                // End of some line
-                                if (aValue == 13)
-                                {
-                                    aValue = aReader.read();
-                                    if (aValue == 10)
-                                    {
-                                        // Follows empty line.
-                                        aValue = aReader.read();
-                                        if (aValue == 13)
-                                        {
-                                            aValue = aReader.read();
-                                            if (aValue == 10)
-                                            {
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                if (aValue == -1)
-                                {
-                                    throw new IllegalStateException("Unexpected end of the input stream.");
-                                }
-                            }
-                            
-                            // Decode incoming messages.
-                            int aSize = myWebClientForPollingResponseMessages.getHeaderFieldInt("content-length", 0);
-                            if (aSize > 0)
-                            {
-                                byte[] aBuffer = new byte[aSize];
-                                anInputStream.read(aBuffer);
-                                ByteArrayInputStream aBufferedMessages = new ByteArrayInputStream(aBuffer);
-                                
-                                // Decode message by message.
-                                // Note: available() returns count - pos  in case of ByteArrayInputStream.
-                                ProtocolMessage aProtocolMessage = null;
-                                while (aBufferedMessages.available() > 0 &&
-                                       (aProtocolMessage = myProtocolFormatter.decodeMessage(aBufferedMessages)) != null)
-                                {
-                                    // Put the message to the message queue from where it will be processed
-                                    // by the working thread.
-                                    myResponseMessageWorkingThread.enqueueMessage(aProtocolMessage);
-                                }
-                            }
+                            // Put the message to the message queue from where it will be processed
+                            // by the working thread.
+                            myResponseMessageWorkingThread.enqueueMessage(aProtocolMessage);
                         }
                     }
-                    else
-                    {
-                        String anErrorMessage = myWebClientForPollingResponseMessages.getResponseMessage();
-                        throw new IllegalStateException(anErrorMessage);
-                    }
 
+                    // Wait specified time before next polling.
                     myStopPollingWaitingEvent.waitOne(myPollingFrequencyMiliseconds);
                 }
             }
@@ -591,8 +502,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
     
     private String myChannelId;
     private String myResponseReceiverId;
-    
-    private HttpURLConnection myWebClientForPollingResponseMessages;
     
     private IProtocolFormatter<byte[]> myProtocolFormatter;
 
