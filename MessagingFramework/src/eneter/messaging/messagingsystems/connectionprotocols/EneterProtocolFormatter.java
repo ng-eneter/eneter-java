@@ -192,6 +192,8 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             }
             catch (Exception err)
             {
+                EneterTrace.warning(TracedObject() + "failed to decode the message.", err);
+                
                 // Invalid message.
                 // Note: Just because somebody sends and invalid string the loop reading messages should
                 //       not be disturbed/interrupted by an exception.
@@ -214,8 +216,9 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             if (readMessage instanceof byte[] == false &&
                 readMessage instanceof Byte[] == false)
             {
-                // Incorrect message format.
-                return myNonProtocolMessage;
+                String anErrorMessage = TracedObject() + "detected that data to be deceoded is not byte[] nor Byte[].";
+                EneterTrace.error(anErrorMessage);
+                throw new IllegalStateException(anErrorMessage);
             }
             
             ByteArrayInputStream aMemoryStream = new ByteArrayInputStream((byte[])readMessage);
@@ -237,25 +240,6 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             // Note: .NET uses Little Endian and UTF8
             byte[] aHeader = {'E', 'N', 'E', 'T', 'E', 'R', BIG_ENDIAN, UTF16};
             writer.write(aHeader);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    private void encodeString(DataOutputStream writer, String s) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            Charset aCharset = Charset.forName("UTF-16BE");
-            ByteBuffer aByteBuffer = aCharset.encode(s);
-            
-            byte[] aStringBytes = aByteBuffer.array();
-
-            writer.writeInt(aStringBytes.length);
-            writer.write(aStringBytes);
         }
         finally
         {
@@ -398,6 +382,25 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             }
             
             return anInt;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void encodeString(DataOutputStream writer, String s) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            Charset aCharset = Charset.forName("UTF-16BE");
+            ByteBuffer aByteBuffer = aCharset.encode(s);
+            
+            byte[] aStringBytes = aByteBuffer.array();
+
+            writer.writeInt(aStringBytes.length);
+            writer.write(aStringBytes);
         }
         finally
         {

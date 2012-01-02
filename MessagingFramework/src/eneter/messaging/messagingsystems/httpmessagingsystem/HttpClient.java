@@ -72,19 +72,16 @@ class HttpClient
                     throw new IllegalStateException(aResponseMessage);
                 }
                 
-                int aResponseContentSize = aConnection.getHeaderFieldInt("content-length", 0);
-                if (aResponseContentSize > 0)
+                InputStream aResponseStream = aConnection.getInputStream();
+                ByteArrayOutputStream aResponseContentStream = new ByteArrayOutputStream();
+                int aSize = 0;
+                byte[] aBuffer = new byte[32764];
+                while ((aSize = aResponseStream.read(aBuffer)) != -1)
                 {
-                    byte[] aResponseContent = new byte[aResponseContentSize];
-                    InputStream aResponseStream = aConnection.getInputStream();
-                    
-                    // Note: I assume, in case of ENETER communication, all response data should be available at once.
-                    aResponseStream.read(aResponseContent);
-                    
-                    return aResponseContent;
+                    aResponseContentStream.write(aBuffer, 0, aSize);
                 }
                 
-                return new byte[0];
+                return aResponseContentStream.toByteArray();
             }
             finally
             {

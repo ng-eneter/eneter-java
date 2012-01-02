@@ -316,13 +316,21 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                         
                         // Decode message by message.
                         // Note: available() returns count - pos  in case of ByteArrayInputStream.
-                        ProtocolMessage aProtocolMessage = null;
-                        while (aBufferedMessages.available() > 0 &&
-                               (aProtocolMessage = myProtocolFormatter.decodeMessage(aBufferedMessages)) != null)
+                        while (aBufferedMessages.available() > 0)
                         {
-                            // Put the message to the message queue from where it will be processed
-                            // by the working thread.
-                            myResponseMessageWorkingThread.enqueueMessage(aProtocolMessage);
+                            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(aBufferedMessages);
+                            
+                            if (aProtocolMessage != null && aProtocolMessage.MessageType != EProtocolMessageType.Unknown)
+                            {
+                                // Put the message to the message queue from where it will be processed
+                                // by the working thread.
+                                myResponseMessageWorkingThread.enqueueMessage(aProtocolMessage);
+                            }
+                            else
+                            {
+                                EneterTrace.warning(TracedObject() + "failed to decode response messages.");
+                                break;
+                            }
                         }
                     }
 
