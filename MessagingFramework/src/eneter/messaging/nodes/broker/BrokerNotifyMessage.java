@@ -8,12 +8,14 @@
 
 package eneter.messaging.nodes.broker;
 
+import java.io.Serializable;
+
 /**
  * The data representing the message sent to the broker to notify subscribed clients.
  * @author Ondrej Uzovic
  *
  */
-public class BrokerNotifyMessage
+public class BrokerNotifyMessage implements Serializable
 {
     /**
      * Default constructor used for the deserialization.
@@ -43,4 +45,6 @@ public class BrokerNotifyMessage
      * Serialized message that shall be notified to subscribers.
      */
     public Object myMessage;
+    
+    private static final long serialVersionUID = 2939701088460435251L;
 }

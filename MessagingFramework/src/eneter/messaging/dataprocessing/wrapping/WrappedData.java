@@ -8,12 +8,14 @@
 
 package eneter.messaging.dataprocessing.wrapping;
 
+import java.io.Serializable;
+
 /**
  * The data structure representing the wrapped data.
  * @author Ondrej Uzovic
  *
  */
-public class WrappedData
+public class WrappedData implements Serializable
 {
     /**
      * Default constructor used for the deserialization.
@@ -42,4 +44,6 @@ public class WrappedData
      * Original (wrapped) data.
      */
     public Object myOriginalData;
+    
+    private static final long serialVersionUID = -8325844480504249827L;
 }

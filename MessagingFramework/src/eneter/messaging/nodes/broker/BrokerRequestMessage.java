@@ -8,6 +8,8 @@
 
 package eneter.messaging.nodes.broker;
 
+import java.io.Serializable;
+
 /**
  * The class represents the data structure used to send requests to the broker.
  * The request for the broker is the message that is intended for the broker and not for the subscribers.
@@ -15,7 +17,7 @@ package eneter.messaging.nodes.broker;
  * @author Ondrej Uzovic
  *
  */
-public class BrokerRequestMessage
+public class BrokerRequestMessage implements Serializable
 {
     /**
      * Default constructor used for serialization/deserialization.
@@ -44,4 +46,6 @@ public class BrokerRequestMessage
      * Array of message types.
      */
     public String[] myMessageTypes;
+    
+    private static final long serialVersionUID = -7632473220961947955L;
 }
