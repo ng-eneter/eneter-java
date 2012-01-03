@@ -1,6 +1,8 @@
 package eneter.messaging.endpoints.typedmessages;
 
-public class Fake_TypedMessage
+import java.io.Serializable;
+
+public class Fake_TypedMessage implements Serializable
 {
     public Fake_TypedMessage()
     {
@@ -14,4 +16,6 @@ public class Fake_TypedMessage
 
     public String FirstName;
     public String SecondName;
+    
+    private static final long serialVersionUID = -9000473394942426528L;
 }
