@@ -18,6 +18,12 @@ public class AesSerializer implements ISerializer
         this(password, new byte[] { 1, 3, 5, 8, 15, (byte)254, 9, (byte)189, 43, (byte)129 }, new XmlStringSerializer());
     }
     
+    public AesSerializer(String password, ISerializer underlyingSerializer) 
+            throws Exception
+    {
+        this(password, new byte[] { 1, 3, 5, 8, 15, (byte)254, 9, (byte)189, 43, (byte)129 }, underlyingSerializer);
+    }
+    
     public AesSerializer(String password, byte[] salt) 
             throws Exception
     {
