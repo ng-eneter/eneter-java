@@ -32,7 +32,7 @@ class TcpInputChannel extends TcpInputChannelBase
     @Override
     public Event<ChannelMessageEventArgs> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
 
@@ -146,7 +146,7 @@ class TcpInputChannel extends TcpInputChannelBase
                 return;
             }
             
-            if (myMessageReceivedEventImpl.isEmpty() == false)
+            if (myMessageReceivedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -180,7 +180,6 @@ class TcpInputChannel extends TcpInputChannelBase
     
     
     private EventImpl<ChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<ChannelMessageEventArgs>();
-    private Event<ChannelMessageEventArgs> myMessageReceivedEventApi = new Event<ChannelMessageEventArgs>(myMessageReceivedEventImpl);
     
     @Override
     protected String TracedObject()

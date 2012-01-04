@@ -34,7 +34,7 @@ class HttpInputChannel extends TcpInputChannelBase
     @Override
     public Event<ChannelMessageEventArgs> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     @Override
@@ -150,7 +150,7 @@ class HttpInputChannel extends TcpInputChannelBase
                 return;
             }
             
-            if (myMessageReceivedEventImpl.isEmpty() == false)
+            if (myMessageReceivedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -182,7 +182,6 @@ class HttpInputChannel extends TcpInputChannelBase
     private IProtocolFormatter<byte[]> myProtocolFormatter;
     
     private EventImpl<ChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<ChannelMessageEventArgs>();
-    private Event<ChannelMessageEventArgs> myMessageReceivedEventApi = new Event<ChannelMessageEventArgs>(myMessageReceivedEventImpl);
     
 
     @Override

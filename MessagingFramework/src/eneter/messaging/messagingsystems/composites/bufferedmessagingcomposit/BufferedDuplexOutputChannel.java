@@ -34,19 +34,19 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
     @Override
     public Event<DuplexChannelMessageEventArgs> responseMessageReceived()
     {
-        return myResponseMessageReceivedEventApi;
+        return myResponseMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<DuplexChannelEventArgs> connectionOpened()
     {
-        return myConnectionOpenedEventApi;
+        return myConnectionOpenedEventImpl.getApi();
     }
 
     @Override
     public Event<DuplexChannelEventArgs> connectionClosed()
     {
-        return myConnectionClosedEventApi;
+        return myConnectionClosedEventImpl.getApi();
     }
 
     @Override
@@ -233,7 +233,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseMessageReceivedEventImpl.isEmpty() == false)
+            if (myResponseMessageReceivedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -443,7 +443,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
                     EneterTrace aTrace = EneterTrace.entering();
                     try
                     {
-                        if (myConnectionOpenedEventImpl.isEmpty() == false)
+                        if (myConnectionOpenedEventImpl.isSubscribed())
                         {
                             try
                             {
@@ -478,7 +478,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myConnectionClosedEventImpl.isEmpty() == false)
+            if (myConnectionClosedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -517,13 +517,8 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private Event<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventApi = new Event<DuplexChannelMessageEventArgs>(myResponseMessageReceivedEventImpl);
-    
     private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
-    private Event<DuplexChannelEventArgs> myConnectionOpenedEventApi = new Event<DuplexChannelEventArgs>(myConnectionOpenedEventImpl);
-    
     private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
-    private Event<DuplexChannelEventArgs> myConnectionClosedEventApi = new Event<DuplexChannelEventArgs>(myConnectionClosedEventImpl);
     
     private IMethod2<Object, DuplexChannelMessageEventArgs> myOnResponseMessageReceived = new IMethod2<Object, DuplexChannelMessageEventArgs>()
     {

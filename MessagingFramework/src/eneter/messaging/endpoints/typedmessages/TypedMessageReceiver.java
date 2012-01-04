@@ -35,7 +35,7 @@ class TypedMessageReceiver<_MessageDataType> extends AttachableInputChannelBase
     @Override
     public Event<TypedMessageReceivedEventArgs<_MessageDataType>> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     @Override
@@ -44,7 +44,7 @@ class TypedMessageReceiver<_MessageDataType> extends AttachableInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myMessageReceivedEventImpl.isEmpty() == false)
+            if (myMessageReceivedEventImpl.isSubscribed())
             {
                 // Deserialize the message value.
                 TypedMessageReceivedEventArgs<_MessageDataType> aMessageReceivedEventArgs = null;
@@ -85,7 +85,6 @@ class TypedMessageReceiver<_MessageDataType> extends AttachableInputChannelBase
     private ISerializer mySerializer;
     
     private EventImpl<TypedMessageReceivedEventArgs<_MessageDataType>> myMessageReceivedEventImpl = new EventImpl<TypedMessageReceivedEventArgs<_MessageDataType>>();
-    private Event<TypedMessageReceivedEventArgs<_MessageDataType>> myMessageReceivedEventApi = new Event<TypedMessageReceivedEventArgs<_MessageDataType>>(myMessageReceivedEventImpl);
     
     private String TracedObject()
     {

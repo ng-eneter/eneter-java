@@ -28,19 +28,19 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     @Override
     public Event<DuplexChannelMessageEventArgs> messageReceived()
     {
-        return myMessageReceivedEvent;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
-        return myResponseReceiverConnectedEvent;
+        return myResponseReceiverConnectedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
     {
-        return myResponseReceiverDisconnectedEvent;
+        return myResponseReceiverDisconnectedEventImpl.getApi();
     }
 
     @Override
@@ -217,7 +217,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     
     private void notifyResponseReceiverConnected(String responseReceiverId)
     {
-        if (!myResponseReceiverConnectedEventImpl.isEmpty())
+        if (myResponseReceiverConnectedEventImpl.isSubscribed())
         {
             ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
 
@@ -239,7 +239,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     
     private void notifyResponseReceiverDisconnected(String responseReceiverId)
     {
-        if (!myResponseReceiverDisconnectedEventImpl.isEmpty())
+        if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
         {
             ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
 
@@ -261,7 +261,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     
     private void notifyMessageReceived(String channelId, Object message, String responseReceiverId)
     {
-        if (!myMessageReceivedEventImpl.isEmpty())
+        if (myMessageReceivedEventImpl.isSubscribed())
         {
             try
             {
@@ -288,13 +288,8 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private Event<DuplexChannelMessageEventArgs> myMessageReceivedEvent = new Event<DuplexChannelMessageEventArgs>(myMessageReceivedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverConnectedEvent = new Event<ResponseReceiverEventArgs>(myResponseReceiverConnectedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEvent = new Event<ResponseReceiverEventArgs>(myResponseReceiverDisconnectedEventImpl);
     
     private IMessagingSystemFactory myMessagingSystemFactory;
     private IInputChannel myMessageReceiverInputChannel;

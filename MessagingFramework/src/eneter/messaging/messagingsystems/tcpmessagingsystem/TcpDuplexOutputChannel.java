@@ -53,19 +53,19 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
     @Override
     public Event<DuplexChannelMessageEventArgs> responseMessageReceived()
     {
-        return myResponseMessageReceivedEventApi;
+        return myResponseMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<DuplexChannelEventArgs> connectionOpened()
     {
-        return myConnectionOpenedEventApi;
+        return myConnectionOpenedEventImpl.getApi();
     }
 
     @Override
     public Event<DuplexChannelEventArgs> connectionClosed()
     {
-        return myConnectionClosedEventApi;
+        return myConnectionClosedEventImpl.getApi();
     }
 
     @Override
@@ -392,7 +392,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                 return;
             }
             
-            if (myResponseMessageReceivedEventImpl.isEmpty() == false)
+            if (myResponseMessageReceivedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -434,7 +434,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     {
                         try
                         {
-                            if (myConnectionOpenedEventImpl.isEmpty() == false)
+                            if (myConnectionOpenedEventImpl.isSubscribed())
                             {
                                 DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
                                 myConnectionOpenedEventImpl.update(this, aMsg);
@@ -481,7 +481,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     {
                         try
                         {
-                            if (myConnectionClosedEventImpl.isEmpty() == false)
+                            if (myConnectionClosedEventImpl.isSubscribed())
                             {
                                 DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
                                 myConnectionClosedEventImpl.update(this, aMsg);
@@ -528,13 +528,8 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private Event<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventApi = new Event<DuplexChannelMessageEventArgs>(myResponseMessageReceivedEventImpl);
-    
     private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
-    private Event<DuplexChannelEventArgs> myConnectionOpenedEventApi = new Event<DuplexChannelEventArgs>(myConnectionOpenedEventImpl);
-    
     private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
-    private Event<DuplexChannelEventArgs> myConnectionClosedEventApi = new Event<DuplexChannelEventArgs>(myConnectionClosedEventImpl);
     
     
     private Runnable myResponseListeningRunnable = new Runnable()

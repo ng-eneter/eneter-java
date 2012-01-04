@@ -37,19 +37,19 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     @Override
     public Event<DuplexChannelMessageEventArgs> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
-        return myResponseReceiverConnectedEventApi;
+        return myResponseReceiverConnectedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
     {
-        return myResponseReceiverDisconnectedEventApi;
+        return myResponseReceiverDisconnectedEventImpl.getApi();
     }
 
     @Override
@@ -253,7 +253,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
             // If the response receiver does not exist, then create it.
             updateLastActivity(e.getResponseReceiverId(), true);
 
-            if (myResponseReceiverConnectedEventImpl.isEmpty() == false)
+            if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -281,7 +281,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
             // If the response receiver does not exist, then create it.
             updateLastActivity(e.getResponseReceiverId(), true);
 
-            if (myMessageReceivedEventImpl.isEmpty() == false)
+            if (myMessageReceivedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -423,7 +423,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                     // It is ok.
                 }
 
-                if (myResponseReceiverDisconnectedEventImpl.isEmpty() == false)
+                if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
                 {
                     try
                     {
@@ -487,13 +487,8 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private Event<DuplexChannelMessageEventArgs> myMessageReceivedEventApi = new Event<DuplexChannelMessageEventArgs>(myMessageReceivedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverConnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverConnectedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverDisconnectedEventImpl);
     
     private IMethod2<Object, ResponseReceiverEventArgs> myOnResponseReceiverConnected = new IMethod2<Object, ResponseReceiverEventArgs>()
     {

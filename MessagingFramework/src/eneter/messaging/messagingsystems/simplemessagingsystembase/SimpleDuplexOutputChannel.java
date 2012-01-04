@@ -37,19 +37,19 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
     @Override
     public Event<DuplexChannelMessageEventArgs> responseMessageReceived()
     {
-        return myResponseMessageReceivedEvent;
+        return myResponseMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<DuplexChannelEventArgs> connectionOpened()
     {
-        return myConnectionOpenedEvent;
+        return myConnectionOpenedEventImpl.getApi();
     }
 
     @Override
     public Event<DuplexChannelEventArgs> connectionClosed()
     {
-        return myConnectionClosedEvent;
+        return myConnectionClosedEventImpl.getApi();
     }
 
     @Override
@@ -184,7 +184,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
             notifyConnectionClosed();
         }
         // It is the normal response message - notify the subscribed handler.
-        else if (!myResponseMessageReceivedEventImpl.isEmpty())
+        else if (myResponseMessageReceivedEventImpl.isSubscribed())
         {
             try
             {
@@ -234,7 +234,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
             {
                 try
                 {
-                    if (!myConnectionOpenedEventImpl.isEmpty())
+                    if (myConnectionOpenedEventImpl.isSubscribed())
                     {
                         DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), myResponseReceiverId);
                         myConnectionOpenedEventImpl.update(this, aMsg);
@@ -259,7 +259,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
             {
                 try
                 {
-                    if (!myConnectionClosedEventImpl.isEmpty())
+                    if (myConnectionClosedEventImpl.isSubscribed())
                     {
                         DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), myResponseReceiverId);
                         myConnectionClosedEventImpl.update(this, aMsg);
@@ -291,13 +291,8 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
     
 
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private Event<DuplexChannelMessageEventArgs> myResponseMessageReceivedEvent = new Event<DuplexChannelMessageEventArgs>(myResponseMessageReceivedEventImpl);
-
     private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
-    private Event<DuplexChannelEventArgs> myConnectionOpenedEvent = new Event<DuplexChannelEventArgs>(myConnectionOpenedEventImpl);
-    
     private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
-    private Event<DuplexChannelEventArgs> myConnectionClosedEvent = new Event<DuplexChannelEventArgs>(myConnectionClosedEventImpl);
     
     
     private IMethod2<Object, ChannelMessageEventArgs> myResponseMessageReceivedHandler = new IMethod2<Object, ChannelMessageEventArgs>()

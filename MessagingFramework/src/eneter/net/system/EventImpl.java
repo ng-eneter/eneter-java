@@ -7,34 +7,6 @@ import java.util.Iterator;
 
 public class EventImpl<T>
 {
-    public void subscribe(IMethod2<Object, T> eventHandler)
-    {
-        if (eventHandler == null)
-        {
-            throw new InvalidParameterException("The input parameter eventHandler is null.");
-        }
-        
-        synchronized (mySubscribedEventHandlers)
-        {
-            // Store the event handler.
-            mySubscribedEventHandlers.add(eventHandler);
-        }
-    }
-    
-    public void unsubscribe(IMethod2<Object, T> eventHandler)
-    {
-        if (eventHandler == null)
-        {
-            throw new InvalidParameterException("The input parameter eventHandler is null.");
-        }
-        
-        synchronized (mySubscribedEventHandlers)
-        {
-            // Remove event handler if it is there. 
-            mySubscribedEventHandlers.remove(eventHandler);
-        }
-    }
-    
     public void update(Object sender, T eventArgs)
             throws Exception
     {
@@ -56,16 +28,64 @@ public class EventImpl<T>
         }
     }
     
+    public Event<T> getApi()
+    {
+        return myEventApi;
+    }
+    
     /*
-     * Returns true if nobody is subscribed.
+     * Returns true if somebody is subscribed.
      */
-    public boolean isEmpty()
+    public boolean isSubscribed()
     {
         synchronized (mySubscribedEventHandlers)
         {
-            return mySubscribedEventHandlers.isEmpty();
+            return !mySubscribedEventHandlers.isEmpty();
+        }
+    }
+    
+    private void subscribeClient(IMethod2<Object, T> eventHandler)
+    {
+        if (eventHandler == null)
+        {
+            throw new InvalidParameterException("The input parameter eventHandler is null.");
+        }
+        
+        synchronized (mySubscribedEventHandlers)
+        {
+            // Store the event handler.
+            mySubscribedEventHandlers.add(eventHandler);
+        }
+    }
+    
+    private void unsubscribeClient(IMethod2<Object, T> eventHandler)
+    {
+        if (eventHandler == null)
+        {
+            throw new InvalidParameterException("The input parameter eventHandler is null.");
+        }
+        
+        synchronized (mySubscribedEventHandlers)
+        {
+            // Remove event handler if it is there. 
+            mySubscribedEventHandlers.remove(eventHandler);
         }
     }
     
     private ArrayList<IMethod2<Object, T>> mySubscribedEventHandlers = new ArrayList<IMethod2<Object, T>>();
+    
+    private Event<T> myEventApi = new Event<T>()
+    {
+        @Override
+        public void subscribe(IMethod2<Object, T> eventHandler)
+        {
+            subscribeClient(eventHandler);
+        }
+
+        @Override
+        public void unsubscribe(IMethod2<Object, T> eventHandler)
+        {
+            unsubscribeClient(eventHandler);
+        }
+    };
 }

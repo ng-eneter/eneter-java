@@ -96,19 +96,19 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
     @Override
     public Event<DuplexChannelMessageEventArgs> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
-        return myResponseReceiverConnectedEventApi;
+        return myResponseReceiverConnectedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
     {
-        return myResponseReceiverDisconnectedEventApi;
+        return myResponseReceiverDisconnectedEventImpl.getApi();
     }
 
     @Override
@@ -515,7 +515,7 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverConnectedEventImpl.isEmpty() == false)
+            if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
                 ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
     
@@ -545,7 +545,7 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverDisconnectedEventImpl.isEmpty() == false)
+            if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
             {
                 ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
 
@@ -575,7 +575,7 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myMessageReceivedEventImpl.isEmpty() == false)
+            if (myMessageReceivedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -671,13 +671,8 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private Event<DuplexChannelMessageEventArgs> myMessageReceivedEventApi = new Event<DuplexChannelMessageEventArgs>(myMessageReceivedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverConnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverConnectedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverDisconnectedEventImpl);
     
     
     

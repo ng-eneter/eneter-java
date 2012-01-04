@@ -54,7 +54,7 @@ class DuplexBrokerClient implements IDuplexBrokerClient
     @Override
     public Event<BrokerMessageReceivedEventArgs> brokerMessageReceived()
     {
-        return myBrokerMessageReceivedEventApi;
+        return myBrokerMessageReceivedEventImpl.getApi();
     }
     
     
@@ -333,7 +333,7 @@ class DuplexBrokerClient implements IDuplexBrokerClient
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myBrokerMessageReceivedEventImpl.isEmpty() == false)
+            if (myBrokerMessageReceivedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -409,7 +409,6 @@ class DuplexBrokerClient implements IDuplexBrokerClient
 
     
     private EventImpl<BrokerMessageReceivedEventArgs> myBrokerMessageReceivedEventImpl = new EventImpl<BrokerMessageReceivedEventArgs>();
-    private Event<BrokerMessageReceivedEventArgs> myBrokerMessageReceivedEventApi = new Event<BrokerMessageReceivedEventArgs>(myBrokerMessageReceivedEventImpl);
     
     
     private IDuplexChannelWrapper myDuplexChannelWrapper;

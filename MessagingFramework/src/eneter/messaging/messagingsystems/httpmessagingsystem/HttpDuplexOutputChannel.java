@@ -62,19 +62,19 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
     @Override
     public Event<DuplexChannelMessageEventArgs> responseMessageReceived()
     {
-        return myResponseMessageReceivedEventApi;
+        return myResponseMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<DuplexChannelEventArgs> connectionOpened()
     {
-        return myConnectionOpenedEventApi;
+        return myConnectionOpenedEventImpl.getApi();
     }
 
     @Override
     public Event<DuplexChannelEventArgs> connectionClosed()
     {
-        return myConnectionClosedEventApi;
+        return myConnectionClosedEventImpl.getApi();
     }
 
     @Override
@@ -393,7 +393,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
             }
-            else if (myResponseMessageReceivedEventImpl.isEmpty() == false)
+            else if (myResponseMessageReceivedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -431,7 +431,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                     {
                         try
                         {
-                            if (myConnectionOpenedEventImpl.isEmpty() == false)
+                            if (myConnectionOpenedEventImpl.isSubscribed())
                             {
                                 DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
                                 myConnectionOpenedEventImpl.update(this, aMsg);
@@ -478,7 +478,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                     {
                         try
                         {
-                            if (myConnectionClosedEventImpl.isEmpty() == false)
+                            if (myConnectionClosedEventImpl.isSubscribed())
                             {
                                 DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
                                 myConnectionClosedEventImpl.update(this, aMsg);
@@ -528,13 +528,8 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private Event<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventApi = new Event<DuplexChannelMessageEventArgs>(myResponseMessageReceivedEventImpl);
-    
     private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
-    private Event<DuplexChannelEventArgs> myConnectionOpenedEventApi = new Event<DuplexChannelEventArgs>(myConnectionOpenedEventImpl);
-    
     private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
-    private Event<DuplexChannelEventArgs> myConnectionClosedEventApi = new Event<DuplexChannelEventArgs>(myConnectionClosedEventImpl);
     
     
     private Runnable myPollingRunnable = new Runnable()

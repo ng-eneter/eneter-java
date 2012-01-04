@@ -20,7 +20,7 @@ class DuplexStringMessageSender extends AttachableDuplexOutputChannelBase
     @Override
     public Event<StringResponseReceivedEventArgs> responseReceived()
     {
-        return myResponseReceivedEventApi;
+        return myResponseReceivedEventImpl.getApi();
     }
 
     @Override
@@ -59,7 +59,7 @@ class DuplexStringMessageSender extends AttachableDuplexOutputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceivedEventImpl.isEmpty())
+            if (!myResponseReceivedEventImpl.isSubscribed())
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
                 return;
@@ -96,5 +96,4 @@ class DuplexStringMessageSender extends AttachableDuplexOutputChannelBase
 
     
     private EventImpl<StringResponseReceivedEventArgs> myResponseReceivedEventImpl = new EventImpl<StringResponseReceivedEventArgs>();
-    private Event<StringResponseReceivedEventArgs> myResponseReceivedEventApi = new Event<StringResponseReceivedEventArgs>(myResponseReceivedEventImpl);
 }

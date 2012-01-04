@@ -38,19 +38,19 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
     @Override
     public Event<TypedRequestReceivedEventArgs<_RequestType>> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
-        return myResponseReceiverConnectedEventApi;
+        return myResponseReceiverConnectedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
     {
-        return myResponseReceiverDisconnectedEventApi;
+        return myResponseReceiverDisconnectedEventImpl.getApi();
     }
 
     @Override
@@ -94,7 +94,7 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myMessageReceivedEventImpl.isEmpty())
+            if (!myMessageReceivedEventImpl.isSubscribed())
             {
                 EneterTrace.warning(TracedObject() + "received the request message but nobody was subscribed.");
                 return;
@@ -143,7 +143,7 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverConnectedEventImpl.isEmpty() == false)
+            if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -167,7 +167,7 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverDisconnectedEventImpl.isEmpty() == false)
+            if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -187,13 +187,8 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
     
     
     private EventImpl<TypedRequestReceivedEventArgs<_RequestType>> myMessageReceivedEventImpl = new EventImpl<TypedRequestReceivedEventArgs<_RequestType>>();
-    private Event<TypedRequestReceivedEventArgs<_RequestType>> myMessageReceivedEventApi = new Event<TypedRequestReceivedEventArgs<_RequestType>>(myMessageReceivedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverConnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverConnectedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverDisconnectedEventImpl);
     
     
     private Class<_RequestType> myRequestMessageClazz;

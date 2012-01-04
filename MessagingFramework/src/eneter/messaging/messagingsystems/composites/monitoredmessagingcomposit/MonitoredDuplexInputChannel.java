@@ -56,19 +56,19 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     @Override
     public Event<DuplexChannelMessageEventArgs> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
-        return myResponseReceiverConnectedEventApi;
+        return myResponseReceiverConnectedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
     {
-        return myResponseReceiverDisconnectedEventApi;
+        return myResponseReceiverDisconnectedEventImpl.getApi();
     }
 
     @Override
@@ -227,7 +227,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             // Update the activity time for the response receiver
             updateResponseReceiver(e.getResponseReceiverId());
 
-            if (myResponseReceiverConnectedEventImpl.isEmpty() == false)
+            if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -273,7 +273,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 else
                 {
                     // Notify the incoming message.
-                    if (myMessageReceivedEventImpl.isEmpty() == false)
+                    if (myMessageReceivedEventImpl.isSubscribed())
                     {
                         DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.myMessageContent, e.getResponseReceiverId());
 
@@ -418,7 +418,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverDisconnectedEventImpl.isEmpty() == false)
+            if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -472,13 +472,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private Event<DuplexChannelMessageEventArgs> myMessageReceivedEventApi = new Event<DuplexChannelMessageEventArgs>(myMessageReceivedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverConnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverConnectedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverDisconnectedEventImpl);
     
     private IMethod2<Object, ResponseReceiverEventArgs> myOnResponseReceiverConnected = new IMethod2<Object, ResponseReceiverEventArgs>()
     {

@@ -34,7 +34,7 @@ public class SimpleInputChannel implements IInputChannel
     
     public Event<ChannelMessageEventArgs> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     public String getChannelId()
@@ -109,7 +109,7 @@ public class SimpleInputChannel implements IInputChannel
     
     private void handleMessage(Object message)
     {
-        if (!myMessageReceivedEventImpl.isEmpty())
+        if (myMessageReceivedEventImpl.isSubscribed())
         {
             try
             {
@@ -133,10 +133,8 @@ public class SimpleInputChannel implements IInputChannel
     private Object myListeningManipulatorLock = new Object();
     
     
-    
-    
     private EventImpl<ChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<ChannelMessageEventArgs>();
-    private Event<ChannelMessageEventArgs> myMessageReceivedEventApi = new Event<ChannelMessageEventArgs>(myMessageReceivedEventImpl);
+
     
     private IMethod1<Object> myHanedleMessageImpl = new IMethod1<Object>()
             {

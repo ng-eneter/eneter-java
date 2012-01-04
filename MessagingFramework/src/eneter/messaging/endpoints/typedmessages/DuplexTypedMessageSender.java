@@ -36,7 +36,7 @@ class DuplexTypedMessageSender<_ResponseType, _RequestType> extends AttachableDu
     @Override
     public Event<TypedResponseReceivedEventArgs<_ResponseType>> responseReceived()
     {
-        return myResponseReceivedEventApi;
+        return myResponseReceivedEventImpl.getApi();
     }
 
     @Override
@@ -81,7 +81,7 @@ class DuplexTypedMessageSender<_ResponseType, _RequestType> extends AttachableDu
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceivedEventImpl.isEmpty())
+            if (!myResponseReceivedEventImpl.isSubscribed())
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
                 return;
@@ -117,7 +117,6 @@ class DuplexTypedMessageSender<_ResponseType, _RequestType> extends AttachableDu
 
     
     private EventImpl<TypedResponseReceivedEventArgs<_ResponseType>> myResponseReceivedEventImpl = new EventImpl<TypedResponseReceivedEventArgs<_ResponseType>>();
-    private Event<TypedResponseReceivedEventArgs<_ResponseType>> myResponseReceivedEventApi = new Event<TypedResponseReceivedEventArgs<_ResponseType>>(myResponseReceivedEventImpl);
     
     
     private Class<_RequestType> myRequestMessageClazz;

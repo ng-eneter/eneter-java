@@ -21,19 +21,19 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
     @Override
     public Event<StringRequestReceivedEventArgs> requestReceived()
     {
-        return myRequestReceivedEventApi;
+        return myRequestReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
-        return myResponseReceiverConnectedEventApi;
+        return myResponseReceiverConnectedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
     {
-        return myResponseReceiverDisconnectedEventApi;
+        return myResponseReceiverDisconnectedEventImpl.getApi();
     }
 
     @Override
@@ -73,7 +73,7 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myRequestReceivedEventImpl.isEmpty())
+            if (!myRequestReceivedEventImpl.isSubscribed())
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
                 return;
@@ -108,7 +108,7 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverConnectedEventImpl.isEmpty() == false)
+            if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -133,7 +133,7 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverDisconnectedEventImpl.isEmpty() == false)
+            if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
             {
                 try
                 {
@@ -154,15 +154,9 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
     
     
     private EventImpl<StringRequestReceivedEventArgs> myRequestReceivedEventImpl = new EventImpl<StringRequestReceivedEventArgs>();
-    private Event<StringRequestReceivedEventArgs> myRequestReceivedEventApi = new Event<StringRequestReceivedEventArgs>(myRequestReceivedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverConnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverConnectedEventImpl);
-    
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverDisconnectedEventImpl);
-    
+   
     
     
     @Override

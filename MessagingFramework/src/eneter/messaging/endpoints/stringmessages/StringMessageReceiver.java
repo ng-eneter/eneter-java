@@ -20,7 +20,7 @@ class StringMessageReceiver extends AttachableInputChannelBase
     @Override
     public Event<StringMessageEventArgs> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     @Override
@@ -29,7 +29,7 @@ class StringMessageReceiver extends AttachableInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (!myMessageReceivedEventImpl.isEmpty())
+            if (myMessageReceivedEventImpl.isSubscribed())
             {
                 if (e.getMessage() instanceof String)
                 {
@@ -60,7 +60,6 @@ class StringMessageReceiver extends AttachableInputChannelBase
     
     
     private EventImpl<StringMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<StringMessageEventArgs>();
-    private Event<StringMessageEventArgs> myMessageReceivedEventApi = new Event<StringMessageEventArgs>(myMessageReceivedEventImpl);
     
     
     private String TracedObject()
