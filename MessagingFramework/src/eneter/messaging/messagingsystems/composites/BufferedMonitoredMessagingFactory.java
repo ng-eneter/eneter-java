@@ -15,6 +15,13 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
                 1000, 2000);
     }
     
+    public BufferedMonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging, ISerializer serializer)
+    {
+        this(underlyingMessaging, serializer,
+                10000, // max offline time
+                1000, 2000);
+    }
+    
     public BufferedMonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging,
             ISerializer serializer,
 
