@@ -6,6 +6,7 @@ import java.net.Socket;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpInputChannelBase;
 import eneter.net.system.*;
 
@@ -14,10 +15,11 @@ class HttpInputChannel extends TcpInputChannelBase
                        implements IInputChannel
 {
     
-    public HttpInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter)
+    public HttpInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter,
+            IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(ipAddressAndPort);
+        super(ipAddressAndPort, serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try

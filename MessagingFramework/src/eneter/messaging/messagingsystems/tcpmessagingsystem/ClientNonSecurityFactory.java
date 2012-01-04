@@ -3,7 +3,7 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 import java.net.InetAddress;
 import java.net.Socket;
 
-class ClientNonSecurityFactory implements IClientSecurityFactory
+public class ClientNonSecurityFactory implements IClientSecurityFactory
 {
     @Override
     public Socket createClientSocket(InetAddress address, int port) throws Exception

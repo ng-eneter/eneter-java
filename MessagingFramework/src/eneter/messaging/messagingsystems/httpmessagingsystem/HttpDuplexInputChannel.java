@@ -7,6 +7,7 @@ import java.util.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpInputChannelBase;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.HashSetExt;
@@ -68,10 +69,12 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
         private ArrayDeque<byte[]> myMessages;
     }
     
-    public HttpDuplexInputChannel(String channelId, int responseReceiverInactivityTimeout, IProtocolFormatter<byte[]> protocolFormatter)
+    public HttpDuplexInputChannel(String channelId, int responseReceiverInactivityTimeout,
+            IProtocolFormatter<byte[]> protocolFormatter,
+            IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(channelId);
+        super(channelId, serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try

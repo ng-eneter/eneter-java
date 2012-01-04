@@ -3,6 +3,10 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.ClientNonSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.ServerNoneSecurityFactory;
 
 public class HttpMessagingSystemFactory implements IMessagingSystemFactory
 {
@@ -53,7 +57,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new HttpInputChannel(channelId, myProtocolFormatter);
+            return new HttpInputChannel(channelId, myProtocolFormatter, myServerSecurityFactory);
         }
         finally
         {
@@ -98,7 +102,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new HttpDuplexInputChannel(channelId, myConnectedDuplexOutputChannelInactivityTimeout, myProtocolFormatter);
+            return new HttpDuplexInputChannel(channelId, myConnectedDuplexOutputChannelInactivityTimeout, myProtocolFormatter, myServerSecurityFactory);
         }
         finally
         {
@@ -109,4 +113,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
     private IProtocolFormatter<byte[]> myProtocolFormatter;
     private int myConnectedDuplexOutputChannelInactivityTimeout;
     private int myPollingFrequency;
+    
+    private IServerSecurityFactory myServerSecurityFactory = new ServerNoneSecurityFactory();
+    //private IClientSecurityFactory myClientSecurityFactory = new ClientNonSecurityFactory();
 }
