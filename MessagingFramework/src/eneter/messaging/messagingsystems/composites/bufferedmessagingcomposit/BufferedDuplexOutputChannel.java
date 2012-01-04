@@ -145,6 +145,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
 
                 myUnderlyingDuplexOutputChannel.closeConnection();
                 myUnderlyingDuplexOutputChannel.connectionClosed().unsubscribe(myOnConnectionClosed);
+                myUnderlyingDuplexOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
 
                 // Emty the queue with messages.
                 synchronized (myMessagesToSend)
