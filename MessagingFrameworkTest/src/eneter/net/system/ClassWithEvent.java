@@ -4,7 +4,7 @@ public class ClassWithEvent
 {
     public Event<String> nameUpdated()
     {
-        return myNameUpdatedEvent;
+        return myNameUpdatedEventImpl.getApi();
     }
     
     public void SetName(String name) throws Exception
@@ -14,5 +14,4 @@ public class ClassWithEvent
     }
     
     private EventImpl<String> myNameUpdatedEventImpl = new EventImpl<String>();
-    private Event<String> myNameUpdatedEvent = new Event<String>(myNameUpdatedEventImpl);
 }

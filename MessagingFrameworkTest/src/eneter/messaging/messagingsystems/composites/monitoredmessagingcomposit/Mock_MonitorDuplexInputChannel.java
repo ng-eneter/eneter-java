@@ -24,19 +24,19 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     @Override
     public Event<DuplexChannelMessageEventArgs> messageReceived()
     {
-        return myMessageReceivedEventApi;
+        return myMessageReceivedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
-        return myResponseReceiverConnectedEventApi;
+        return myResponseReceiverConnectedEventImpl.getApi();
     }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
     {
-        return myResponseReceiverDisconnectedEventApi;
+        return myResponseReceiverDisconnectedEventImpl.getApi();
     }
 
     @Override
@@ -99,7 +99,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
 
     private void onResponseReceiverDisconnected(Object sender, ResponseReceiverEventArgs e)
     {
-        if (myResponseReceiverDisconnectedEventImpl.isEmpty() == false)
+        if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
         {
             try
             {
@@ -145,7 +145,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
             else
             {
                 // Notify the incoming message.
-                if (myMessageReceivedEventImpl.isEmpty() == false)
+                if (myMessageReceivedEventImpl.isSubscribed())
                 {
                     DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.myMessageContent, e.getResponseReceiverId());
 
@@ -174,13 +174,8 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private Event<DuplexChannelMessageEventArgs> myMessageReceivedEventApi = new Event<DuplexChannelMessageEventArgs>(myMessageReceivedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverConnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverConnectedEventImpl);
-    
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private Event<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventApi = new Event<ResponseReceiverEventArgs>(myResponseReceiverDisconnectedEventImpl);
     
     
     private IMethod2<Object, ResponseReceiverEventArgs> myOnResponseReceiverConnected = new IMethod2<Object, ResponseReceiverEventArgs>()
