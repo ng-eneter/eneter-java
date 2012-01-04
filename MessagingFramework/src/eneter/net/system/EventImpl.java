@@ -38,17 +38,21 @@ public class EventImpl<T>
     public void update(Object sender, T eventArgs)
             throws Exception
     {
+        ArrayList<IMethod2<Object, T>> aSafeCopyOfSubscribers;
+        
         synchronized (mySubscribedEventHandlers)
         {
-            // Go via subscribed observers and notify them about the event.
-            Iterator<IMethod2<Object, T>> it = mySubscribedEventHandlers.iterator();
-            while (it.hasNext())
-            {
-                IMethod2<Object, T> anEventHandler = it.next();
-                
-                // Notify the subscriber.
-                anEventHandler.invoke(sender, eventArgs);
-            }
+            aSafeCopyOfSubscribers = new ArrayList<IMethod2<Object,T>>(mySubscribedEventHandlers); 
+        }
+        
+        // Use the safe copy to iterate via subscribed observers and notify them about the event.
+        Iterator<IMethod2<Object, T>> it = aSafeCopyOfSubscribers.iterator();
+        while (it.hasNext())
+        {
+            IMethod2<Object, T> anEventHandler = it.next();
+            
+            // Notify the subscriber.
+            anEventHandler.invoke(sender, eventArgs);
         }
     }
     
