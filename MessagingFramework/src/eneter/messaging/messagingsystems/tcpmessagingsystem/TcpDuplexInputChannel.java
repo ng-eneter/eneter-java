@@ -55,10 +55,11 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
     }
     
     
-    public TcpDuplexInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter)
+    public TcpDuplexInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter,
+            IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(ipAddressAndPort);
+        super(ipAddressAndPort, serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try

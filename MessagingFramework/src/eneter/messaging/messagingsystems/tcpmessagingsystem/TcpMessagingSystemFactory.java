@@ -30,7 +30,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpOutputChannel(channelId, myProtocolFormatter);
+            return new TcpOutputChannel(channelId, myProtocolFormatter, myClientSecurityFactory);
         }
         finally
         {
@@ -44,7 +44,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpInputChannel(channelId, myProtocolFormatter);
+            return new TcpInputChannel(channelId, myProtocolFormatter, myServerSecurityFactory);
         }
         finally
         {
@@ -58,7 +58,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpDuplexOutputChannel(channelId, null, myProtocolFormatter);
+            return new TcpDuplexOutputChannel(channelId, null, myProtocolFormatter, myClientSecurityFactory);
         }
         finally
         {
@@ -73,7 +73,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpDuplexOutputChannel(channelId, responseReceiverId, myProtocolFormatter);
+            return new TcpDuplexOutputChannel(channelId, responseReceiverId, myProtocolFormatter, myClientSecurityFactory);
         }
         finally
         {
@@ -87,7 +87,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpDuplexInputChannel(channelId, myProtocolFormatter);
+            return new TcpDuplexInputChannel(channelId, myProtocolFormatter, myServerSecurityFactory);
         }
         finally
         {
@@ -97,4 +97,6 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     
     
     private IProtocolFormatter<byte[]> myProtocolFormatter;
+    private IServerSecurityFactory myServerSecurityFactory = new ServerNoneSecurityFactory();
+    private IClientSecurityFactory myClientSecurityFactory = new ClientNonSecurityFactory();
 }

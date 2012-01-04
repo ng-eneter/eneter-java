@@ -10,7 +10,8 @@ import eneter.net.system.StringExt;
 
 class TcpOutputChannel implements IOutputChannel
 {
-    public TcpOutputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter)
+    public TcpOutputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter,
+            IClientSecurityFactory clientSecurityFactory)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -35,6 +36,7 @@ class TcpOutputChannel implements IOutputChannel
 
             myChannelId = ipAddressAndPort;
             myProtocolFormatter = protocolFormatter;
+            myClientSecurityFactory = clientSecurityFactory;
         }
         finally
         {
@@ -59,8 +61,9 @@ class TcpOutputChannel implements IOutputChannel
                 try
                 {
                     // Creates the socket and connect it to the port.
-                    Socket aTcpClient = new Socket(InetAddress.getByName(myUri.getHost()), myUri.getPort());
-                    aTcpClient.setTcpNoDelay(true);
+                    //Socket aTcpClient = new Socket(InetAddress.getByName(myUri.getHost()), myUri.getPort());
+                    //aTcpClient.setTcpNoDelay(true);
+                    Socket aTcpClient = myClientSecurityFactory.createClientSocket(InetAddress.getByName(myUri.getHost()), myUri.getPort());
                     
                     try
                     {
@@ -97,7 +100,7 @@ class TcpOutputChannel implements IOutputChannel
     }
 
     
-    
+    private IClientSecurityFactory myClientSecurityFactory;
     private URI myUri;
     private Object myLock = new Object();
     

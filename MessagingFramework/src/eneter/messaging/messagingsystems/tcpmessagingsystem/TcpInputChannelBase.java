@@ -12,7 +12,7 @@ import eneter.net.system.threading.ThreadPool;
 
 public abstract class TcpInputChannelBase
 {
-    public TcpInputChannelBase(String ipAddressAndPort) throws Exception
+    public TcpInputChannelBase(String ipAddressAndPort, IServerSecurityFactory serverSecurityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -37,6 +37,8 @@ public abstract class TcpInputChannelBase
                 EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
                 throw err;
             }
+            
+            myServerSecurityFactory = serverSecurityFactory;
             
             myChannelId = ipAddressAndPort;
             myMessageProcessingThread = new WorkingThread<ProtocolMessage>(ipAddressAndPort);
@@ -74,7 +76,8 @@ public abstract class TcpInputChannelBase
                     // Start the working thread for removing messages from the queue
                     myMessageProcessingThread.registerMessageHandler(myMessageHandlerHandler);
                     
-                    myServerSocket = new ServerSocket(myUri.getPort(), 1000, InetAddress.getByName(myUri.getHost()));
+                    //myServerSocket = new ServerSocket(myUri.getPort(), 1000, InetAddress.getByName(myUri.getHost()));
+                    myServerSocket = myServerSecurityFactory.createServerSocket(InetAddress.getByName(myUri.getHost()), myUri.getPort());
                     
                     // Listen in another thread.
                     myTcpListeningThread = new Thread(myDoTcpListeningRunnable);
@@ -295,6 +298,7 @@ public abstract class TcpInputChannelBase
     private URI myUri;
     protected String myChannelId = "";
     
+    private IServerSecurityFactory myServerSecurityFactory;
     private ServerSocket myServerSocket;
     private Thread myTcpListeningThread;
     protected volatile boolean myStopTcpListeningRequested;

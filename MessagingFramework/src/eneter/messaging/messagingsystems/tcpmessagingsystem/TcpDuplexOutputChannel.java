@@ -15,7 +15,8 @@ import eneter.net.system.threading.ThreadPool;
 class TcpDuplexOutputChannel implements IDuplexOutputChannel
 {
     public TcpDuplexOutputChannel(String ipAddressAndPort, String responseReceiverId,
-                                  IProtocolFormatter<byte[]> protocolFormatter) throws Exception
+                                  IProtocolFormatter<byte[]> protocolFormatter,
+                                  IClientSecurityFactory clientSecurotyFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -42,6 +43,8 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
             myResponseReceiverId = (StringExt.isNullOrEmpty(responseReceiverId)) ? ipAddressAndPort + "_" + UUID.randomUUID().toString() : responseReceiverId;
             
             myProtocolFormatter = protocolFormatter;
+            
+            myClientSecurityFactory = clientSecurotyFactory;
         }
         finally
         {
@@ -114,8 +117,9 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     myStopReceivingRequestedFlag = false;
 
                     URI aUri = new URI(getChannelId());
-                    myTcpClient = new Socket(InetAddress.getByName(aUri.getHost()), aUri.getPort());
-                    myTcpClient.setTcpNoDelay(true);
+                    //myTcpClient = new Socket(InetAddress.getByName(aUri.getHost()), aUri.getPort());
+                    //myTcpClient.setTcpNoDelay(true);
+                    myTcpClient = myClientSecurityFactory.createClientSocket(InetAddress.getByName(aUri.getHost()), aUri.getPort());
                     
                     myMessageProcessingThread.registerMessageHandler(myMessageHandlerHandler);
 
@@ -514,6 +518,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
     private String myChannelId;
     private String myResponseReceiverId;
     
+    private IClientSecurityFactory myClientSecurityFactory;
     private Socket myTcpClient;
     private Object myConnectionManipulatorLock = new Object();
 
