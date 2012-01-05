@@ -31,19 +31,19 @@ public class WrappedData implements Serializable
      */
     public WrappedData(Object addedData, Object originalData)
     {
-        myAddedData = addedData;
-        myOriginalData = originalData;
+        AddedData = addedData;
+        OriginalData = originalData;
     }
     
     /**
      * Newly added data.
      */
-    public Object myAddedData;
+    public Object AddedData;
     
     /**
      * Original (wrapped) data.
      */
-    public Object myOriginalData;
+    public Object OriginalData;
     
     private static final long serialVersionUID = -8325844480504249827L;
 }

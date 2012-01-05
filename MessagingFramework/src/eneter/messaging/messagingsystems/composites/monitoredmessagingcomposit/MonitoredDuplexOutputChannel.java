@@ -257,7 +257,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
                 MonitorChannelMessage aMessage = mySerializer.deserialize(e.getMessage(), MonitorChannelMessage.class);
 
                 // If it is the response for the ping.
-                if (aMessage.myMessageType == MonitorChannelMessageType.Ping)
+                if (aMessage.MessageType == MonitorChannelMessageType.Ping)
                 {
                     // Release the pinging thread waiting for the response.
                     myResponseReceivedEvent.set();
@@ -267,7 +267,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
                     // Notify the event to the subscriber.
                     if (myResponseMessageReceivedEventImpl.isSubscribed())
                     {
-                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.myMessageContent, e.getResponseReceiverId());
+                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId());
 
                         try
                         {

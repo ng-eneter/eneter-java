@@ -259,7 +259,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 MonitorChannelMessage aMessage = mySerializer.deserialize(e.getMessage(), MonitorChannelMessage.class);
 
                 // if the message is ping, then response.
-                if (aMessage.myMessageType == MonitorChannelMessageType.Ping)
+                if (aMessage.MessageType == MonitorChannelMessageType.Ping)
                 {
                     try
                     {
@@ -275,7 +275,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     // Notify the incoming message.
                     if (myMessageReceivedEventImpl.isSubscribed())
                     {
-                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.myMessageContent, e.getResponseReceiverId());
+                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId());
 
                         try
                         {

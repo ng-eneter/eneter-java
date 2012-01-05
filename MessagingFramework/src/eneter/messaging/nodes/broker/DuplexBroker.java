@@ -160,23 +160,23 @@ class DuplexBroker implements IDuplexBroker
 
             synchronized (mySubscribtionManipulatorLock)
             {
-                if (e.getRequestMessage().myRequest == EBrokerRequest.Subscribe)
+                if (e.getRequestMessage().Request == EBrokerRequest.Subscribe)
                 {
-                    subscribe(e.getResponseReceiverId(), e.getRequestMessage().myMessageTypes, myMessageSubscribtions);
+                    subscribe(e.getResponseReceiverId(), e.getRequestMessage().MessageTypes, myMessageSubscribtions);
                 }
-                else if (e.getRequestMessage().myRequest == EBrokerRequest.SubscribeRegExp)
+                else if (e.getRequestMessage().Request == EBrokerRequest.SubscribeRegExp)
                 {
-                    subscribe(e.getResponseReceiverId(), e.getRequestMessage().myMessageTypes, myRegExpSubscribtions);
+                    subscribe(e.getResponseReceiverId(), e.getRequestMessage().MessageTypes, myRegExpSubscribtions);
                 }
-                else if (e.getRequestMessage().myRequest == EBrokerRequest.Unsubscribe)
+                else if (e.getRequestMessage().Request == EBrokerRequest.Unsubscribe)
                 {
-                    unsubscribe(e.getResponseReceiverId(), e.getRequestMessage().myMessageTypes, myMessageSubscribtions);
+                    unsubscribe(e.getResponseReceiverId(), e.getRequestMessage().MessageTypes, myMessageSubscribtions);
                 }
-                else if (e.getRequestMessage().myRequest == EBrokerRequest.UnsubscribeRegExp)
+                else if (e.getRequestMessage().Request == EBrokerRequest.UnsubscribeRegExp)
                 {
-                    unsubscribe(e.getResponseReceiverId(), e.getRequestMessage().myMessageTypes, myRegExpSubscribtions);
+                    unsubscribe(e.getResponseReceiverId(), e.getRequestMessage().MessageTypes, myRegExpSubscribtions);
                 }
-                else if (e.getRequestMessage().myRequest == EBrokerRequest.UnsubscribeAll)
+                else if (e.getRequestMessage().Request == EBrokerRequest.UnsubscribeAll)
                 {
                     unsubscribe(e.getResponseReceiverId(), null, myMessageSubscribtions);
                     unsubscribe(e.getResponseReceiverId(), null, myRegExpSubscribtions);
@@ -210,7 +210,7 @@ class DuplexBroker implements IDuplexBroker
                             public Boolean invoke(TSubscriptionItem x)
                                     throws Exception
                             {
-                                return x.getMessageTypeId().equals(e.getRequestMessage().myMessageTypeId);
+                                return x.getMessageTypeId().equals(e.getRequestMessage().MessageTypeId);
                             }
                         });
                 
@@ -226,7 +226,7 @@ class DuplexBroker implements IDuplexBroker
                                     try
                                     {
                                         String aRegEx = x.getMessageTypeId();
-                                        String aMessageType = e.getRequestMessage().myMessageTypeId;
+                                        String aMessageType = e.getRequestMessage().MessageTypeId;
                                         boolean aMatchResult = Pattern.matches(aRegEx, aMessageType);
                                         return aMatchResult;
                                     }

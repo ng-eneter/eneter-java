@@ -33,19 +33,19 @@ public class BrokerRequestMessage implements Serializable
      */
     public BrokerRequestMessage(EBrokerRequest request, String[] messageTypes)
     {
-        myRequest = request;
-        myMessageTypes = messageTypes;
+        Request = request;
+        MessageTypes = messageTypes;
     }
 
     /**
      * Type of the request.
      */
-    public EBrokerRequest myRequest;
+    public EBrokerRequest Request;
     
     /**
      * Array of message types.
      */
-    public String[] myMessageTypes;
+    public String[] MessageTypes;
     
     private static final long serialVersionUID = -7632473220961947955L;
 }

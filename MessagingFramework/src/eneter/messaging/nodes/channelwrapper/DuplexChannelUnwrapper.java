@@ -96,10 +96,10 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
 
             // WrappedData.AddedData represents the channel id.
             // Therefore if everything is ok then it must be string.
-            if (aWrappedData.myAddedData instanceof String)
+            if (aWrappedData.AddedData instanceof String)
             {
                 final DuplexChannelMessageEventArgs ee = e;
-                final String aMessageReceiverId = (String)aWrappedData.myAddedData;
+                final String aMessageReceiverId = (String)aWrappedData.AddedData;
 
                 TDuplexConnection aConectionToOutput = null;
 
@@ -154,7 +154,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                     try
                     {
                         // Send the unwrapped message.
-                        aConectionToOutput.getDuplexOutputChannel().sendMessage(aWrappedData.myOriginalData);
+                        aConectionToOutput.getDuplexOutputChannel().sendMessage(aWrappedData.OriginalData);
                     }
                     catch (Exception err)
                     {

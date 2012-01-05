@@ -31,20 +31,20 @@ public class BrokerNotifyMessage implements Serializable
      */
     public BrokerNotifyMessage(String messageTypeId, Object message)
     {
-        myMessageTypeId = messageTypeId;
-        myMessage = message;
+        MessageTypeId = messageTypeId;
+        Message = message;
     }
     
     
     /**
      * Type of the notified message.
      */
-    public String myMessageTypeId;
+    public String MessageTypeId;
     
     /**
      * Serialized message that shall be notified to subscribers.
      */
-    public Object myMessage;
+    public Object Message;
     
     private static final long serialVersionUID = 2939701088460435251L;
 }

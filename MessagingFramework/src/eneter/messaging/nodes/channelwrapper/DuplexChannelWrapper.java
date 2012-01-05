@@ -248,23 +248,23 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
 
                 // WrappedData.AddedData represents the channel id.
                 // Therefore if everything is ok then it must be string.
-                if (aWrappedData.myAddedData instanceof String)
+                if (aWrappedData.AddedData instanceof String)
                 {
                     // Get the output channel according to the channel id.
                     TDuplexInputChannel aDuplexInputChannel = null;
 
                     synchronized (myDuplexInputChannels)
                     {
-                        aDuplexInputChannel = myDuplexInputChannels.get((String)aWrappedData.myAddedData);
+                        aDuplexInputChannel = myDuplexInputChannels.get((String)aWrappedData.AddedData);
                     }
 
                     if (aDuplexInputChannel != null)
                     {
-                        aDuplexInputChannel.getDuplexInputChannel().sendResponseMessage(aDuplexInputChannel.getResponseReceiverId(), aWrappedData.myOriginalData);
+                        aDuplexInputChannel.getDuplexInputChannel().sendResponseMessage(aDuplexInputChannel.getResponseReceiverId(), aWrappedData.OriginalData);
                     }
                     else
                     {
-                        EneterTrace.warning(TracedObject() + "could not send the response message to the duplex input channel '" + (String)aWrappedData.myAddedData + "' because the channel is not attached to the unwrapper.");
+                        EneterTrace.warning(TracedObject() + "could not send the response message to the duplex input channel '" + (String)aWrappedData.AddedData + "' because the channel is not attached to the unwrapper.");
                     }
                 }
                 else

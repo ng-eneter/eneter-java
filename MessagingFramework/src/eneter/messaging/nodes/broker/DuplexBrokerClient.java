@@ -341,7 +341,7 @@ class DuplexBrokerClient implements IDuplexBrokerClient
 
                     if (e.getReceivingError() == null)
                     {
-                        anEvent = new BrokerMessageReceivedEventArgs(e.getResponseMessage().myMessageTypeId, e.getResponseMessage().myMessage);
+                        anEvent = new BrokerMessageReceivedEventArgs(e.getResponseMessage().MessageTypeId, e.getResponseMessage().Message);
                     }
                     else
                     {

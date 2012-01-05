@@ -54,9 +54,9 @@ class ChannelUnwrapper extends AttachableInputChannelBase
 
             // WrappedData.AddedData represents the channel id.
             // Therefore if everything is ok then it must be string.
-            if (aWrappedData.myAddedData instanceof String)
+            if (aWrappedData.AddedData instanceof String)
             {
-                String anOutputChannelId = (String)aWrappedData.myAddedData;
+                String anOutputChannelId = (String)aWrappedData.AddedData;
 
                 try
                 {
@@ -64,7 +64,7 @@ class ChannelUnwrapper extends AttachableInputChannelBase
                     IOutputChannel anOutputChannel = myOutputMessagingFactory.createOutputChannel(anOutputChannelId);
                     
                     // Send the unwrapped message.
-                    anOutputChannel.sendMessage(aWrappedData.myOriginalData);
+                    anOutputChannel.sendMessage(aWrappedData.OriginalData);
                 }
                 catch (Exception err)
                 {
