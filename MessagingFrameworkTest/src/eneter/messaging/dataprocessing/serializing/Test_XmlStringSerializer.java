@@ -55,7 +55,7 @@ public class Test_XmlStringSerializer
         String aData = "hello world";
         Object aSerializedData = TestedSerializer.serialize(aData, String.class);
         
-        assertEquals("<String xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">hello world</String>", (String)aSerializedData);
+        assertEquals("<String xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">hello world</String>", (String)aSerializedData);
         
         String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
 
@@ -68,7 +68,7 @@ public class Test_XmlStringSerializer
         int a = 10;
         Object aSerializedData = TestedSerializer.serialize(a, int.class);
         
-        assertEquals("<int xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">10</int>", (String)aSerializedData);
+        assertEquals("<int xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">10</int>", (String)aSerializedData);
         
         int aDeserializedData = TestedSerializer.deserialize(aSerializedData, int.class);
 
@@ -81,7 +81,7 @@ public class Test_XmlStringSerializer
         int[] a = {1,2,3};
         Object aSerializedData = TestedSerializer.serialize(a, int[].class);
         
-        assertEquals("<ArrayOfInt xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><int>1</int><int>2</int><int>3</int></ArrayOfInt>", (String)aSerializedData);
+        assertEquals("<ArrayOfInt xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>1</int><int>2</int><int>3</int></ArrayOfInt>", (String)aSerializedData);
         
         int[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, int[].class);
 
@@ -94,7 +94,7 @@ public class Test_XmlStringSerializer
         byte[] a = {0, 1, 2, 3, (byte)255};
         Object aSerializedData = TestedSerializer.serialize(a, byte[].class);
         
-        assertEquals("<base64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">AAECA/8=</base64Binary>", (String)aSerializedData);
+        assertEquals("<base64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">AAECA/8=</base64Binary>", (String)aSerializedData);
         
         byte[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, byte[].class);
 
@@ -104,7 +104,7 @@ public class Test_XmlStringSerializer
         byte[] aa = {};
         aSerializedData = TestedSerializer.serialize(aa, byte[].class);
         
-        assertEquals("<base64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"></base64Binary>", (String)aSerializedData);
+        assertEquals("<base64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"></base64Binary>", (String)aSerializedData);
         
         aDeserializedData = TestedSerializer.deserialize(aSerializedData, byte[].class);
 
@@ -114,7 +114,7 @@ public class Test_XmlStringSerializer
         // Serialize null byte array.
         aSerializedData = TestedSerializer.serialize(null, byte[].class);
         
-        assertEquals("<base64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/>", (String)aSerializedData);
+        assertEquals("<base64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xsi:nil=\"true\"/>", (String)aSerializedData);
         
         aDeserializedData = TestedSerializer.deserialize(aSerializedData, byte[].class);
 
@@ -127,7 +127,7 @@ public class Test_XmlStringSerializer
         Object[] a = {(int)1,"Hello",(char)'A'};
         Object aSerializedData = TestedSerializer.serialize(a, Object[].class);
         
-        assertEquals("<ArrayOfAnyType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><anyType xsi:type=\"xsd:int\">1</anyType><anyType xsi:type=\"xsd:string\">Hello</anyType><anyType xmlns:q1=\"http://microsoft.com/wsdl/types/\" xsi:type=\"q1:char\">65</anyType></ArrayOfAnyType>", (String)aSerializedData);
+        assertEquals("<ArrayOfAnyType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><anyType xsi:type=\"xsd:int\">1</anyType><anyType xsi:type=\"xsd:string\">Hello</anyType><anyType xmlns:q1=\"http://microsoft.com/wsdl/types/\" xsi:type=\"q1:char\">65</anyType></ArrayOfAnyType>", (String)aSerializedData);
         
         Object[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, Object[].class);
 
@@ -150,7 +150,7 @@ public class Test_XmlStringSerializer
         
         Object aSerializedData = TestedSerializer.serialize(aClasses, MyTestClass1[].class);
         
-        assertEquals("<ArrayOfMyTestClass1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><MyTestClass1><k>1</k><str>Hello</str></MyTestClass1><MyTestClass1><k>2</k><str>Hello</str></MyTestClass1><MyTestClass1><k>3</k><str>Hello</str></MyTestClass1></ArrayOfMyTestClass1>", (String)aSerializedData);
+        assertEquals("<ArrayOfMyTestClass1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><MyTestClass1><k>1</k><str>Hello</str></MyTestClass1><MyTestClass1><k>2</k><str>Hello</str></MyTestClass1><MyTestClass1><k>3</k><str>Hello</str></MyTestClass1></ArrayOfMyTestClass1>", (String)aSerializedData);
         
         MyTestClass1[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass1[].class);
 
@@ -173,7 +173,7 @@ public class Test_XmlStringSerializer
         
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass1.class);
         
-        assertEquals("<MyTestClass1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><k>-10</k><str>Eneter</str></MyTestClass1>", (String)aSerializedData);
+        assertEquals("<MyTestClass1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><k>-10</k><str>Eneter</str></MyTestClass1>", (String)aSerializedData);
         
         MyTestClass1 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass1.class);
         
@@ -192,7 +192,7 @@ public class Test_XmlStringSerializer
         
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
-        assertEquals("<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><kk>1000</kk><vv><k>5</k><str>Eneter</str></vv><mm>2000</mm></MyTestClass2>", (String)aSerializedData);
+        assertEquals("<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><kk>1000</kk><vv><k>5</k><str>Eneter</str></vv><mm>2000</mm></MyTestClass2>", (String)aSerializedData);
         
         MyTestClass2 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass2.class);
         
@@ -208,7 +208,7 @@ public class Test_XmlStringSerializer
         MyTestClass2 aClass = null;
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
-        assertEquals("<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/>", (String)aSerializedData);
+        assertEquals("<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xsi:nil=\"true\"/>", (String)aSerializedData);
         
         MyTestClass2 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass2.class);
         
@@ -223,7 +223,7 @@ public class Test_XmlStringSerializer
         
         Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass2.class);
         
-        assertEquals("<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><kk>111</kk><vv xsi:nil=\"true\"/><mm>222</mm></MyTestClass2>", (String)aSerializedData);
+        assertEquals("<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><kk>111</kk><vv xsi:nil=\"true\"/><mm>222</mm></MyTestClass2>", (String)aSerializedData);
         
         MyTestClass2 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass2.class);
         
@@ -237,7 +237,7 @@ public class Test_XmlStringSerializer
         MyEnum aData = MyEnum.Tuesday;
         
         Object aSerializedData = TestedSerializer.serialize(aData, MyEnum.class);
-        assertEquals("<MyEnum xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">Tuesday</MyEnum>", (String)aSerializedData);
+        assertEquals("<MyEnum xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">Tuesday</MyEnum>", (String)aSerializedData);
 
         MyEnum aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyEnum.class);
         assertTrue(aData == aDeserializedData);
@@ -250,25 +250,45 @@ public class Test_XmlStringSerializer
         aTestClass.myEnum = MyEnum.Tuesday;
         
         Object aSerializedData = TestedSerializer.serialize(aTestClass, MyTestClass3.class);
-        assertEquals("<MyTestClass3 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><myEnum>Tuesday</myEnum></MyTestClass3>", (String)aSerializedData);
+        assertEquals("<MyTestClass3 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><myEnum>Tuesday</myEnum></MyTestClass3>", (String)aSerializedData);
 
         MyTestClass3 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass3.class);
         assertEquals(aTestClass.myEnum, aDeserializedData.myEnum);
     }
     
     @Test
-    public void serializeClassWithObjectField() throws Exception
+    public void serializeClassWithObjectField_String() throws Exception
     {
         MyClassWithObject aClass = new MyClassWithObject();
         aClass.myItem = "Hello"; // assign string to the object
         
         Object aSerializedData = TestedSerializer.serialize(aClass, MyClassWithObject.class);
         
-        assertEquals("<MyClassWithObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><myItem xsi:type=\"xsd:string\">Hello</myItem></MyClassWithObject>", (String)aSerializedData);
+        assertEquals("<MyClassWithObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><myItem xsi:type=\"xsd:string\">Hello</myItem></MyClassWithObject>", (String)aSerializedData);
         
         MyClassWithObject aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyClassWithObject.class);
         
         assertEquals(aClass.myItem, aDeserializedData.myItem);
+    }
+    
+    @Test
+    public void serializeClassWithObjectField_ByteArray() throws Exception
+    {
+        MyClassWithObject aClass = new MyClassWithObject();
+        aClass.myItem = new byte[] {0, 1, 2, 3, (byte)255}; // assign string to the object
+        
+        Object aSerializedData = TestedSerializer.serialize(aClass, MyClassWithObject.class);
+        
+        assertEquals("<MyClassWithObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><myItem xsi:type=\"xsd:base64Binary\">AAECA/8=</myItem></MyClassWithObject>", (String)aSerializedData);
+        
+        MyClassWithObject aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyClassWithObject.class);
+        
+        assertEquals(5, ((byte[])aDeserializedData.myItem).length);
+        assertEquals(0, ((byte[])aDeserializedData.myItem)[0]);
+        assertEquals(1, ((byte[])aDeserializedData.myItem)[1]);
+        assertEquals(2, ((byte[])aDeserializedData.myItem)[2]);
+        assertEquals(3, ((byte[])aDeserializedData.myItem)[3]);
+        assertEquals((byte)255, ((byte[])aDeserializedData.myItem)[4]);
     }
     
     
@@ -277,7 +297,7 @@ public class Test_XmlStringSerializer
     {
         String s = "& < > \" '";
         Object aSerializedData = TestedSerializer.serialize(s, String.class);
-        assertEquals("<String xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">&amp; &lt; &gt; &quot; &apos;</String>", (String)aSerializedData);
+        assertEquals("<String xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">&amp; &lt; &gt; &quot; &apos;</String>", (String)aSerializedData);
         
         String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
         assertEquals(s, aDeserializedData);
@@ -288,7 +308,7 @@ public class Test_XmlStringSerializer
     {
         char c = 'A';
         Object aSerializedData = TestedSerializer.serialize(c, char.class);
-        assertEquals("<char xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">65</char>", (String)aSerializedData);
+        assertEquals("<char xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">65</char>", (String)aSerializedData);
         
         char aDeserializedData = TestedSerializer.deserialize(aSerializedData, char.class);
         assertEquals(c, aDeserializedData);
