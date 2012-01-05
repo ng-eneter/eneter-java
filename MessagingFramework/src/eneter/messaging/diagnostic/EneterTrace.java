@@ -409,7 +409,7 @@ public class EneterTrace
                     // Note: If the filter is not set or string matches.
                     if (myNameSpaceFilter == null || myNameSpaceFilter.matcher(aMethodName).matches())
                     {
-                        // If a trace log is set, then write to it.
+                        // If a trace log is set, then use it.
                         if (myTraceLog != null)
                         {
                             myTraceLog.println(aMessage);
@@ -417,8 +417,8 @@ public class EneterTrace
                         }
                         else
                         {
-                            // Otherwise write to the default error stream
-                            System.err.println(aMessage);
+                            // Otherwise write to the default output stream
+                            System.out.println(aMessage);
                         }
                     }
                 }
