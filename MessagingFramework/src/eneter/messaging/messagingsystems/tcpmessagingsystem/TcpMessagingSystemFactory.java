@@ -95,8 +95,34 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
+    public void setServerSecurity(IServerSecurityFactory serverSecurityFactory)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myServerSecurityFactory = serverSecurityFactory;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public void setClientSecurity(IClientSecurityFactory clientSecurityFactory)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myClientSecurityFactory = clientSecurityFactory;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     
     private IProtocolFormatter<byte[]> myProtocolFormatter;
-    private IServerSecurityFactory myServerSecurityFactory = new ServerNoneSecurityFactory();
-    private IClientSecurityFactory myClientSecurityFactory = new ClientNonSecurityFactory();
+    private IServerSecurityFactory myServerSecurityFactory = new NoneSecurityServerFactory();
+    private IClientSecurityFactory myClientSecurityFactory = new NoneSecurityClientFactory();
 }

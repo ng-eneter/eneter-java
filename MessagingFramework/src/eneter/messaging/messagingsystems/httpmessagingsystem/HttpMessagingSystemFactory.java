@@ -1,12 +1,11 @@
 package eneter.messaging.messagingsystems.httpmessagingsystem;
 
+import java.net.*;
+
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.ClientNonSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.ServerNoneSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 
 public class HttpMessagingSystemFactory implements IMessagingSystemFactory
 {
@@ -57,7 +56,8 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new HttpInputChannel(channelId, myProtocolFormatter, myServerSecurityFactory);
+            IServerSecurityFactory aServerSecurityFactory = getServerSecurityFactory(channelId);
+            return new HttpInputChannel(channelId, myProtocolFormatter, aServerSecurityFactory);
         }
         finally
         {
@@ -102,18 +102,37 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new HttpDuplexInputChannel(channelId, myConnectedDuplexOutputChannelInactivityTimeout, myProtocolFormatter, myServerSecurityFactory);
+            IServerSecurityFactory aServerSecurityFactory = getServerSecurityFactory(channelId);
+            return new HttpDuplexInputChannel(channelId, myConnectedDuplexOutputChannelInactivityTimeout, myProtocolFormatter, aServerSecurityFactory);
         }
         finally
         {
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    private IServerSecurityFactory getServerSecurityFactory(String channelId) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            String aProtocol = new URL(channelId).getProtocol().toLowerCase();
+            if (aProtocol.equals("https"))
+            {
+                return  new SslServerFactory();
+            }
+            else
+            {
+                return new NoneSecurityServerFactory();
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        } 
+    }
 
     private IProtocolFormatter<byte[]> myProtocolFormatter;
     private int myConnectedDuplexOutputChannelInactivityTimeout;
     private int myPollingFrequency;
-    
-    private IServerSecurityFactory myServerSecurityFactory = new ServerNoneSecurityFactory();
-    //private IClientSecurityFactory myClientSecurityFactory = new ClientNonSecurityFactory();
 }
