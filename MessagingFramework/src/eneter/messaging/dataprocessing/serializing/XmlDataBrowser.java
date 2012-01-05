@@ -28,6 +28,7 @@ class XmlDataBrowser
                                  SHORT_ATTRIBUTE, INT_ATTRIBUTE, LONG_ATTRIBUTE,
                                  FLOAT_ATTRIBUTE, DOUBLE_ATTRIBUTE,
                                  STRING_ATTRIBUTE,
+                                 BYTE_ARRAY_ATTRIBUTE,
                                  NILLATTRIBUTE};
                     
             myKeywordIdentifier = new KeywordIdentifier(aKeywords);
@@ -121,11 +122,11 @@ class XmlDataBrowser
                 if (aKeywordIdx > -1)
                 {
                     // Nil attribute.
-                    if (aKeywordIdx == 9)
+                    if (aKeywordIdx == 10)
                     {
                         anElement.myIsNull = true;
                     }
-                    else if (aKeywordIdx < 9)
+                    else if (aKeywordIdx < 10)
                     {
                         anElement.myClazz = myClazzes[aKeywordIdx];
                     }
@@ -697,6 +698,7 @@ class XmlDataBrowser
     private KeywordIdentifier myKeywordIdentifier;
     
     private final String NILLATTRIBUTE = "nil=\"true\"";
+    
     private final String BOOL_ATTRIBUTE = ":boolean\"";
     private final String CHAR_ATTRIBUTE = ":char\"";
     private final String BYTE_ATTRIBUTE = ":unsignedByte\"";
@@ -707,11 +709,13 @@ class XmlDataBrowser
     private final String DOUBLE_ATTRIBUTE = ":double\"";
     
     private final String STRING_ATTRIBUTE = ":string\"";
+    private final String BYTE_ARRAY_ATTRIBUTE = ":base64Binary\"";
     
     private Class<?>[] myClazzes = {boolean.class, char.class, byte.class,
                                     short.class, int.class, long.class,
                                     float.class, double.class,
-                                    String.class};
+                                    String.class,
+                                    byte[].class};
   
     
 }

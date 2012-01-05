@@ -19,8 +19,6 @@ import eneter.messaging.diagnostic.EneterTrace;
  * for .NET. The serializer does not support generic types.
  * 
  * @author Ondrej Uzovic & Martin Valach
- * 
- * TODO: Encoding/Decoding UTF-8. (.NET works with UTF-8, Java works with UTF-16).
  */
 public class XmlStringSerializer implements ISerializer
 {
@@ -616,9 +614,13 @@ public class XmlStringSerializer implements ISerializer
                 {
                     anAttributes = " xsi:type=\"xsd:string\"";
                 }
+                else if (aRealType == byte[].class || aRealType == Byte[].class)
+                {
+                    anAttributes = " xsi:type=\"xsd:base64Binary\"";
+                }
                 else
                 {
-                    String anErrorMessage = "Serialized item of type 'Object' can be only primitive type or 'String'.";
+                    String anErrorMessage = "Serialized item of type 'Object' can be only primitive type or 'String' or byte[].";
                     EneterTrace.error(anErrorMessage);
                     throw new IllegalStateException(anErrorMessage);
                 }
