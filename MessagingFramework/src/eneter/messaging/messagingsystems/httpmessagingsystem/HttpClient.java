@@ -13,6 +13,8 @@ class HttpClient
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            // Note: If the protocol is https, then HttpsURLConnection is automatically created.
+            //       HttpsURLConnection is derived from HttpURLConnection.
             HttpURLConnection aConnection = (HttpURLConnection)url.openConnection();
             try
             {
