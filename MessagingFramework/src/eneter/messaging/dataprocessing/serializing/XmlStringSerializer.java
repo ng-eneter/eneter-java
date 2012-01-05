@@ -104,7 +104,7 @@ public class XmlStringSerializer implements ISerializer
             }
             
             // Note: keep the space character at the beginning of the name-space string!!!
-            String aNameSpacesAndAttributes = " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + getAttributes(dataToSerialize, clazz);
+            String aNameSpacesAndAttributes = " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"" + getAttributes(dataToSerialize, clazz);
             
             serializeElement(aRootName, aNameSpacesAndAttributes, dataToSerialize, aSerializedObjectStr);
 
