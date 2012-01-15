@@ -12,7 +12,7 @@ import eneter.net.system.IMethod1;
 import eneter.net.system.threading.ManualResetEvent;
 import eneter.net.system.threading.ThreadPool;
 
-class TcpListenerProvider
+public class TcpListenerProvider
 {
     public TcpListenerProvider(InetAddress address, int port)
     {

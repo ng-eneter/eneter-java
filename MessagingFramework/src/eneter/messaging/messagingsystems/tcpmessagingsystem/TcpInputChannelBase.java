@@ -22,10 +22,10 @@ public abstract class TcpInputChannelBase
                 throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
             }
             
-            URI aUri;
+            URL aUrl;
             try
             {
-                aUri = new URI(ipAddressAndPort);
+                aUrl = new URL(ipAddressAndPort);
             }
             catch (Exception err)
             {
@@ -38,7 +38,8 @@ public abstract class TcpInputChannelBase
                 throw err;
             }
             
-            myTcpListenerProvider = new TcpListenerProvider(InetAddress.getByName(aUri.getHost()), aUri.getPort(), serverSecurityFactory);
+            int aPort = (aUrl.getPort() != -1) ? aUrl.getPort() : aUrl.getDefaultPort();
+            myTcpListenerProvider = new TcpListenerProvider(InetAddress.getByName(aUrl.getHost()), aPort, serverSecurityFactory);
             
             myChannelId = ipAddressAndPort;
             myMessageProcessingThread = new WorkingThread<ProtocolMessage>(ipAddressAndPort);
