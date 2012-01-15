@@ -39,7 +39,8 @@ public abstract class TcpInputChannelBase
             }
             
             int aPort = (aUrl.getPort() != -1) ? aUrl.getPort() : aUrl.getDefaultPort();
-            myTcpListenerProvider = new TcpListenerProvider(InetAddress.getByName(aUrl.getHost()), aPort, serverSecurityFactory);
+            InetSocketAddress aSocketAddress = new InetSocketAddress(aUrl.getHost(), aPort);
+            myTcpListenerProvider = new TcpListenerProvider(aSocketAddress, serverSecurityFactory);
             
             myChannelId = ipAddressAndPort;
             myMessageProcessingThread = new WorkingThread<ProtocolMessage>(ipAddressAndPort);

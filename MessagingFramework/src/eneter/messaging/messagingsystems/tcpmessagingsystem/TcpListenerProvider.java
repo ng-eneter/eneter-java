@@ -2,8 +2,10 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 
 import eneter.messaging.diagnostic.EneterTrace;
@@ -14,18 +16,17 @@ import eneter.net.system.threading.ThreadPool;
 
 public class TcpListenerProvider
 {
-    public TcpListenerProvider(InetAddress address, int port)
+    public TcpListenerProvider(InetSocketAddress socketAddress)
     {
-        this(address, port, new NoneSecurityServerFactory());
+        this(socketAddress, new NoneSecurityServerFactory());
     }
     
-    public TcpListenerProvider(InetAddress address, int port, IServerSecurityFactory serverSecurityFactory)
+    public TcpListenerProvider(InetSocketAddress socketAddress, IServerSecurityFactory serverSecurityFactory)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myAddress = address;
-            myPort = port;
+            mySocketAddress = socketAddress;
             myServerSecurityFactory = serverSecurityFactory;
         }
         finally
@@ -55,7 +56,7 @@ public class TcpListenerProvider
                     myConnectionHandler = connectionHandler;
                     
                     //myServerSocket = new ServerSocket(myUri.getPort(), 1000, InetAddress.getByName(myUri.getHost()));
-                    myServerSocket = myServerSecurityFactory.createServerSocket(myAddress, myPort);
+                    myServerSocket = myServerSecurityFactory.createServerSocket(mySocketAddress);
                     
                     // Listen in another thread.
                     myTcpListeningThread = new Thread(myDoTcpListeningRunnable);
@@ -279,8 +280,7 @@ public class TcpListenerProvider
     }
     
     
-    private InetAddress myAddress;
-    private int myPort;
+    private InetSocketAddress mySocketAddress;
     private IServerSecurityFactory myServerSecurityFactory;
     private IMethod1<Socket> myConnectionHandler;
     

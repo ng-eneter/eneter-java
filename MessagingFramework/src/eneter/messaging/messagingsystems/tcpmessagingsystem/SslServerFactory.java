@@ -29,12 +29,12 @@ public class SslServerFactory implements IServerSecurityFactory
     
     
     @Override
-    public ServerSocket createServerSocket(InetAddress address, int port) throws Exception
+    public ServerSocket createServerSocket(InetSocketAddress socketAddress) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            SSLServerSocket aServerSocket = (SSLServerSocket)mySslServerSocketFactory.createServerSocket(port, 1000, address);
+            SSLServerSocket aServerSocket = (SSLServerSocket)mySslServerSocketFactory.createServerSocket(socketAddress.getPort(), 1000, socketAddress.getAddress());
             aServerSocket.setNeedClientAuth(myIsClientCertificateRequired);
             
             return aServerSocket;

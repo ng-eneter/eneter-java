@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -39,7 +40,8 @@ public class HttpPolicyServer
             setPolicyXml(getSilverlightDefaultPolicyXml());
             
             int aPort = (aUrl.getPort() != -1) ? aUrl.getPort() : aUrl.getDefaultPort();
-            myTcpListenerProvider = new TcpListenerProvider(InetAddress.getByName(aUrl.getHost()), aPort);
+            InetSocketAddress aSocketAddress = new InetSocketAddress(aUrl.getHost(), aPort);
+            myTcpListenerProvider = new TcpListenerProvider(aSocketAddress);
         }
         finally
         {

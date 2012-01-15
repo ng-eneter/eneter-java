@@ -27,16 +27,19 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                 throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
             }
 
+            URI aUri;
             try
             {
                 // just check if the address is valid
-                new URI(ipAddressAndPort);
+                aUri = new URI(ipAddressAndPort);
             }
             catch (Exception err)
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
                 throw err;
             }
+            
+            mySocketAddress = new InetSocketAddress(aUri.getHost(), aUri.getPort());
 
             myChannelId = ipAddressAndPort;
 
@@ -116,10 +119,9 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                 {
                     myStopReceivingRequestedFlag = false;
 
-                    URI aUri = new URI(getChannelId());
                     //myTcpClient = new Socket(InetAddress.getByName(aUri.getHost()), aUri.getPort());
                     //myTcpClient.setTcpNoDelay(true);
-                    myTcpClient = myClientSecurityFactory.createClientSocket(InetAddress.getByName(aUri.getHost()), aUri.getPort());
+                    myTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
                     
                     myMessageProcessingThread.registerMessageHandler(myMessageHandlerHandler);
 
@@ -520,6 +522,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
     
     private IClientSecurityFactory myClientSecurityFactory;
     private Socket myTcpClient;
+    private InetSocketAddress mySocketAddress;
     private Object myConnectionManipulatorLock = new Object();
 
     private Thread myResponseReceiverThread;

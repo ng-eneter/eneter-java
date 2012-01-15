@@ -23,16 +23,19 @@ class TcpOutputChannel implements IOutputChannel
                 throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
             }
 
+            URI aUri;
             try
             {
                 // just check if the address is valid
-                myUri = new URI(ipAddressAndPort);
+                aUri = new URI(ipAddressAndPort);
             }
             catch (Exception err)
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
                 throw err;
             }
+            
+            mySocketAddress = new InetSocketAddress(aUri.getHost(), aUri.getPort());
 
             myChannelId = ipAddressAndPort;
             myProtocolFormatter = protocolFormatter;
@@ -63,7 +66,7 @@ class TcpOutputChannel implements IOutputChannel
                     // Creates the socket and connect it to the port.
                     //Socket aTcpClient = new Socket(InetAddress.getByName(myUri.getHost()), myUri.getPort());
                     //aTcpClient.setTcpNoDelay(true);
-                    Socket aTcpClient = myClientSecurityFactory.createClientSocket(InetAddress.getByName(myUri.getHost()), myUri.getPort());
+                    Socket aTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
                     
                     try
                     {
@@ -101,7 +104,7 @@ class TcpOutputChannel implements IOutputChannel
 
     
     private IClientSecurityFactory myClientSecurityFactory;
-    private URI myUri;
+    private InetSocketAddress mySocketAddress;
     private Object myLock = new Object();
     
     private String myChannelId;

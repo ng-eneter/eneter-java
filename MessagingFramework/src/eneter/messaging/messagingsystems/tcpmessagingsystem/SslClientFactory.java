@@ -1,6 +1,7 @@
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 import javax.net.ssl.*;
@@ -28,12 +29,12 @@ public class SslClientFactory implements IClientSecurityFactory
     }
     
     @Override
-    public Socket createClientSocket(InetAddress address, int port) throws Exception
+    public Socket createClientSocket(InetSocketAddress socketAddress) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            SSLSocket aClientSocket = (SSLSocket)mySocketFactory.createSocket(address, port);
+            SSLSocket aClientSocket = (SSLSocket)mySocketFactory.createSocket(socketAddress.getAddress(), socketAddress.getPort());
             aClientSocket.startHandshake();
             
             return aClientSocket;

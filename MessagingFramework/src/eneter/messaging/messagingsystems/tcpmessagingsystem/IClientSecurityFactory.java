@@ -1,9 +1,8 @@
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
-import java.net.InetAddress;
-import java.net.Socket;
+import java.net.*;
 
 public interface IClientSecurityFactory
 {
-    Socket createClientSocket(InetAddress address, int port) throws Exception;
+    Socket createClientSocket(InetSocketAddress socketAddress) throws Exception;
 }

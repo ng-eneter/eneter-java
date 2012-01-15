@@ -2,6 +2,7 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -23,7 +24,9 @@ public class TcpPolicyServer
         try
         {
             myPolicyXml = getSilverlightDefaultPolicyXml();
-            myTcpListenerProvider = new TcpListenerProvider(ipAddress, 943);
+            
+            InetSocketAddress aSocketAddress = new InetSocketAddress(ipAddress, 943);
+            myTcpListenerProvider = new TcpListenerProvider(aSocketAddress);
         }
         finally
         {

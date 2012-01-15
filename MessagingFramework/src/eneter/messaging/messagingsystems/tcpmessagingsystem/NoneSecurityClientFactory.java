@@ -1,6 +1,7 @@
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 import eneter.messaging.diagnostic.EneterTrace;
@@ -8,12 +9,13 @@ import eneter.messaging.diagnostic.EneterTrace;
 public class NoneSecurityClientFactory implements IClientSecurityFactory
 {
     @Override
-    public Socket createClientSocket(InetAddress address, int port) throws Exception
+    public Socket createClientSocket(InetSocketAddress socketAddress) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            Socket aClientSocket = new Socket(address, port);
+            Socket aClientSocket = new Socket();
+            aClientSocket.connect(socketAddress);
             aClientSocket.setTcpNoDelay(true);
             return aClientSocket;
         }
