@@ -397,10 +397,11 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             Charset aCharset = Charset.forName("UTF-16BE");
             ByteBuffer aByteBuffer = aCharset.encode(s);
             
-            byte[] aStringBytes = aByteBuffer.array();
-
-            writer.writeInt(aStringBytes.length);
-            writer.write(aStringBytes);
+            // Actual size of data.
+            writer.writeInt(aByteBuffer.limit());
+            
+            // Write data.
+            writer.write(aByteBuffer.array(), 0, aByteBuffer.limit());
         }
         finally
         {

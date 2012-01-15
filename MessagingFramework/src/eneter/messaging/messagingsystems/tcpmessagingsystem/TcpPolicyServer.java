@@ -3,6 +3,7 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import eneter.messaging.diagnostic.*;
@@ -109,8 +110,12 @@ public class TcpPolicyServer
             // If it is the policy request then return the policy xml
             if (aReceivedRequest.equals(myPolicyRequestString))
             {
-                byte[] aResponse = aCharset.encode(myPolicyXml).array();
-                tcpClient.getOutputStream().write(aResponse);
+                ByteBuffer aBuf = aCharset.encode(myPolicyXml);
+                
+                // Note: Method array() returns the reference to the internal array, that can
+                //       be longer than amount of data.
+                //       The actual size of data is returned from limit().
+                tcpClient.getOutputStream().write(aBuf.array(), 0, aBuf.limit());
             }
         }
         finally

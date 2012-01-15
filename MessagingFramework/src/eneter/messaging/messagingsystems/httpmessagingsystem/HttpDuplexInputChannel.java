@@ -204,204 +204,187 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void handleConnection(Socket clientSocket)
+    protected void handleConnection(Socket clientSocket) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            // Status that will be responded back to the client.
+            // If everything is OK, the status will be changed to OK.
+            ByteArrayOutputStream aResponseMessages = null; // will be set if response messages are available
+            int aSizeOfResponseMessages = 0;
+            int anHttpStatusCode = 404; // will be set to 200 if everything is OK.
+            
+            InputStream anInputStream = null;
+
             try
             {
-                // Status that will be responded back to the client.
-                // If everything is OK, the status will be changed to OK.
-                ByteArrayOutputStream aResponseMessages = null; // will be set if response messages are available
-                int aSizeOfResponseMessages = 0;
-                int anHttpStatusCode = 404; // will be set to 200 if everything is OK.
+                anInputStream = clientSocket.getInputStream();
                 
-                InputStream anInputStream = null;
-
-                try
+                // We are not interested in HTTP part, so set the position
+                // in the stream at the beginning of ENETER.
+                DataInputStream aReader = new DataInputStream(anInputStream);
+                while (true)
                 {
-                    // If the end is requested.
-                    if (!myStopTcpListeningRequested)
+                    int aValue = aReader.read();
+                    
+                    // End of some line
+                    if (aValue == 13)
                     {
-                        anInputStream = clientSocket.getInputStream();
-                        
-                        // We are not interested in HTTP part, so set the position
-                        // in the stream at the beginning of ENETER.
-                        DataInputStream aReader = new DataInputStream(anInputStream);
-                        while (true)
+                        aValue = aReader.read();
+                        if (aValue == 10)
                         {
-                            int aValue = aReader.read();
-                            
-                            // End of some line
+                            // Follows empty line.
+                            aValue = aReader.read();
                             if (aValue == 13)
                             {
                                 aValue = aReader.read();
                                 if (aValue == 10)
                                 {
-                                    // Follows empty line.
-                                    aValue = aReader.read();
-                                    if (aValue == 13)
-                                    {
-                                        aValue = aReader.read();
-                                        if (aValue == 10)
-                                        {
-                                            break;
-                                        }
-                                    }
+                                    break;
                                 }
-                            }
-                            
-                            if (aValue == -1)
-                            {
-                                throw new IllegalStateException("Unexpected end of the input stream.");
                             }
                         }
-                        
-                        
-                        // Decode the eneter message.
-                        final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
+                    }
+                    
+                    if (aValue == -1)
+                    {
+                        throw new IllegalStateException("Unexpected end of the input stream.");
+                    }
+                }
+                    
+                // Decode the eneter message.
+                final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
 
-                        if (aProtocolMessage != null)
+                if (aProtocolMessage != null)
+                {
+                    // If it is a normal message.
+                    if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+                    {
+                        synchronized (myResponseMessages)
                         {
-                            // If it is a normal message.
-                            if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
-                            {
-                                synchronized (myResponseMessages)
-                                {
-                                    // If the sending duplex output channel is connected then process the message.
-                                    // Otherwise return with an error.
-                                    TResponseReceiver aResponseReceiver = EnumerableExt.firstOrDefault(myResponseMessages,
-                                            new IFunction1<Boolean, TResponseReceiver>()
-                                            {
-                                                @Override
-                                                public Boolean invoke(TResponseReceiver x)
-                                                        throws Exception
-                                                {
-                                                    return x.getResponseReceiverId().equals(aProtocolMessage.ResponseReceiverId);
-                                                }
-                                            });
-
-                                    if (aResponseReceiver != null && aResponseReceiver.getConnectionState() == TResponseReceiver.EConnctionState.Open)
+                            // If the sending duplex output channel is connected then process the message.
+                            // Otherwise return with an error.
+                            TResponseReceiver aResponseReceiver = EnumerableExt.firstOrDefault(myResponseMessages,
+                                    new IFunction1<Boolean, TResponseReceiver>()
                                     {
-                                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
-                                        
-                                        // Everything is OK.
-                                        anHttpStatusCode = 200;
-                                    }
-                                }
-                            }
-                            // If it is a request to poll enqueued messages.
-                            else if (aProtocolMessage.MessageType == EProtocolMessageType.PollRequest)
-                            {
-                                try
-                                {
-                                    synchronized (myResponseMessages)
-                                    {
-                                        // Get messages collected for the response receiver.
-                                        TResponseReceiver aResponsesForParticularReceiver = EnumerableExt.firstOrDefault(myResponseMessages,
-                                                new IFunction1<Boolean, TResponseReceiver>()
-                                                {
-                                                    @Override
-                                                    public Boolean invoke(TResponseReceiver x)
-                                                            throws Exception
-                                                    {
-                                                        return x.getResponseReceiverId().equals(aProtocolMessage.ResponseReceiverId);
-                                                    }
-                                                });
-                                        
-                                        if (aResponsesForParticularReceiver != null)
+                                        @Override
+                                        public Boolean invoke(TResponseReceiver x)
+                                                throws Exception
                                         {
-                                            // Update the polling time.
-                                            aResponsesForParticularReceiver.setLastPollingActivityTime(System.currentTimeMillis());
-
-                                            // If there are stored messages for the receiver
-                                            if (aResponsesForParticularReceiver.getMessages().size() > 0)
-                                            {
-                                                aResponseMessages = new ByteArrayOutputStream();
-                                                
-                                                // Dequeue responses to be sent to the response receiver.
-                                                // Note: Try not to exceed 1MB - better do more small transfers
-                                                while (aResponsesForParticularReceiver.getMessages().size() > 0 &&
-                                                        aSizeOfResponseMessages < 1048576)
-                                                {
-                                                    // Get the response message formatted according to the connection protocol.
-                                                    byte[] aResponseMessage = aResponsesForParticularReceiver.getMessages().poll();
-                                                    aResponseMessages.write(aResponseMessage, 0, aResponseMessage.length);
-                                                    
-                                                    aSizeOfResponseMessages += aResponseMessage.length;
-                                                }
-                                            }
+                                            return x.getResponseReceiverId().equals(aProtocolMessage.ResponseReceiverId);
                                         }
+                                    });
+
+                            if (aResponseReceiver != null && aResponseReceiver.getConnectionState() == TResponseReceiver.EConnctionState.Open)
+                            {
+                                myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                                
+                                // Everything is OK.
+                                anHttpStatusCode = 200;
+                            }
+                        }
+                    }
+                    // If it is a request to poll enqueued messages.
+                    else if (aProtocolMessage.MessageType == EProtocolMessageType.PollRequest)
+                    {
+                        try
+                        {
+                            synchronized (myResponseMessages)
+                            {
+                                // Get messages collected for the response receiver.
+                                TResponseReceiver aResponsesForParticularReceiver = EnumerableExt.firstOrDefault(myResponseMessages,
+                                        new IFunction1<Boolean, TResponseReceiver>()
+                                        {
+                                            @Override
+                                            public Boolean invoke(TResponseReceiver x)
+                                                    throws Exception
+                                            {
+                                                return x.getResponseReceiverId().equals(aProtocolMessage.ResponseReceiverId);
+                                            }
+                                        });
+                                
+                                if (aResponsesForParticularReceiver != null)
+                                {
+                                    // Update the polling time.
+                                    aResponsesForParticularReceiver.setLastPollingActivityTime(System.currentTimeMillis());
+
+                                    // If there are stored messages for the receiver
+                                    if (aResponsesForParticularReceiver.getMessages().size() > 0)
+                                    {
+                                        aResponseMessages = new ByteArrayOutputStream();
                                         
-                                        // Everything ok.
-                                        anHttpStatusCode = 200;
+                                        // Dequeue responses to be sent to the response receiver.
+                                        // Note: Try not to exceed 1MB - better do more small transfers
+                                        while (aResponsesForParticularReceiver.getMessages().size() > 0 &&
+                                                aSizeOfResponseMessages < 1048576)
+                                        {
+                                            // Get the response message formatted according to the connection protocol.
+                                            byte[] aResponseMessage = aResponsesForParticularReceiver.getMessages().poll();
+                                            aResponseMessages.write(aResponseMessage, 0, aResponseMessage.length);
+                                            
+                                            aSizeOfResponseMessages += aResponseMessage.length;
+                                        }
                                     }
                                 }
-                                catch (Exception err)
-                                {
-                                    EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-                                }
-                                catch (Error err)
-                                {
-                                    EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-                                    throw err;
-                                }
-                            }
-                            else
-                            {
-                                // Put the message to the queue from where the working thread removes it to notify
-                                // subscribers of the input channel.
-                                // Note: therfore subscribers of the input channel are notified allways in one thread.
-                                myMessageProcessingThread.enqueueMessage(aProtocolMessage);
                                 
                                 // Everything ok.
                                 anHttpStatusCode = 200;
                             }
                         }
-                        else
+                        catch (Exception err)
                         {
-                            EneterTrace.warning(TracedObject() + "did not receive a valid message.");
+                            EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
                         }
-                    }
-                }
-                finally
-                {
-                    // Send HTTP response.
-                    OutputStream anOutputStream = clientSocket.getOutputStream();
-                    DataOutputStream aWriter = new DataOutputStream(anOutputStream);
-                    if (anHttpStatusCode == 200)
-                    {
-                        if (aResponseMessages != null && aSizeOfResponseMessages > 0)
+                        catch (Error err)
                         {
-                            aWriter.writeBytes("HTTP/1.1 200 OK\r\n");
-                            aWriter.writeBytes("Content-Type: \r\n");
-                            aWriter.writeBytes("Content-Length: " + aSizeOfResponseMessages + "\r\n\r\n");
-                            
-                            // Send also eneter response message in the context of HTTP.
-                            aResponseMessages.writeTo(anOutputStream);
-                        }
-                        else
-                        {
-                            aWriter.writeBytes("HTTP/1.1 200 OK\r\n\r\n");
+                            EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+                            throw err;
                         }
                     }
                     else
                     {
-                        aWriter.writeBytes("HTTP/1.1 404 Not Found\r\n\r\n");
+                        // Put the message to the queue from where the working thread removes it to notify
+                        // subscribers of the input channel.
+                        // Note: therfore subscribers of the input channel are notified allways in one thread.
+                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                        
+                        // Everything ok.
+                        anHttpStatusCode = 200;
                     }
-                    
-                    clientSocket.close();
+                }
+                else
+                {
+                    EneterTrace.warning(TracedObject() + "did not receive a valid message.");
                 }
             }
-            catch (Exception err)
+            finally
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
-                throw err;
+                // Send HTTP response.
+                OutputStream anOutputStream = clientSocket.getOutputStream();
+                DataOutputStream aWriter = new DataOutputStream(anOutputStream);
+                if (anHttpStatusCode == 200)
+                {
+                    if (aResponseMessages != null && aSizeOfResponseMessages > 0)
+                    {
+                        aWriter.writeBytes("HTTP/1.1 200 OK\r\n");
+                        aWriter.writeBytes("Content-Type: \r\n");
+                        aWriter.writeBytes("Content-Length: " + aSizeOfResponseMessages + "\r\n\r\n");
+                        
+                        // Send also eneter response message in the context of HTTP.
+                        aResponseMessages.writeTo(anOutputStream);
+                    }
+                    else
+                    {
+                        aWriter.writeBytes("HTTP/1.1 200 OK\r\n\r\n");
+                    }
+                }
+                else
+                {
+                    aWriter.writeBytes("HTTP/1.1 404 Not Found\r\n\r\n");
+                }
+                
+                clientSocket.close();
             }
         }
         finally
@@ -411,7 +394,7 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void messageHandler(final ProtocolMessage protocolMessage)
+    protected void handleMessage(final ProtocolMessage protocolMessage)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

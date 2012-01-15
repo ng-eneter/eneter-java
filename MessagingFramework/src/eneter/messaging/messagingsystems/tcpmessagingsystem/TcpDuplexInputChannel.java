@@ -224,126 +224,100 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void handleConnection(Socket clientSocket)
+    protected void handleConnection(Socket clientSocket) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            String aResponseReceiverId = ""; // will be set when the 1st message is received.
+
+            InputStream anInputStream = null;
+
             try
             {
-                String aResponseReceiverId = ""; // will be set when the 1st message is received.
+                anInputStream = clientSocket.getInputStream();
+                
 
-                InputStream anInputStream = null;
-
-                try
+                // While the stop of listening is not requested and the connection is not closed.
+                boolean isConnectionClosed = false;
+                while (!isConnectionClosed)
                 {
-                    // If the end is requested.
-                    if (!myStopTcpListeningRequested)
+                    // Block until a message is received or the connection is closed.
+                    ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
+
+                    if (aProtocolMessage != null)
                     {
-                        anInputStream = clientSocket.getInputStream();
-                        
-
-                        // While the stop of listening is not requested and the connection is not closed.
-                        boolean isConnectionClosed = false;
-                        while (!myStopTcpListeningRequested && !isConnectionClosed)
+                        // If response receiver connection open message
+                        if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
                         {
-                            // Block until a message is received or the connection is closed.
-                            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
-
-                            if (!myStopTcpListeningRequested)
+                            aResponseReceiverId = aProtocolMessage.ResponseReceiverId;
+                            
+                            synchronized (myConnectedResponseReceivers)
                             {
-                                if (aProtocolMessage != null)
+                                // Note: It is not allowed that 2 response receivers would have the same responseReceiverId.
+                                if (!myConnectedResponseReceivers.containsKey(aResponseReceiverId))
                                 {
-                                    // If response receiver connection open message
-                                    if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
-                                    {
-                                        aResponseReceiverId = aProtocolMessage.ResponseReceiverId;
-                                        
-                                        synchronized (myConnectedResponseReceivers)
-                                        {
-                                            // Note: It is not allowed that 2 response receivers would have the same responseReceiverId.
-                                            if (!myConnectedResponseReceivers.containsKey(aResponseReceiverId))
-                                            {
-                                                myConnectedResponseReceivers.put(aResponseReceiverId, new TClient(clientSocket));
-                                            }
-                                            else
-                                            {
-                                                throw new IllegalStateException("The resposne receiver '" + aResponseReceiverId + "' is already connected. It is not allowed, that response receivers share the same id.");
-                                            }
-                                        }
-
-                                        // Put the message to the queue from where the working thread removes it to notify
-                                        // subscribers of the input channel.
-                                        // Note: therfore subscribers of the input channel are notified allways in one thread.
-                                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
-                                    }
-                                    // If response receiver connection closed message
-                                    else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
-                                    {
-                                        isConnectionClosed = true;
-                                    }
-                                    else
-                                    {
-                                        // Put the message to the queue from where the working thread removes it to notify
-                                        // subscribers of the input channel.
-                                        // Note: therfore subscribers of the input channel are notified allways in one thread.
-                                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
-                                    }
+                                    myConnectedResponseReceivers.put(aResponseReceiverId, new TClient(clientSocket));
                                 }
                                 else
                                 {
-                                    isConnectionClosed = true;
+                                    throw new IllegalStateException("The resposne receiver '" + aResponseReceiverId + "' is already connected. It is not allowed, that response receivers share the same id.");
                                 }
                             }
-                        }
-                    }
-                }
-                finally
-                {
-                    if (!StringExt.isNullOrEmpty(aResponseReceiverId))
-                    {
-                        TClient.EConnectionState aConnectionState = TClient.EConnectionState.Closed;
-
-                        synchronized (myConnectedResponseReceivers)
-                        {
-                            TClient aTClient = myConnectedResponseReceivers.get(aResponseReceiverId);
-                            if (aTClient != null)
-                            {
-                                aConnectionState = aTClient.getConnectionState();
-                            }
-
-                            myConnectedResponseReceivers.remove(aResponseReceiverId);
-                        }
-
-                        // If the connection was not closed from this duplex input channel (i.e. by stopping of listener
-                        // or by calling 'DisconnectResponseReceiver()', then notify, that the client disconnected itself.
-                        if (!myStopTcpListeningRequested && aConnectionState == TClient.EConnectionState.Open)
-                        {
-                            ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aResponseReceiverId, null);
 
                             // Put the message to the queue from where the working thread removes it to notify
                             // subscribers of the input channel.
                             // Note: therfore subscribers of the input channel are notified allways in one thread.
                             myMessageProcessingThread.enqueueMessage(aProtocolMessage);
                         }
+                        // If response receiver connection closed message
+                        else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
+                        {
+                            isConnectionClosed = true;
+                        }
+                        else
+                        {
+                            // Put the message to the queue from where the working thread removes it to notify
+                            // subscribers of the input channel.
+                            // Note: therfore subscribers of the input channel are notified allways in one thread.
+                            myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                        }
                     }
-
-                    // Close the connection.
-                    if (anInputStream != null)
+                    else
                     {
-                        anInputStream.close();
+                        isConnectionClosed = true;
                     }
-                    clientSocket.close();
                 }
             }
-            catch (Exception err)
+            finally
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
-                throw err;
+                if (!StringExt.isNullOrEmpty(aResponseReceiverId))
+                {
+                    TClient.EConnectionState aConnectionState = TClient.EConnectionState.Closed;
+
+                    synchronized (myConnectedResponseReceivers)
+                    {
+                        TClient aTClient = myConnectedResponseReceivers.get(aResponseReceiverId);
+                        if (aTClient != null)
+                        {
+                            aConnectionState = aTClient.getConnectionState();
+                        }
+
+                        myConnectedResponseReceivers.remove(aResponseReceiverId);
+                    }
+
+                    // If the connection was not closed from this duplex input channel (i.e. by stopping of listener
+                    // or by calling 'DisconnectResponseReceiver()', then notify, that the client disconnected itself.
+                    if (aConnectionState == TClient.EConnectionState.Open)
+                    {
+                        ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aResponseReceiverId, null);
+
+                        // Put the message to the queue from where the working thread removes it to notify
+                        // subscribers of the input channel.
+                        // Note: therfore subscribers of the input channel are notified allways in one thread.
+                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                    }
+                }
             }
         }
         finally
@@ -353,7 +327,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void messageHandler(ProtocolMessage protocolMessage)
+    protected void handleMessage(ProtocolMessage protocolMessage)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -482,7 +456,6 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
     
     
     private HashMap<String, TClient> myConnectedResponseReceivers = new HashMap<String, TClient>();
-    
     private IProtocolFormatter<byte[]> myProtocolFormatter;
     
     

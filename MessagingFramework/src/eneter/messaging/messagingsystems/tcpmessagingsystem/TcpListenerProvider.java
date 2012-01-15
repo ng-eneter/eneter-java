@@ -5,14 +5,10 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.URI;
 
-import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.ErrorHandler;
-import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.net.system.IMethod1;
-import eneter.net.system.StringExt;
 import eneter.net.system.threading.ManualResetEvent;
 import eneter.net.system.threading.ThreadPool;
 
@@ -255,6 +251,11 @@ class TcpListenerProvider
             catch (Exception err)
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
+                throw err;
             }
             finally
             {

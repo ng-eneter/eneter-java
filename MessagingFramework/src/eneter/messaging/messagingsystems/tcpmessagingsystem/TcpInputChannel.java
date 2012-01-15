@@ -59,75 +59,60 @@ class TcpInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void handleConnection(Socket clientSocket)
+    protected void handleConnection(Socket clientSocket) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            synchronized (myConnectedSenders)
+            {
+                myConnectedSenders.add(clientSocket);
+            }
+
             try
             {
-                synchronized (myConnectedSenders)
-                {
-                    myConnectedSenders.add(clientSocket);
-                }
+                // Source stream.
+                InputStream anInputStream = clientSocket.getInputStream();
 
+                // First read the message to the buffer.
+                ProtocolMessage aProtocolMessage = null;
+                ByteArrayOutputStream anOutputMemStream = new ByteArrayOutputStream();
                 try
                 {
-                    // If the end is requested.
-                    if (!myStopTcpListeningRequested)
+                    int aSize = 0;
+                    byte[] aBuffer = new byte[32768];
+                    while ((aSize = anInputStream.read(aBuffer, 0, aBuffer.length)) != -1)
                     {
-                        // Source stream.
-                        InputStream anInputStream = clientSocket.getInputStream();
-
-                        // First read the message to the buffer.
-                        ProtocolMessage aProtocolMessage = null;
-                        ByteArrayOutputStream anOutputMemStream = new ByteArrayOutputStream();
-                        try
-                        {
-                            int aSize = 0;
-                            byte[] aBuffer = new byte[32768];
-                            while ((aSize = anInputStream.read(aBuffer, 0, aBuffer.length)) != -1)
-                            {
-                                anOutputMemStream.write(aBuffer, 0, aSize);
-                            }
-                        }
-                        finally
-                        {
-                            anOutputMemStream.close();
-                        }
-
-                        // Decode the incoming message.
-                        aProtocolMessage = myProtocolFormatter.decodeMessage(anOutputMemStream.toByteArray());
-
-                        if (!myStopTcpListeningRequested && aProtocolMessage != null)
-                        {
-                            // Put the message to the queue from where the working thread removes it to notify
-                            // subscribers of the input channel.
-                            // Note: therfore subscribers of the input channel are notified allways in one thread.
-                            myMessageProcessingThread.enqueueMessage(aProtocolMessage);
-                        }
+                        anOutputMemStream.write(aBuffer, 0, aSize);
                     }
                 }
                 finally
                 {
-                    synchronized (myConnectedSenders)
-                    {
-                        myConnectedSenders.remove(clientSocket);
-                    }
+                    anOutputMemStream.close();
+                }
 
-                    // Close the connection.
-                    clientSocket.close();
+                // Decode the incoming message.
+                aProtocolMessage = myProtocolFormatter.decodeMessage(anOutputMemStream.toByteArray());
+
+                if (aProtocolMessage != null)
+                {
+                    // Put the message to the queue from where the working thread removes it to notify
+                    // subscribers of the input channel.
+                    // Note: therfore subscribers of the input channel are notified allways in one thread.
+                    myMessageProcessingThread.enqueueMessage(aProtocolMessage);
                 }
             }
-            catch (Exception err)
+            finally
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingHttpConnectionFailure, err);
+                synchronized (myConnectedSenders)
+                {
+                    myConnectedSenders.remove(clientSocket);
+                }
+
+                // Close the connection.
+                clientSocket.close();
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingHttpConnectionFailure, err);
-                throw err;
-            }
+            
         }
         finally
         {
@@ -136,7 +121,7 @@ class TcpInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void messageHandler(ProtocolMessage protocolMessage)
+    protected void handleMessage(ProtocolMessage protocolMessage)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

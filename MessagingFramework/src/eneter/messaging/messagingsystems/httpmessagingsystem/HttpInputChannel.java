@@ -47,91 +47,76 @@ class HttpInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void handleConnection(Socket clientSocket)
+    protected void handleConnection(Socket clientSocket) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            // Status that will be responsed back to the client.
+            // If everything is OK, the status will be changed to OK.
+            String anHttpResponseStatus = "HTTP/1.1 404 Not Found\r\n\r\n";
+            
             try
             {
-                // Status that will be responsed back to the client.
-                // If everything is OK, the status will be changed to OK.
-                String anHttpResponseStatus = "HTTP/1.1 404 Not Found\r\n\r\n";
-                
-                try
-                {
-                    // If the end is requested.
-                    if (!myStopTcpListeningRequested)
-                    {
-                        // Source stream.
-                        InputStream anInputStream = clientSocket.getInputStream();
+                // Source stream.
+                InputStream anInputStream = clientSocket.getInputStream();
 
-                        // Actually, we are not interested in HTTP details.
-                        // So skip the HTTP part and find the beginning of the ENETER message.
-                        // Note: The content of the HTTP message should start after empty line.
-                        DataInputStream aReader = new DataInputStream(anInputStream);
-                        while (true)
+                // Actually, we are not interested in HTTP details.
+                // So skip the HTTP part and find the beginning of the ENETER message.
+                // Note: The content of the HTTP message should start after empty line.
+                DataInputStream aReader = new DataInputStream(anInputStream);
+                while (true)
+                {
+                    int aValue = aReader.read();
+                    
+                    // End of some line
+                    if (aValue == 13)
+                    {
+                        aValue = aReader.read();
+                        if (aValue == 10)
                         {
-                            int aValue = aReader.read();
-                            
-                            // End of some line
+                            // Follows empty line.
+                            aValue = aReader.read();
                             if (aValue == 13)
                             {
                                 aValue = aReader.read();
                                 if (aValue == 10)
                                 {
-                                    // Follows empty line.
-                                    aValue = aReader.read();
-                                    if (aValue == 13)
-                                    {
-                                        aValue = aReader.read();
-                                        if (aValue == 10)
-                                        {
-                                            break;
-                                        }
-                                    }
+                                    break;
                                 }
                             }
-                            
-                            if (aValue == -1)
-                            {
-                                throw new IllegalStateException("Unexpected end of the input stream.");
-                            }
-                        }
-                        
-                        // Decode the incoming message.
-                        ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
-                        
-                        // The incoming message was OK.
-                        anHttpResponseStatus = "HTTP/1.1 200 OK\r\n\r\n";
-
-                        if (!myStopTcpListeningRequested && aProtocolMessage != null)
-                        {
-                            // Put the message to the queue from where the working thread removes it to notify
-                            // subscribers of the input channel.
-                            // Note: therfore subscribers of the input channel are notified allways in one thread.
-                            myMessageProcessingThread.enqueueMessage(aProtocolMessage);
                         }
                     }
-                }
-                finally
-                {
-                    // The message was successfully received, so send the HTTP response.
-                    DataOutputStream aResponseWriter = new DataOutputStream(clientSocket.getOutputStream());
-                    aResponseWriter.writeBytes(anHttpResponseStatus);
                     
-                    // Close the connection.
-                    clientSocket.close();
+                    if (aValue == -1)
+                    {
+                        throw new IllegalStateException("Unexpected end of the input stream.");
+                    }
                 }
+                    
+                // Decode the incoming message.
+                ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
+                
+                // The incoming message was OK.
+                anHttpResponseStatus = "HTTP/1.1 200 OK\r\n\r\n";
+
+                if (aProtocolMessage != null)
+                {
+                    // Put the message to the queue from where the working thread removes it to notify
+                    // subscribers of the input channel.
+                    // Note: therefore subscribers of the input channel are notified always in one thread.
+                    myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                }
+
             }
-            catch (Exception err)
+            finally
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingHttpConnectionFailure, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingHttpConnectionFailure, err);
-                throw err;
+                // The message was successfully received, so send the HTTP response.
+                DataOutputStream aResponseWriter = new DataOutputStream(clientSocket.getOutputStream());
+                aResponseWriter.writeBytes(anHttpResponseStatus);
+                
+                // Close the connection.
+                clientSocket.close();
             }
         }
         finally
@@ -141,7 +126,7 @@ class HttpInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void messageHandler(ProtocolMessage protocolMessage)
+    protected void handleMessage(ProtocolMessage protocolMessage)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

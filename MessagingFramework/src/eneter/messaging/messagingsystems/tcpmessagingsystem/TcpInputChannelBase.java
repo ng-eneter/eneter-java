@@ -7,8 +7,7 @@ import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.net.system.*;
-import eneter.net.system.threading.ManualResetEvent;
-import eneter.net.system.threading.ThreadPool;
+
 
 public abstract class TcpInputChannelBase
 {
@@ -23,9 +22,10 @@ public abstract class TcpInputChannelBase
                 throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
             }
             
+            URI aUri;
             try
             {
-                myUri = new URI(ipAddressAndPort);
+                aUri = new URI(ipAddressAndPort);
             }
             catch (Exception err)
             {
@@ -38,7 +38,7 @@ public abstract class TcpInputChannelBase
                 throw err;
             }
             
-            myServerSecurityFactory = serverSecurityFactory;
+            myTcpListenerProvider = new TcpListenerProvider(InetAddress.getByName(aUri.getHost()), aUri.getPort(), serverSecurityFactory);
             
             myChannelId = ipAddressAndPort;
             myMessageProcessingThread = new WorkingThread<ProtocolMessage>(ipAddressAndPort);
@@ -71,23 +71,11 @@ public abstract class TcpInputChannelBase
                 
                 try
                 {
-                    myStopTcpListeningRequested = false;
-                    
                     // Start the working thread for removing messages from the queue
                     myMessageProcessingThread.registerMessageHandler(myMessageHandlerHandler);
                     
-                    //myServerSocket = new ServerSocket(myUri.getPort(), 1000, InetAddress.getByName(myUri.getHost()));
-                    myServerSocket = myServerSecurityFactory.createServerSocket(InetAddress.getByName(myUri.getHost()), myUri.getPort());
-                    
-                    // Listen in another thread.
-                    myTcpListeningThread = new Thread(myDoTcpListeningRunnable);
-                    myTcpListeningThread.start();
-                    
-                    // Wait until the thread really started the listening.
-                    if (!myListeningStartedEvent.waitOne(5000))
-                    {
-                        throw new IllegalStateException("The thread listening to messages did not start.");
-                    }
+                    // Start TCP listener.
+                    myTcpListenerProvider.startListening(myHandleConnection);
                 }
                 catch (Exception err)
                 {
@@ -129,7 +117,6 @@ public abstract class TcpInputChannelBase
         }
     }
     
-    @SuppressWarnings("deprecation")
     public void stopListening()
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -137,8 +124,7 @@ public abstract class TcpInputChannelBase
         {
             synchronized (myListeningManipulatorLock)
             {
-                myStopTcpListeningRequested = true;
-
+                // Try to stop connections with clients.
                 try
                 {
                     disconnectClients();
@@ -152,52 +138,9 @@ public abstract class TcpInputChannelBase
                     EneterTrace.error(TracedObject() + "failed to close Tcp connections with clients.", err);
                     throw err;
                 }
-
-                if (myServerSocket != null)
-                {
-                    try
-                    {
-                        myServerSocket.close();
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
-                    }
-                    myServerSocket = null;
-                }
-
-                if (myTcpListeningThread != null && myTcpListeningThread.getState() != Thread.State.NEW)
-                {
-                    try
-                    {
-                        myTcpListeningThread.join(1000);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myTcpListeningThread.getId());
-                    }
-                    
-                    if (myTcpListeningThread.getState() != Thread.State.TERMINATED)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myTcpListeningThread.getId());
-
-                        try
-                        {
-                            // The thread must be stopped
-                            myTcpListeningThread.stop();
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                        }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                            throw err;
-                        }
-                    }
-                }
-                myTcpListeningThread = null;
+                
+                // Stop the TCP listener.
+                myTcpListenerProvider.stopListening();
 
                 // Stop thread processing the queue with messages.
                 try
@@ -229,58 +172,8 @@ public abstract class TcpInputChannelBase
         {
             synchronized (myListeningManipulatorLock)
             {
-                return myServerSocket != null;
+                return myTcpListenerProvider.isListening();
             }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    
-    private void doTcpListening()
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myListeningStartedEvent.set();
-            
-            try
-            {
-                // Listening loop.
-                while (!myStopTcpListeningRequested)
-                {
-                    // Wait while the client is connected.
-                    final Socket aClientSocket = myServerSocket.accept();
-                    
-                    // Process the incoming connection in a different thread.
-                    ThreadPool.queueUserWorkItem(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            handleConnection(aClientSocket);
-                        }
-                    });
-                }
-            }
-            catch (SocketException err)
-            {
-                // If the server is not listening, then this exception occurred because the listening
-                // was stopped and tracing is not desired.
-                // If the server still listens, then there is some other problem that must be traced.
-                if (myServerSocket != null)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
-                }
-            }
-            catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
-            }
-            
-            myListeningStartedEvent.reset();
         }
         finally
         {
@@ -291,39 +184,35 @@ public abstract class TcpInputChannelBase
     
     protected abstract void disconnectClients() throws IOException;
     
-    protected abstract void handleConnection(Socket clientSocket);
+    protected abstract void handleConnection(Socket clientSocket) throws Exception;
     
-    protected abstract void messageHandler(ProtocolMessage message);
+    protected abstract void handleMessage(ProtocolMessage message);
     
-    private URI myUri;
+
     protected String myChannelId = "";
-    
-    private IServerSecurityFactory myServerSecurityFactory;
-    private ServerSocket myServerSocket;
-    private Thread myTcpListeningThread;
-    protected volatile boolean myStopTcpListeningRequested;
-    private ManualResetEvent myListeningStartedEvent = new ManualResetEvent(false);
-    
+   
+   
+    protected Object myListeningManipulatorLock = new Object();
+    private TcpListenerProvider myTcpListenerProvider;
     protected WorkingThread<ProtocolMessage> myMessageProcessingThread;
     
-    protected Object myListeningManipulatorLock = new Object();
     
-    
-    private Runnable myDoTcpListeningRunnable = new Runnable()
+    private IMethod1<Socket> myHandleConnection = new IMethod1<Socket>()
     {
         @Override
-        public void run()
+        public void invoke(Socket x) throws Exception
         {
-            doTcpListening();
+            handleConnection(x);
         }
     };
     
+   
     private IMethod1<ProtocolMessage> myMessageHandlerHandler = new IMethod1<ProtocolMessage>()
     {
         @Override
         public void invoke(ProtocolMessage message) throws Exception
         {
-            messageHandler(message);
+            handleMessage(message);
         }
     };
     
