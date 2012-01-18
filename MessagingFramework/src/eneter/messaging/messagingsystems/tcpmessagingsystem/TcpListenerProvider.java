@@ -1,20 +1,14 @@
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketException;
+import java.net.*;
 
-import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.ErrorHandler;
+import eneter.messaging.diagnostic.*;
 import eneter.net.system.IMethod1;
-import eneter.net.system.threading.ManualResetEvent;
-import eneter.net.system.threading.ThreadPool;
+import eneter.net.system.threading.*;
 
-public class TcpListenerProvider
+
+public class TcpListenerProvider implements ITcpListenerProvider
 {
     public TcpListenerProvider(InetSocketAddress socketAddress)
     {
@@ -35,6 +29,12 @@ public class TcpListenerProvider
         }
     }
     
+    public InetSocketAddress getSocketAddress()
+    {
+        return mySocketAddress;
+    }
+    
+    @Override
     public void startListening(IMethod1<Socket> connectionHandler) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -107,7 +107,8 @@ public class TcpListenerProvider
             EneterTrace.leaving(aTrace);
         }
     }
-    
+ 
+    @Override
     @SuppressWarnings("deprecation")
     public void stopListening()
     {
@@ -172,7 +173,7 @@ public class TcpListenerProvider
         }
     }
     
-    
+    @Override
     public boolean isListening()
     {
         EneterTrace aTrace = EneterTrace.entering();
