@@ -11,7 +11,7 @@ import eneter.net.system.*;
 
 public abstract class TcpInputChannelBase
 {
-    public TcpInputChannelBase(String ipAddressAndPort, IServerSecurityFactory serverSecurityFactory) throws Exception
+    public TcpInputChannelBase(ITcpListenerProvider tcpListenerProvider, IServerSecurityFactory serverSecurityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

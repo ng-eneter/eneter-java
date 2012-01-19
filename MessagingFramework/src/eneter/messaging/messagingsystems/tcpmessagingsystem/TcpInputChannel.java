@@ -12,11 +12,11 @@ import eneter.net.system.*;
 class TcpInputChannel extends TcpInputChannelBase
                       implements IInputChannel
 {
-    public TcpInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter,
+    public TcpInputChannel(ITcpListenerProvider tcpListenerProvider, IProtocolFormatter<byte[]> protocolFormatter,
             IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(ipAddressAndPort, serverSecurityFactory);
+        super(tcpListenerProvider, serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try

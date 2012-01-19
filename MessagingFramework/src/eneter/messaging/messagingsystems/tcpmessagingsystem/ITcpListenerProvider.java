@@ -10,5 +10,5 @@ public interface ITcpListenerProvider
     
     public void stopListening();
     
-    public boolean isListening();
+    public boolean isListening() throws Exception;
 }
