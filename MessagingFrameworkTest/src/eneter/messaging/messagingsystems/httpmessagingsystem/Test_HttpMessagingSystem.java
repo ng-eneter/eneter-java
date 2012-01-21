@@ -35,8 +35,8 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
     @Before
     public void Setup() throws Exception
     {
-        EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
-        EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
+        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
         Random aRandomPort = new Random();
         int aPort = 7000 + aRandomPort.nextInt(1000);
