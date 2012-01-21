@@ -2,16 +2,12 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.io.InputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.URL;
-import java.nio.charset.Charset;
+import java.net.URI;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.ErrorHandler;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpListenerProvider;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.ITcpListenerProvider;
 import eneter.net.system.IMethod1;
 
 public class HttpPolicyServer
@@ -21,27 +17,14 @@ public class HttpPolicyServer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            URL aUrl;
-            try
-            {
-                aUrl = new URL(httpRootAddress);
-            }
-            catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
-                throw err;
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
-                throw err;
-            }
-            
             setPolicyXml(getSilverlightDefaultPolicyXml());
             
-            int aPort = (aUrl.getPort() != -1) ? aUrl.getPort() : aUrl.getDefaultPort();
-            InetSocketAddress aSocketAddress = new InetSocketAddress(aUrl.getHost(), aPort);
-            myTcpListenerProvider = new TcpListenerProvider(aSocketAddress);
+            // Get the http address with the path to the policy xml.
+            URI aUri = new URI(httpRootAddress);
+            String aPolicyXmlHttp = aUri.getScheme() + "://" + aUri.getAuthority() + myPolicyXmlPath;
+            
+            // Subscribe to listen to the xml policy path.
+            myHttpListenerProvider = new HttpListenerProvider(aPolicyXmlHttp);
         }
         finally
         {
@@ -68,12 +51,12 @@ public class HttpPolicyServer
         }
     }
 
-    public boolean isListening()
+    public boolean isListening() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return myTcpListenerProvider.isListening();
+            return myHttpListenerProvider.isListening();
         }
         finally
         {
@@ -88,7 +71,7 @@ public class HttpPolicyServer
         {
             try
             {
-                myTcpListenerProvider.startListening(myHandleConnection);
+                myHttpListenerProvider.startListening(myHandleConnection);
             }
             catch (Exception err)
             {
@@ -107,7 +90,7 @@ public class HttpPolicyServer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myTcpListenerProvider.stopListening();
+            myHttpListenerProvider.stopListening();
         }
         finally
         {
@@ -115,30 +98,18 @@ public class HttpPolicyServer
         }
     }
 
+    /**
+     * It is called if the request to http://address/clientaccesspolicy.xml is received.
+     * It responses the policy xml.
+     * @param tcpClient
+     * @throws Exception
+     */
     private void handleConnection(Socket tcpClient) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Source stream.
-            InputStream anInputStream = tcpClient.getInputStream();
-
-            Charset aCharset = Charset.forName("UTF-8");
-            
-            String aReceivedRequest = "";
-            int aSize = 0;
-            byte[] aBuffer = new byte[512];
-            while (aReceivedRequest.length() < myPolicyRequestString.length() &&
-                    (aSize = anInputStream.read(aBuffer, 0, aBuffer.length)) > 0)
-            {
-                aReceivedRequest += new String(aBuffer, 0, aSize, aCharset);
-            }
-
-            // If it is the policy request then return the policy xml
-            if (aReceivedRequest.equals(myPolicyRequestString))
-            {
-                tcpClient.getOutputStream().write(myHttpResponse);
-            }
+            tcpClient.getOutputStream().write(myHttpResponse);
         }
         finally
         {
@@ -195,8 +166,8 @@ public class HttpPolicyServer
         }
     }
     
-    private TcpListenerProvider myTcpListenerProvider;
-    private String myPolicyRequestString = "GET /clientaccesspolicy.xml";
+    private ITcpListenerProvider myHttpListenerProvider;
+    private String myPolicyXmlPath = "/clientaccesspolicy.xml";
     private String myHttpRootAddress;
     private byte[] myHttpResponse;
     private String myPolicyXml;

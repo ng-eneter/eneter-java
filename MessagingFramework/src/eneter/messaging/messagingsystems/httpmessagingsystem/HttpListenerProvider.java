@@ -8,6 +8,11 @@ import eneter.net.system.IMethod1;
 
 class HttpListenerProvider implements ITcpListenerProvider
 {
+    public HttpListenerProvider(String ipAddressAndPort)
+    {
+        this(ipAddressAndPort, new NoneSecurityServerFactory());
+    }
+    
     public HttpListenerProvider(String ipAddressAndPort, IServerSecurityFactory serverSecurityFactory)
     {
         EneterTrace aTrace = EneterTrace.entering();

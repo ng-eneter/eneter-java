@@ -166,14 +166,25 @@ class HttpListenerController
             }
         }
         
-        public boolean existPathListener(String path)
+        public boolean existPathListener(final String path) throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
                 synchronized (myPathListeners)
                 {
-                    return myPathListeners.size() != 0;
+                    boolean isAny = EnumerableExt.any(myPathListeners,
+                            new IFunction1<Boolean, PathListener>()
+                            {
+                                @Override
+                                public Boolean invoke(PathListener x)
+                                        throws Exception
+                                {
+                                    return x.getPath().equals(path);
+                                }
+                            });
+                    
+                    return isAny;
                 }
             }
             finally
@@ -416,7 +427,7 @@ class HttpListenerController
                 // If the path listener does not exist then listening is not active.
                 if (aHostListener.existPathListener(uri.getPath()) == false)
                 {
-                    myListeners.remove(aHostListener);
+                    return false;
                 }
                 
                 return true;
