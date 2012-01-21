@@ -58,7 +58,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     }
 
     @Override
-    public boolean isListening()
+    public boolean isListening() throws Exception
     {
         return myUnderlyingInputChannel.isListening();
     }
