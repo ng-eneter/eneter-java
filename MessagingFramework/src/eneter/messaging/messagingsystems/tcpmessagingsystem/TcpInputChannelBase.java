@@ -11,7 +11,7 @@ import eneter.net.system.*;
 
 public abstract class TcpInputChannelBase
 {
-    public TcpInputChannelBase(ITcpListenerProvider tcpListenerProvider, IServerSecurityFactory serverSecurityFactory) throws Exception
+    public TcpInputChannelBase(String ipAddressAndPort, ITcpListenerProvider tcpListenerProvider, IServerSecurityFactory serverSecurityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -22,25 +22,7 @@ public abstract class TcpInputChannelBase
                 throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
             }
             
-            URL aUrl;
-            try
-            {
-                aUrl = new URL(ipAddressAndPort);
-            }
-            catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
-                throw err;
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
-                throw err;
-            }
-            
-            int aPort = (aUrl.getPort() != -1) ? aUrl.getPort() : aUrl.getDefaultPort();
-            InetSocketAddress aSocketAddress = new InetSocketAddress(aUrl.getHost(), aPort);
-            myTcpListenerProvider = new TcpListenerProvider(aSocketAddress, serverSecurityFactory);
+            myTcpListenerProvider = tcpListenerProvider;
             
             myChannelId = ipAddressAndPort;
             myMessageProcessingThread = new WorkingThread<ProtocolMessage>(ipAddressAndPort);
@@ -167,7 +149,7 @@ public abstract class TcpInputChannelBase
     }
     
     
-    public boolean isListening()
+    public boolean isListening() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -195,7 +177,7 @@ public abstract class TcpInputChannelBase
    
    
     protected Object myListeningManipulatorLock = new Object();
-    private TcpListenerProvider myTcpListenerProvider;
+    private ITcpListenerProvider myTcpListenerProvider;
     protected WorkingThread<ProtocolMessage> myMessageProcessingThread;
     
     

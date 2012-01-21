@@ -10,6 +10,57 @@ import eneter.net.system.threading.*;
 
 public class TcpListenerProvider implements ITcpListenerProvider
 {
+    public TcpListenerProvider(String ipAddressAndPort)
+            throws Exception
+    {
+        this(ipAddressAndPort, new NoneSecurityServerFactory());
+    }
+    
+    public TcpListenerProvider(String ipAddressAndPort, IServerSecurityFactory serverSecurityFactory)
+            throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            URI aUri;
+            try
+            {
+                aUri = new URI(ipAddressAndPort);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
+                throw err;
+            }
+            
+            int aPort = aUri.getPort();
+            
+            // If the port is not part of the address use the default one.
+            if (aPort == -1)
+            {
+                String aProtocol = aUri.getScheme();
+                if (aProtocol == null || aProtocol != null && aProtocol.toLowerCase().equals("http"))
+                {
+                    aPort = 80;
+                }
+                else if (aProtocol != null && aProtocol.toLowerCase().equals("https"))
+                {
+                    aPort = 443;
+                }
+                
+                String anErrorMessage = TracedObject() + "detected, the port number is not specified.";
+                throw new IllegalStateException(anErrorMessage);
+            }
+            
+            mySocketAddress = new InetSocketAddress(aUri.getHost(), aPort);
+            myServerSecurityFactory = serverSecurityFactory;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     public TcpListenerProvider(InetSocketAddress socketAddress)
     {
         this(socketAddress, new NoneSecurityServerFactory());
@@ -28,6 +79,7 @@ public class TcpListenerProvider implements ITcpListenerProvider
             EneterTrace.leaving(aTrace);
         }
     }
+    
     
     public InetSocketAddress getSocketAddress()
     {

@@ -8,12 +8,12 @@ import eneter.net.system.IMethod1;
 
 class HttpListenerProvider implements ITcpListenerProvider
 {
-    public HttpListenerProvider(URI uri, IServerSecurityFactory serverSecurityFactory)
+    public HttpListenerProvider(String ipAddressAndPort, IServerSecurityFactory serverSecurityFactory)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myUri = uri;
+            myUri = URI.create(ipAddressAndPort);
             myServerSecurityFactory = serverSecurityFactory;
         }
         finally

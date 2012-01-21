@@ -74,7 +74,9 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
             IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(channelId, serverSecurityFactory);
+        super(channelId,
+              new HttpListenerProvider(channelId, serverSecurityFactory),
+              serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -219,40 +221,10 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
 
             try
             {
+                // Source stream.
+                // Note: The stream position is set right behind the HTTP part.
                 anInputStream = clientSocket.getInputStream();
                 
-                // We are not interested in HTTP part, so set the position
-                // in the stream at the beginning of ENETER.
-                DataInputStream aReader = new DataInputStream(anInputStream);
-                while (true)
-                {
-                    int aValue = aReader.read();
-                    
-                    // End of some line
-                    if (aValue == 13)
-                    {
-                        aValue = aReader.read();
-                        if (aValue == 10)
-                        {
-                            // Follows empty line.
-                            aValue = aReader.read();
-                            if (aValue == 13)
-                            {
-                                aValue = aReader.read();
-                                if (aValue == 10)
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (aValue == -1)
-                    {
-                        throw new IllegalStateException("Unexpected end of the input stream.");
-                    }
-                }
-                    
                 // Decode the eneter message.
                 final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
 

@@ -9,19 +9,20 @@ import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 
-class TcpInputChannel extends TcpInputChannelBase
-                      implements IInputChannel
+class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
 {
-    public TcpInputChannel(ITcpListenerProvider tcpListenerProvider, IProtocolFormatter<byte[]> protocolFormatter,
+    public TcpInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter,
             IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(tcpListenerProvider, serverSecurityFactory);
+        super(ipAddressAndPort,
+              new TcpListenerProvider(ipAddressAndPort, serverSecurityFactory),
+              serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-             myProtocolFormatter = protocolFormatter;
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {

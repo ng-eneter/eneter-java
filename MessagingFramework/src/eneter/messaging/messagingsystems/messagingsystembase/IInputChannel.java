@@ -41,5 +41,5 @@ public interface IInputChannel
     /**
      * Returns true if the input channel is listening.
      */
-    boolean isListening();
+    boolean isListening() throws Exception;
 }

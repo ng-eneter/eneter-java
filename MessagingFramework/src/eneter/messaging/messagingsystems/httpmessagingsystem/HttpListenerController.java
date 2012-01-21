@@ -173,7 +173,7 @@ class HttpListenerController
             {
                 synchronized (myPathListeners)
                 {
-                    return myPathListeners.size() == 0;
+                    return myPathListeners.size() != 0;
                 }
             }
             finally
@@ -250,7 +250,7 @@ class HttpListenerController
                                 public Boolean invoke(PathListener x)
                                         throws Exception
                                 {
-                                    return x.equals(aUri.getPath());
+                                    return x.getPath().equals(aUri.getPath());
                                 }
                             });
                 }
@@ -358,7 +358,6 @@ class HttpListenerController
      * @throws Exception
      */
     public static void stopListening(final URI uri)
-            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -383,6 +382,15 @@ class HttpListenerController
                     myListeners.remove(aHostListener);
                 }
             }
+        }
+        catch (Exception err)
+        {
+            EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
+        }
+        catch (Error err)
+        {
+            EneterTrace.error(TracedObject() + ErrorHandler.StopListeningFailure, err);
+            throw err;
         }
         finally
         {

@@ -61,7 +61,7 @@ public abstract class AttachableInputChannelBase implements IAttachableInputChan
         }
     }
 
-    public void detachInputChannel()
+    public void detachInputChannel() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

@@ -142,7 +142,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     }
 
     @Override
-    public boolean isListening()
+    public boolean isListening() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

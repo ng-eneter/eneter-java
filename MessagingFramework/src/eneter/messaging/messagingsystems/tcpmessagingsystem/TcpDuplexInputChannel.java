@@ -59,7 +59,9 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(ipAddressAndPort, serverSecurityFactory);
+        super(ipAddressAndPort,
+              new TcpListenerProvider(ipAddressAndPort, serverSecurityFactory),
+              serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try

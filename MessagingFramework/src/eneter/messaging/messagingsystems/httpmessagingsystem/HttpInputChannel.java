@@ -2,6 +2,7 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.URI;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
@@ -19,7 +20,9 @@ class HttpInputChannel extends TcpInputChannelBase
             IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(ipAddressAndPort, serverSecurityFactory);
+        super(ipAddressAndPort,
+              new HttpListenerProvider(ipAddressAndPort, serverSecurityFactory),
+              serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -59,40 +62,8 @@ class HttpInputChannel extends TcpInputChannelBase
             try
             {
                 // Source stream.
+                // Note: The stream position is set right behind the HTTP part.
                 InputStream anInputStream = clientSocket.getInputStream();
-
-                // Actually, we are not interested in HTTP details.
-                // So skip the HTTP part and find the beginning of the ENETER message.
-                // Note: The content of the HTTP message should start after empty line.
-                DataInputStream aReader = new DataInputStream(anInputStream);
-                while (true)
-                {
-                    int aValue = aReader.read();
-                    
-                    // End of some line
-                    if (aValue == 13)
-                    {
-                        aValue = aReader.read();
-                        if (aValue == 10)
-                        {
-                            // Follows empty line.
-                            aValue = aReader.read();
-                            if (aValue == 13)
-                            {
-                                aValue = aReader.read();
-                                if (aValue == 10)
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (aValue == -1)
-                    {
-                        throw new IllegalStateException("Unexpected end of the input stream.");
-                    }
-                }
                     
                 // Decode the incoming message.
                 ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);

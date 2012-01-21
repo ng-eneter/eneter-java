@@ -53,7 +53,7 @@ public interface IDuplexInputChannel
     /**
      * Returns true if the duplex input channel is listening.
      */
-    boolean isListening();
+    boolean isListening() throws Exception;
 
     /**
      * Sends the response message back to the connected IDuplexOutputChannel.

@@ -114,7 +114,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     }
 
     @Override
-    public boolean isListening()
+    public boolean isListening() throws Exception
     {
         synchronized (myListeningManipulatorLock)
         {
