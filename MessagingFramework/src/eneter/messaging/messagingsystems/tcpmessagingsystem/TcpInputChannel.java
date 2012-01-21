@@ -21,7 +21,7 @@ class TcpInputChannel extends TcpInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myProtocolFormatter = protocolFormatter;
+             myProtocolFormatter = protocolFormatter;
         }
         finally
         {
