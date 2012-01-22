@@ -8,7 +8,7 @@ import eneter.net.system.IMethod1;
 import eneter.net.system.threading.*;
 
 
-public class TcpListenerProvider implements ITcpListenerProvider
+public class TcpListenerProvider implements IListenerProvider
 {
     public TcpListenerProvider(String ipAddressAndPort)
             throws Exception

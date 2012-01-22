@@ -6,7 +6,7 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.net.system.IMethod1;
 
-class HttpListenerProvider implements ITcpListenerProvider
+class HttpListenerProvider implements IListenerProvider
 {
     public HttpListenerProvider(String ipAddressAndPort)
     {

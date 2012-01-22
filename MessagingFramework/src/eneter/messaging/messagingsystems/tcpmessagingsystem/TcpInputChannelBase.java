@@ -11,7 +11,7 @@ import eneter.net.system.*;
 
 public abstract class TcpInputChannelBase
 {
-    public TcpInputChannelBase(String ipAddressAndPort, ITcpListenerProvider tcpListenerProvider, IServerSecurityFactory serverSecurityFactory) throws Exception
+    public TcpInputChannelBase(String ipAddressAndPort, IListenerProvider tcpListenerProvider, IServerSecurityFactory serverSecurityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -177,7 +177,7 @@ public abstract class TcpInputChannelBase
    
    
     protected Object myListeningManipulatorLock = new Object();
-    private ITcpListenerProvider myTcpListenerProvider;
+    private IListenerProvider myTcpListenerProvider;
     protected WorkingThread<ProtocolMessage> myMessageProcessingThread;
     
     

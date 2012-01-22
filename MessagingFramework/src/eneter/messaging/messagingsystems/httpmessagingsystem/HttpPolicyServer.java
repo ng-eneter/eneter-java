@@ -7,7 +7,7 @@ import java.net.URI;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.ErrorHandler;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.ITcpListenerProvider;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IListenerProvider;
 import eneter.net.system.IMethod1;
 
 public class HttpPolicyServer
@@ -166,7 +166,7 @@ public class HttpPolicyServer
         }
     }
     
-    private ITcpListenerProvider myHttpListenerProvider;
+    private IListenerProvider myHttpListenerProvider;
     private String myPolicyXmlPath = "/clientaccesspolicy.xml";
     private String myHttpRootAddress;
     private byte[] myHttpResponse;

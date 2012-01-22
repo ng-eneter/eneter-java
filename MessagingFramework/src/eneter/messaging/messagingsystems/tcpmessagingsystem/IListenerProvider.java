@@ -4,7 +4,7 @@ import java.net.Socket;
 
 import eneter.net.system.IMethod1;
 
-public interface ITcpListenerProvider
+public interface IListenerProvider
 {
     public void startListening(IMethod1<Socket> connectionHandler) throws Exception;
     
