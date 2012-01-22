@@ -655,7 +655,7 @@ public abstract class MessagingSystemBaseTester
     
     
     
-    private void sendMessageViaOutputChannel(final String channelId, final Object message, final int numberOfTimes, int timeOutForMessageProcessing)
+    protected void sendMessageViaOutputChannel(final String channelId, final Object message, final int numberOfTimes, int timeOutForMessageProcessing)
             throws Exception
     {
         IOutputChannel anOutputChannel = myMessagingSystemFactory.createOutputChannel(channelId);
@@ -677,7 +677,7 @@ public abstract class MessagingSystemBaseTester
                 {
                     ++aNumberOfReceivedMessages[0];
 
-                    if (!myChannelId.equals(y.getChannelId()) || !message.equals(y.getMessage()))
+                    if (!channelId.equals(y.getChannelId()) || !message.equals(y.getMessage()))
                     {
                         ++aNumberOfFailures[0];
                     }
@@ -707,13 +707,13 @@ public abstract class MessagingSystemBaseTester
                 anOutputChannel.sendMessage(message);
             }
 
-            EneterTrace.info("Send messages to '" + myChannelId + "' completed - waiting while they are processed.");
+            EneterTrace.info("Send messages to '" + channelId + "' completed - waiting while they are processed.");
 
             // Wait until all messages are processed.
             assertTrue(aMessagesSentEvent.waitOne(timeOutForMessageProcessing));
             //assertTrue(aMessagesSentEvent.waitOne(60000));
 
-            EneterTrace.info("Waiting for processing of messages on '" + myChannelId + "' completed.");
+            EneterTrace.info("Waiting for processing of messages on '" + channelId + "' completed.");
         }
         finally
         {
@@ -725,7 +725,7 @@ public abstract class MessagingSystemBaseTester
     }
     
     
-    private void sendMessageReceiveResponse(final String channelId, final Object message, final Object resonseMessage, final int numberOfTimes, int timeOutForMessageProcessing)
+    protected void sendMessageReceiveResponse(final String channelId, final Object message, final Object resonseMessage, final int numberOfTimes, int timeOutForMessageProcessing)
             throws Exception
     {
         IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(channelId);
@@ -811,13 +811,13 @@ public abstract class MessagingSystemBaseTester
                 anOutputChannel.sendMessage(message);
             }
 
-            EneterTrace.info("Send messages to '" + myChannelId + "' completed - waiting while they are processed.");
+            EneterTrace.info("Send messages to '" + channelId + "' completed - waiting while they are processed.");
 
             // Wait until all messages are processed.
             assertTrue(aMessagesSentEvent.waitOne(timeOutForMessageProcessing));
             //assertTrue(aMessagesSentEvent.waitOne(60000));
 
-            EneterTrace.info("Waiting for processing of messages on '" + myChannelId + "' completed.");
+            EneterTrace.info("Waiting for processing of messages on '" + channelId + "' completed.");
         }
         finally
         {

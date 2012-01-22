@@ -6,6 +6,10 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.net.ConnectException;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.junit.*;
 
@@ -43,6 +47,17 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
         
         myMessagingSystemFactory = new HttpMessagingSystemFactory();
         myChannelId = "http://127.0.0.1:" + Integer.toString(aPort) + "/Testing/";
+        
+        myChannelId2 = "http://127.0.0.1:" + Integer.toString(aPort) + "/Testing2/";
+        myChannelId3 = "http://127.0.0.1:" + Integer.toString(aPort) + "/";
+    }
+    
+    @Test(expected = ConnectException.class)
+    @Override
+    public void A07_StopListening()
+        throws Exception
+    {
+        super.A07_StopListening();
     }
     
     @Test
@@ -133,11 +148,52 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
         }
     }
     
-    @Test(expected = ConnectException.class)
-    @Override
-    public void A07_StopListening()
-        throws Exception
+    @Test
+    public void B02_MoreListenersBasedOnSameTCP() throws Exception
     {
-        super.A07_StopListening();
+        final int aTimeout = 60000;
+        
+        ExecutorService aThreadPool = Executors.newFixedThreadPool(10);
+        
+        Future<?> anEnd1 = aThreadPool.submit(new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
+                {
+                    sendMessageReceiveResponse(myChannelId, "Hello1", "Response1", 100, aTimeout);
+                    return null;
+                }
+            });
+        
+        Future<?> anEnd2 = aThreadPool.submit(new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
+                {
+                    // One-way channel on the same TCP as duplex channel.
+                    sendMessageViaOutputChannel(myChannelId2, "Hello2", 100, aTimeout);
+                    return null;
+                }
+            });
+        
+        Future<?> anEnd3 = aThreadPool.submit(new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
+                {
+                    sendMessageReceiveResponse(myChannelId3, "Hello3", "Response3", 100, aTimeout);
+                    return null;
+                }
+            });
+        
+        // Wait until completed.
+        // Note: This will throw exception if some of these tests fails.
+        anEnd1.get();
+        anEnd2.get();
+        anEnd3.get();
     }
+    
+    
+    private String myChannelId2;
+    private String myChannelId3;
 }
