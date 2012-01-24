@@ -10,7 +10,7 @@ public class ClassWithEvent
     public void SetName(String name) throws Exception
     {
         // Rise the event that the name was updated.
-        myNameUpdatedEventImpl.update(this, name);
+        myNameUpdatedEventImpl.raise(this, name);
     }
     
     private EventImpl<String> myNameUpdatedEventImpl = new EventImpl<String>();
