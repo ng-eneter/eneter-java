@@ -113,7 +113,7 @@ public class SimpleInputChannel implements IInputChannel
         {
             try
             {
-                myMessageReceivedEventImpl.update(this, new ChannelMessageEventArgs(myChannelId, message));
+                myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(myChannelId, message));
             }
             catch (Exception err)
             {

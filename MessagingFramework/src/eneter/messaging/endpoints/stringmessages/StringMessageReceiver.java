@@ -35,7 +35,7 @@ class StringMessageReceiver extends AttachableInputChannelBase
                 {
                     try
                     {
-                        myMessageReceivedEventImpl.update(this, new StringMessageEventArgs((String)e.getMessage()));
+                        myMessageReceivedEventImpl.raise(this, new StringMessageEventArgs((String)e.getMessage()));
                     }
                     catch (Exception err)
                     {

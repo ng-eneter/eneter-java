@@ -231,7 +231,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             {
                 try
                 {
-                    myResponseReceiverConnectedEventImpl.update(this, e);
+                    myResponseReceiverConnectedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {
@@ -279,7 +279,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
 
                         try
                         {
-                            myMessageReceivedEventImpl.update(this, aMsg);
+                            myMessageReceivedEventImpl.raise(this, aMsg);
                         }
                         catch (Exception err)
                         {
@@ -422,7 +422,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             {
                 try
                 {
-                    myResponseReceiverDisconnectedEventImpl.update(this, e);
+                    myResponseReceiverDisconnectedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {

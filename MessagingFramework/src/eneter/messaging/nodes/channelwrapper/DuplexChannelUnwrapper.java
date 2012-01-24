@@ -188,7 +188,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
             {
                 try
                 {
-                    myResponseReceiverConnectedEventImpl.update(this, e);
+                    myResponseReceiverConnectedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {
@@ -259,7 +259,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
             {
                 try
                 {
-                    myResponseReceiverDisconnectedEventImpl.update(this, e);
+                    myResponseReceiverDisconnectedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {

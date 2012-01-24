@@ -348,7 +348,7 @@ class DuplexBrokerClient implements IDuplexBrokerClient
                         anEvent = new BrokerMessageReceivedEventArgs(e.getReceivingError());
                     }
 
-                    myBrokerMessageReceivedEventImpl.update(this, anEvent);
+                    myBrokerMessageReceivedEventImpl.raise(this, anEvent);
                 }
                 catch (Exception err)
                 {

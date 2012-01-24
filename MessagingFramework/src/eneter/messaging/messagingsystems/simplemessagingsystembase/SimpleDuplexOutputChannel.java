@@ -188,7 +188,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
         {
             try
             {
-                myResponseMessageReceivedEventImpl.update(this, new DuplexChannelMessageEventArgs(getChannelId(), aProtocolMessage.Message, myResponseReceiverId));
+                myResponseMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(getChannelId(), aProtocolMessage.Message, myResponseReceiverId));
             }
             catch (Exception err)
             {
@@ -237,7 +237,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
                     if (myConnectionOpenedEventImpl.isSubscribed())
                     {
                         DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), myResponseReceiverId);
-                        myConnectionOpenedEventImpl.update(this, aMsg);
+                        myConnectionOpenedEventImpl.raise(this, aMsg);
                     }
                 }
                 catch (Exception err)
@@ -262,7 +262,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
                     if (myConnectionClosedEventImpl.isSubscribed())
                     {
                         DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), myResponseReceiverId);
-                        myConnectionClosedEventImpl.update(this, aMsg);
+                        myConnectionClosedEventImpl.raise(this, aMsg);
                     }
                 }
                 catch (Exception err)

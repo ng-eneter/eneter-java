@@ -74,7 +74,7 @@ class DuplexStringMessageSender extends AttachableDuplexOutputChannelBase
 
             try
             {
-                myResponseReceivedEventImpl.update(this, new StringResponseReceivedEventArgs((String)e.getMessage()));
+                myResponseReceivedEventImpl.raise(this, new StringResponseReceivedEventArgs((String)e.getMessage()));
             }
             catch (Exception err)
             {

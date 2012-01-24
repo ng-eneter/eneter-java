@@ -398,7 +398,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                 try
                 {
                     DuplexChannelMessageEventArgs anEvent = new DuplexChannelMessageEventArgs(getChannelId(), protocolMessage.Message, getResponseReceiverId());
-                    myResponseMessageReceivedEventImpl.update(this, anEvent);
+                    myResponseMessageReceivedEventImpl.raise(this, anEvent);
                 }
                 catch (Exception err)
                 {
@@ -434,7 +434,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                             if (myConnectionOpenedEventImpl.isSubscribed())
                             {
                                 DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
-                                myConnectionOpenedEventImpl.update(this, aMsg);
+                                myConnectionOpenedEventImpl.raise(this, aMsg);
                             }
                         }
                         catch (Exception err)
@@ -481,7 +481,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                             if (myConnectionClosedEventImpl.isSubscribed())
                             {
                                 DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
-                                myConnectionClosedEventImpl.update(this, aMsg);
+                                myConnectionClosedEventImpl.raise(this, aMsg);
                             }
                         }
                         catch (Exception err)

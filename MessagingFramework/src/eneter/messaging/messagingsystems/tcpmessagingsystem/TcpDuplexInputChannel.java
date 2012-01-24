@@ -378,7 +378,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
 
             try
             {
-                myResponseReceiverConnectedEventImpl.update(this, aResponseReceiverEvent);
+                myResponseReceiverConnectedEventImpl.raise(this, aResponseReceiverEvent);
             }
             catch (Exception err)
             {
@@ -403,7 +403,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
 
                 try
                 {
-                    myResponseReceiverDisconnectedEventImpl.update(this, aResponseReceiverEvent);
+                    myResponseReceiverDisconnectedEventImpl.raise(this, aResponseReceiverEvent);
                 }
                 catch (Exception err)
                 {
@@ -431,7 +431,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             {
                 try
                 {
-                    myMessageReceivedEventImpl.update(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
                 }
                 catch (Exception err)
                 {

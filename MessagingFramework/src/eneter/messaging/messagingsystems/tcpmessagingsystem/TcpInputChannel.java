@@ -137,7 +137,7 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
             {
                 try
                 {
-                    myMessageReceivedEventImpl.update(this, new ChannelMessageEventArgs(getChannelId(), protocolMessage.Message));
+                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(getChannelId(), protocolMessage.Message));
                 }
                 catch (Exception err)
                 {

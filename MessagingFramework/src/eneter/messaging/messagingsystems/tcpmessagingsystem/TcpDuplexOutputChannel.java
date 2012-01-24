@@ -402,7 +402,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
             {
                 try
                 {
-                    myResponseMessageReceivedEventImpl.update(this, new DuplexChannelMessageEventArgs(getChannelId(), protocolMessage.Message, getResponseReceiverId()));
+                    myResponseMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(getChannelId(), protocolMessage.Message, getResponseReceiverId()));
                 }
                 catch (Exception err)
                 {
@@ -443,7 +443,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                             if (myConnectionOpenedEventImpl.isSubscribed())
                             {
                                 DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
-                                myConnectionOpenedEventImpl.update(this, aMsg);
+                                myConnectionOpenedEventImpl.raise(this, aMsg);
                             }
                         }
                         catch (Exception err)
@@ -490,7 +490,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                             if (myConnectionClosedEventImpl.isSubscribed())
                             {
                                 DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
-                                myConnectionClosedEventImpl.update(this, aMsg);
+                                myConnectionClosedEventImpl.raise(this, aMsg);
                             }
                         }
                         catch (Exception err)

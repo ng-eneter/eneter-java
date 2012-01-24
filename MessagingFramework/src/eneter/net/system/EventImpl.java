@@ -7,7 +7,7 @@ import java.util.Iterator;
 
 public class EventImpl<T>
 {
-    public void update(Object sender, T eventArgs)
+    public void raise(Object sender, T eventArgs)
             throws Exception
     {
         ArrayList<IMethod2<Object, T>> aSafeCopyOfSubscribers;

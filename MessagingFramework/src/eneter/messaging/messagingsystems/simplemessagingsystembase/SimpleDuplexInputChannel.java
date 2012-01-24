@@ -223,7 +223,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
 
             try
             {
-                myResponseReceiverConnectedEventImpl.update(this, aResponseReceiverEvent);
+                myResponseReceiverConnectedEventImpl.raise(this, aResponseReceiverEvent);
             }
             catch (Exception err)
             {
@@ -245,7 +245,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
 
             try
             {
-                myResponseReceiverDisconnectedEventImpl.update(this, aResponseReceiverEvent);
+                myResponseReceiverDisconnectedEventImpl.raise(this, aResponseReceiverEvent);
             }
             catch (Exception err)
             {
@@ -265,7 +265,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
         {
             try
             {
-                myMessageReceivedEventImpl.update(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+                myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
             }
             catch (Exception err)
             {

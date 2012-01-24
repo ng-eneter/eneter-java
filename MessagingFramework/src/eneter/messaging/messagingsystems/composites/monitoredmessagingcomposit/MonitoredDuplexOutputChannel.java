@@ -271,7 +271,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
 
                         try
                         {
-                            myResponseMessageReceivedEventImpl.update(this, aMsg);
+                            myResponseMessageReceivedEventImpl.raise(this, aMsg);
                         }
                         catch (Exception err)
                         {
@@ -300,7 +300,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
             {
                 try
                 {
-                    myConnectionOpenedEventImpl.update(this, e);
+                    myConnectionOpenedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {
@@ -407,7 +407,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
                             try
                             {
                                 DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
-                                myConnectionClosedEventImpl.update(this, aMsg);
+                                myConnectionClosedEventImpl.raise(this, aMsg);
                             }
                             catch (Exception err)
                             {

@@ -62,7 +62,7 @@ class TypedMessageReceiver<_MessageDataType> extends AttachableInputChannelBase
 
                 try
                 {
-                    myMessageReceivedEventImpl.update(this, aMessageReceivedEventArgs);
+                    myMessageReceivedEventImpl.raise(this, aMessageReceivedEventArgs);
                 }
                 catch (Exception err)
                 {

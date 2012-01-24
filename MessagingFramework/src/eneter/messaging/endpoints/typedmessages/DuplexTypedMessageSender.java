@@ -102,7 +102,7 @@ class DuplexTypedMessageSender<_ResponseType, _RequestType> extends AttachableDu
 
             try
             {
-                myResponseReceivedEventImpl.update(this, aResponseReceivedEventArgs);
+                myResponseReceivedEventImpl.raise(this, aResponseReceivedEventArgs);
             }
             catch (Exception err)
             {

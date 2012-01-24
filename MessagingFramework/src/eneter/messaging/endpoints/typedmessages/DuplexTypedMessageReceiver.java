@@ -120,7 +120,7 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
 
             try
             {
-                myMessageReceivedEventImpl.update(this, aRequestReceivedEventArgs);
+                myMessageReceivedEventImpl.raise(this, aRequestReceivedEventArgs);
             }
             catch (Exception err)
             {
@@ -147,7 +147,7 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
             {
                 try
                 {
-                    myResponseReceiverConnectedEventImpl.update(this, e);
+                    myResponseReceiverConnectedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {
@@ -171,7 +171,7 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
             {
                 try
                 {
-                    myResponseReceiverDisconnectedEventImpl.update(this, e);
+                    myResponseReceiverDisconnectedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {

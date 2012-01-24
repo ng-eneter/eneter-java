@@ -257,7 +257,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
             {
                 try
                 {
-                    myResponseReceiverConnectedEventImpl.update(this, e);
+                    myResponseReceiverConnectedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {
@@ -285,7 +285,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
             {
                 try
                 {
-                    myMessageReceivedEventImpl.update(this, e);
+                    myMessageReceivedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {
@@ -428,7 +428,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                     try
                     {
                         ResponseReceiverEventArgs aMsg = new ResponseReceiverEventArgs(aResponseReceiverContext.getResponseReceiverId());
-                        myResponseReceiverDisconnectedEventImpl.update(this, aMsg);
+                        myResponseReceiverDisconnectedEventImpl.raise(this, aMsg);
                     }
                     catch (Exception err)
                     {

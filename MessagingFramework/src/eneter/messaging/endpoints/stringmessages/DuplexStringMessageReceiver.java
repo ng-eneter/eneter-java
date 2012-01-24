@@ -88,7 +88,7 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
 
             try
             {
-                myRequestReceivedEventImpl.update(this, new StringRequestReceivedEventArgs((String)e.getMessage(), e.getResponseReceiverId()));
+                myRequestReceivedEventImpl.raise(this, new StringRequestReceivedEventArgs((String)e.getMessage(), e.getResponseReceiverId()));
             }
             catch (Exception err)
             {
@@ -112,7 +112,7 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
             {
                 try
                 {
-                    myResponseReceiverConnectedEventImpl.update(this, e);
+                    myResponseReceiverConnectedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {
@@ -137,7 +137,7 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
             {
                 try
                 {
-                    myResponseReceiverDisconnectedEventImpl.update(this, e);
+                    myResponseReceiverDisconnectedEventImpl.raise(this, e);
                 }
                 catch (Exception err)
                 {
