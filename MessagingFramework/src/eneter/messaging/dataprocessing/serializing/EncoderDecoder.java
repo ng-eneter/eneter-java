@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework for Java
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2012 Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.dataprocessing.serializing;
 
 import java.io.*;
@@ -6,6 +14,12 @@ import java.nio.charset.Charset;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
+/**
+ * Internal class using an underlying serializer to serialize/deserialize data.
+ * It stores informarmation about used encoding (UTF8 or UTF16) and Little Endian and Big Endian.
+ * It helps to ensure compatibility between various platforms.
+ *
+ */
 class EncoderDecoder
 {
     public EncoderDecoder(ISerializer underlyingSerializer)

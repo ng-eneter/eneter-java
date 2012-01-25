@@ -1,8 +1,8 @@
 /**
- * Project: Eneter.Messaging.Framework
- * Author: Martin Valach, Ondrej Uzovic
+ * Project: Eneter.Messaging.Framework for Java
+ * Author: Ondrej Uzovic
  * 
- * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * Copyright © 2012 Ondrej Uzovic
  * 
  */
 

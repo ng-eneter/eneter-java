@@ -1,8 +1,8 @@
 /**
- * Project: Eneter.Messaging.Framework
- * Author: Martin Valach, Ondrej Uzovic
+ * Project: Eneter.Messaging.Framework for Java
+ * Author: Ondrej Uzovic
  * 
- * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * Copyright © 2012 Ondrej Uzovic
  * 
  */
 
@@ -10,7 +10,6 @@ package eneter.messaging.dataprocessing.serializing;
 
 /**
  * The interface declares the API for serialization and deserialization.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public interface ISerializer
@@ -19,7 +18,7 @@ public interface ISerializer
      * Serializes data to Object.
      * @param dataToSerialize Data to be serialized.
      * @param clazz represents the serialized type.
-     * @return Object representing the serialized data. Typically it can be byte[] or string.
+     * @return Object representing the serialized data. Typically it can be byte[] or String.
      * @throws Exception If the serialization fails.
      */
     <T> Object serialize(T dataToSerialize, Class<T> clazz) throws Exception;
