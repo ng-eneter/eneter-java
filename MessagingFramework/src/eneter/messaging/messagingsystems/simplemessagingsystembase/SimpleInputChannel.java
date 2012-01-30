@@ -16,12 +16,13 @@ import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
 import eneter.net.system.Event;
 import eneter.net.system.EventImpl;
 import eneter.net.system.IMethod1;
+import eneter.net.system.StringExt;
 
 public class SimpleInputChannel implements IInputChannel
 {
     public SimpleInputChannel(String channelId, IMessagingSystemBase messagingSystem)
     {
-        if (channelId == null || channelId == "")
+        if (StringExt.isNullOrEmpty(channelId))
         {
             EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
             throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);

@@ -13,6 +13,7 @@ import java.security.InvalidParameterException;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.IMethod2;
+import eneter.net.system.StringExt;
 
 public abstract class AttachableDuplexOutputChannelBase implements IAttachableDuplexOutputChannel
 {
@@ -111,7 +112,7 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
                     throw new InvalidParameterException(aMessage);
                 }
 
-                if (duplexOutputChannel.getChannelId() == null || duplexOutputChannel.getChannelId().isEmpty())
+                if (StringExt.isNullOrEmpty(duplexOutputChannel.getChannelId()))
                 {
                     String aMessage = TracedObject() + "failed to attach the duplex output channel, because the input parameter 'duplexOutputChannel' has empty or null channel id.";
                     EneterTrace.error(aMessage);

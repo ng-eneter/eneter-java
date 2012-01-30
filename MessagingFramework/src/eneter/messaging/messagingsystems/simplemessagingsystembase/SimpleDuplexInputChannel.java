@@ -13,7 +13,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     public SimpleDuplexInputChannel(String channelId, IMessagingSystemFactory messagingFactory,
                                     IProtocolFormatter<?> protocolFormatter)
     {
-        if (channelId == null || channelId == "")
+        if (StringExt.isNullOrEmpty(channelId))
         {
             EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
             throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);

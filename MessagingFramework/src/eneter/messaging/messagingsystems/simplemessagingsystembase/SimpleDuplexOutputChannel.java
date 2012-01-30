@@ -14,7 +14,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
     public SimpleDuplexOutputChannel(String channelId, String responseReceiverId, IMessagingSystemFactory messagingFactory,
                                      IProtocolFormatter<?> protocolFormatter) throws Exception
     {
-        if (channelId == null || channelId.isEmpty())
+        if (StringExt.isNullOrEmpty(channelId))
         {
             EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
             throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);
@@ -23,7 +23,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
         myChannelId = channelId;
         myMessagingFactory = messagingFactory;
 
-        myResponseReceiverId = (responseReceiverId == null || responseReceiverId.isEmpty()) ? channelId + "_" + UUID.randomUUID().toString() : responseReceiverId;
+        myResponseReceiverId = (StringExt.isNullOrEmpty(responseReceiverId)) ? channelId + "_" + UUID.randomUUID().toString() : responseReceiverId;
 
         // Try to create input channel to check, if the response receiver id is correct.
         // If not, the exception will be thrown and the error is detected early.
@@ -107,7 +107,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
         synchronized (myConnectionManipulatorLock)
         {
             // Try to notify that the connection is closed
-            if (myMessageSenderOutputChannel != null && myResponseReceiverId != null && !myResponseReceiverId.isEmpty())
+            if (myMessageSenderOutputChannel != null && !StringExt.isNullOrEmpty(myResponseReceiverId))
             {
                 try
                 {

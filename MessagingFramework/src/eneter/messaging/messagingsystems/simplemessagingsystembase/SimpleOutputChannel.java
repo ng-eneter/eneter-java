@@ -12,12 +12,13 @@ import java.security.InvalidParameterException;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.IOutputChannel;
+import eneter.net.system.StringExt;
 
 public class SimpleOutputChannel implements IOutputChannel
 {
     public SimpleOutputChannel(String channelId, IMessagingSystemBase messagingSystem)
     {
-        if (channelId == null || channelId == "")
+        if (StringExt.isNullOrEmpty(channelId))
         {
             EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
             throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);
