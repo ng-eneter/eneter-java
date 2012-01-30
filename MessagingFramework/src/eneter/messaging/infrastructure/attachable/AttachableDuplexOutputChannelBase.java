@@ -18,6 +18,7 @@ import eneter.net.system.StringExt;
 public abstract class AttachableDuplexOutputChannelBase implements IAttachableDuplexOutputChannel
 {
     public void attachDuplexOutputChannel(IDuplexOutputChannel duplexOutputChannel)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -43,7 +44,7 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
     
                     String aMessage = TracedObject() + ErrorHandler.OpenConnectionFailure;
                     EneterTrace.error(aMessage, err);
-                    throw new IllegalStateException(aMessage);
+                    throw err;
                 }
             }
         }
