@@ -107,7 +107,7 @@ public class TcpPolicyServer
             while (aReceivedRequest.length() < myPolicyRequestString.length() &&
                     (aSize = anInputStream.read(aBuffer, 0, aBuffer.length)) > 0)
             {
-                aReceivedRequest += new String(aBuffer, 0, aSize, aCharset);
+                aReceivedRequest += new String(aBuffer, 0, aSize, "UTF-8");
             }
 
             // If it is the policy request then return the policy xml

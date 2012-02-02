@@ -410,23 +410,24 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
     }
     
     private String decodeString(byte[] encodedString, int anEndianEncodingId, int aStringEncodingId)
+            throws UnsupportedEncodingException
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            Charset aCharset;
+            String aCharset;
             
             if (aStringEncodingId == UTF16 && anEndianEncodingId == BIG_ENDIAN)
             {
-                aCharset = Charset.forName("UTF-16BE");
+                aCharset = "UTF-16BE";
             }
             else if (aStringEncodingId == UTF16 && anEndianEncodingId == LITTLE_ENDIAN)
             {
-                aCharset = Charset.forName("UTF-16LE");
+                aCharset = "UTF-16LE";
             }
             else if (aStringEncodingId == UTF8)
             {
-                aCharset = Charset.forName("UTF-8");
+                aCharset = "UTF-8";
             }
             else
             {

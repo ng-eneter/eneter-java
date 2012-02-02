@@ -120,18 +120,15 @@ class EncoderDecoder
             
             if (aDataType == STRING_UTF8_ID)
             {
-                Charset aCharset = Charset.forName("UTF-8");
-                aDecodedData = new String(aDecodedBytes.toByteArray(), aCharset);
+                aDecodedData = new String(aDecodedBytes.toByteArray(), "UTF-8");
             }
             else if (aDataType == STRING_UTF16_LE_ID)
             {
-                Charset aCharset = Charset.forName("UTF-16LE");
-                aDecodedData = new String(aDecodedBytes.toByteArray(), aCharset);
+                aDecodedData = new String(aDecodedBytes.toByteArray(), "UTF-16LE");
             }
             else if (aDataType == STRING_UTF16_BE_ID)
             {
-                Charset aCharset = Charset.forName("UTF-16BE");
-                aDecodedData = new String(aDecodedBytes.toByteArray(), aCharset);
+                aDecodedData = new String(aDecodedBytes.toByteArray(), "UTF-16BE");
             }
             else if (aDataType == BYTES_ID)
             {
