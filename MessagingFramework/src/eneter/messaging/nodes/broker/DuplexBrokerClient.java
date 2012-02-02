@@ -89,26 +89,13 @@ class DuplexBrokerClient implements IDuplexBrokerClient
     }
 
     @Override
-    public void detachDuplexOutputChannel() throws Exception
+    public void detachDuplexOutputChannel()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            try
-            {
-                myDuplexChannelWrapper.detachDuplexOutputChannel();
-                myDuplexOutputChannelId = "";
-            }
-            catch (Exception err)
-            {
-                EneterTrace.warning(TracedObject() + "failed to detach duplex output channel.", err);
-                throw err;
-            }
-            catch (Error err)
-            {
-                EneterTrace.warning(TracedObject() + "failed to detach duplex output channel.", err);
-                throw err;
-            }
+            myDuplexChannelWrapper.detachDuplexOutputChannel();
+            myDuplexOutputChannelId = "";
         }
         finally
         {

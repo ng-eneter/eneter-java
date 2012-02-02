@@ -36,7 +36,7 @@ public interface IAttachableDuplexOutputChannel
      * Detaches the duplex output channel and stops listening to response messages.
      * @throws Exception 
      */
-    void detachDuplexOutputChannel() throws Exception;
+    void detachDuplexOutputChannel();
 
 
     /**
