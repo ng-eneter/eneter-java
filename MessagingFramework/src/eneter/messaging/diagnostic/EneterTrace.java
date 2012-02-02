@@ -8,7 +8,6 @@
 package eneter.messaging.diagnostic;
 
 import java.util.Date;
-import java.util.Locale;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -383,7 +382,7 @@ public class EneterTrace
     }
     
     
-    private static void writeMessage(String prefix, String message, int callStackIdx)
+    private static void writeMessage(final String prefix, String message, int callStackIdx)
     {
         //get current date time with Date()
         Date aDate = new Date();
