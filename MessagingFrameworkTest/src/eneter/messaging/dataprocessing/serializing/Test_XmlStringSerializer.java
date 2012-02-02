@@ -55,7 +55,7 @@ public class Test_XmlStringSerializer
         String aData = "hello world";
         Object aSerializedData = TestedSerializer.serialize(aData, String.class);
         
-        assertEquals("<String xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">hello world</String>", (String)aSerializedData);
+        assertEquals("<string xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">hello world</string>", (String)aSerializedData);
         
         String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
 
@@ -297,7 +297,7 @@ public class Test_XmlStringSerializer
     {
         String s = "& < > \" '";
         Object aSerializedData = TestedSerializer.serialize(s, String.class);
-        assertEquals("<String xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">&amp; &lt; &gt; &quot; &apos;</String>", (String)aSerializedData);
+        assertEquals("<string xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">&amp; &lt; &gt; &quot; &apos;</string>", (String)aSerializedData);
         
         String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
         assertEquals(s, aDeserializedData);

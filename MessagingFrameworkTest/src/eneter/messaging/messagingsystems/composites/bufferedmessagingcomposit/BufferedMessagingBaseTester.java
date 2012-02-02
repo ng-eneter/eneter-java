@@ -679,9 +679,14 @@ public abstract class BufferedMessagingBaseTester
                 aDuplexOutputChannel.sendMessage(Integer.toString(i));
             }
 
+            // Note: This test can fail.
+            //       The problem is, if the connection was broken
+            //       at the moment when the client successfully sent the message
+            //       but the message did not reach the service yet.
+            
             // Wait until all messages are processed.
             //anAllMessagesProcessedEvent.WaitOne();
-            assertTrue(anAllMessagesProcessedEvent.waitOne(20000));
+            assertTrue(anAllMessagesProcessedEvent.waitOne(15000));
 
             aTestFinishedFlag[0] = true;
             anInteruptingThread.join();

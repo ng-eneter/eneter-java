@@ -1,9 +1,12 @@
 package eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit;
 
+import java.io.PrintStream;
 import java.util.Random;
 
 import org.junit.Before;
 
+import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
 
 public class Test_BufferedMessaging_Tcp_Xml extends BufferedMessagingBaseTester

@@ -802,8 +802,14 @@ public abstract class MessagingSystemBaseTester
             // Input channel starts listening
             anInputChannel.startListening();
             
+            // give some time to be sure the listening is fully activated.
+            Thread.sleep(100);
+            
             // Output channel connects in order to be able to receive response messages.
             anOutputChannel.openConnection();
+            
+            // give some time to be sure the connection is fully activated.
+            Thread.sleep(100);
 
             // Send messages
             for (int i = 0; i < numberOfTimes; ++i)
