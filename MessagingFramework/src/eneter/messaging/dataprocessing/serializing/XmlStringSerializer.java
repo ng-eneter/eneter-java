@@ -49,57 +49,8 @@ public class XmlStringSerializer implements ISerializer
             // So to avoid allocations initialize it with 500.
             StringBuilder aSerializedObjectStr = new StringBuilder(500);
 
-            String aRootName = clazz.getSimpleName();
-            
-            // Correct the name according to .NET
-            if (clazz.isArray())
-            {
-                if (clazz == boolean[].class || clazz == Boolean[].class)
-                {
-                    aRootName = "ArrayOfBoolean";
-                }
-                else if (clazz == char[].class || clazz == Character[].class)
-                {
-                    aRootName = "ArrayOfChar";
-                }
-                else if (clazz == byte[].class || clazz == Byte[].class)
-                {
-                    aRootName = "base64Binary";
-                }
-                else if (clazz == int[].class || clazz == Integer[].class)
-                {
-                    aRootName = "ArrayOfInt";
-                }
-                else if (clazz == long[].class || clazz == Long[].class)
-                {
-                    aRootName = "ArrayOfLong";
-                }
-                else if (clazz == short[].class || clazz == Short[].class)
-                {
-                    aRootName = "ArrayOfShort";
-                }
-                else if (clazz == double[].class || clazz == Double[].class)
-                {
-                    aRootName = "ArrayOfDouble";
-                }
-                else if (clazz == float[].class || clazz == Float[].class)
-                {
-                    aRootName = "ArrayOfFloat";
-                }
-                else if (clazz == Object[].class)
-                {
-                    aRootName = "ArrayOfAnyType";
-                }
-                else
-                {
-                    String aClassItemTypeName = clazz.getComponentType().getSimpleName();
-                    aRootName = "ArrayOf" + aClassItemTypeName;
-                }
-            }
-            else if (clazz == Integer.class)
-            {
-                aRootName = "int";
-            }
+            // Get the root name compatible with .Net
+            String aRootName = getRootName(clazz);
             
             // Note: keep the space character at the beginning of the name-space string!!!
             String aNameSpacesAndAttributes = " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"" + getAttributes(dataToSerialize, clazz);
@@ -561,6 +512,85 @@ public class XmlStringSerializer implements ISerializer
         }
     }
     
+    private String getRootName(Class<?> clazz)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            String aRootName;
+            
+            // Correct the name according to .NET
+            if (clazz == Integer.class)
+            {
+                aRootName = "int";
+            }
+            else if (clazz == Character.class)
+            {
+                aRootName = "char";
+            }
+            else if (clazz == Boolean.class ||
+                     clazz == Byte.class || clazz == Long.class || clazz == Short.class ||
+                     clazz == Double.class || clazz == Float.class ||
+                     clazz == String.class)
+            {
+                aRootName = clazz.getSimpleName().toLowerCase();
+            }
+            else if (clazz.isArray())
+            {
+                if (clazz == boolean[].class || clazz == Boolean[].class)
+                {
+                    aRootName = "ArrayOfBoolean";
+                }
+                else if (clazz == char[].class || clazz == Character[].class)
+                {
+                    aRootName = "ArrayOfChar";
+                }
+                else if (clazz == byte[].class || clazz == Byte[].class)
+                {
+                    aRootName = "base64Binary";
+                }
+                else if (clazz == int[].class || clazz == Integer[].class)
+                {
+                    aRootName = "ArrayOfInt";
+                }
+                else if (clazz == long[].class || clazz == Long[].class)
+                {
+                    aRootName = "ArrayOfLong";
+                }
+                else if (clazz == short[].class || clazz == Short[].class)
+                {
+                    aRootName = "ArrayOfShort";
+                }
+                else if (clazz == double[].class || clazz == Double[].class)
+                {
+                    aRootName = "ArrayOfDouble";
+                }
+                else if (clazz == float[].class || clazz == Float[].class)
+                {
+                    aRootName = "ArrayOfFloat";
+                }
+                else if (clazz == Object[].class)
+                {
+                    aRootName = "ArrayOfAnyType";
+                }
+                else
+                {
+                    String aClassItemTypeName = clazz.getComponentType().getSimpleName();
+                    aRootName = "ArrayOf" + aClassItemTypeName;
+                }
+            }
+            else
+            {
+                aRootName = clazz.getSimpleName();
+            }   
+            
+            return aRootName;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     private String getAttributes(Object dataToSerialize, Class<?> declaredType)
     {
