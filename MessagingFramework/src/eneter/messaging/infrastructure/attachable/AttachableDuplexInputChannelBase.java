@@ -14,6 +14,10 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 
+/**
+ * Internal non-api class implementing basic logic for attaching the channel. 
+ *
+ */
 public abstract class AttachableDuplexInputChannelBase implements IAttachableDuplexInputChannel
 {
     public void attachDuplexInputChannel(IDuplexInputChannel duplexInputChannel)

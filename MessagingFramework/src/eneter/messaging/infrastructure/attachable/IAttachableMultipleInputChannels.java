@@ -18,7 +18,6 @@ import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
  * They are able to listen to messages on more input channels (addresses).
  * But they are not able to send back response messages.
  * 
- * @see IDispatcher
  */
 public interface IAttachableMultipleInputChannels
 {	

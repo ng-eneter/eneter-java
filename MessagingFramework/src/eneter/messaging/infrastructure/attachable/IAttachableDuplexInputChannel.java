@@ -16,7 +16,6 @@ import eneter.messaging.messagingsystems.messagingsystembase.IDuplexInputChannel
  * The duplex input channel is used in the request-response communication by a listener
  * to receive request messages and send back response messages.
  * 
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public interface IAttachableDuplexInputChannel

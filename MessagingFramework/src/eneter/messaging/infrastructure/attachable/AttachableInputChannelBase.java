@@ -12,6 +12,10 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 
+/**
+ * Internal non-api class implementing basic logic for attaching the channel.  
+ *
+ */
 public abstract class AttachableInputChannelBase implements IAttachableInputChannel
 {
     public void attachInputChannel(IInputChannel inputChannel)

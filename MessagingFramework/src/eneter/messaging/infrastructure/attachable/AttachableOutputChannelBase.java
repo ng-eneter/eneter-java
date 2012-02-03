@@ -11,6 +11,10 @@ package eneter.messaging.infrastructure.attachable;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
+/**
+ * Internal non-api class implementing basic logic for attaching the channel.  
+ *
+ */
 public abstract class AttachableOutputChannelBase implements IAttachableOutputChannel
 {
     public void attachOutputChannel(IOutputChannel outputChannel)

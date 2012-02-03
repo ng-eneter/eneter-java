@@ -17,6 +17,10 @@ import eneter.net.system.*;
 import eneter.net.system.collections.generic.*;
 import eneter.net.system.linq.EnumerableExt;
 
+/**
+ * Internal non-api class implementing basic logic for attaching the channel.  
+ *
+ */
 public abstract class AttachableMultipleDuplexInputChannelsBase implements IAttachableMultipleDuplexInputChannels
 {
     /// <summary>

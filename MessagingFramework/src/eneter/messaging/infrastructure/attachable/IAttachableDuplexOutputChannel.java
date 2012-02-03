@@ -16,7 +16,6 @@ import eneter.messaging.messagingsystems.messagingsystembase.IDuplexOutputChanne
  * The duplex output channel is used in the request-response communication by a sender
  * to send request messages and receive response messages.
  * 
- * @author Martin Valach and Ondrej Uzovic
  *
  */
 public interface IAttachableDuplexOutputChannel
