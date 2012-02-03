@@ -10,7 +10,6 @@ package eneter.messaging.endpoints.typedmessages;
 
 /**
  * The interface declares the factory to create duplex strongly typed message sender and receiver.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public interface IDuplexTypedMessagesFactory

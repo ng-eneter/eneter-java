@@ -14,7 +14,6 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 /**
  * Implements the factory to create duplex strongly typed message sender and receiver.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory

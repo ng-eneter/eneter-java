@@ -10,7 +10,6 @@ package eneter.messaging.endpoints.typedmessages;
 
 /**
  * The event when a typed response message is received.
- * @author Ondrej Uzovic & Martin Valach
  *
  * @param <_ResponseMessageType> message type
  */

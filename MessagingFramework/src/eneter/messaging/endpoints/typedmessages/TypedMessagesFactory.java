@@ -14,7 +14,6 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 /**
  * Implements the factory to create strongly typed message senders and receivers.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public class TypedMessagesFactory implements ITypedMessagesFactory

@@ -10,7 +10,6 @@ package eneter.messaging.endpoints.typedmessages;
 
 /**
  * The interface declares the factory to create strongly typed message senders and receivers.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public interface ITypedMessagesFactory

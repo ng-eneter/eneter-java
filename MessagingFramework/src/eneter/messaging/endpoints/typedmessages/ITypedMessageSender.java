@@ -13,7 +13,6 @@ import eneter.messaging.infrastructure.attachable.IAttachableOutputChannel;
 /**
  * The interface declares the strongly typed messsage sender.
  * The sender is able to send messages of the specified type via one-way output channel.
- * @author Ondrej Uzovic & Martin Valach
  *
  * @param <_MessageData> type representing the message.
  */

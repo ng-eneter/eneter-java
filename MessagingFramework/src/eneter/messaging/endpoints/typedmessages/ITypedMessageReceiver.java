@@ -14,7 +14,6 @@ import eneter.net.system.Event;
 /**
  * The interface declares the strongly typed message receiver.
  * The receiver is able to receive messages of the specified type via one-way input channel.
- * @author Ondrej Uzovic & Martin Valach
  *
  * @param <_MessageDataType> type of the message
  */

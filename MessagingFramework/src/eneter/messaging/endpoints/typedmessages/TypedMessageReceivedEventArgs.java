@@ -11,7 +11,6 @@ package eneter.messaging.endpoints.typedmessages;
 
 /**
  * The typed message received event.
- * @author Ondrej Uzovic & Martin Valach
  *
  * @param <_MessageData> represents the message type
  */

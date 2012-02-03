@@ -10,7 +10,6 @@ package eneter.messaging.endpoints.typedmessages;
 
 /**
  * The event when the typed message is received.
- * @author Ondrej Uzovic & Martin Valach
  *
  * @param <_RequestMessageType> type of the request message
  */
