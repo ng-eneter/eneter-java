@@ -10,7 +10,6 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.URI;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
