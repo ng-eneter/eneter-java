@@ -38,7 +38,7 @@ public interface IAttachableMultipleInputChannels
 	 * Detaches the input channel.
 	 * It cleans the reference to the input channel and stops the listening.
 	 */
-	void detachInputChannel() throws Exception;
+	void detachInputChannel();
 	
 	
 	/**

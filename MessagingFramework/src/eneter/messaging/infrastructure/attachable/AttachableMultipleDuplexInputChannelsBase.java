@@ -119,8 +119,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         }
     }
 
-    public void detachDuplexInputChannel(final String channelId)
-            throws Exception
+    public void detachDuplexInputChannel(final String channelId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -133,7 +132,6 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                         {
                             @Override
                             public Boolean invoke(TDuplexInputChannelContext x)
-                                    throws Exception
                             {
                                 return x.getAttachedDuplexInputChannel().getChannelId().equals(channelId);
                             }
@@ -158,9 +156,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                                 new IFunction1<Boolean, TDuplexInputChannelContext>()
                                 {
                                     @Override
-                                    public Boolean invoke(
-                                            TDuplexInputChannelContext x)
-                                            throws Exception
+                                    public Boolean invoke(TDuplexInputChannelContext x)
                                     {
                                         return x.getAttachedDuplexInputChannel().getChannelId().equals(aDuplexInputChannelContext.getAttachedDuplexInputChannel().getChannelId());
                                     }

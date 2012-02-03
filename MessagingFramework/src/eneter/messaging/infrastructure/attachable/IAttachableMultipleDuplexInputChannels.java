@@ -33,7 +33,7 @@ public interface IAttachableMultipleDuplexInputChannels
 	 * Detaches the duplex input channel.
 	 * Detaching the input channel stops listening to the messages.
 	 */
-	void detachDuplexInputChannel() throws Exception;
+	void detachDuplexInputChannel();
 
 	
 	/**

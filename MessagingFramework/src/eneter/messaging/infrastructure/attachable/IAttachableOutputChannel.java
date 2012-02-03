@@ -31,7 +31,7 @@ public interface IAttachableOutputChannel
 	/**
 	 * Detaches the output channel.
 	 */
-	void detachOutputChannel() throws Exception;
+	void detachOutputChannel();
 	
 
 	/**
