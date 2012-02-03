@@ -17,7 +17,7 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
+import eneter.net.system.EventHandler;
 import eneter.net.system.StringExt;
 import eneter.net.system.threading.*;
 
@@ -78,7 +78,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
         final AutoResetEvent aDisconncetionEvent = new AutoResetEvent(false);
 
         final ArrayList<TConnectionEvent> aConnections = new ArrayList<TConnectionEvent>();
-        anInputChannel.responseReceiverConnected().subscribe(new IMethod2<Object, ResponseReceiverEventArgs>()
+        anInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
             public void invoke(Object x, ResponseReceiverEventArgs y)
@@ -90,7 +90,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
         }); 
 
         final ArrayList<TConnectionEvent> aDisconnections = new ArrayList<TConnectionEvent>();
-        anInputChannel.responseReceiverDisconnected().subscribe(new IMethod2<Object, ResponseReceiverEventArgs>()
+        anInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
             public void invoke(Object x, ResponseReceiverEventArgs y)

@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousMessagingSystemFactory;
-import eneter.net.system.IMethod2;
+import eneter.net.system.EventHandler;
 
 public class Test_Broker
 {
@@ -30,7 +30,7 @@ public class Test_Broker
         IDuplexBrokerClient aBrokerClient1 = aBrokerFactory.createBrokerClient();
         
         final BrokerMessageReceivedEventArgs[] aClient1ReceivedMessage = {null};
-        aBrokerClient1.brokerMessageReceived().subscribe(new IMethod2<Object, BrokerMessageReceivedEventArgs>()
+        aBrokerClient1.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, BrokerMessageReceivedEventArgs y)
@@ -43,7 +43,7 @@ public class Test_Broker
 
         IDuplexBrokerClient aBrokerClient2 = aBrokerFactory.createBrokerClient();
         final BrokerMessageReceivedEventArgs[] aClient2ReceivedMessage = {null};
-        aBrokerClient2.brokerMessageReceived().subscribe(new IMethod2<Object, BrokerMessageReceivedEventArgs>()
+        aBrokerClient2.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, BrokerMessageReceivedEventArgs y)
@@ -56,7 +56,7 @@ public class Test_Broker
 
         IDuplexBrokerClient aBrokerClient3 = aBrokerFactory.createBrokerClient();
         final BrokerMessageReceivedEventArgs[] aClient3ReceivedMessage = {null};
-        aBrokerClient3.brokerMessageReceived().subscribe(new IMethod2<Object, BrokerMessageReceivedEventArgs>()
+        aBrokerClient3.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, BrokerMessageReceivedEventArgs y)
@@ -69,7 +69,7 @@ public class Test_Broker
 
         IDuplexBrokerClient aBrokerClient4 = aBrokerFactory.createBrokerClient();
         final BrokerMessageReceivedEventArgs[] aClient4ReceivedMessage = {null};
-        aBrokerClient4.brokerMessageReceived().subscribe(new IMethod2<Object, BrokerMessageReceivedEventArgs>()
+        aBrokerClient4.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, BrokerMessageReceivedEventArgs y)

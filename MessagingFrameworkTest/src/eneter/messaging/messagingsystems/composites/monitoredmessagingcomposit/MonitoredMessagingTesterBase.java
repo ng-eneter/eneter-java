@@ -8,7 +8,7 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
+import eneter.net.system.EventHandler;
 import eneter.net.system.threading.*;
 
 
@@ -33,7 +33,7 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
         final AutoResetEvent aDisconnectedEvent = new AutoResetEvent(false);
 
         final boolean[] aDisconnectedFlag = {false};
-        aDuplexOutputChannel.connectionClosed().subscribe(new IMethod2<Object, DuplexChannelEventArgs>()
+        aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
             public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
@@ -78,7 +78,7 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
         final AutoResetEvent aDisconnectedEvent = new AutoResetEvent(false);
 
         final boolean[] aDisconnectedFlag = {false};
-        aDuplexOutputChannel.connectionClosed().subscribe(new IMethod2<Object, DuplexChannelEventArgs>()
+        aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
             public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
@@ -126,7 +126,7 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
         final AutoResetEvent aDisconnectedEvent = new AutoResetEvent(false);
 
         final boolean[] aDisconnectedFlag = {false};
-        aDuplexOutputChannel.connectionClosed().subscribe(new IMethod2<Object, DuplexChannelEventArgs>()
+        aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
             public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
@@ -172,7 +172,7 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
         final AutoResetEvent aConnectionClosedEvent = new AutoResetEvent(false);
         
         final String[] aClosedResponseReceiverId = {""};
-        aDuplexInputChannel.responseReceiverDisconnected().subscribe(new IMethod2<Object, ResponseReceiverEventArgs>()
+        aDuplexInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
             public void invoke(Object x, ResponseReceiverEventArgs y)

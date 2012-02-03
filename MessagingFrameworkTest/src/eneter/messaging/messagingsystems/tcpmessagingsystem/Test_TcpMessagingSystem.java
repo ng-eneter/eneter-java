@@ -13,7 +13,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
+import eneter.net.system.EventHandler;
 import eneter.net.system.threading.ManualResetEvent;
 
 public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
@@ -48,7 +48,7 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
 
         // Observe the input channel
         final ArrayList<String> aReceivedMessages = new ArrayList<String>();
-        anInputChannel.messageReceived().subscribe(new IMethod2<Object, ChannelMessageEventArgs>()
+        anInputChannel.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
         {
             @Override
             public void invoke(Object x, ChannelMessageEventArgs y) throws Exception

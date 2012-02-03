@@ -5,8 +5,9 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 
 import org.junit.Test;
+
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
+import eneter.net.system.*;
 import eneter.net.system.threading.*;
 
 public abstract class StringMessagesBaseTester
@@ -33,7 +34,7 @@ public abstract class StringMessagesBaseTester
         final ManualResetEvent aMessageReceivedEvent = new ManualResetEvent(false);
 
         final String[] aReceivedMessage = {""};
-        myMessageReceiver.messageReceived().subscribe(new IMethod2<Object, StringMessageEventArgs>()
+        myMessageReceiver.messageReceived().subscribe(new EventHandler<StringMessageEventArgs>()
         {
             @Override
             public void invoke(Object x, StringMessageEventArgs y) throws Exception
@@ -72,7 +73,7 @@ public abstract class StringMessagesBaseTester
         final ManualResetEvent aMessageReceivedEvent = new ManualResetEvent(false);
 
         final ArrayList<String> aReceivedMessages = new ArrayList<String>();
-        myMessageReceiver.messageReceived().subscribe(new IMethod2<Object, StringMessageEventArgs>()
+        myMessageReceiver.messageReceived().subscribe(new EventHandler<StringMessageEventArgs>()
         {
             @Override
             public void invoke(Object x, StringMessageEventArgs y) throws Exception

@@ -6,7 +6,7 @@ import org.junit.*;
 
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousMessagingSystemFactory;
-import eneter.net.system.IMethod2;
+import eneter.net.system.EventHandler;
 
 public class Test_Dispatcher
 {
@@ -45,7 +45,7 @@ public class Test_Dispatcher
     {
         // Listen output from dispatcher
         final ChannelMessageEventArgs[] aReceivedFromChannel3 = {null};
-        myReadingChannel3.messageReceived().subscribe(new IMethod2<Object, ChannelMessageEventArgs>()
+        myReadingChannel3.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
         {
             @Override
             public void invoke(Object x, ChannelMessageEventArgs y) throws Exception
@@ -56,7 +56,7 @@ public class Test_Dispatcher
         myReadingChannel3.startListening();
 
         final ChannelMessageEventArgs[] aReceivedFromChannel4 = {null};
-        myReadingChannel4.messageReceived().subscribe(new IMethod2<Object, ChannelMessageEventArgs>()
+        myReadingChannel4.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
         {
             @Override
             public void invoke(Object x, ChannelMessageEventArgs y) throws Exception

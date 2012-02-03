@@ -7,7 +7,7 @@ import org.junit.*;
 import eneter.messaging.endpoints.stringmessages.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousMessagingSystemFactory;
-import eneter.net.system.IMethod2;
+import eneter.net.system.EventHandler;
 
 public class Tester_ChannelWrapper
 {
@@ -69,7 +69,7 @@ public class Tester_ChannelWrapper
         final String[] aReceivedMessage1 = {""};
 
         //final String[] aReceivedMessage1 = {""};
-        aStringMessageReceiver1.messageReceived().subscribe(new IMethod2<Object, StringMessageEventArgs>()
+        aStringMessageReceiver1.messageReceived().subscribe(new EventHandler<StringMessageEventArgs>()
         {
             @Override
             public void invoke(Object x, StringMessageEventArgs y) throws Exception
@@ -79,7 +79,7 @@ public class Tester_ChannelWrapper
         });
         
         final String[] aReceivedMessage2 = {""};
-        aStringMessageReceiver2.messageReceived().subscribe(new IMethod2<Object, StringMessageEventArgs>()
+        aStringMessageReceiver2.messageReceived().subscribe(new EventHandler<StringMessageEventArgs>()
         {
             @Override
             public void invoke(Object x, StringMessageEventArgs y) throws Exception

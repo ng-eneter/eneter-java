@@ -46,7 +46,7 @@ public class Test_Event
     
     
     // Inner class providing the event handler.
-    private IMethod2<Object, String> anEventHandler = new IMethod2<Object, String>()
+    private EventHandler<String> anEventHandler = new EventHandler<String>()
     {
         @Override
         public void invoke(Object t1, String t2)

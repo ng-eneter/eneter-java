@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
+import eneter.net.system.*;
 import eneter.net.system.threading.AutoResetEvent;
 
 public abstract class TypedRequestResponseBaseTester
@@ -32,7 +32,7 @@ public abstract class TypedRequestResponseBaseTester
         final AutoResetEvent aMessageReceivedEvent = new AutoResetEvent(false);
 
         final int[] aReceivedMessage = {0};
-        Responser.messageReceived().subscribe(new IMethod2<Object, TypedRequestReceivedEventArgs<Integer>>()
+        Responser.messageReceived().subscribe(new EventHandler<TypedRequestReceivedEventArgs<Integer>>()
         {
             @Override
             public void invoke(Object x, TypedRequestReceivedEventArgs<Integer> y)
@@ -47,7 +47,7 @@ public abstract class TypedRequestResponseBaseTester
         Responser.attachDuplexInputChannel(DuplexInputChannel);
 
         final int[] aReceivedResponse = {0};
-        Requester.responseReceived().subscribe(new IMethod2<Object, TypedResponseReceivedEventArgs<Integer>>()
+        Requester.responseReceived().subscribe(new EventHandler<TypedResponseReceivedEventArgs<Integer>>()
         {
             @Override
             public void invoke(Object x, TypedResponseReceivedEventArgs<Integer> y)
@@ -87,7 +87,7 @@ public abstract class TypedRequestResponseBaseTester
         final AutoResetEvent aMessageReceivedEvent = new AutoResetEvent(false);
 
         final ArrayList<Integer> aReceivedMessages = new ArrayList<Integer>();
-        Responser.messageReceived().subscribe(new IMethod2<Object, TypedRequestReceivedEventArgs<Integer>>()
+        Responser.messageReceived().subscribe(new EventHandler<TypedRequestReceivedEventArgs<Integer>>()
         {
             @Override
             public void invoke(Object x, TypedRequestReceivedEventArgs<Integer> y)
@@ -105,7 +105,7 @@ public abstract class TypedRequestResponseBaseTester
         Responser.attachDuplexInputChannel(DuplexInputChannel);
 
         final ArrayList<Integer> aReceivedResponses = new ArrayList<Integer>();
-        Requester.responseReceived().subscribe(new IMethod2<Object, TypedResponseReceivedEventArgs<Integer>>()
+        Requester.responseReceived().subscribe(new EventHandler<TypedResponseReceivedEventArgs<Integer>>()
         {
             @Override
             public void invoke(Object x, TypedResponseReceivedEventArgs<Integer> y)

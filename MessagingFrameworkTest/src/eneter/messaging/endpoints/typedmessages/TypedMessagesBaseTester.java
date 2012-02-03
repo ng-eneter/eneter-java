@@ -11,7 +11,7 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
 import eneter.messaging.messagingsystems.messagingsystembase.IOutputChannel;
-import eneter.net.system.IMethod2;
+import eneter.net.system.*;
 import eneter.net.system.threading.ManualResetEvent;
 
 public abstract class TypedMessagesBaseTester
@@ -37,7 +37,7 @@ public abstract class TypedMessagesBaseTester
         final ManualResetEvent aMessageReceivedEvent = new ManualResetEvent(false);
 
         final Fake_TypedMessage[] aReceivedMessage = {null};
-        MessageReceiver.messageReceived().subscribe(new IMethod2<Object, TypedMessageReceivedEventArgs<Fake_TypedMessage>>()
+        MessageReceiver.messageReceived().subscribe(new EventHandler<TypedMessageReceivedEventArgs<Fake_TypedMessage>>()
         {
             @Override
             public void invoke(Object x, TypedMessageReceivedEventArgs<Fake_TypedMessage> y)
@@ -81,7 +81,7 @@ public abstract class TypedMessagesBaseTester
         final ManualResetEvent aMessageReceivedEvent = new ManualResetEvent(false);
 
         final ArrayList<Fake_TypedMessage> aReceivedMessages = new ArrayList<Fake_TypedMessage>();
-        MessageReceiver.messageReceived().subscribe(new IMethod2<Object, TypedMessageReceivedEventArgs<Fake_TypedMessage>>()
+        MessageReceiver.messageReceived().subscribe(new EventHandler<TypedMessageReceivedEventArgs<Fake_TypedMessage>>()
         {
             @Override
             public void invoke(Object x, TypedMessageReceivedEventArgs<Fake_TypedMessage> y)

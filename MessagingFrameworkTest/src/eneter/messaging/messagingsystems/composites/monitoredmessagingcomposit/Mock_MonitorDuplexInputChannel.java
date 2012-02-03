@@ -5,7 +5,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.Event;
 import eneter.net.system.EventImpl;
-import eneter.net.system.IMethod2;
+import eneter.net.system.EventHandler;
 
 class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
 {
@@ -178,7 +178,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     
     
-    private IMethod2<Object, ResponseReceiverEventArgs> myOnResponseReceiverConnected = new IMethod2<Object, ResponseReceiverEventArgs>()
+    private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
         public void invoke(Object x, ResponseReceiverEventArgs y)
@@ -188,7 +188,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
         }
     };
     
-    private IMethod2<Object, ResponseReceiverEventArgs> myOnResponseReceiverDisconnected = new IMethod2<Object, ResponseReceiverEventArgs>()
+    private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverDisconnected = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
         public void invoke(Object x, ResponseReceiverEventArgs y)
@@ -198,7 +198,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
         }
     };
     
-    private IMethod2<Object, DuplexChannelMessageEventArgs> myOnMessageReceived = new IMethod2<Object, DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object x, DuplexChannelMessageEventArgs y)

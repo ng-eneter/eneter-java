@@ -64,7 +64,7 @@ public class Test_DuplexDispatcher
         myDuplexDispatcher.addDuplexOutputChannel("ChannelB_3");
 
         final String[] aReceivedMessage1 = {""};
-        myStringMessageReceiver1.requestReceived().subscribe(new IMethod2<Object, StringRequestReceivedEventArgs>()
+        myStringMessageReceiver1.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, StringRequestReceivedEventArgs y)
@@ -76,7 +76,7 @@ public class Test_DuplexDispatcher
         });
 
         final String[] aReceivedMessage2 = {""};
-        myStringMessageReceiver2.requestReceived().subscribe(new IMethod2<Object, StringRequestReceivedEventArgs>()
+        myStringMessageReceiver2.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, StringRequestReceivedEventArgs y)
@@ -88,7 +88,7 @@ public class Test_DuplexDispatcher
         });
         
         final String[] aReceivedMessage3 = {""};
-        myStringMessageReceiver3.requestReceived().subscribe(new IMethod2<Object, StringRequestReceivedEventArgs>()
+        myStringMessageReceiver3.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, StringRequestReceivedEventArgs y)
@@ -101,7 +101,7 @@ public class Test_DuplexDispatcher
         
 
         final String[] aReceivedResponse11 = {""};
-        myStringMessageSender11.responseReceived().subscribe(new IMethod2<Object, StringResponseReceivedEventArgs>()
+        myStringMessageSender11.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, StringResponseReceivedEventArgs y)
@@ -112,7 +112,7 @@ public class Test_DuplexDispatcher
         });
 
         final String[] aReceivedResponse12 = {""};
-        myStringMessageSender12.responseReceived().subscribe(new IMethod2<Object, StringResponseReceivedEventArgs>()
+        myStringMessageSender12.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, StringResponseReceivedEventArgs y)
@@ -123,7 +123,7 @@ public class Test_DuplexDispatcher
         });
 
         final String[] aReceivedResponse13 = {""};
-        myStringMessageSender13.responseReceived().subscribe(new IMethod2<Object, StringResponseReceivedEventArgs>()
+        myStringMessageSender13.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, StringResponseReceivedEventArgs y)
@@ -134,7 +134,7 @@ public class Test_DuplexDispatcher
         });
         
         final String[] aReceivedResponse22 = {""};
-        myStringMessageSender22.responseReceived().subscribe(new IMethod2<Object, StringResponseReceivedEventArgs>()
+        myStringMessageSender22.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, StringResponseReceivedEventArgs y)

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import org.junit.*;
 
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
+import eneter.net.system.*;
 import eneter.net.system.threading.*;
 
 public abstract class StringRequestResponseBaseTester
@@ -35,7 +35,7 @@ public abstract class StringRequestResponseBaseTester
 
         try
         {
-            myMessageResponser.requestReceived().subscribe(new IMethod2<Object, StringRequestReceivedEventArgs>()
+            myMessageResponser.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
             {
                 @Override
                 public void invoke(Object x, StringRequestReceivedEventArgs y)
@@ -50,7 +50,7 @@ public abstract class StringRequestResponseBaseTester
             myMessageResponser.attachDuplexInputChannel(myDuplexInputChannel);
 
             
-            myMessageRequester.responseReceived().subscribe(new IMethod2<Object, StringResponseReceivedEventArgs>()
+            myMessageRequester.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
             {
                 @Override
                 public void invoke(Object x, StringResponseReceivedEventArgs y)
@@ -88,7 +88,7 @@ public abstract class StringRequestResponseBaseTester
         final AutoResetEvent aMessageReceivedEvent = new AutoResetEvent(false);
 
         final ArrayList<String> aReceivedMessages = new ArrayList<String>();
-        myMessageResponser.requestReceived().subscribe(new IMethod2<Object, StringRequestReceivedEventArgs>()
+        myMessageResponser.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, StringRequestReceivedEventArgs y)
@@ -106,7 +106,7 @@ public abstract class StringRequestResponseBaseTester
         myMessageResponser.attachDuplexInputChannel(myDuplexInputChannel);
 
         final ArrayList<String> aReceivedResponses = new ArrayList<String>();
-        myMessageRequester.responseReceived().subscribe(new IMethod2<Object, StringResponseReceivedEventArgs>()
+        myMessageRequester.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
             public void invoke(Object x, StringResponseReceivedEventArgs y)
