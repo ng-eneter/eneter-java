@@ -449,7 +449,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
     private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
 
     
-    private IMethod2<Object, DuplexChannelMessageEventArgs> myOnResponseMessageReceived = new IMethod2<Object, DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myOnResponseMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object x, DuplexChannelMessageEventArgs y)
@@ -459,7 +459,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
         }
     };
     
-    private IMethod2<Object, DuplexChannelEventArgs> myOnConnectionOpened = new IMethod2<Object, DuplexChannelEventArgs>()
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionOpened = new EventHandler<DuplexChannelEventArgs>()
     {
         @Override
         public void invoke(Object x, DuplexChannelEventArgs y) throws Exception
@@ -468,7 +468,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
         }
     };
     
-    private IMethod2<Object, DuplexChannelEventArgs> myOnConnectionClosed = new IMethod2<Object, DuplexChannelEventArgs>()
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionClosed = new EventHandler<DuplexChannelEventArgs>()
     {
         @Override
         public void invoke(Object x, DuplexChannelEventArgs y) throws Exception

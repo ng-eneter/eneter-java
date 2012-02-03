@@ -296,7 +296,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     private Object myListeningManipulatorLock = new Object();
     private String myDuplexInputChannelId = "";
     
-    private IMethod2<Object, ChannelMessageEventArgs> myMessageReceivedHandler = new IMethod2<Object, ChannelMessageEventArgs>()
+    private EventHandler<ChannelMessageEventArgs> myMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object t1, ChannelMessageEventArgs t2)

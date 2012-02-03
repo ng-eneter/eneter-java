@@ -406,7 +406,7 @@ class DuplexBrokerClient implements IDuplexBrokerClient
     private String myDuplexOutputChannelId = "";
    
     
-    private IMethod2<Object, TypedResponseReceivedEventArgs<BrokerNotifyMessage>> myOnBrokerMessageReceivedHandler = new IMethod2<Object, TypedResponseReceivedEventArgs<BrokerNotifyMessage>>()
+    private EventHandler<TypedResponseReceivedEventArgs<BrokerNotifyMessage>> myOnBrokerMessageReceivedHandler = new EventHandler<TypedResponseReceivedEventArgs<BrokerNotifyMessage>>()
     {
         @Override
         public void invoke(Object sender, TypedResponseReceivedEventArgs<BrokerNotifyMessage> e)

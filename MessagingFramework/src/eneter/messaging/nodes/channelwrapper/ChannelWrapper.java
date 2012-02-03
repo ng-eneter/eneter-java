@@ -13,7 +13,7 @@ import eneter.messaging.dataprocessing.wrapping.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.infrastructure.attachable.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
+import eneter.net.system.*;
 
 import java.util.*;
 
@@ -181,7 +181,7 @@ class ChannelWrapper extends AttachableOutputChannelBase
     
     private ISerializer mySerializer;
     
-    private IMethod2<Object, ChannelMessageEventArgs> myOnMessageReceivedHandler = new IMethod2<Object, ChannelMessageEventArgs>()
+    private EventHandler<ChannelMessageEventArgs> myOnMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
             {
                 @Override
                 public void invoke(Object t1, ChannelMessageEventArgs t2)

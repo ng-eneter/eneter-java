@@ -20,11 +20,11 @@ public interface Event<T>
      * Subscribes client to for the event.
      * @param eventHandler Event handler provided by the client.
      */
-    public void subscribe(IMethod2<Object, T> eventHandler);
+    public void subscribe(EventHandler<T> eventHandler);
     
     /**
      * Unsubscribes client from the event.
      * @param eventHandler Event handler that should be unsubscribed from the event.
      */
-    public void unsubscribe(IMethod2<Object, T> eventHandler);
+    public void unsubscribe(EventHandler<T> eventHandler);
 }

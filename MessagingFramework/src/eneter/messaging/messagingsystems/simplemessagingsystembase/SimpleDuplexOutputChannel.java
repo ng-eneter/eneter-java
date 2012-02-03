@@ -295,7 +295,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
     private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
     
     
-    private IMethod2<Object, ChannelMessageEventArgs> myResponseMessageReceivedHandler = new IMethod2<Object, ChannelMessageEventArgs>()
+    private EventHandler<ChannelMessageEventArgs> myResponseMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object t1, ChannelMessageEventArgs t2)

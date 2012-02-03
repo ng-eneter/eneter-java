@@ -12,8 +12,7 @@ import java.security.InvalidParameterException;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
-import eneter.net.system.StringExt;
+import eneter.net.system.*;
 
 public abstract class AttachableDuplexInputChannelBase implements IAttachableDuplexInputChannel
 {
@@ -157,7 +156,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
     
     private IDuplexInputChannel myAttachedDuplexInputChannel;
     
-    private IMethod2<Object, DuplexChannelMessageEventArgs> myMessageReceivedHandler = new IMethod2<Object, DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object sender, DuplexChannelMessageEventArgs e)
@@ -167,7 +166,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
         }
     };
     
-    private IMethod2<Object, ResponseReceiverEventArgs> myResponseReceiverConnectedHandler = new IMethod2<Object, ResponseReceiverEventArgs>()
+    private EventHandler<ResponseReceiverEventArgs> myResponseReceiverConnectedHandler = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
         public void invoke(Object sender, ResponseReceiverEventArgs e)
@@ -177,7 +176,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
         }
     };
     
-    private IMethod2<Object, ResponseReceiverEventArgs> myResponseReceiverDisconnectedHandler = new IMethod2<Object, ResponseReceiverEventArgs>()
+    private EventHandler<ResponseReceiverEventArgs> myResponseReceiverDisconnectedHandler = new EventHandler<ResponseReceiverEventArgs>()
     {
         
         @Override

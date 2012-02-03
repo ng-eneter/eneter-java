@@ -12,8 +12,7 @@ import java.security.InvalidParameterException;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
-import eneter.net.system.StringExt;
+import eneter.net.system.*;
 
 public abstract class AttachableDuplexOutputChannelBase implements IAttachableDuplexOutputChannel
 {
@@ -150,7 +149,7 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
     
     private IDuplexOutputChannel myAttachedDuplexOutputChannel;
     
-    private IMethod2<Object, DuplexChannelMessageEventArgs> myResponseMessageHandler = new IMethod2<Object, DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myResponseMessageHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object sender, DuplexChannelMessageEventArgs e)

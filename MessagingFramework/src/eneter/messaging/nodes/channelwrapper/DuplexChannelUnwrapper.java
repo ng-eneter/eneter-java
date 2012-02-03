@@ -338,7 +338,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
 
     
-    private IMethod2<Object, DuplexChannelMessageEventArgs> myOnResponseMessageReceivedHandler = new IMethod2<Object, DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myOnResponseMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object sender, DuplexChannelMessageEventArgs e)

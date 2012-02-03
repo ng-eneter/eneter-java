@@ -44,7 +44,7 @@ public class EventImpl<T>
         }
     }
     
-    private void subscribeClient(IMethod2<Object, T> eventHandler)
+    private void subscribeClient(EventHandler<T> eventHandler)
     {
         if (eventHandler == null)
         {
@@ -58,7 +58,7 @@ public class EventImpl<T>
         }
     }
     
-    private void unsubscribeClient(IMethod2<Object, T> eventHandler)
+    private void unsubscribeClient(EventHandler<T> eventHandler)
     {
         if (eventHandler == null)
         {
@@ -72,18 +72,18 @@ public class EventImpl<T>
         }
     }
     
-    private ArrayList<IMethod2<Object, T>> mySubscribedEventHandlers = new ArrayList<IMethod2<Object, T>>();
+    private ArrayList<EventHandler<T>> mySubscribedEventHandlers = new ArrayList<EventHandler<T>>();
     
     private Event<T> myEventApi = new Event<T>()
     {
         @Override
-        public void subscribe(IMethod2<Object, T> eventHandler)
+        public void subscribe(EventHandler<T> eventHandler)
         {
             subscribeClient(eventHandler);
         }
 
         @Override
-        public void unsubscribe(IMethod2<Object, T> eventHandler)
+        public void unsubscribe(EventHandler<T> eventHandler)
         {
             unsubscribeClient(eventHandler);
         }

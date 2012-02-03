@@ -590,7 +590,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
 
     private IMessagingSystemFactory myMessagingSystemFactory;
     
-    private IMethod2<Object, DuplexChannelMessageEventArgs> myMessageReceivedHandler = new IMethod2<Object, DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object sender, DuplexChannelMessageEventArgs e)
@@ -600,7 +600,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         }
     };
     
-    private IMethod2<Object, DuplexChannelMessageEventArgs> myResponseMessageReceivedHandler = new IMethod2<Object, DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myResponseMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object sender, DuplexChannelMessageEventArgs e)
@@ -610,7 +610,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         }
     };
     
-    private IMethod2<Object, ResponseReceiverEventArgs> myResponseReceiverDisconnected = new IMethod2<Object, ResponseReceiverEventArgs>()
+    private EventHandler<ResponseReceiverEventArgs> myResponseReceiverDisconnected = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
         public void invoke(Object sender, ResponseReceiverEventArgs e)

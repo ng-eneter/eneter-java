@@ -490,7 +490,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     
-    private IMethod2<Object, ResponseReceiverEventArgs> myOnResponseReceiverConnected = new IMethod2<Object, ResponseReceiverEventArgs>()
+    private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
         public void invoke(Object x, ResponseReceiverEventArgs y)
@@ -500,7 +500,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
         }
     };
     
-    private IMethod2<Object, DuplexChannelMessageEventArgs> myOnMessageReceived = new IMethod2<Object, DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object x, DuplexChannelMessageEventArgs y)

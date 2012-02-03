@@ -395,7 +395,7 @@ class DuplexBroker implements IDuplexBroker
     private String myDuplexInputChannelId = "";
     
     
-    private IMethod2<Object, TypedRequestReceivedEventArgs<BrokerNotifyMessage>> myOnBrokerMessageReceivedHandler = new IMethod2<Object, TypedRequestReceivedEventArgs<BrokerNotifyMessage>>()
+    private EventHandler<TypedRequestReceivedEventArgs<BrokerNotifyMessage>> myOnBrokerMessageReceivedHandler = new EventHandler<TypedRequestReceivedEventArgs<BrokerNotifyMessage>>()
             {
                 @Override
                 public void invoke(Object sender, TypedRequestReceivedEventArgs<BrokerNotifyMessage> e)
@@ -405,7 +405,7 @@ class DuplexBroker implements IDuplexBroker
                 }
             };
     
-    private IMethod2<Object, TypedRequestReceivedEventArgs<BrokerRequestMessage>> myOnBrokerRequestReceivedHandler = new IMethod2<Object, TypedRequestReceivedEventArgs<BrokerRequestMessage>>()
+    private EventHandler<TypedRequestReceivedEventArgs<BrokerRequestMessage>> myOnBrokerRequestReceivedHandler = new EventHandler<TypedRequestReceivedEventArgs<BrokerRequestMessage>>()
     {
         @Override
         public void invoke(Object sender, TypedRequestReceivedEventArgs<BrokerRequestMessage> e)
@@ -415,7 +415,7 @@ class DuplexBroker implements IDuplexBroker
         }
     };
     
-    private IMethod2<Object, ResponseReceiverEventArgs> myOnSubscriberDisconnectedHandler = new IMethod2<Object, ResponseReceiverEventArgs>()
+    private EventHandler<ResponseReceiverEventArgs> myOnSubscriberDisconnectedHandler = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
         public void invoke(Object sender, ResponseReceiverEventArgs e)

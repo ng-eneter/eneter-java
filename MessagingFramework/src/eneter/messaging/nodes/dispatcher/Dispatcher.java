@@ -305,7 +305,7 @@ class Dispatcher implements IDispatcher
     private HashSet<IInputChannel> myInputChannels = new HashSet<IInputChannel>();
     private HashSet<IOutputChannel> myOutputChannels = new HashSet<IOutputChannel>();
     
-    private IMethod2<Object, ChannelMessageEventArgs> myOnMessageReceivedHandler = new IMethod2<Object, ChannelMessageEventArgs>()
+    private EventHandler<ChannelMessageEventArgs> myOnMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object sender, ChannelMessageEventArgs e) throws Exception

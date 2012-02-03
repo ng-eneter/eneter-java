@@ -10,7 +10,7 @@ package eneter.messaging.infrastructure.attachable;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
+import eneter.net.system.*;
 
 public abstract class AttachableInputChannelBase implements IAttachableInputChannel
 {
@@ -115,7 +115,7 @@ public abstract class AttachableInputChannelBase implements IAttachableInputChan
     protected abstract void onMessageReceived(Object sender, ChannelMessageEventArgs e);
     
     
-    private IMethod2<Object, ChannelMessageEventArgs> myMessageReceivedHandler = new IMethod2<Object, ChannelMessageEventArgs>()
+    private EventHandler<ChannelMessageEventArgs> myMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object sender, ChannelMessageEventArgs e) throws Exception

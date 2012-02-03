@@ -16,8 +16,8 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.infrastructure.attachable.AttachableDuplexOutputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.IDuplexInputChannel;
-import eneter.net.system.IMethod2;
-import eneter.net.system.StringExt;
+import eneter.net.system.*;
+
 
 class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
                            implements IDuplexChannelWrapper
@@ -329,7 +329,7 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
     private ISerializer mySerializer;
     
     
-    IMethod2<Object, DuplexChannelMessageEventArgs> myOnMessageReceivedEventHandler = new IMethod2<Object, DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceivedEventHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void invoke(Object sender, DuplexChannelMessageEventArgs e)
