@@ -12,6 +12,11 @@ import java.util.ArrayList;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
+/**
+ * Internal helper class for browsing of xml string.
+ * The class is used to serialize/deserialize xml strings.
+ *
+ */
 class XmlDataBrowser
 {
     public class TElement

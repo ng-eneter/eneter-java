@@ -10,6 +10,11 @@ package eneter.messaging.dataprocessing.serializing;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
+/**
+ * Internal helper class to find desired keywords from the sequence of chars.
+ * It is very fast search utility to identify desired strings from the sequence of chars.
+ *
+ */
 class KeywordIdentifier
 {
     private class TKeyword
@@ -97,6 +102,11 @@ class KeywordIdentifier
         }
     }
     
+    /**
+     * Is called to evaluate the next character in the char sequence.
+     * @param c
+     * @return if a keyword was identified, it returns the index of the keyword.
+     */
     public int evaluate(char c)
     {
         EneterTrace aTrace = EneterTrace.entering();

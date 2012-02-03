@@ -16,7 +16,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 /**
  * Internal class using an underlying serializer to serialize/deserialize data.
- * It stores informarmation about used encoding (UTF8 or UTF16) and Little Endian and Big Endian.
+ * It stores informarmation about used encoding (UTF8 or UTF16) and Little Endian and Big Endian number encoding.
  * It helps to ensure compatibility between various platforms.
  *
  */

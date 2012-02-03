@@ -36,7 +36,10 @@ import eneter.net.system.security.cryptography.Rfc2898DeriveBytes;
  * ...
  * 
  * // Serialize data with using AES.
- * object aSerializedData = aSerializer.Serialize&lt;MyData&gt;(aData);
+ * object aSerializedData = aSerializer.serialize(aData, MyData.class);
+ * ...
+ * // Deserialize data
+ * MyData aDeserialized = aSerializer.deserialize(aSerializedData, MyData.class);
  * }
  * </pre>
  */

@@ -14,11 +14,12 @@ import java.util.ArrayList;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Implements the serialization/deserialization to/from XmlString. The
- * serializer can be used for the communication with Eneter.Messaging.Framework
- * for .NET. The serializer does not support generic types.
- * 
- * @author Ondrej Uzovic & Martin Valach
+ * Implements the serialization/deserialization to/from xml string.<br/>
+ * <br/>
+ * The serializer is compatible with XmlStringSerializer in Eneter Messaging Framework
+ * for .NET. <b>The serializer does not support generic types.</b><br/>
+ * <br/>
+ * This serializer is used by default is no serializer is specified in the code. 
  */
 public class XmlStringSerializer implements ISerializer
 {

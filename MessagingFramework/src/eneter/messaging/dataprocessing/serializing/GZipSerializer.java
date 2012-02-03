@@ -28,7 +28,11 @@ import eneter.messaging.diagnostic.EneterTrace;
  * ...
  *
  * // Serialize data. Serialized data will be compressed.
- * object aSerializedData = aSerializer.Serialize<MyData>(aData);
+ * object aSerializedData = aSerializer.serialize(aData, MyData.class);
+ * ...
+ *
+ * // Deserialize data
+ * MyData aDeserialized = aSerializer.deserialize(aSerializedData, MyData.class);
  * }
  * </pre>
  *
