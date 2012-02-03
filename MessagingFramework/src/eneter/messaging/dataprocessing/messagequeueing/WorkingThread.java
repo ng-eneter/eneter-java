@@ -1,5 +1,5 @@
 /**
- * Project: Eneter.Messaging.Framework for Java
+ * Project: Eneter.Messaging.Framework
  * Author: Ondrej Uzovic
  * 
  * Copyright © 2012 Ondrej Uzovic
@@ -18,7 +18,6 @@ import eneter.net.system.IMethod1;
  * Implements the thread that has the message queue.
  * If a message is put to the queue, the thread removes it from the queue and calls a user defined
  * method to handle it.
- * @author Ondrej Uzovic & Martin Valach
  *
  * @param <_MessageType> type of the message processed by the thread
  */

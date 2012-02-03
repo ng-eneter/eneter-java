@@ -1,6 +1,13 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2012 Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.messagingsystems.httpmessagingsystem;
 
-import java.io.OutputStream;
 import java.net.*;
 
 import eneter.messaging.diagnostic.*;

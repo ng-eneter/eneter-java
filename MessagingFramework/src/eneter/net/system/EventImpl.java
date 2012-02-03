@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2012 Ondrej Uzovic
+ * 
+ */
+
 package eneter.net.system;
 
 import java.security.InvalidParameterException;
