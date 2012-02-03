@@ -12,7 +12,6 @@ import java.io.Serializable;
 
 /**
  * The data structure representing the wrapped data.
- * @author Ondrej Uzovic
  *
  */
 public class WrappedData implements Serializable

@@ -14,7 +14,6 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 /**
  * Implements the wrapper/unwrapper of data.
- * @author Ondrej Uzovic
  *
  */
 public class DataWrapper
