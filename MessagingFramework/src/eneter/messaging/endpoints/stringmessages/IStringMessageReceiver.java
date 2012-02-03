@@ -14,7 +14,6 @@ import eneter.net.system.Event;
 /**
  * The interface declares the string message receiver.
  * The receiver is able to receive text messages via one-way input channel.
- * @author Ondrej Uzocic & Martin Valach
  *
  */
 public interface IStringMessageReceiver extends IAttachableInputChannel

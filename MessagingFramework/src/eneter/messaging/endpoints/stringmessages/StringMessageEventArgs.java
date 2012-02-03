@@ -10,7 +10,6 @@ package eneter.messaging.endpoints.stringmessages;
 
 /**
  * The string message received event.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public final class StringMessageEventArgs

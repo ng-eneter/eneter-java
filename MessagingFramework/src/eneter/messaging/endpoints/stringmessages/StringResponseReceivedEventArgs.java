@@ -11,7 +11,6 @@ package eneter.messaging.endpoints.stringmessages;
 
 /**
  * The event is invoked when a string response message is received.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public final class StringResponseReceivedEventArgs

@@ -13,7 +13,6 @@ import eneter.messaging.infrastructure.attachable.IAttachableOutputChannel;
 /**
  * The interface declares the string message sender.
  * The sender is able to send text messages via one-way output channel.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public interface IStringMessageSender extends IAttachableOutputChannel

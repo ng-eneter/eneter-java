@@ -15,7 +15,6 @@ import eneter.net.system.Event;
 /**
  * The interface declares the duplex string message sender.
  * The duplex sender is able to send text messages and receive text responses.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public interface IDuplexStringMessageSender extends IAttachableDuplexOutputChannel

@@ -12,7 +12,6 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 /**
  * Implements the factory to create duplex string message sender and receiver.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public class DuplexStringMessagesFactory implements IDuplexStringMessagesFactory

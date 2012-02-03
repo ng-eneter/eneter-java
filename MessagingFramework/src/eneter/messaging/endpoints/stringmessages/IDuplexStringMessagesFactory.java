@@ -10,7 +10,6 @@ package eneter.messaging.endpoints.stringmessages;
 
 /**
  * The interface declares the factory to create duplex string message sender and receiver.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public interface IDuplexStringMessagesFactory

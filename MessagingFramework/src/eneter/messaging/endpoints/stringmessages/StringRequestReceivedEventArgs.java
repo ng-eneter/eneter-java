@@ -10,7 +10,6 @@ package eneter.messaging.endpoints.stringmessages;
 
 /**
  * Declares the event type when the request message is received.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public final class StringRequestReceivedEventArgs

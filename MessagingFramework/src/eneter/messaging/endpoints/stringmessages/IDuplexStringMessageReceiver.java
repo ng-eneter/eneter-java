@@ -15,7 +15,6 @@ import eneter.net.system.Event;
 /**
  * The interface declares the reliable string message receiver.
  * The reliable string message receiver can receiver string messages and response string messages.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public interface IDuplexStringMessageReceiver extends IAttachableDuplexInputChannel

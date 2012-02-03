@@ -13,7 +13,6 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 /**
  * The interface declares the factory to create string message senders and receivers.
- * @author ondrik
  *
  */
 public class StringMessagesFactory implements IStringMessagesFactory

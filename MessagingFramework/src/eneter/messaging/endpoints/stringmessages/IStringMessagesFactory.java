@@ -11,7 +11,6 @@ package eneter.messaging.endpoints.stringmessages;
 
 /**
  * The interface declares the factory to create string message senders and receivers.
- * @author ondrik
  *
  */
 public interface IStringMessagesFactory
