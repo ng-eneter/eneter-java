@@ -10,7 +10,6 @@ package eneter.messaging.diagnostic;
 
 /**
  * Internal helper class to trace typical messags.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public final class ErrorHandler

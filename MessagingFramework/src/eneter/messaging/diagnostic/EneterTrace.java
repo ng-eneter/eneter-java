@@ -20,7 +20,6 @@ import java.util.regex.Pattern;
  * The EneterTrace allows to trace error messages, warning message, info messages and debug messages.
  * It also allows to trace entering and leaving from a method and measures the time spent in the method.
  * In order to trace entering - leaving and debug messages, you must set the detail level to 'Debug'.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public class EneterTrace
@@ -51,8 +50,6 @@ public class EneterTrace
      *  and the measuring of the time starts.
      *  In order to trace entering-leaving, the detail level must be set to 'Debug'.
      *  
-     *  @return EneterTrace
-     * 
      */
     public static EneterTrace entering()
     {
