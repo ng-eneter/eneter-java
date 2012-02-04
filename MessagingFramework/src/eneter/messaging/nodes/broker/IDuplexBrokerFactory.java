@@ -10,7 +10,6 @@ package eneter.messaging.nodes.broker;
 
 /**
  * Declares the factory to create the broker and the broker client.
- * @author Ondrej Uzovic
  *
  */
 public interface IDuplexBrokerFactory

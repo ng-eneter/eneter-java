@@ -15,7 +15,6 @@ import eneter.net.system.*;
  * Declares the broker client.
  * The broker client allows to send messages via the broker, so that broker will forward them to all subscribers.<br/>
  * It also allows to subscribe for messages the client is interested to.
- * @author Ondrej Uzovic
  *
  */
 public interface IDuplexBrokerClient extends IAttachableDuplexOutputChannel

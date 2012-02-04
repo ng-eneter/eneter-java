@@ -14,7 +14,6 @@ import java.io.Serializable;
  * The class represents the data structure used to send requests to the broker.
  * The request for the broker is the message that is intended for the broker and not for the subscribers.
  * This message is used by the broker client to subscribe and unsubscribe.
- * @author Ondrej Uzovic
  *
  */
 public class BrokerRequestMessage implements Serializable

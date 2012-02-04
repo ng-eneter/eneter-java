@@ -12,7 +12,6 @@ import java.io.Serializable;
 
 /**
  * The data representing the message sent to the broker to notify subscribed clients.
- * @author Ondrej Uzovic
  *
  */
 public class BrokerNotifyMessage implements Serializable

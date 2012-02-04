@@ -13,7 +13,6 @@ import eneter.messaging.infrastructure.attachable.IAttachableDuplexInputChannel;
 /**
  * The interface declares the broker.
  * The broker receives messages and forwards them to subscribed clients.
- * @author Ondrej Uzovic
  *
  */
 public interface IDuplexBroker extends IAttachableDuplexInputChannel
