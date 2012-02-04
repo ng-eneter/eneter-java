@@ -11,7 +11,6 @@ package eneter.messaging.messagingsystems.messagingsystembase;
 /**
  * The event data available when the duplex input channel receives a message.
  * 
- * @author Ondrej Uzovic & Martin Valach
  */
 public final class DuplexChannelMessageEventArgs extends DuplexChannelEventArgs
 {

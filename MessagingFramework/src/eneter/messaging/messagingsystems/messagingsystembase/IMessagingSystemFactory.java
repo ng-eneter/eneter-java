@@ -13,7 +13,6 @@ package eneter.messaging.messagingsystems.messagingsystembase;
  * This factory interface is supposed to be implemented by particular messaging systems so that
  * a custom implementation for input and output channels can be provided.
  * 
- * @author Ondrej Uzovic & Martin Valach
  */
 public interface IMessagingSystemFactory
 {

@@ -14,7 +14,6 @@ import eneter.net.system.Event;
 /**
  * Declares the input channel that can receive messages from the output channel.
  * 
- * @author Ondrej Uzovic & Martin Valach
  */
 public interface IInputChannel
 {

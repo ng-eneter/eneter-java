@@ -14,7 +14,6 @@ package eneter.messaging.messagingsystems.messagingsystembase;
  * The event is used for the communication between the duplex output channel and duplex input channel
  * to identify where to send response messages.
  * 
- * @author Ondrej Uzovic & Martin Valach
  */
 public final class ResponseReceiverEventArgs
 {

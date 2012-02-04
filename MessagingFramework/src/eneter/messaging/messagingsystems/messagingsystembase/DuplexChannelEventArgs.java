@@ -11,7 +11,6 @@ package eneter.messaging.messagingsystems.messagingsystembase;
 /**
  * Event argument containing channel id and response receiver id.
  * 
- * @author Ondrej Uzovic & Martin Valach
  */
 public class DuplexChannelEventArgs
 {
