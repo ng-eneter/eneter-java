@@ -21,15 +21,23 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     public SimpleDuplexInputChannel(String channelId, IMessagingSystemFactory messagingFactory,
                                     IProtocolFormatter<?> protocolFormatter)
     {
-        if (StringExt.isNullOrEmpty(channelId))
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
-            throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);
+            if (StringExt.isNullOrEmpty(channelId))
+            {
+                EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
+                throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);
+            }
+            
+            myDuplexInputChannelId = channelId;
+            myMessagingSystemFactory = messagingFactory;
+            myProtocolFormatter = protocolFormatter;
         }
-        
-        myDuplexInputChannelId = channelId;
-        myMessagingSystemFactory = messagingFactory;
-        myProtocolFormatter = protocolFormatter;
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
     
@@ -61,72 +69,94 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     public void startListening()
         throws Exception
     {
-        synchronized (myListeningManipulatorLock)
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            if (isListening())
+            synchronized (myListeningManipulatorLock)
             {
-                String aMessage = TracedObject() + ErrorHandler.IsAlreadyListening;
-                EneterTrace.error(aMessage);
-                throw new IllegalStateException(aMessage);
-            }
-            
-            try
-            {
-                myMessageReceiverInputChannel = myMessagingSystemFactory.createInputChannel(myDuplexInputChannelId);
-                myMessageReceiverInputChannel.messageReceived().subscribe(myMessageReceivedHandler);
-                myMessageReceiverInputChannel.startListening();
-            }
-            catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
-                stopListening();
+                if (isListening())
+                {
+                    String aMessage = TracedObject() + ErrorHandler.IsAlreadyListening;
+                    EneterTrace.error(aMessage);
+                    throw new IllegalStateException(aMessage);
+                }
                 
-                throw err;
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
-                stopListening();
-                
-                throw err;
+                try
+                {
+                    myMessageReceiverInputChannel = myMessagingSystemFactory.createInputChannel(myDuplexInputChannelId);
+                    myMessageReceiverInputChannel.messageReceived().subscribe(myMessageReceivedHandler);
+                    myMessageReceiverInputChannel.startListening();
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                    stopListening();
+                    
+                    throw err;
+                }
+                catch (Error err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                    stopListening();
+                    
+                    throw err;
+                }
             }
         }
-        
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
     public void stopListening()
     {
-        synchronized (myListeningManipulatorLock)
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            if (myMessageReceiverInputChannel != null)
+            synchronized (myListeningManipulatorLock)
             {
-                try
+                if (myMessageReceiverInputChannel != null)
                 {
-                    myMessageReceiverInputChannel.stopListening();
+                    try
+                    {
+                        myMessageReceiverInputChannel.stopListening();
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
+                    }
+                    catch (Error err)
+                    {
+                        EneterTrace.error(TracedObject() + ErrorHandler.StopListeningFailure, err);
+                        throw err;
+                    }
+                    
+                    myMessageReceiverInputChannel.messageReceived().unsubscribe(myMessageReceivedHandler);
                 }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.StopListeningFailure, err);
-                    throw err;
-                }
-                
-                myMessageReceiverInputChannel.messageReceived().unsubscribe(myMessageReceivedHandler);
             }
         }
-        
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
     public boolean isListening() throws Exception
     {
-        synchronized (myListeningManipulatorLock)
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            return myMessageReceiverInputChannel != null && myMessageReceiverInputChannel.isListening();
+            synchronized (myListeningManipulatorLock)
+            {
+                return myMessageReceiverInputChannel != null && myMessageReceiverInputChannel.isListening();
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
         }
     }
 
@@ -134,160 +164,207 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     public void sendResponseMessage(String responseReceiverId, Object message)
             throws Exception
     {
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IOutputChannel aResponseOutputChannel = myMessagingSystemFactory.createOutputChannel(responseReceiverId);
-            
-            // Encode the response message.
-            Object anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
-            
-            aResponseOutputChannel.sendMessage(anEncodedMessage);
+            try
+            {
+                IOutputChannel aResponseOutputChannel = myMessagingSystemFactory.createOutputChannel(responseReceiverId);
+                
+                // Encode the response message.
+                Object anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
+                
+                aResponseOutputChannel.sendMessage(anEncodedMessage);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+    
+                // Sending the response message failed, therefore consider it as the disconnection with the reponse receiver.
+                notifyResponseReceiverDisconnected(responseReceiverId);
+    
+                throw err;
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+    
+                // Sending the response message failed, therefore consider it as the disconnection with the reponse receiver.
+                notifyResponseReceiverDisconnected(responseReceiverId);
+    
+                throw err;
+            }
         }
-        catch (Exception err)
+        finally
         {
-            EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-
-            // Sending the response message failed, therefore consider it as the disconnection with the reponse receiver.
-            notifyResponseReceiverDisconnected(responseReceiverId);
-
-            throw err;
-        }
-        catch (Error err)
-        {
-            EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-
-            // Sending the response message failed, therefore consider it as the disconnection with the reponse receiver.
-            notifyResponseReceiverDisconnected(responseReceiverId);
-
-            throw err;
+            EneterTrace.leaving(aTrace);
         }
     }
 
     @Override
     public void disconnectResponseReceiver(String responseReceiverId)
     {
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IOutputChannel aResponseOutputChannel = myMessagingSystemFactory.createOutputChannel(responseReceiverId);
-
-            // Encode the message for closing the connection with the client.
-            Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(responseReceiverId);
-            
-            aResponseOutputChannel.sendMessage(anEncodedMessage);
+            try
+            {
+                IOutputChannel aResponseOutputChannel = myMessagingSystemFactory.createOutputChannel(responseReceiverId);
+    
+                // Encode the message for closing the connection with the client.
+                Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(responseReceiverId);
+                
+                aResponseOutputChannel.sendMessage(anEncodedMessage);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
+            }
+            catch (Error err)
+            {
+                EneterTrace.error(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
+                throw err;
+            }
         }
-        catch (Exception err)
+        finally
         {
-            EneterTrace.warning(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
+            EneterTrace.leaving(aTrace);
         }
-        catch (Error err)
-        {
-            EneterTrace.error(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
-            throw err;
-        }
-        
     }
 
     
     private void onMessageReceived(Object o, ChannelMessageEventArgs e)
     {
+        EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Decode the incoming message.
-            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(e.getMessage());
-
-            if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
+            try
             {
-                notifyResponseReceiverConnected(aProtocolMessage.ResponseReceiverId);
+                // Decode the incoming message.
+                ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(e.getMessage());
+    
+                if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
+                {
+                    notifyResponseReceiverConnected(aProtocolMessage.ResponseReceiverId);
+                }
+                else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
+                {
+                    notifyResponseReceiverDisconnected(aProtocolMessage.ResponseReceiverId);
+                }
+                else if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+                {
+                    notifyMessageReceived(getChannelId(), aProtocolMessage.Message, aProtocolMessage.ResponseReceiverId);
+                }
+                else
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+                }
             }
-            else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
+            catch (Exception err)
             {
-                notifyResponseReceiverDisconnected(aProtocolMessage.ResponseReceiverId);
+                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
             }
-            else if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+            catch (Error err)
             {
-                notifyMessageReceived(getChannelId(), aProtocolMessage.Message, aProtocolMessage.ResponseReceiverId);
-            }
-            else
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
+                throw err;
             }
         }
-        catch (Exception err)
+        finally
         {
-            EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
-        }
-        catch (Error err)
-        {
-            EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
-            throw err;
+            EneterTrace.leaving(aTrace);
         }
     }
     
     private void notifyResponseReceiverConnected(String responseReceiverId)
     {
-        if (myResponseReceiverConnectedEventImpl.isSubscribed())
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
-
-            try
+            if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
-                myResponseReceiverConnectedEventImpl.raise(this, aResponseReceiverEvent);
+                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
+    
+                try
+                {
+                    myResponseReceiverConnectedEventImpl.raise(this, aResponseReceiverEvent);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+                catch (Error err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                    throw err;
+                }
             }
-            catch (Exception err)
-            {
-                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                throw err;
-            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
         }
     }
     
     private void notifyResponseReceiverDisconnected(String responseReceiverId)
     {
-        if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
-
-            try
+            if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
             {
-                myResponseReceiverDisconnectedEventImpl.raise(this, aResponseReceiverEvent);
+                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
+    
+                try
+                {
+                    myResponseReceiverDisconnectedEventImpl.raise(this, aResponseReceiverEvent);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+                catch (Error err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                    throw err;
+                }
             }
-            catch (Exception err)
-            {
-                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                throw err;
-            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
         }
     }
     
     private void notifyMessageReceived(String channelId, Object message, String responseReceiverId)
     {
-        if (myMessageReceivedEventImpl.isSubscribed())
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            try
+            if (myMessageReceivedEventImpl.isSubscribed())
             {
-                myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+                try
+                {
+                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+                catch (Error err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                    throw err;
+                }
             }
-            catch (Exception err)
+            else
             {
-                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                throw err;
+                EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
             }
         }
-        else
+        finally
         {
-            EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
+            EneterTrace.leaving(aTrace);
         }
     }
     

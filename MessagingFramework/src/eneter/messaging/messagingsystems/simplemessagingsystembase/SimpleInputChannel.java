@@ -11,6 +11,9 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase;
 import java.security.InvalidParameterException;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.connectionprotocols.EProtocolMessageType;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.messagingsystembase.ChannelMessageEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
 import eneter.net.system.Event;
@@ -20,16 +23,25 @@ import eneter.net.system.StringExt;
 
 public class SimpleInputChannel implements IInputChannel
 {
-    public SimpleInputChannel(String channelId, IMessagingSystemBase messagingSystem)
+    public SimpleInputChannel(String channelId, IMessagingSystemBase messagingSystem, IProtocolFormatter<?> protocolFormatter)
     {
-        if (StringExt.isNullOrEmpty(channelId))
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
-            throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);
+            if (StringExt.isNullOrEmpty(channelId))
+            {
+                EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
+                throw new InvalidParameterException(ErrorHandler.NullOrEmptyChannelId);
+            }
+            
+            myChannelId = channelId;
+            myMessagingSystem = messagingSystem;
+            myProtocolFormatter= protocolFormatter;
         }
-        
-        myChannelId = channelId;
-        myMessagingSystem = messagingSystem;
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
     
@@ -46,84 +58,124 @@ public class SimpleInputChannel implements IInputChannel
     public void startListening()
         throws Exception
     {
-        synchronized (myListeningManipulatorLock)
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            if (isListening())
+            synchronized (myListeningManipulatorLock)
             {
-                String aMessage = TracedObject() + ErrorHandler.IsAlreadyListening;
-                EneterTrace.error(aMessage);
-                throw new IllegalStateException(aMessage);
-            }
-            
-            try
-            {
-                myMessagingSystem.registerMessageHandler(myChannelId, myHanedleMessageImpl);
-                myIsListeningFlag = true;
-            }
-            catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
-                stopListening();
+                if (isListening())
+                {
+                    String aMessage = TracedObject() + ErrorHandler.IsAlreadyListening;
+                    EneterTrace.error(aMessage);
+                    throw new IllegalStateException(aMessage);
+                }
                 
-                throw err;
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
-                stopListening();
-                
-                throw err;
+                try
+                {
+                    myMessagingSystem.registerMessageHandler(myChannelId, myHanedleMessageImpl);
+                    myIsListeningFlag = true;
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                    stopListening();
+                    
+                    throw err;
+                }
+                catch (Error err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                    stopListening();
+                    
+                    throw err;
+                }
             }
         }
-        
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     public void stopListening()
     {
-        synchronized (myListeningManipulatorLock)
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            try
+            synchronized (myListeningManipulatorLock)
             {
-                myMessagingSystem.unregisterMessageHandler(myChannelId);
+                try
+                {
+                    myMessagingSystem.unregisterMessageHandler(myChannelId);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
+                }
+                catch (Error err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.StopListeningFailure, err);
+                    throw err;
+                }
+    
+                myIsListeningFlag = false;
             }
-            catch (Exception err)
-            {
-                EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.StopListeningFailure, err);
-                throw err;
-            }
-
-            myIsListeningFlag = false;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
         }
     }
 
     public boolean isListening()
     {
-        synchronized (myListeningManipulatorLock)
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            return myIsListeningFlag;
+            synchronized (myListeningManipulatorLock)
+            {
+                return myIsListeningFlag;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
         }
     }
     
     private void handleMessage(Object message)
     {
-        if (myMessageReceivedEventImpl.isSubscribed())
+        EneterTrace aTrace = EneterTrace.entering();
+        try
         {
-            try
+            // Decode the message.
+            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(message);
+            
+            if (aProtocolMessage.MessageType != EProtocolMessageType.MessageReceived)
             {
-                myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(myChannelId, message));
+                EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+                return;
             }
-            catch (Exception err)
+            
+            if (myMessageReceivedEventImpl.isSubscribed())
             {
-                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                try
+                {
+                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(myChannelId, message));
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+            else
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
             }
         }
-        else
+        finally
         {
-            EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
+            EneterTrace.leaving(aTrace);
         }
     }
     
@@ -133,6 +185,7 @@ public class SimpleInputChannel implements IInputChannel
     
     private Object myListeningManipulatorLock = new Object();
     
+    private IProtocolFormatter<?> myProtocolFormatter;
     
     private EventImpl<ChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<ChannelMessageEventArgs>();
 

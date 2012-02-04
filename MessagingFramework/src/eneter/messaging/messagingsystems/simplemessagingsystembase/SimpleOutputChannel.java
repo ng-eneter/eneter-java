@@ -11,12 +11,13 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase;
 import java.security.InvalidParameterException;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.IOutputChannel;
 import eneter.net.system.StringExt;
 
 public class SimpleOutputChannel implements IOutputChannel
 {
-    public SimpleOutputChannel(String channelId, IMessagingSystemBase messagingSystem)
+    public SimpleOutputChannel(String channelId, IMessagingSystemBase messagingSystem, IProtocolFormatter<?> protocolFormatter)
     {
         if (StringExt.isNullOrEmpty(channelId))
         {
@@ -26,6 +27,7 @@ public class SimpleOutputChannel implements IOutputChannel
         
         myChannelId = channelId;
         myMessagingSystem = messagingSystem;
+        myProtocolFormatter = protocolFormatter;
     }
     
     public String getChannelId()
@@ -38,7 +40,10 @@ public class SimpleOutputChannel implements IOutputChannel
     {
         try
         {
-            myMessagingSystem.sendMessage(myChannelId, message);
+            // Encode the message according the protocol.
+            Object anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
+            
+            myMessagingSystem.sendMessage(myChannelId, anEncodedMessage);
         }
         catch (Exception err)
         {
@@ -54,6 +59,7 @@ public class SimpleOutputChannel implements IOutputChannel
     
     private IMessagingSystemBase myMessagingSystem;
     private String myChannelId;
+    private IProtocolFormatter<?> myProtocolFormatter;
    
     
     private String TracedObject()

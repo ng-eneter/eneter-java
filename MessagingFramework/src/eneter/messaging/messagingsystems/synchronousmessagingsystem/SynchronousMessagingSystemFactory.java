@@ -36,6 +36,11 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         this(new EneterProtocolFormatter());
     }
     
+    /**
+     * Constructs the factory representing the messaging system.
+     * 
+     * @param protocolFromatter
+     */
     public SynchronousMessagingSystemFactory(IProtocolFormatter<?> protocolFromatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -61,7 +66,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleOutputChannel(channelId, myMessagingSystem);
+            return new SimpleOutputChannel(channelId, myMessagingSystem, myProtocolFormatter);
         }
         finally
         {
@@ -80,7 +85,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleInputChannel(channelId, myMessagingSystem);
+            return new SimpleInputChannel(channelId, myMessagingSystem, myProtocolFormatter);
         }
         finally
         {

@@ -8,29 +8,62 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase;
 
+import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.IMethod1;
 
 public class SimpleMessagingSystem implements IMessagingSystemBase
 {
     public SimpleMessagingSystem(IMessagingProvider inputChannelMessaging)
     {
-        myInputChannelMessaging = inputChannelMessaging;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myInputChannelMessaging = inputChannelMessaging;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     public void sendMessage(String channelId, Object message)
             throws Exception
     {
-        myInputChannelMessaging.sendMessage(channelId, message);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myInputChannelMessaging.sendMessage(channelId, message);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     public void registerMessageHandler(String channelId, IMethod1<Object> messageHandler)
     {
-        myInputChannelMessaging.registerMessageHandler(channelId, messageHandler);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myInputChannelMessaging.registerMessageHandler(channelId, messageHandler);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     public void unregisterMessageHandler(String channelId)
     {
-        myInputChannelMessaging.unregisterMessageHandler(channelId);
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myInputChannelMessaging.unregisterMessageHandler(channelId);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
 

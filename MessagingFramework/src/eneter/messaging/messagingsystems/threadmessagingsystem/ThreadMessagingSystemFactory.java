@@ -66,7 +66,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleOutputChannel(channelId, myMessagingSystem);
+            return new SimpleOutputChannel(channelId, myMessagingSystem, myProtocolFormatter);
         }
         finally
         {
@@ -84,7 +84,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleInputChannel(channelId, myMessagingSystem);
+            return new SimpleInputChannel(channelId, myMessagingSystem, myProtocolFormatter);
         }
         finally
         {
