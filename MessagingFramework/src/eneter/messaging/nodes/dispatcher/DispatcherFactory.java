@@ -10,6 +10,9 @@ package eneter.messaging.nodes.dispatcher;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
+/**
+ * Implements the factory to create the one-way dispatcher.
+ */
 public class DispatcherFactory implements IDispatcherFactory
 {
 
