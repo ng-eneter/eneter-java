@@ -18,14 +18,37 @@ import java.nio.charset.Charset;
 import eneter.messaging.diagnostic.*;
 import eneter.net.system.IMethod1;
 
+/**
+ * TCP policy server needed for the communication with Silverlight applications.
+ * 
+ * The policy server is required by Silverlight for the communication via HTTP or TCP.
+ * (See also HttpPolicyServer.)<br/>
+ * <br/>
+ * The TCP policy server is a special service listening on the port 943 (by default for all Ip adresses).
+ * When it receives &lt;policy-file-request/&gt; request, it returns the content of the policy file.
+ * <br/><br/>
+ * Silverlight automatically uses this service before the TCP connection is created.
+ * If a Silverlight application wants to open the TCP connection,
+ * Silverlight first sends the request on the port 943 and expects the policy file.
+ * If the policy server is not there or the content of the policy file does not allow
+ * the communication, the Tcp connection is not created.
+ *
+ */
 public class TcpPolicyServer
 {
+    /**
+     * Constructs the TCP policy server providing the policy file on the port 943 for all IP addresses.
+     * @throws Exception
+     */
     public TcpPolicyServer() throws Exception
     {
         this(InetAddress.getByName("0.0.0.0"));
     }
     
-    
+    /**
+     * Constructs the TCP policy server providing the policy file on the port 943 for the given IP address.
+     * @param ipAddress
+     */
     public TcpPolicyServer(InetAddress ipAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -42,16 +65,28 @@ public class TcpPolicyServer
         }
     }
     
+    /**
+     * Gets policy xml.
+     * @return
+     */
     public String getPolicyXml()
     {
         return myPolicyXml;
     }
     
+    /**
+     * Sets policy xml.
+     * @param policyXml
+     */
     public void setPolicyXml(String policyXml)
     {
         myPolicyXml = policyXml;
     }
  
+    /**
+     * Returns true, if this instance of policy server is listening to requests.
+     * @return
+     */
     public boolean isListening()
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -65,6 +100,12 @@ public class TcpPolicyServer
         }
     }
     
+    /**
+     * Starts the policy server.
+     * 
+     * It starts the thread listening to requests on port 943 and responding the policy XML.
+     * @throws Exception
+     */
     public void startPolicyServer() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -86,6 +127,11 @@ public class TcpPolicyServer
         }
     }
     
+    /**
+     * Stops the policy server.
+     * 
+     * It stops the listening and responding for requests.
+     */
     public void stopPolicyServer()
     {
         EneterTrace aTrace = EneterTrace.entering();

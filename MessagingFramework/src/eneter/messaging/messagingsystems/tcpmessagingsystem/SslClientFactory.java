@@ -15,13 +15,29 @@ import javax.net.ssl.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
+/**
+ * Implements factory that creates SSL client socket.
+ *
+ */
 public class SslClientFactory implements IClientSecurityFactory
 {
+    /**
+     * Constructs the factory.
+     * 
+     * The factory will use the default socket factory returned from SSLSocketFactory.getDefault()
+     */
     public SslClientFactory()
     {
         this((SSLSocketFactory)SSLSocketFactory.getDefault());
     }
     
+    /**
+     * Constructs the factory.
+     * 
+     * The factory will internally use given SSLSocketFactory.
+     * 
+     * @param socketFactory
+     */
     public SslClientFactory(SSLSocketFactory socketFactory)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -35,6 +51,9 @@ public class SslClientFactory implements IClientSecurityFactory
         }
     }
     
+    /**
+     * Creates SSLClientSocket
+     */
     @Override
     public Socket createClientSocket(InetSocketAddress socketAddress) throws Exception
     {

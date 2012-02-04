@@ -14,13 +14,29 @@ import javax.net.ssl.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
+/**
+ * Implements factory that creates SSL Server Sockets.
+ * 
+ *
+ */
 public class SslServerFactory implements IServerSecurityFactory
 {
+    /**
+     * Constructs the factory.
+     * 
+     * The factory will use SSLServerSocketFactory.getDefault().
+     */
     public SslServerFactory()
     {
         this((SSLServerSocketFactory)SSLServerSocketFactory.getDefault(), false);
     }
     
+    /**
+     * Constructs the factory.
+     * 
+     * @param sslServerSocketFactory given SSL server socket factory
+     * @param isClientCertificateRequired true if also the client certificate shall be required during the communication
+     */
     public SslServerFactory(SSLServerSocketFactory sslServerSocketFactory, boolean isClientCertificateRequired)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -35,7 +51,9 @@ public class SslServerFactory implements IServerSecurityFactory
         }
     }
     
-    
+    /**
+     * Creates the SSLServerSocket.
+     */
     @Override
     public ServerSocket createServerSocket(InetSocketAddress socketAddress) throws Exception
     {

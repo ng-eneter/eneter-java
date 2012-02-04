@@ -13,8 +13,16 @@ import java.net.Socket;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
+/**
+ * Implements factory for the client socket that does not use any security.
+ * 
+ *
+ */
 public class NoneSecurityClientFactory implements IClientSecurityFactory
 {
+    /**
+     * Creates non-secured client socket.
+     */
     @Override
     public Socket createClientSocket(InetSocketAddress socketAddress) throws Exception
     {
