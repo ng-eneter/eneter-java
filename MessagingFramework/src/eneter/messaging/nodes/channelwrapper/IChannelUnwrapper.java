@@ -20,7 +20,6 @@ import eneter.messaging.infrastructure.attachable.IAttachableInputChannel;
  * IDuplexChannelUnwrapper.<br/>
  * Notice, the 'channel unwrapper' can communication only with 'channel wrapper'. It cannot communicate with 'duplex channel wrapper'.
  * 
- * @author Ondrej Uzovic
  *
  */
 public interface IChannelUnwrapper extends IAttachableInputChannel

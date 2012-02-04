@@ -22,7 +22,6 @@ import eneter.net.system.Event;
  * Notice, the 'duplex channel unwrapper' can communication only with 'duplex channel wrapper'.
  * It cannot communicate with one-way 'channel wrapper'.
  * 
- * @author Ondrej Uzovic
  *
  */
 public interface IDuplexChannelUnwrapper extends IAttachableDuplexInputChannel

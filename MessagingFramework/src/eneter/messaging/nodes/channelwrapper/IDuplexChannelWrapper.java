@@ -20,7 +20,6 @@ import eneter.messaging.infrastructure.attachable.*;
  * Notice, the 'duplex channel wrapper' can communication only with 'duplex channel unwrapper'.
  * It cannot communicate with one-way 'channel unwrapper'.
  * 
- * @author Ondrej Uzovic
  *
  */
 public interface IDuplexChannelWrapper extends IAttachableMultipleDuplexInputChannels,
