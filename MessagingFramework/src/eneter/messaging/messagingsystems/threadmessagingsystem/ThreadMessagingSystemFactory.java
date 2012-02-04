@@ -26,21 +26,29 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.*;
  * <br/><br/>
  * Notice, the messages are always received in one particular working thread, but the notification events e.g. connection opened
  * are invoked in a different thread.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
 {
     /**
-     * Constructs the factory representing the messaging system. <br/>
+     * Constructs thread based messaging factory.
+     * 
      * Every instance of the synchronous messaging system factory represents one messaging system.
-     * It means that two instances of this factory class creates channels for two independent (different) messaging system.
+     * It means that two instances of this factory creates channels for two independent (different) messaging system.
      */
     public ThreadMessagingSystemFactory()
     {
         this(new EneterProtocolFormatter());
     }
     
+    /**
+     * Constructs thread based messaging factory.
+     * 
+     * Every instance of the synchronous messaging system factory represents one messaging system.
+     * It means that two instances of this factory creates channels for two independent (different) messaging system.
+     * 
+     * @param protocolFormatter low-level message formatter for the communication between channels.
+     */
     public ThreadMessagingSystemFactory(IProtocolFormatter<?> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
