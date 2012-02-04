@@ -12,14 +12,56 @@ import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
+/**
+ * Implements the messaging factory extending the underlying messaging system by monitoring the connection
+ * between duplex output channel and duplex input channel. 
+ *
+ * When the connection is monitored, the duplex output channel periodically sends 'ping' messages
+ * to the duplex input channel and waits for responses.
+ * If the response comes within the specified time, the connection is open.
+ * <br/>
+ * On the receiver side, the duplex input channel waits for the 'ping' messages and monitors if the connected
+ * duplex output channel is still alive. If the 'ping' message does not come within the specified time,
+ * the particular duplex output channel is disconnected.
+ * <br/><br/>
+ * Notice, the output channel and the input channel do not maintain an open connection.
+ * Therefore, the monitored messaging is not applicable for them. The implementation of this factory just uses
+ * the underlying messaging to create them.
+ * <br/><br/>
+ * <b>Note</b>
+ * Channels created by monitored messaging factory cannot communicate with channels, that were not created
+ * by monitored factory. E.g. the channel created with the monitored messaging factory with underlying TCP
+ * will not communicate with channels created directly with TCP messaging factory. The reason is, the
+ * communicating channels must understand the 'ping' communication.
+ */
 public class MonitoredMessagingFactory implements IMessagingSystemFactory
 {
-    
+    /**
+     * Constructs the factory with default settings.
+     * 
+     * It uses XmlStringSerializer.
+     * The duplex output channel will check the connection with the 'ping' once per second and the response must be received within 2 seconds.
+     * Otherwise the connection is closed.<br/>
+     * The duplex input channel expects the 'ping' request at least once per 2s. Otherwise the duplex output
+     * channel is disconnected.
+     * 
+     * @param underlyingMessaging underlying messaging system e.g. HTTP, TCP, ...
+     */
     public MonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging)
     {
         this(underlyingMessaging, new XmlStringSerializer(), 1000, 2000);
     }
     
+    /**
+     * Constructs the factory from specified parameters.
+     * 
+     * @param underlyingMessaging underlying messaging system e.g. HTTP, TCP, ...
+     * @param serializer serializer used to serialize 'ping' messages
+     * @param pingFrequency how often the duplex output channel pings the connection
+     * @param pingResponseTimeout For the duplex output channel: the maximum time, the response for the ping must be received
+     *           For the duplex input channel: the maximum time within the ping for the connected duplex output channel
+     *           must be received.
+     */
     public MonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging,
             ISerializer serializer,
             long pingFrequency,
@@ -40,6 +82,13 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Creates the output channel sending messages to the input channel.
+     * 
+     * Since the output channel communicates oneway and does not maintain the open connection,
+     * the monitoring of the connection is not applicable.
+     * Therefore, the implementation of the method just uses the underlying messaging to create the output channel.
+     */
     @Override
     public IOutputChannel createOutputChannel(String channelId)
             throws Exception
@@ -55,6 +104,13 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Creates the input channel receiving messages from the output channel.
+     * 
+     * Since the input channel communicates oneway and does not maintain the open connection,
+     * the monitoring of the connection is not applicable.
+     * Therefore, the implementation of the method just uses the underlying messaging to create the input channel.
+     */
     @Override
     public IInputChannel createInputChannel(String channelId) throws Exception
     {
@@ -69,6 +125,13 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
+     * 
+     * The channel also regularly checks if the connection is available. It sends 'ping' messages and expect 'ping' responses
+     * within the specified timeout. If the 'ping' response does not come within the specified timeout, the event
+     * IDuplexOutputChannel.connectionClosed is invoked.
+     */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId)
             throws Exception
@@ -85,6 +148,13 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
+     * 
+     * The channel also regularly checks if the connection is available. It sends 'ping' messages and expect 'ping' responses
+     * within the specified timeout. If the 'ping' response does not come within the specified timeout, the event
+     * IDuplexOutputChannel.connectionClosed" is invoked.
+     */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
             String responseReceiverId) throws Exception
@@ -101,6 +171,14 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Creates the duplex input channel receiving messages from the duplex output channel and sending the response messages.
+     * 
+     * It also checks if the duplex output channel is still connected. It expect, that every connected duplex output channel
+     * sends regularly 'ping' messages. If the 'ping' message from the duplex output channel is not received within the specified
+     * timeout, the duplex output channel is disconnected. The event IDuplexInputChannel.responseReceiverDisconnected
+     * is invoked.
+     */
     @Override
     public IDuplexInputChannel createDuplexInputChannel(String channelId)
             throws Exception
