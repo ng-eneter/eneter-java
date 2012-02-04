@@ -16,21 +16,38 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.*;
 
 
 /**
- * Implements the messaging system delivering messages with using .Net thread pool.
- * The messages are put to the queue of .Net thread pool. The receiving input channel is then called
+ * Implements the messaging system delivering messages with using thread pool.
+ * The messages are put to the queue of thread pool. The receiving input channel is then called
  * in the context of the assigned thread from the pool. Therefore the input channel can process more messages at once
  * and also can notify the subscriber from more different threads at the same time. <br/>
  * <b>Therefore do not forget to be careful and avoid race conditioning.</b>
  * 
- * @author Ondrej Uzovic & Martin Valach
  */
 public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
 {
+    /**
+     * Implements the messaging system delivering messages with using the thread pool.
+     * 
+     * The messages are put to the queue of .Net thread pool. The receiving input channel is then called
+     * in the context of the assigned thread from the pool. Therefore the input channel can process more messages at once
+     * and also can notify the subscriber from more different threads at the same time. <br/>
+     * <b>Therefore do not forget to be careful and avoid race conditioning.</b>
+     */
     public ThreadPoolMessagingSystemFactory()
     {
         this(new EneterProtocolFormatter());
     }
     
+    /**
+     * Implements the messaging system delivering messages with using the thread pool.
+     * 
+     * The messages are put to the queue of .Net thread pool. The receiving input channel is then called
+     * in the context of the assigned thread from the pool. Therefore the input channel can process more messages at once
+     * and also can notify the subscriber from more different threads at the same time. <br/>
+     * <b>Therefore do not forget to be careful and avoid race conditioning.</b>
+     * 
+     * @param protocolFormatter low-level message formatter used for the communication between channels.
+     */
     public ThreadPoolMessagingSystemFactory(IProtocolFormatter<?> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
