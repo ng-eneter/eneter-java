@@ -8,11 +8,34 @@
 
 package eneter.messaging.messagingsystems.connectionprotocols;
 
+/**
+ * Indicates the type of the low-level protocol message.
+ * 
+ */
 public enum EProtocolMessageType
 {
+    /**
+     * Unknown message.
+     */
     Unknown,
+    
+    /**
+     * Open connection request message.
+     */
     OpenConnectionRequest,
+    
+    /**
+     * Close connection request message.
+     */
     CloseConnectionRequest,
+    
+    /**
+     * Poll request message.
+     */
     PollRequest,
+    
+    /**
+     * Message or reaponse message.
+     */
     MessageReceived
 }

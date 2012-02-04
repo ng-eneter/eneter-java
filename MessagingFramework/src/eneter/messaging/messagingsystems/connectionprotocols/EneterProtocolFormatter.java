@@ -15,6 +15,10 @@ import java.nio.charset.Charset;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
+/**
+ * Implements encoding/decoding of low-level messages into eneter format.  
+ *
+ */
 public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
 {
     @Override
