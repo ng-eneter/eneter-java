@@ -9,7 +9,7 @@
 package eneter.net.system;
 
 /**
- * Event handler used to subscribe to events.
+ * Event handler to process events.
  *
  * @param <T> type of the event parameter.
  */
