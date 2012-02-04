@@ -14,7 +14,6 @@ import java.util.concurrent.Executors;
 /**
  * Provides .NET style thread pool for Eneter Messaging needs.
  * The class provides one single thread pool for the Eneter Messaging Framework.
- * @author Ondrej Uzovic & Martin Valach
  */
 public final class ThreadPool
 {

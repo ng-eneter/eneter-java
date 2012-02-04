@@ -12,7 +12,6 @@ package eneter.net.system.threading;
  * Equivalent to .NET ManualResetEvent.
  * Threads calling waitOne() wait until 'set' is signaled.
  * Then, all waiting threads can continue.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public final class ManualResetEvent

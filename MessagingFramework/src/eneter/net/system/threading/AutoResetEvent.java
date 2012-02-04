@@ -12,7 +12,6 @@ package eneter.net.system.threading;
  * Equivalent to .NET AutoResetEvent.
  * Threads calling waitOne() wait until 'set' is signaled.
  * Then, only one thread can continue.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public final class AutoResetEvent
