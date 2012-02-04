@@ -18,8 +18,32 @@ import eneter.messaging.diagnostic.ErrorHandler;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IListenerProvider;
 import eneter.net.system.IMethod1;
 
+/**
+ * HTTP policy server needed for the communication with Silverlight applications.
+ * 
+ * The policy server is required by Silverlight for the communication via HTTP or TCP.
+ * (See also TcpPolicyServer.)
+ * Windows Phone 7 (based on Silverlight 3 too) does not require the policy server.
+ * <br/><br/>
+ * The HTTP policy server is a special service listening to the HTTP root address. When it receives the
+ * request with the path '/clientaccesspolicy.xml', it returns the content of the policy file.
+ * <br/><br/>
+ * Silverlight automatically uses this service before an HTTP request is invoked.
+ * If the Silverlight application invokes the HTTP request (e.g. http://127.0.0.1/MyService/),
+ * Silverlight first sends the request on the root (i.e. http://127.0.0.1/) and expects the policy file.
+ * If the policy server is not there or the content of the policy file does not allow the communication,
+ * the original HTTP request is not performed.
+ *
+ */
 public class HttpPolicyServer
 {
+    /**
+     * Constructs the Http policy server.
+     * 
+     * @param httpRootAddress root Http address. E.g. if the serivice has the address http://127.0.0.1/MyService/, the root
+     *            address will be http://127.0.0.1/.
+     * @throws Exception
+     */
     public HttpPolicyServer(String httpRootAddress) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -40,11 +64,21 @@ public class HttpPolicyServer
         }
     }
     
+    /**
+     * Gets the policy xml.
+     * @return
+     */
     public String getPolicyXml()
     {
         return myPolicyXml;
     }
     
+    /**
+     * Sets the policy xml.
+     * 
+     * @param policyXml
+     * @throws Exception
+     */
     public void setPolicyXml(String policyXml) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -59,6 +93,11 @@ public class HttpPolicyServer
         }
     }
 
+    /**
+     * Returns true, if this instance of policy server is listening to requests.
+     * @return
+     * @throws Exception
+     */
     public boolean isListening() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -72,6 +111,13 @@ public class HttpPolicyServer
         }
     }
     
+    /**
+     * Starts the policy server.
+     * 
+     * It starts the thread listening to HTTP requests and responding the policy file.
+     * 
+     * @throws Exception
+     */
     public void startPolicyServer() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -93,6 +139,11 @@ public class HttpPolicyServer
         }
     }
     
+    /**
+     * Stops the policy server.
+     * 
+     * It stops the listening and responding for requests.
+     */
     public void stopPolicyServer()
     {
         EneterTrace aTrace = EneterTrace.entering();
