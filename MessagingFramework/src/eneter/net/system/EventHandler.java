@@ -8,6 +8,11 @@
 
 package eneter.net.system;
 
+/**
+ * Event handler used to subscribe to events.
+ *
+ * @param <T> type of the event parameter.
+ */
 public interface EventHandler<T> extends IMethod2<Object, T>
 {
 }

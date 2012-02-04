@@ -12,9 +12,80 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import eneter.messaging.endpoints.typedmessages.TypedResponseReceivedEventArgs;
 
+/**
+ * Implements event similar way as in .NET.
+ * 
+ * The class is intended to be used by a class that wants to raise events.
+ * 
+ * <pre>
+ * {@code
+ * // Class exposing some event.
+ * class MyExposingClass
+ * {
+ *      // Exposed to a user for subscribing.
+ *      public Event&lt;TMyEvent&gt; calculationCompleted()
+ *      {
+ *          // Returns event, so that the user can only subscribe or unsubscribe.
+ *          // Note: User of the event cannot raise the event.
+ *          return myCalculationCompletedEvent.getApi();
+ *      }
+ *      
+ *      ...
+ *      
+ *      private void someMethod()
+ *      {
+ *          // Raise the event.
+ *          myCalculationCompletedEvent.raise(this, new TMyEvent(...));
+ *      }
+ *      
+ *      // Declaring the event.
+ *      private EventImpl&lt;TMyEvent&gt; myCalculationCompletedEvent = new EventImpl&lt;TMyEvent&gt;(); 
+ * }
+ *
+ * ...
+ *
+ * // Class consuming the event.
+ * class MyConsumingClass
+ * {
+ *      // Subscribing for the event.
+ *      private void someMethod()
+ *      {
+ *          myExposingClass.subscribe(myOnCalculationCompleted);
+ *      }
+ *      
+ *      // Method processing the event.
+ *      private void onCalculationCompleted(object sender, TMyEvent e)
+ *      {
+ *          ...
+ *      }
+ *      
+ *      // Declaring the event handler.
+ *      private EventHandler&lt;TMyEvent&gt; myOnCalculationCompleted = new EventHandler&lt;TMyEvent&gt;()
+ *      {
+ *          public void invoke(Object x, TMyEvent y)
+ *                  throws Exception
+ *          {
+ *              onCalculationCompleted(x, y);
+ *          }
+ *      }
+ * }
+ * 
+ * }
+ * </pre>
+ *
+ * @param <T>
+ */
 public class EventImpl<T>
 {
+    /**
+     * Raises the event to all subscribers.
+     * 
+     * @param sender reference to the sender
+     * @param eventArgs event parameter
+     * @throws Exception
+     */
     public void raise(Object sender, T eventArgs)
             throws Exception
     {
@@ -36,13 +107,18 @@ public class EventImpl<T>
         }
     }
     
+    /**
+     * Returns event for the user. The user can subscribe/unsubscribe.
+     * @return
+     */
     public Event<T> getApi()
     {
         return myEventApi;
     }
     
-    /*
-     * Returns true if somebody is subscribed.
+    /**
+     * REturns true if somebody is subscribe.
+     * @return
      */
     public boolean isSubscribed()
     {
