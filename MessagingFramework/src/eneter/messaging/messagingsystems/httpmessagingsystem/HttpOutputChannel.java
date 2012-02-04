@@ -15,7 +15,7 @@ import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.StringExt;
 
-public class HttpOutputChannel implements IOutputChannel
+class HttpOutputChannel implements IOutputChannel
 {
     public HttpOutputChannel(String channelId, IProtocolFormatter<byte[]> protocolFormatter)
             throws Exception
