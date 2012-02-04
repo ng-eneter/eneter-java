@@ -39,7 +39,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
     /**
      * Constructs the factory representing the messaging system.
      * 
-     * @param protocolFromatter
+     * @param protocolFromatter formatter used to encode low-level messages between channels
      */
     public SynchronousMessagingSystemFactory(IProtocolFormatter<?> protocolFromatter)
     {

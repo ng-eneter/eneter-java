@@ -41,7 +41,7 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Implements the messaging system delivering messages with using the thread pool.
      * 
-     * The messages are put to the queue of .Net thread pool. The receiving input channel is then called
+     * The messages are put to the queue of thread pool. The receiving input channel is then called
      * in the context of the assigned thread from the pool. Therefore the input channel can process more messages at once
      * and also can notify the subscriber from more different threads at the same time. <br/>
      * <b>Therefore do not forget to be careful and avoid race conditioning.</b>
