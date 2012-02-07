@@ -5,7 +5,7 @@
  * Copyright © 2012 Ondrej Uzovic
  * 
  */
-
+ 
 package eneter.messaging.dataprocessing.messagequeueing;
 
 import java.util.concurrent.ExecutorService;
