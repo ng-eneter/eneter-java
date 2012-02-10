@@ -1,9 +1,92 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 	<head>
+		<title>HTML Online Editor Sample</title>
 	</head>
-	
 	<body>
-		Hello, this is overview.
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Welcome to the Eneter.Messaging.Framework, the message oriented midleware.</span></span></p>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong>Eneter Messaging Framework</strong> is a lightweight framework for the interprocess communication. Although the framework is lightweight, it provides quite comprehensive functionality allowing implementation of advanced communication scenarios too.</span></span></p>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Supported Platforms</big></strong><br />
+			The framework is implemented for multiple platforms. Therefore, you can use the same mechanism to implement the communication between applications running on different platforms. E.g. you can implement the communication between Java and .NET, between Silverlight and Java, between Android and .NET, ... .<br />
+			<br />
+			The following platforms are supported:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Java 6</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Android 2.1 (or later)</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">.NET 3.5, .NET 4.0</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Windows Phone 7</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Silverlight 3, Silverlight 4</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Mono 2.6.4</span></span></li>
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Interprocess Communication</big></strong><br />
+			The framework allows to implement the communication by various protocols or transportation mechanisms.</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>TCP</em> - for communication between processes running on different machines.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>HTTP</em> - for communication between processes running on different machines.</span></span></li>
+			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>Thread Messaging</em> - for communication between threads running in the same process.</span></span></li>
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Message Serialization</big></strong><br />
+			Communicated messages can be serialized/deserialized with using:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>XML Serializer</em> - serialization to XML, to communicate across platforms.</span></span></li>
+			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>Binary Serializer</em> - for fast serialization using the binary format </span></span><span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>(not for the communication between .NET and Java).</em></span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>AES Serializer</em> - for encrypting using Advanced Encryption Standard.</span></span></li>
+			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>GZip Serializer</em> - for compressing big messages before sending across the network</span></span></li>
+		</ul>
+		<p>
+			<span style="color: rgb(0, 0, 255);"><span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">The communication API is not bound to a particular protocol or encoding format, therefore your implementation stays same, does not matter what you use.</span></span></span></p>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Routing Messages</big></strong><br />
+			It provides components that can be placed on the communication path to control the routing behavior.</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Broker - for publish-subscribe scenarios (publisher sends messages to the broker and the broker notifies all subscribers).</span></span></li>
+			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Dispatcher - for routing messages to all connected receivers (e.g. for a service listening to TCP and HTTP at the same time</span></span></li>
+			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Channel Wrapper/Unwrapper - for receiving multiple type of messages on one address (no need for if ... else ... statment in the user code)</span></span></li>
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Reliability</big></strong><br />
+			The communication across the network is typically less reliable as a local call in inside a process. The network connection can be interrupted or a receiving application can be temporarily unavailable. If your communication scenario requires overcome these issues, the framework provides:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Monitoring of connection availability - for early disconnection of a disconnection.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Buffered messaging and automatic reconnect - for overcoming short disconnections (e.g. in case of instable network)</span></span></li>
+			
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Security</big></strong><br />
+			The communication across the network is easy to observe and confidential data can be acquired by unauthorized persons. Therefore, you may want to protect your data:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">SSL or serializer using fast symetric  AES encryption.</span></span></li>
+		</ul>
+		<p>
+			<img width="100%" alt="Download" title="EneterComponents" src="../docres/EneterComponents.gif">
+		</p>
 	</body>
 </html>
