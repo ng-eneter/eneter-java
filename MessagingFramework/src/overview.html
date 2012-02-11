@@ -1,6 +1,5 @@
 <html>
 	<head>
-		<title>HTML Online Editor Sample</title>
 	</head>
 	<body>
 		<p>
@@ -9,7 +8,7 @@
 			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong>Eneter Messaging Framework</strong> is a lightweight framework for the interprocess communication. Although the framework is lightweight, it provides functionality for  advanced communication scenarios too.</span></span></p>
 		<p>
 			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Supported Platforms</big></strong><br />
-			The framework is implemented for multiple platforms. Therefore,  you can use it to implement the communication between applications running on different platforms. E.g. Java and .NET, or Silverlight and Java, or  Android and .NET, ... .<br />
+			The framework is provided for multiple platforms. Therefore,  you can use it to implement the communication between applications running on different platforms. E.g. Java and .NET, or Silverlight and Java, or  Android and .NET, ... .<br />
 			<br />
 			The following platforms are supported:</span></span></p>
 		<ul>
@@ -43,18 +42,27 @@
 			Communicated messages  are encoded by a serializer. To serialize/deserialize messages the framework supports:</span></span></p>
 		<ul>
 			<li>
-				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>XML Serializer</em> - serialization to XML, <span style="color: rgb(0, 128, 0);">works for the communication across platforms</span>.</span></span></li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>XML Serializer</em> - serialization to XML <span style="color: rgb(0, 128, 0);">(works for the communication across platforms)</span>.</span></span></li>
 			
 			<li>
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>Binary Serializer</em> - for fast serialization using the binary format </span></span><span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>(does not  work for the communication between .NET and Java).</em></span></span></li>
 			<li>
-				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>AES Serializer</em> - for encrypting using Advanced Encryption Standard <span style="color: rgb(0, 128, 0);">works for the communication across platforms</span>.</span></span></li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>AES Serializer</em> - for encrypting using Advanced Encryption Standard <span style="color: rgb(0, 128, 0);">(works for the communication across platforms)</span>.</span></span></li>
 			
 			<li>
-				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>GZip Serializer</em> - for compressing big messages before sending across the network <span style="color: rgb(0, 128, 0);">works for the communication across platforms</span>.</span></span></li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>GZip Serializer</em> - for compressing big messages before sending across the network <span style="color: rgb(0, 128, 0);">(works for the communication across platforms)</span>.</span></span></li>
 		</ul>
 		<p>
 			<span style="color: rgb(0, 0, 255);"><span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">The communication API is not bound to a particular protocol or encoding format, therefore your implementation stays same, does not matter what you use.</span></span></span></p>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Sending-Receving Messages</big></strong><br />
+			To implement the communication between applications, the framework provides functionality to send and receive messages. Communication can be one-way or request-response and messages can be:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>String Messages</em> - for sending and receiving text messages.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>Typed Message</em>s - for sending and receiving data structures of specified types.</span></span></li>
+		</ul>
 		<p>
 			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Routing Messages</big></strong><br />
 			It provides components that can be placed on the communication path to control the routing behavior.</span></span></p>
@@ -85,6 +93,8 @@
 			<li>
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">SSL or serializer using fast symetric  AES encryption.</span></span></li>
 		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><big><strong>Eneter Communication</strong></big><br /></span></span></p>
 		<p>
 			<img width="100%" alt="" title="EneterComponents" src="./doc-files/EneterComponents.gif">
 		</p>
