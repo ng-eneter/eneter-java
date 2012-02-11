@@ -11,7 +11,7 @@ package eneter.messaging.infrastructure.attachable;
 import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
 
 /**
- * The interface declares methods to attach/detach multiple IInputChannel.
+ * The interface declares methods to attach/detach multiple {@link IInputChannel}.
  *
  * Some comunication components need to attach several channels.
  * Components using multiple input channels are used in one-way communication.

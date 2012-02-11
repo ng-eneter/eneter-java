@@ -11,7 +11,7 @@ package eneter.messaging.infrastructure.attachable;
 import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
 
 /**
- * The interface declares methods to attach/detach one IInputChannel.
+ * The interface declares methods to attach/detach one {@link IInputChannel}.
  * 
  * The input channel is used in one-way communication by a listener to receive messages.
  * Components that are able to attach the input channel can listen to messages but they cannot send back any response message.

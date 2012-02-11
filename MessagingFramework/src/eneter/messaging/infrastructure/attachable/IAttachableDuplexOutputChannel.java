@@ -11,7 +11,7 @@ package eneter.messaging.infrastructure.attachable;
 import eneter.messaging.messagingsystems.messagingsystembase.IDuplexOutputChannel;
 
 /**
- * The interface declares methods to attach/detach one IDuplexOutputChannel.
+ * The interface declares methods to attach/detach one {@link IDuplexOutputChannel}.
  * 
  * The duplex output channel is used in the request-response communication by a sender
  * to send request messages and receive response messages.

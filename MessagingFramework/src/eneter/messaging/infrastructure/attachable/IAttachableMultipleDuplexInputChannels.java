@@ -11,7 +11,7 @@ package eneter.messaging.infrastructure.attachable;
 import eneter.messaging.messagingsystems.messagingsystembase.IDuplexInputChannel;
 
 /**
- * The interface declares methods to attach/detach multiple IDuplexInputChannel.
+ * The interface declares methods to attach/detach multiple {@link IDuplexInputChannel}.
  * 
  * Some comunication components need to attach several channels. E.g. {@link IDuplexDispatcher}.
  * Component using multiple duplex input channels is used in request-response communication and is
