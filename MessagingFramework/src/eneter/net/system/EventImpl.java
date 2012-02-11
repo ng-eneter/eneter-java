@@ -15,7 +15,7 @@ import java.util.Iterator;
 import eneter.messaging.endpoints.typedmessages.TypedResponseReceivedEventArgs;
 
 /**
- * Implements event similar way as in .NET.
+ * Implements event similar way as in .NET.<br/>
  * 
  * The class is intended to be used by a class that wants to raise events.
  * 
@@ -25,7 +25,7 @@ import eneter.messaging.endpoints.typedmessages.TypedResponseReceivedEventArgs;
  * class MyExposingClass
  * {
  *      // Exposed to a user for subscribing.
- *      public Event&lt;TMyEvent&gt; calculationCompleted()
+ *      public Event<TMyEvent> calculationCompleted()
  *      {
  *          // Returns event, so that the user can only subscribe or unsubscribe.
  *          // Note: User of the event cannot raise the event.
@@ -41,7 +41,7 @@ import eneter.messaging.endpoints.typedmessages.TypedResponseReceivedEventArgs;
  *      }
  *      
  *      // Declaring the event.
- *      private EventImpl&lt;TMyEvent&gt; myCalculationCompletedEvent = new EventImpl&lt;TMyEvent&gt;(); 
+ *      private EventImpl<TMyEvent> myCalculationCompletedEvent = new EventImpl<TMyEvent>(); 
  * }
  *
  * ...
@@ -62,7 +62,7 @@ import eneter.messaging.endpoints.typedmessages.TypedResponseReceivedEventArgs;
  *      }
  *      
  *      // Declaring the event handler.
- *      private EventHandler&lt;TMyEvent&gt; myOnCalculationCompleted = new EventHandler&lt;TMyEvent&gt;()
+ *      private EventHandler<TMyEvent> myOnCalculationCompleted = new EventHandler<TMyEvent>()
  *      {
  *          public void invoke(Object x, TMyEvent y)
  *                  throws Exception
@@ -75,7 +75,7 @@ import eneter.messaging.endpoints.typedmessages.TypedResponseReceivedEventArgs;
  * }
  * </pre>
  *
- * @param <T>
+ * @param <T> type of the event
  */
 public class EventImpl<T>
 {

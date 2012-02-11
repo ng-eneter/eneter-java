@@ -14,7 +14,6 @@ import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFac
 
 /**
  * Implements the factory for creating channel wrapper and unwrapper.
- * @author Ondrej Uzovic
  *
  */
 public class ChannelWrapperFactory implements IChannelWrapperFactory

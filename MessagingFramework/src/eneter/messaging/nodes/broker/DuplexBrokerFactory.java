@@ -70,7 +70,7 @@ import eneter.messaging.nodes.channelwrapper.*;
  *
  * // Send message to the broker. The broker will then forward it to all subscribers.
  * XmlStringSerializer anXmlSerializer = new XmlStringSerializer();
- * object aSerializedChatMessage = anXmlSerializer.Serialize&lt;ChatMessage&gt;(aChatMessage);
+ * object aSerializedChatMessage = anXmlSerializer.Serialize<ChatMessage>(aChatMessage);
  * myBrokerClient.SendMessage("MyChatMessageType", aSerializedChatMessage);
  *
  * }

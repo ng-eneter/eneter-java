@@ -16,10 +16,10 @@ import eneter.messaging.diagnostic.EneterTrace;
 /**
  * Implements the serialization/deserialization to/from xml string.<br/>
  * <br/>
- * The serializer is compatible with XmlStringSerializer in Eneter Messaging Framework
- * for .NET. <b>The serializer does not support generic types.</b><br/>
- * <br/>
- * This serializer is used by default is no serializer is specified in the code. 
+ * This is the default serializer used by the framework. The serializer is compatible
+ * with XmlStringSerializer from Eneter Messaging Framework for .NET.
+ * Therefore, you can use it for the communication between Java and .NET applications.
+ * <b>The serializer does not support generic types on Java and Android platforms!</b><br/>
  */
 public class XmlStringSerializer implements ISerializer
 {
