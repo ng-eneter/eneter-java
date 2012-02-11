@@ -8,7 +8,7 @@
 
 
 /**
- * Functionality to send and receive simple text messages.
+ * Functionality to send and receive text messages.
  * 
  * The following example shows how to send a string message via TCP.<br/>
  * <pre>
