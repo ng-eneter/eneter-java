@@ -48,8 +48,38 @@ public class EneterTrace
      * 
      *  The entering information for the method calling this constructor is put to the trace
      *  and the measuring of the time starts.
-     *  In order to trace entering-leaving, the detail level must be set to 'Debug'.
-     *  
+     *  In order to trace entering-leaving, the detail level must be set to 'Debug'.<br/>
+     *  <br/>
+     *  The following example shows how to trace entering and leaving from a method.
+     *  <pre>
+     *  {@code
+     *  class MyClass
+     *  {
+     *  	...
+     *  	
+     *  	void doSomething()
+     *  	{
+     *  		EneterTrace aTrace = EneterTrace.entering();
+     *  		try
+     *  		{
+     *  			...
+     *  		}
+     *  		finally
+     *  		{
+     *  			EneterTrace.leaving(aTrace);
+     *  		}
+     *  	}
+     *  }
+     *  }
+     *  </pre>
+     *  <br/>
+     *  Output:
+     *  <pre>
+     *  {@code
+     *  23:58:54.585 ~  1 --> some.namespace.MyClass.doSomething 
+     *  23:58:54.585 ~  1 <-- some.namespace.MyClass.doSomething [0:0:0 0ms 5.0us]
+     *  }
+     *  </pre>
      */
     public static EneterTrace entering()
     {
@@ -303,27 +333,28 @@ public class EneterTrace
      *  @param value
      *  
      * If the namespace matches with the regular expression, the message will be traced.
-     * If the filter is set to null, then the filter is not used and all messages will be traced.
-     * <example>
+     * If the filter is set to null, then the filter is not used and all messages will be traced.<br/>
+     * <br/>
      * The following example shows how to set the filter to trace a certain namespace.
-     * <code>
+     * <pre>
+     * {@code
      * // Set the debug detailed level.
      * EneterTrace.DetailLevel = EneterTrace.EDetailLevel.Debug;
-     * 
+     *
      * // Examples:
      * // Traces all name spaces starting with 'My.NameSpace'.
      * EneterTrace.NameSpaceFilter = Pattern.compile("^My\.NameSpace");
-     * 
+     *
      * // Traces exactly the name space 'My.NameSpace'.
      * EneterTrace.NameSpaceFilter = Pattern.compile("^My\.NameSpace$");
-     * 
+     *
      * // Traces name spaces starting with 'Calc.Methods' or 'App.Utilities'.
      * EneterTrace.NameSpaceFilter = Pattern.compile("^Calc\.Methods|^App\.Utilities");
-     * 
+     *
      * // Traces all name spaces except namespaces starting with 'Eneter'.
      * EneterTrace.NameSpaceFilter = Pattern.compile("^(?!\bEneter\b)");
-     * </code>
-     * </example>
+     * }
+     * </pre>
      */
     public static void setNameSpaceFilter(Pattern value)
     {

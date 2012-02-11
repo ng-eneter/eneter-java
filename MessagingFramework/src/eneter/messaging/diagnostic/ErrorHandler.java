@@ -9,7 +9,7 @@
 package eneter.messaging.diagnostic;
 
 /**
- * Internal helper class to trace typical messags.
+ * Internal helper class providing typical messages of Eneter Messaging Framework.
  *
  */
 public final class ErrorHandler
