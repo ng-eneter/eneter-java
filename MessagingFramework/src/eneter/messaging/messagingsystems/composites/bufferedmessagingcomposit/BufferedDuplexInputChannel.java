@@ -252,7 +252,6 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     
     
     private void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e)
-            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -273,6 +272,10 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 }
             }
         }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + "detected exception when response receiver connected.", err);
+        }
         finally
         {
             EneterTrace.leaving(aTrace);
@@ -280,7 +283,6 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     }
     
     private void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e)
-            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -300,6 +302,10 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
             }
+        }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + "detected exception when message was received.", err);
         }
         finally
         {
@@ -501,8 +507,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
-        public void invoke(Object x, ResponseReceiverEventArgs y)
-                throws Exception
+        public void onEvent(Object x, ResponseReceiverEventArgs y)
         {
             onResponseReceiverConnected(x, y);
         }
@@ -511,8 +516,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                throws Exception
+        public void onEvent(Object x, DuplexChannelMessageEventArgs y)
         {
             onMessageReceived(x, y);
         }

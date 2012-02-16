@@ -384,7 +384,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     private EventHandler<ChannelMessageEventArgs> myMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object t1, ChannelMessageEventArgs t2)
+        public void onEvent(Object t1, ChannelMessageEventArgs t2)
         {
             onMessageReceived(t1, t2);
         }

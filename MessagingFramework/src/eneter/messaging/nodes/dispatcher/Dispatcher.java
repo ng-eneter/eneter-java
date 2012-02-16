@@ -316,7 +316,7 @@ class Dispatcher implements IDispatcher
     private EventHandler<ChannelMessageEventArgs> myOnMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object sender, ChannelMessageEventArgs e) throws Exception
+        public void onEvent(Object sender, ChannelMessageEventArgs e)
         {
             onMessageReceived(sender, e);
         }

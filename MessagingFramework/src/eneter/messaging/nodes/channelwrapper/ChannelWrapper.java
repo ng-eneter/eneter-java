@@ -184,8 +184,7 @@ class ChannelWrapper extends AttachableOutputChannelBase
     private EventHandler<ChannelMessageEventArgs> myOnMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
             {
                 @Override
-                public void invoke(Object t1, ChannelMessageEventArgs t2)
-                        throws Exception
+                public void onEvent(Object t1, ChannelMessageEventArgs t2)
                 {
                     onMessageReceived(t1, t2);
                 }

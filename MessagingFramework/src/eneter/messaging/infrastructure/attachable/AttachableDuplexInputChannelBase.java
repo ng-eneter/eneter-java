@@ -144,11 +144,11 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
     }
 
 
-    protected abstract void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e) throws Exception;
+    protected abstract void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e);
 
     protected abstract void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e);
 
-    protected abstract void onResponseReceiverDisconnected(Object sender, ResponseReceiverEventArgs e) throws Exception;
+    protected abstract void onResponseReceiverDisconnected(Object sender, ResponseReceiverEventArgs e);
 
 
     public IDuplexInputChannel getAttachedDuplexInputChannel()
@@ -163,8 +163,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
     private EventHandler<DuplexChannelMessageEventArgs> myMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object sender, DuplexChannelMessageEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
         {
             onMessageReceived(sender, e);
         }
@@ -173,8 +172,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
     private EventHandler<ResponseReceiverEventArgs> myResponseReceiverConnectedHandler = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
-        public void invoke(Object sender, ResponseReceiverEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, ResponseReceiverEventArgs e)
         {
             onResponseReceiverConnected(sender, e);
         }
@@ -184,8 +182,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
     {
         
         @Override
-        public void invoke(Object sender, ResponseReceiverEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, ResponseReceiverEventArgs e)
         {
             onResponseReceiverDisconnected(sender, e);
         }

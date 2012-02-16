@@ -71,7 +71,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
     }
 
     @Override
-    protected void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e) throws Exception
+    protected void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -172,6 +172,10 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                 EneterTrace.error(TracedObject() + "detected that the unwrapped message contian the channel id as the string type.");
             }
         }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + "detected exception when message received.", err);
+        }
         finally
         {
             EneterTrace.leaving(aTrace);
@@ -209,7 +213,6 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
 
     @Override
     protected void onResponseReceiverDisconnected(Object sender, ResponseReceiverEventArgs e)
-            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -271,6 +274,10 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                     throw err;
                 }
             }
+        }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + "detected exception response receiver disconnected.", err);
         }
         finally
         {
@@ -341,8 +348,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
     private EventHandler<DuplexChannelMessageEventArgs> myOnResponseMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object sender, DuplexChannelMessageEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
         {
             onResponseMessageReceived(sender, e);
         }

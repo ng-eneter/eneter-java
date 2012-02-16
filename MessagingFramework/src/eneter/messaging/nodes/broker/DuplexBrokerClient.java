@@ -409,8 +409,7 @@ class DuplexBrokerClient implements IDuplexBrokerClient
     private EventHandler<TypedResponseReceivedEventArgs<BrokerNotifyMessage>> myOnBrokerMessageReceivedHandler = new EventHandler<TypedResponseReceivedEventArgs<BrokerNotifyMessage>>()
     {
         @Override
-        public void invoke(Object sender, TypedResponseReceivedEventArgs<BrokerNotifyMessage> e)
-                throws Exception
+        public void onEvent(Object sender, TypedResponseReceivedEventArgs<BrokerNotifyMessage> e)
         {
             onBrokerMessageReceived(sender, e);
         }

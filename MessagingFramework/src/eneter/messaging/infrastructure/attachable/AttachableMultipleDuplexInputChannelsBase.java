@@ -540,7 +540,6 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
     }
 
     private void onDuplexInputChannelResponseReceiverDisconnected(Object sender, final ResponseReceiverEventArgs e)
-            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -564,6 +563,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     HashSetExt.removeWhere(aDuplexInputChannelContext.getOpenConnections(), aPredicate);
                 }
             }
+        }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + "failed to process the response receiver disconnection", err);
         }
         finally
         {
@@ -593,8 +596,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
     private EventHandler<DuplexChannelMessageEventArgs> myMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object sender, DuplexChannelMessageEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
         {
             onMessageReceived(sender, e);
         }
@@ -603,8 +605,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
     private EventHandler<DuplexChannelMessageEventArgs> myResponseMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object sender, DuplexChannelMessageEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
         {
             onResponseMessageReceived(sender, e);
         }
@@ -613,8 +614,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
     private EventHandler<ResponseReceiverEventArgs> myResponseReceiverDisconnected = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
-        public void invoke(Object sender, ResponseReceiverEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, ResponseReceiverEventArgs e)
         {
             onDuplexInputChannelResponseReceiverDisconnected(sender, e);
         }

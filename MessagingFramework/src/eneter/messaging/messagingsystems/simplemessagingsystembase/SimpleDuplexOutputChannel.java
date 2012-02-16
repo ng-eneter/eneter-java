@@ -377,7 +377,7 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
     private EventHandler<ChannelMessageEventArgs> myResponseMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object t1, ChannelMessageEventArgs t2)
+        public void onEvent(Object t1, ChannelMessageEventArgs t2)
         {
             onResponseMessageReceived(t1, t2);
         }

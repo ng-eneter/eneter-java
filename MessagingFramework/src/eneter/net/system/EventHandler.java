@@ -13,6 +13,14 @@ package eneter.net.system;
  *
  * @param <T> type of the event parameter.
  */
-public interface EventHandler<T> extends IMethod2<Object, T>
+public interface EventHandler<T>
 {
+    /**
+     * Method processing the event.
+     * 
+     * 
+     * @param sender
+     * @param e
+     */
+    void onEvent(Object sender, T e);
 }

@@ -147,7 +147,7 @@ class DuplexBroker implements IDuplexBroker
         return myDuplexChannelUnwrapper.getAttachedDuplexInputChannel();
     }
     
-    private void onBrokerRequestReceived(Object sender, TypedRequestReceivedEventArgs<BrokerRequestMessage> e) throws Exception
+    private void onBrokerRequestReceived(Object sender, TypedRequestReceivedEventArgs<BrokerRequestMessage> e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -183,13 +183,17 @@ class DuplexBroker implements IDuplexBroker
                 }
             }
         }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + "detected exception when broker request received.", err);
+        }
         finally
         {
             EneterTrace.leaving(aTrace);
         }
     }
     
-    private void onBrokerMessageReceived(Object sender, final TypedRequestReceivedEventArgs<BrokerNotifyMessage> e) throws Exception
+    private void onBrokerMessageReceived(Object sender, final TypedRequestReceivedEventArgs<BrokerNotifyMessage> e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -293,13 +297,17 @@ class DuplexBroker implements IDuplexBroker
                 }
             }
         }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + "detected exception when broker message received.", err);
+        }
         finally
         {
             EneterTrace.leaving(aTrace);
         }
     }
     
-    private void onSubscriberDisconnected(Object sender, ResponseReceiverEventArgs e) throws Exception
+    private void onSubscriberDisconnected(Object sender, ResponseReceiverEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -310,6 +318,10 @@ class DuplexBroker implements IDuplexBroker
                 unsubscribe(e.getResponseReceiverId(), null, myMessageSubscribtions);
                 unsubscribe(e.getResponseReceiverId(), null, myRegExpSubscribtions);
             }
+        }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + "detected exception when subscriber disconnected.", err);
         }
         finally
         {
@@ -398,8 +410,7 @@ class DuplexBroker implements IDuplexBroker
     private EventHandler<TypedRequestReceivedEventArgs<BrokerNotifyMessage>> myOnBrokerMessageReceivedHandler = new EventHandler<TypedRequestReceivedEventArgs<BrokerNotifyMessage>>()
             {
                 @Override
-                public void invoke(Object sender, TypedRequestReceivedEventArgs<BrokerNotifyMessage> e)
-                        throws Exception
+                public void onEvent(Object sender, TypedRequestReceivedEventArgs<BrokerNotifyMessage> e)
                 {
                     onBrokerMessageReceived(sender, e);
                 }
@@ -408,8 +419,7 @@ class DuplexBroker implements IDuplexBroker
     private EventHandler<TypedRequestReceivedEventArgs<BrokerRequestMessage>> myOnBrokerRequestReceivedHandler = new EventHandler<TypedRequestReceivedEventArgs<BrokerRequestMessage>>()
     {
         @Override
-        public void invoke(Object sender, TypedRequestReceivedEventArgs<BrokerRequestMessage> e)
-                throws Exception
+        public void onEvent(Object sender, TypedRequestReceivedEventArgs<BrokerRequestMessage> e)
         {
             onBrokerRequestReceived(sender, e);
         }
@@ -418,8 +428,7 @@ class DuplexBroker implements IDuplexBroker
     private EventHandler<ResponseReceiverEventArgs> myOnSubscriberDisconnectedHandler = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
-        public void invoke(Object sender, ResponseReceiverEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, ResponseReceiverEventArgs e)
         {
             onSubscriberDisconnected(sender, e);
         }

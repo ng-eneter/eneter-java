@@ -531,8 +531,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
     private EventHandler<DuplexChannelMessageEventArgs> myOnResponseMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                throws Exception
+        public void onEvent(Object x, DuplexChannelMessageEventArgs y)
         {
             onResponseMessageReceived(x, y);
         }
@@ -541,8 +540,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
     private EventHandler<DuplexChannelEventArgs> myOnConnectionClosed = new EventHandler<DuplexChannelEventArgs>()
     {
         @Override
-        public void invoke(Object x, DuplexChannelEventArgs y)
-                throws Exception
+        public void onEvent(Object x, DuplexChannelEventArgs y)
         {
             onConnectionClosed(x, y);
         }

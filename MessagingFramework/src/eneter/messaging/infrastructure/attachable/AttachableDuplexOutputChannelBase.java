@@ -156,8 +156,7 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
     private EventHandler<DuplexChannelMessageEventArgs> myResponseMessageHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object sender, DuplexChannelMessageEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
         {
             onResponseMessageReceived(sender, e);
         }

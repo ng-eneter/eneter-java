@@ -332,8 +332,7 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
     private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceivedEventHandler = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object sender, DuplexChannelMessageEventArgs e)
-                throws Exception
+        public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
         {
             onMessageReceived(sender, e);
         }

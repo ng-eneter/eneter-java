@@ -122,7 +122,7 @@ public abstract class AttachableInputChannelBase implements IAttachableInputChan
     private EventHandler<ChannelMessageEventArgs> myMessageReceivedHandler = new EventHandler<ChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object sender, ChannelMessageEventArgs e) throws Exception
+        public void onEvent(Object sender, ChannelMessageEventArgs e)
         {
             onMessageReceived(sender, e);
         }

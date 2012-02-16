@@ -227,7 +227,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     }
 
     private void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e)
-            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -246,6 +245,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
             }
+        }
+        catch (Exception err)
+        {
+            EneterTrace.warning(TracedObject() + "detected exception when response receiver connected.", err);
         }
         finally
         {
@@ -486,8 +489,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
-        public void invoke(Object x, ResponseReceiverEventArgs y)
-                throws Exception
+        public void onEvent(Object x, ResponseReceiverEventArgs y)
         {
             onResponseReceiverConnected(x, y);
         }
@@ -496,8 +498,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                throws Exception
+        public void onEvent(Object x, DuplexChannelMessageEventArgs y)
         {
             onMessageReceived(x, y);
         }
