@@ -81,8 +81,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
         anInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 aConnections.add(new TConnectionEvent(System.currentTimeMillis(), y.getResponseReceiverId()));
                 aConncetionEvent.set();
@@ -93,8 +92,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
         anInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 aDisconnections.add(new TConnectionEvent(System.currentTimeMillis(), y.getResponseReceiverId()));
                 aDisconncetionEvent.set();

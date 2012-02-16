@@ -6,6 +6,7 @@ import java.util.ArrayList;
 
 import org.junit.*;
 
+import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.threading.*;
@@ -38,13 +39,19 @@ public abstract class StringRequestResponseBaseTester
             myMessageResponser.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
             {
                 @Override
-                public void invoke(Object x, StringRequestReceivedEventArgs y)
-                        throws Exception
+                public void onEvent(Object x, StringRequestReceivedEventArgs y)
                 {
                     aReceivedMessage[0] = y.getRequestMessage();
 
                     // Send the response
-                    myMessageResponser.sendResponseMessage(y.getResponseReceiverId(), "Response");
+                    try
+                    {
+						myMessageResponser.sendResponseMessage(y.getResponseReceiverId(), "Response");
+					}
+                    catch (Exception err)
+                    {
+						EneterTrace.error("Sending of response message failed.", err);
+					}
                 }
             }); 
             myMessageResponser.attachDuplexInputChannel(myDuplexInputChannel);
@@ -53,8 +60,7 @@ public abstract class StringRequestResponseBaseTester
             myMessageRequester.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
             {
                 @Override
-                public void invoke(Object x, StringResponseReceivedEventArgs y)
-                        throws Exception
+                public void onEvent(Object x, StringResponseReceivedEventArgs y)
                 {
                     aReceivedResponse[0] = y.getResponseMessage();
 
@@ -91,8 +97,7 @@ public abstract class StringRequestResponseBaseTester
         myMessageResponser.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringRequestReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, StringRequestReceivedEventArgs y)
             {
                 synchronized (aReceivedMessages)
                 {
@@ -100,7 +105,14 @@ public abstract class StringRequestResponseBaseTester
                 }
 
                 // Send the response
-                myMessageResponser.sendResponseMessage(y.getResponseReceiverId(), "Response");
+                try 
+                {
+					myMessageResponser.sendResponseMessage(y.getResponseReceiverId(), "Response");
+				}
+                catch (Exception err)
+                {
+                	EneterTrace.error("Sending of response message failed.", err);
+				}
             }
         });
         myMessageResponser.attachDuplexInputChannel(myDuplexInputChannel);
@@ -109,8 +121,7 @@ public abstract class StringRequestResponseBaseTester
         myMessageRequester.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringResponseReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, StringResponseReceivedEventArgs y)
             {
                 synchronized (aReceivedResponses)
                 {

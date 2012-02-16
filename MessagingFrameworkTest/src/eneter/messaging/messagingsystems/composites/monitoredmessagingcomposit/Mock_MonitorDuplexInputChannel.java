@@ -181,8 +181,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
-        public void invoke(Object x, ResponseReceiverEventArgs y)
-                throws Exception
+        public void onEvent(Object x, ResponseReceiverEventArgs y)
         {
             onResponseReceiverConnected(x, y);
         }
@@ -191,8 +190,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverDisconnected = new EventHandler<ResponseReceiverEventArgs>()
     {
         @Override
-        public void invoke(Object x, ResponseReceiverEventArgs y)
-                throws Exception
+        public void onEvent(Object x, ResponseReceiverEventArgs y)
         {
             onResponseReceiverDisconnected(x, y);
         }
@@ -201,8 +199,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
-        public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                throws Exception
+        public void onEvent(Object x, DuplexChannelMessageEventArgs y)
         {
             onMessageReceived(x, y);
         }

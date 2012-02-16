@@ -36,7 +36,7 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
         aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
                 aDisconnectedFlag[0] = true;
                 aDisconnectedEvent.set();
@@ -81,7 +81,7 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
         aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
                 aDisconnectedFlag[0] = true;
                 aDisconnectedEvent.set();
@@ -129,7 +129,7 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
         aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
                 aDisconnectedFlag[0] = true;
                 aDisconnectedEvent.set();
@@ -175,8 +175,7 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
         aDuplexInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 aClosedResponseReceiverId[0] = y.getResponseReceiverId();
                 aConnectionClosedEvent.set();

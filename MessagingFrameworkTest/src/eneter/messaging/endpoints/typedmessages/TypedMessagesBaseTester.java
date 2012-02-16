@@ -40,8 +40,7 @@ public abstract class TypedMessagesBaseTester
         MessageReceiver.messageReceived().subscribe(new EventHandler<TypedMessageReceivedEventArgs<Fake_TypedMessage>>()
         {
             @Override
-            public void invoke(Object x, TypedMessageReceivedEventArgs<Fake_TypedMessage> y)
-                    throws Exception
+            public void onEvent(Object x, TypedMessageReceivedEventArgs<Fake_TypedMessage> y)
             {
                 aReceivedMessage[0] = y.getMessageData();
 
@@ -84,8 +83,7 @@ public abstract class TypedMessagesBaseTester
         MessageReceiver.messageReceived().subscribe(new EventHandler<TypedMessageReceivedEventArgs<Fake_TypedMessage>>()
         {
             @Override
-            public void invoke(Object x, TypedMessageReceivedEventArgs<Fake_TypedMessage> y)
-                    throws Exception
+            public void onEvent(Object x, TypedMessageReceivedEventArgs<Fake_TypedMessage> y)
             {
                 synchronized (aReceivedMessages)
                 {

@@ -26,8 +26,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexInputChannel.messageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (aReceivedMessages)
                 {
@@ -37,7 +36,14 @@ public abstract class BufferedMessagingBaseTester
                     aReceivedMessages.add(k);
                     k += 1000;
 
-                    aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
+                    try
+                    {
+						aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
+					}
+                    catch (Exception err)
+                    {
+						EneterTrace.error("Sending response message failed.", err);
+					}
                 }
             }
         });
@@ -48,8 +54,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (aReceivedResponseMessages)
                 {
@@ -116,8 +121,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexInputChannel.messageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (aReceivedMessages)
                 {
@@ -127,7 +131,14 @@ public abstract class BufferedMessagingBaseTester
                     aReceivedMessages.add(k);
                     k += 1000;
 
-                    aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
+                    try
+                    {
+						aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
+					}
+                    catch (Exception err)
+                    {
+                    	EneterTrace.error("Sending response message failed.", err);
+					}
                 }
             }
         });
@@ -138,8 +149,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (aReceivedResponseMessages)
                 {
@@ -210,7 +220,7 @@ public abstract class BufferedMessagingBaseTester
         anInputChannel.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, ChannelMessageEventArgs y) throws Exception
+            public void onEvent(Object x, ChannelMessageEventArgs y)
             {
                 synchronized (aReceivedMessages)
                 {
@@ -269,8 +279,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexInputChannel.messageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (aReceivedMessages)
                 {
@@ -280,7 +289,14 @@ public abstract class BufferedMessagingBaseTester
                     aReceivedMessages.add(k);
                     k += 1000;
 
-                    aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
+                    try
+                    {
+						aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
+					}
+                    catch (Exception err)
+                    {
+                    	EneterTrace.error("Sending response message failed.", err);
+					}
                 }
             }
         });
@@ -291,8 +307,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (aReceivedResponseMessages)
                 {
@@ -361,8 +376,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (aReceivedResponseMessages)
                 {
@@ -424,7 +438,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelEventArgs y) throws Exception
+            public void onEvent(Object x, DuplexChannelEventArgs y)
             {
                 aConnectionClosedEvent.set();
             }
@@ -435,8 +449,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 aDisconnectedResponseReceiverId[0] = y.getResponseReceiverId();
                 aResponseReceiverDisconnectedEvent.set();
@@ -473,8 +486,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 synchronized (anOpenConnections)
                 {
@@ -525,8 +537,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 synchronized (anOpenConnections)
                 {
@@ -587,8 +598,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexInputChannel.messageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (aReceivedMessages)
                 {
@@ -601,7 +611,14 @@ public abstract class BufferedMessagingBaseTester
                     k += 1000;
 
                     EneterTrace.info("Sent response message: " + Integer.toString(k));
-                    aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
+                    try 
+                    {
+						aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
+					}
+                    catch (Exception err)
+                    {
+                    	EneterTrace.error("Sending response message failed.", err);
+					}
                 }
             }
         });
@@ -609,7 +626,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
                 EneterTrace.info("ConnectionClosed invoked in duplex output channel");
 
@@ -624,8 +641,7 @@ public abstract class BufferedMessagingBaseTester
         aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (aReceivedResponseMessages)
                 {

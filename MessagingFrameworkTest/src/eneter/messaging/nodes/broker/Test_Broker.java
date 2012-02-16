@@ -33,8 +33,7 @@ public class Test_Broker
         aBrokerClient1.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, BrokerMessageReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, BrokerMessageReceivedEventArgs y)
             {
                 aClient1ReceivedMessage[0] = y;
             }
@@ -46,8 +45,7 @@ public class Test_Broker
         aBrokerClient2.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, BrokerMessageReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, BrokerMessageReceivedEventArgs y)
             {
                 aClient2ReceivedMessage[0] = y;
             }
@@ -59,8 +57,7 @@ public class Test_Broker
         aBrokerClient3.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, BrokerMessageReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, BrokerMessageReceivedEventArgs y)
             {
                 aClient3ReceivedMessage[0] = y;
             }
@@ -72,8 +69,7 @@ public class Test_Broker
         aBrokerClient4.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, BrokerMessageReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, BrokerMessageReceivedEventArgs y)
             {
                 aClient4ReceivedMessage[0] = y;
             }

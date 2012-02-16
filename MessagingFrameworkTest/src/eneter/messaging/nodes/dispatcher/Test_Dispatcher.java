@@ -48,7 +48,7 @@ public class Test_Dispatcher
         myReadingChannel3.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, ChannelMessageEventArgs y) throws Exception
+            public void onEvent(Object x, ChannelMessageEventArgs y)
             {
                 aReceivedFromChannel3[0] = y;
             }
@@ -59,7 +59,7 @@ public class Test_Dispatcher
         myReadingChannel4.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, ChannelMessageEventArgs y) throws Exception
+            public void onEvent(Object x, ChannelMessageEventArgs y)
             {
                 aReceivedFromChannel4[0] = y;
             }

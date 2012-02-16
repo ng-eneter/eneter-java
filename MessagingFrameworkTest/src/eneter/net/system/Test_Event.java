@@ -49,7 +49,7 @@ public class Test_Event
     private EventHandler<String> anEventHandler = new EventHandler<String>()
     {
         @Override
-        public void invoke(Object t1, String t2)
+        public void onEvent(Object t1, String t2)
         {
             onNameUpdated(t1, t2);
         }

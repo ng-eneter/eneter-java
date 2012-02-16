@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import org.junit.*;
 
+import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.endpoints.stringmessages.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.synchronousmessagingsystem.*;
@@ -67,11 +68,17 @@ public class Test_DuplexDispatcher
         myStringMessageReceiver1.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringRequestReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, StringRequestReceivedEventArgs y)
             {
                 aReceivedMessage1[0] = y.getRequestMessage();
-                myStringMessageReceiver1.sendResponseMessage(y.getResponseReceiverId(), "Response1");
+                try
+                {
+					myStringMessageReceiver1.sendResponseMessage(y.getResponseReceiverId(), "Response1");
+				}
+                catch (Exception err)
+                {
+					EneterTrace.error("Sending Response1 failed.", err);
+				}
             }
         });
 
@@ -79,11 +86,17 @@ public class Test_DuplexDispatcher
         myStringMessageReceiver2.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringRequestReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, StringRequestReceivedEventArgs y)
             {
                 aReceivedMessage2[0] = y.getRequestMessage();
-                myStringMessageReceiver2.sendResponseMessage(y.getResponseReceiverId(), "Response2");
+                try
+                {
+					myStringMessageReceiver2.sendResponseMessage(y.getResponseReceiverId(), "Response2");
+				}
+                catch (Exception err)
+                {
+                	EneterTrace.error("Sending Response2 failed.", err);
+				}
             }
         });
         
@@ -91,11 +104,17 @@ public class Test_DuplexDispatcher
         myStringMessageReceiver3.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringRequestReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, StringRequestReceivedEventArgs y)
             {
                 aReceivedMessage3[0] = y.getRequestMessage();
-                myStringMessageReceiver3.sendResponseMessage(y.getResponseReceiverId(), "Response3");
+                try
+                {
+					myStringMessageReceiver3.sendResponseMessage(y.getResponseReceiverId(), "Response3");
+				}
+                catch (Exception err)
+                {
+                	EneterTrace.error("Sending Response3 failed.", err);
+				}
             }
         });
         
@@ -104,8 +123,7 @@ public class Test_DuplexDispatcher
         myStringMessageSender11.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringResponseReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, StringResponseReceivedEventArgs y)
             {
                 aReceivedResponse11[0] += y.getResponseMessage();
             }
@@ -115,8 +133,7 @@ public class Test_DuplexDispatcher
         myStringMessageSender12.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringResponseReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, StringResponseReceivedEventArgs y)
             {
                 aReceivedResponse12[0] += y.getResponseMessage();
             }
@@ -126,8 +143,7 @@ public class Test_DuplexDispatcher
         myStringMessageSender13.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringResponseReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, StringResponseReceivedEventArgs y)
             {
                 aReceivedResponse13[0] += y.getResponseMessage();
             }
@@ -137,8 +153,7 @@ public class Test_DuplexDispatcher
         myStringMessageSender22.responseReceived().subscribe(new EventHandler<StringResponseReceivedEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringResponseReceivedEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, StringResponseReceivedEventArgs y)
             {
                 aReceivedResponse22[0] += y.getResponseMessage();
             }

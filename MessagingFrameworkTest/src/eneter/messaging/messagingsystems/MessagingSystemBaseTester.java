@@ -56,7 +56,7 @@ public abstract class MessagingSystemBaseTester
         anInputChannel.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object t1, ChannelMessageEventArgs t2) throws Exception
+            public void onEvent(Object t1, ChannelMessageEventArgs t2)
             {
                 // This method should not be never executed.
                 // So we are not interested in received messages.
@@ -90,7 +90,7 @@ public abstract class MessagingSystemBaseTester
         anInputChannel.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, ChannelMessageEventArgs y) throws Exception
+            public void onEvent(Object x, ChannelMessageEventArgs y)
             {
                 aReceivedMessages.add((String)y.getMessage());
 
@@ -165,8 +165,7 @@ public abstract class MessagingSystemBaseTester
         anInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 aConnectedReceiver[0] = y.getResponseReceiverId();
 
@@ -179,7 +178,7 @@ public abstract class MessagingSystemBaseTester
         anInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y) throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 aDisconnectedReceiver[0] = y.getResponseReceiverId();
 
@@ -192,7 +191,7 @@ public abstract class MessagingSystemBaseTester
         anOutputChannel.connectionOpened().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelEventArgs y) throws Exception
+            public void onEvent(Object x, DuplexChannelEventArgs y)
             {
                 aConnectionOpenedEventArgs[0] = y;
                 aConnectionOpenedEvent.set();
@@ -204,7 +203,7 @@ public abstract class MessagingSystemBaseTester
         anOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelEventArgs y) throws Exception
+            public void onEvent(Object x, DuplexChannelEventArgs y)
             {
                 aConnectionClosedEventArgs[0] = y;
                 aConnectionClosedEvent.set();
@@ -331,8 +330,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object t1, ResponseReceiverEventArgs t2)
-                    throws Exception
+            public void onEvent(Object t1, ResponseReceiverEventArgs t2)
             {
                 aResponseReceiverConnectedFlag[0] = true;
                 aResponseReceiverConnectedEvent.set();
@@ -342,8 +340,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object t1, ResponseReceiverEventArgs t2)
-                    throws Exception
+            public void onEvent(Object t1, ResponseReceiverEventArgs t2)
             {
                 //aResponseReceiverDisconnectedFlag = true;
             }
@@ -355,8 +352,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelMessageEventArgs t2)
-                    throws Exception
+            public void onEvent(Object t1, DuplexChannelMessageEventArgs t2)
             {
                 aResponseMessageReceivedFlag[0] = true;
             }
@@ -365,7 +361,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
                 aConnectionClosedReceivedInOutputChannelFlag[0] = true;
                 aConnectionClosedEvent.set();
@@ -417,8 +413,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 aConnectedResponseReceiver[0] = y.getResponseReceiverId();
                 aResponseReceiverConnectedEvent.set();
@@ -430,8 +425,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 aDisconnectedResponseReceiver[0] = y.getResponseReceiverId();
                 aResponseReceiverDisconnectedEvent.set();
@@ -443,8 +437,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexInputChannel.messageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 aReceivedMessage[0] = (String)y.getMessage();
                 aMessageReceivedEvent.set();
@@ -508,22 +501,29 @@ public abstract class MessagingSystemBaseTester
 
         final AutoResetEvent aConnectionReopenEvent = new AutoResetEvent(false);
         final boolean[] isConnected = {true};
-        final boolean[] isStopped = {false};
+        final boolean[] isConnectedAfter = {false};
         aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
-                if (!isStopped[0])
+                if (!isConnectedAfter[0])
                 {
+                	// it is disconnected, so false is expected.
                     isConnected[0] = aDuplexOutputChannel.isConnected();
 
                     // Try to open from the handler.
-                    aDuplexOutputChannel.openConnection();
+                    try
+                    {
+						aDuplexOutputChannel.openConnection();
+						isConnectedAfter[0] = true;
+					}
+                    catch (Exception err)
+                    {
+						EneterTrace.error("Open connection failed.", err);
+					}
 
                     aConnectionReopenEvent.set();
-
-                    isStopped[0] = true;
                 }
             }
         });
@@ -547,6 +547,7 @@ public abstract class MessagingSystemBaseTester
         }
 
         assertFalse(isConnected[0]);
+        assertTrue(isConnectedAfter[0]);
     }
     
     @Test
@@ -560,7 +561,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexOutputChannel.connectionOpened().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
                 isOpenedFlag[0] = aDuplexOutputChannel.isConnected();
 
@@ -574,7 +575,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
                 isClosedFlag[0] = aDuplexOutputChannel.isConnected() == false;
                 aConnectionClosedEvent.set();
@@ -612,12 +613,18 @@ public abstract class MessagingSystemBaseTester
         aDuplexInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
         {
             @Override
-            public void invoke(Object x, ResponseReceiverEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
             {
                 aConnectedResponseReceiver[0] = y.getResponseReceiverId();
 
-                aDuplexInputChannel.disconnectResponseReceiver(aConnectedResponseReceiver[0]);
+                try
+                {
+					aDuplexInputChannel.disconnectResponseReceiver(aConnectedResponseReceiver[0]);
+				}
+                catch (Exception err)
+                {
+					EneterTrace.error("Disconnecting the response receiver failed.", err);
+				}
             }
         });
         
@@ -626,7 +633,7 @@ public abstract class MessagingSystemBaseTester
         aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
         {
             @Override
-            public void invoke(Object t1, DuplexChannelEventArgs t2) throws Exception
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
                 isDisconnectedFlag[0] = aDuplexOutputChannel.isConnected() == false;
                 aConnectionClosedEvent.set();
@@ -669,7 +676,7 @@ public abstract class MessagingSystemBaseTester
         EventHandler<ChannelMessageEventArgs> aMessageReceivedEventHandler = new EventHandler<ChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, ChannelMessageEventArgs y)
+            public void onEvent(Object x, ChannelMessageEventArgs y)
             {
                 // Some messaging system can have a parallel access therefore we must ensure
                 // that results are put to the list synchronously.
@@ -739,8 +746,7 @@ public abstract class MessagingSystemBaseTester
         EventHandler<DuplexChannelMessageEventArgs> aMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
-                    throws Exception
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 // Some messaging system can have a parallel access therefore we must ensure
                 // that results are put to the list synchronously.
@@ -755,7 +761,14 @@ public abstract class MessagingSystemBaseTester
                     else
                     {
                         // everything is ok -> send the response
-                        anInputChannel.sendResponseMessage(y.getResponseReceiverId(), resonseMessage);
+                        try
+                        {
+							anInputChannel.sendResponseMessage(y.getResponseReceiverId(), resonseMessage);
+						}
+                        catch (Exception err)
+                        {
+							EneterTrace.error("Sending response message failed.", err);
+						}
                     }
                 }
             }
@@ -772,7 +785,7 @@ public abstract class MessagingSystemBaseTester
         EventHandler<DuplexChannelMessageEventArgs> aResponseReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, DuplexChannelMessageEventArgs y)
+            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
             {
                 synchronized (amyResponseReceiverLock)
                 {

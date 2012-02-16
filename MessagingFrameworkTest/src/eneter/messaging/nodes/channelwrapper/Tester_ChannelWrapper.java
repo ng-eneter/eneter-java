@@ -72,7 +72,7 @@ public class Tester_ChannelWrapper
         aStringMessageReceiver1.messageReceived().subscribe(new EventHandler<StringMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringMessageEventArgs y) throws Exception
+            public void onEvent(Object x, StringMessageEventArgs y)
             {
                 aReceivedMessage1[0] = y.getMessage();
             }
@@ -82,7 +82,7 @@ public class Tester_ChannelWrapper
         aStringMessageReceiver2.messageReceived().subscribe(new EventHandler<StringMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringMessageEventArgs y) throws Exception
+            public void onEvent(Object x, StringMessageEventArgs y)
             {
                 aReceivedMessage2[0] = y.getMessage();
             }

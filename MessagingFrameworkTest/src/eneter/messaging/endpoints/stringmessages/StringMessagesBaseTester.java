@@ -37,7 +37,7 @@ public abstract class StringMessagesBaseTester
         myMessageReceiver.messageReceived().subscribe(new EventHandler<StringMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringMessageEventArgs y) throws Exception
+            public void onEvent(Object x, StringMessageEventArgs y)
             {
                 aReceivedMessage[0] = y.getMessage();
 
@@ -76,7 +76,7 @@ public abstract class StringMessagesBaseTester
         myMessageReceiver.messageReceived().subscribe(new EventHandler<StringMessageEventArgs>()
         {
             @Override
-            public void invoke(Object x, StringMessageEventArgs y) throws Exception
+            public void onEvent(Object x, StringMessageEventArgs y)
             {
                 synchronized (aReceivedMessages)
                 {
