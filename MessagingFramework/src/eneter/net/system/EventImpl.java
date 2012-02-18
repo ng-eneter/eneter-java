@@ -62,8 +62,7 @@ import java.util.Iterator;
  *      // Declaring the event handler.
  *      private EventHandler<TMyEvent> myOnCalculationCompleted = new EventHandler<TMyEvent>()
  *      {
- *          public void invoke(Object x, TMyEvent y)
- *                  throws Exception
+ *          public void onEvent(Object x, TMyEvent y)
  *          {
  *              onCalculationCompleted(x, y);
  *          }

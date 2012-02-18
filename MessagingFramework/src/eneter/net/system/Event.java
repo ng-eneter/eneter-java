@@ -10,7 +10,9 @@ package eneter.net.system;
 
 /**
  * Emulates the event mechanism from C#.
- * It provides functionality to subscribe and unsubscribe from the event.
+ * It provides functionality to subscribe and unsubscribe from the event.<br/>
+ * <br/>
+ * For example see {@link EventImpl}.
  *
  * @param <T> type of the data notified by the event.
  */
