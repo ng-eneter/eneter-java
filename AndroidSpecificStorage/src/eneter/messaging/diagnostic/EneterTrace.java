@@ -9,6 +9,7 @@ package eneter.messaging.diagnostic;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.regex.Pattern;
 
 import android.util.Log;
@@ -447,5 +448,16 @@ public class EneterTrace
     private static String myTag = "EneterMessaging"; 
     
     // Ensures sequential writing of messages. 
-    private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor();
+    private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
+    {
+        @Override
+        public Thread newThread(Runnable r)
+        {
+            Thread aNewThread = new Thread(r);
+            
+            // Thread shall not block the application to shutdown.
+            aNewThread.setDaemon(true);
+            return aNewThread;
+        }
+    });
 }
