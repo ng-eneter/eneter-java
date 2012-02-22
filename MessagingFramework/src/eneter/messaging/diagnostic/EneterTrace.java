@@ -12,6 +12,7 @@ import java.util.Date;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.regex.Pattern;
 
 
@@ -518,5 +519,16 @@ public class EneterTrace
     private static Pattern myNameSpaceFilter;
     
     // Ensures sequential writing of messages. 
-    private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor();
+    private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
+    {
+        @Override
+        public Thread newThread(Runnable r)
+        {
+            Thread aNewThread = new Thread(r);
+            
+            // Thread shall not block the application to shutdown.
+            aNewThread.setDaemon(true);
+            return aNewThread;
+        }
+    });
 }
