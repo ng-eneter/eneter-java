@@ -30,7 +30,9 @@ public class NoneSecurityClientFactory implements IClientSecurityFactory
         try
         {
             Socket aClientSocket = new Socket();
-            aClientSocket.connect(socketAddress);
+            
+            // Connect with the timeout 3 seconds.
+            aClientSocket.connect(socketAddress, 3000);
             aClientSocket.setTcpNoDelay(true);
             return aClientSocket;
         }
