@@ -52,7 +52,9 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             mySerializer = serializer;
             myPingTimeout = pingTimeout;
 
-            myPingTimeoutChecker = new Timer();
+            // Create timer checking if pings are received within desired time-window.
+            // Note: The timer thread is daemon.
+            myPingTimeoutChecker = new Timer(true);
         }
         finally
         {
