@@ -8,12 +8,12 @@
 
 package eneter.messaging.dataprocessing.serializing;
 
-import eneter.messaging.diagnostic.EneterTrace;
-
 /**
  * Internal helper class to find desired keywords from the sequence of chars.
  * It is very fast search utility to identify desired strings from the sequence of chars.
  *
+ * Note: EneterTrace is not used because this functionality is called very often
+ *       the trace would not be readable.
  */
 class KeywordIdentifier
 {
@@ -27,35 +27,27 @@ class KeywordIdentifier
         
         public boolean evaluate(char c)
         {
-            EneterTrace aTrace = EneterTrace.entering();
-            try
+            boolean aMatchFlag = myKeyword.charAt(myIdx) == c;
+
+            if (aMatchFlag)
             {
-                boolean aMatchFlag = myKeyword.charAt(myIdx) == c;
-    
-                if (aMatchFlag)
-                {
-                    // The next character should match with the next position in the string.
-                    ++myIdx;
-                    
-                    // If it was the last character in the keyword, then the this keyword
-                    // was identified.
-                    if (myIdx >= myKeyword.length())
-                    {
-                        myIdx = 0;
-                        return true;
-                    }
-                }
-                else
+                // The next character should match with the next position in the string.
+                ++myIdx;
+                
+                // If it was the last character in the keyword, then the this keyword
+                // was identified.
+                if (myIdx >= myKeyword.length())
                 {
                     myIdx = 0;
+                    return true;
                 }
-                
-                return false;
             }
-            finally
+            else
             {
-                EneterTrace.leaving(aTrace);
+                myIdx = 0;
             }
+            
+            return false;
         }
 
         // Resets the identification process.
@@ -70,35 +62,18 @@ class KeywordIdentifier
     
     public KeywordIdentifier(String[] keywords)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
+        myKeywords = new TKeyword[keywords.length];
+        for (int i = 0; i < keywords.length; ++i)
         {
-            myKeywords = new TKeyword[keywords.length];
-            for (int i = 0; i < keywords.length; ++i)
-            {
-                myKeywords[i] = new TKeyword(keywords[i]);
-            }
+            myKeywords[i] = new TKeyword(keywords[i]);
         }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-        
     }
     
     public void reset()
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
+        for (TKeyword aKeyword : myKeywords)
         {
-            for (TKeyword aKeyword : myKeywords)
-            {
-                aKeyword.reset();
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
+            aKeyword.reset();
         }
     }
     
@@ -109,23 +84,15 @@ class KeywordIdentifier
      */
     public int evaluate(char c)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
+        for (int i = 0; i < myKeywords.length; ++i)
         {
-            for (int i = 0; i < myKeywords.length; ++i)
+            if (myKeywords[i].evaluate(c))
             {
-                if (myKeywords[i].evaluate(c))
-                {
-                    return i;
-                }
+                return i;
             }
-            
-            return -1;
         }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        
+        return -1;
     }
 
     private TKeyword[] myKeywords;
