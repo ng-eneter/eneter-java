@@ -89,6 +89,32 @@ public class Test_XmlStringSerializer
     }
     
     @Test
+    public void serializeStringArray() throws Exception
+    {
+        String[] a = {"1",null,"3"};
+        Object aSerializedData = TestedSerializer.serialize(a, String[].class);
+        
+        assertEquals("<ArrayOfString xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><string>1</string><string xsi:nil=\"true\"/><string>3</string></ArrayOfString>", (String)aSerializedData);
+        
+        String[] aDeserializedData = TestedSerializer.deserialize(aSerializedData, String[].class);
+
+        assertTrue(Arrays.equals(a, aDeserializedData));
+    }
+    
+    @Test
+    public void serializeEmptyString() throws Exception
+    {
+    	String a = "";
+        Object aSerializedData = TestedSerializer.serialize(a, String.class);
+        
+        assertEquals("<string xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"></string>", (String)aSerializedData);
+        
+        String aDeserializedData = TestedSerializer.deserialize(aSerializedData, String.class);
+
+        assertTrue(a.equals(aDeserializedData));
+    }
+    
+    @Test
     public void serializeByteArray() throws Exception
     {
         byte[] a = {0, 1, 2, 3, (byte)255};
