@@ -493,9 +493,16 @@ public class XmlStringSerializer implements ISerializer
             {
                 for (String anItem : (String[]) array)
                 {
-                    xmlResult.append("<string>");
-                    xmlResult.append(anItem);
-                    xmlResult.append("</string>");
+                    if (anItem != null)
+                    {
+                        xmlResult.append("<string>");
+                        xmlResult.append(anItem);
+                        xmlResult.append("</string>");
+                    }
+                    else
+                    {
+                        xmlResult.append("<string xsi:nil=\"true\"/>");
+                    }
                 }
             }
             // If it as an array declared as Object[]
@@ -848,8 +855,15 @@ public class XmlStringSerializer implements ISerializer
                 for (int i = 0; i < anItems.length; ++i)
                 {
                     XmlDataBrowser.TElement anElement = anElements.get(i);
-                    String aValue = xmlBrowser.getStringValue(anElement.myValueStartPosition, anElement.myValueLength);
-                    anItems[i] = aValue;
+                    if (!anElement.myIsNull)
+                    {
+                        String aValue = xmlBrowser.getStringValue(anElement.myValueStartPosition, anElement.myValueLength);
+                        anItems[i] = aValue;
+                    }
+                    else
+                    {
+                        anItems[i] = null;
+                    }
                 }
     
                 return (T) anItems;
