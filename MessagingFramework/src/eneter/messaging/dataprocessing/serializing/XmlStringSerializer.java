@@ -489,6 +489,15 @@ public class XmlStringSerializer implements ISerializer
                     xmlResult.append("</short>");
                 }
             }
+            else if (array instanceof String[])
+            {
+                for (String anItem : (String[]) array)
+                {
+                    xmlResult.append("<string>");
+                    xmlResult.append(anItem);
+                    xmlResult.append("</string>");
+                }
+            }
             // If it as an array declared as Object[]
             else if (array.getClass() == Object[].class)
             {
