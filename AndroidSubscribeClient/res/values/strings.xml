@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, AndroidSubscribeClientActivity!</string>
+    <string name="app_name">AndroidSubscribeClient</string>
+    <string name="SubscribreMsg">Subscribe Message</string>
+    <string name="UnsubscribeMsg">Unsubscribe Message</string>
+    <string name="ReceivedNotification">Received Notification Message:</string>
+
+</resources>
