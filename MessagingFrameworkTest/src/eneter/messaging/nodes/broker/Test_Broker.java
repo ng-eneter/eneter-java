@@ -2,6 +2,8 @@ package eneter.messaging.nodes.broker;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
+
 import org.junit.Test;
 
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -164,5 +166,50 @@ public class Test_Broker
         assertEquals("TypeA", aClient3ReceivedMessage[0].getMessageTypeId());
         assertEquals("Message A", (String)aClient3ReceivedMessage[0].getMessage());
         assertEquals(null, aClient3ReceivedMessage[0].getReceivingError());
+    }
+    
+    @Test
+    public void subscribeSameMessageTwice() throws Exception
+    {
+        // Create channels
+        IMessagingSystemFactory aMessagingSystem = new SynchronousMessagingSystemFactory();
+        
+        IDuplexInputChannel aBrokerInputChannel = aMessagingSystem.createDuplexInputChannel("BrokerChannel");
+        IDuplexOutputChannel aSubscriberClientOutputChannel = aMessagingSystem.createDuplexOutputChannel("BrokerChannel");
+        IDuplexOutputChannel aPublisherClientOutputChannel = aMessagingSystem.createDuplexOutputChannel("BrokerChannel");
+
+        IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory();
+
+        IDuplexBroker aBroker = aBrokerFactory.createBroker();
+        aBroker.attachDuplexInputChannel(aBrokerInputChannel);
+        
+        IDuplexBrokerClient aSubscriber = aBrokerFactory.createBrokerClient();
+        final ArrayList<BrokerMessageReceivedEventArgs> aClient1ReceivedMessage = new ArrayList<BrokerMessageReceivedEventArgs>();
+        aSubscriber.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
+        {
+            @Override
+            public void onEvent(Object x, BrokerMessageReceivedEventArgs y)
+            {
+                aClient1ReceivedMessage.add(y);
+            }
+        });
+        aSubscriber.attachDuplexOutputChannel(aSubscriberClientOutputChannel);
+
+        IDuplexBrokerClient aPublisher = aBrokerFactory.createBrokerClient();
+        aPublisher.attachDuplexOutputChannel(aPublisherClientOutputChannel);
+
+        // Subscribe the 1st time.
+        aSubscriber.subscribe("TypeA");
+        
+        // Subscribe the 2nd time.
+        aSubscriber.subscribe("TypeA");
+        
+        // Notify the message.
+        aPublisher.sendMessage("TypeA", "Message A");
+        
+        // Although the client is subscribed twice, the message shall be notified once.
+        assertEquals(1, aClient1ReceivedMessage.size());
+        assertEquals("TypeA", aClient1ReceivedMessage.get(0).getMessageTypeId());
+        assertEquals("Message A", (String)aClient1ReceivedMessage.get(0).getMessage());
     }
 }
