@@ -1,0 +1,99 @@
+<html>
+	<head>
+	</head>
+	<body>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Welcome to the Eneter.Messaging.Framework, the cross-platform message oriented middleware.</span></span></p>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong>Eneter Messaging Framework</strong> is a lightweight framework for the interprocess communication. It is easy to use and although the framework is lightweight, it provides functionality for advanced scenarios too.</span></span></p>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Supported Platforms</big></strong><br />
+			The framework is available for multiple platforms. Therefore,  you can use it for communication between two Java applications but also for the communication between Java and .NET applications.<br />
+			<br />
+			The framework is available for:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Java 6</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Android 2.1 (or later)</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">.NET 3.5, .NET 4.0</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Windows Phone 7</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Silverlight 3, Silverlight 4, Silverlight 5</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Mono 2.6.4</span></span></li>
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Protocols</big></strong><br />
+			The framework  for Java and Android supports following protocols and transportation mechanisms:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/tcpmessagingsystem/package-summary.html">TCP</a></em> - for communication between processes running on different machines.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/httpmessagingsystem/package-summary.html">HTTP</a></em> - for communication between processes running on different machines.</span></span></li>
+			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/threadmessagingsystem/package-summary.html">Thread Messaging</a></em> - for communication between threads running in the same process.</span></span></li>
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Message Serialization</big></strong><br />
+			Communicated messages  are encoded by a serializer. To serialize/deserialize messages the framework supports:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/dataprocessing/serializing/XmlStringSerializer.html">XML Serializer</a></em> - serialization to XML <span style="color: rgb(0, 128, 0);">(works for the communication between Java and .NET)</span>.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/dataprocessing/serializing/JavaBinarySerializer.html">Binary Serializer</a></em> - for fast serialization using the binary format </span></span><span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em>(does not work for the communication between Java and .NET).</em></span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/dataprocessing/serializing/AesSerializer.html">AES Serializer</a></em> - for encrypting using Advanced Encryption Standard <span style="color: rgb(0, 128, 0);">(works for the communication between Java and .NET)</span>.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/dataprocessing/serializing/GZipSerializer.html">GZip Serializer</a></em> - for compressing big messages before sending across the network <span style="color: rgb(0, 128, 0);">(works for the communication between Java and .NET)</span>.</span></span></li>
+		</ul>
+		<p>
+			<span style="color: rgb(0, 0, 255);"><span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">The communication API is not bound to a particular protocol or encoding format, therefore your implementation stays same, does not matter what you use.</span></span></span></p>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Sending-Receiving Messages</big></strong><br />
+			To implement the communication between applications, the framework provides functionality to send and receive messages. Communication can be one-way or request-response and messages can be:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/endpoints/stringmessages/package-summary.html">String Messages</a></em> - for sending and receiving text messages.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/endpoints/typedmessages/package-summary.html">Typed Messages</a></em> - for sending and receiving data structures of specified types.</span></span></li>
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Routing Messages</big></strong><br />
+			It provides components that can be placed on the communication path to control the routing behavior.</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/nodes/broker/package-summary.html">Broker</a></em> - for publish-subscribe scenarios (publisher sends messages to the broker and the broker notifies all subscribers).</span></span></li>
+			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/nodes/dispatcher/package-summary.html">Dispatcher</a></em> - for routing messages to all connected receivers (e.g. for a service listening to TCP and HTTP at the same time).</span></span></li>
+			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/nodes/channelwrapper/package-summary.html">Channel Wrapper/Unwrapper</a></em> - for receiving multiple type of messages on one address (no need for if ... else ... statement in the user code).</span></span></li>
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Reliability</big></strong><br />
+			The communication across the network is typically less reliable as a local call inside the process. The network connection can be interrupted or receiving application can be temporarily unavailable. If your communication scenario requires to overcome these issues, the framework provides:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/composites/monitoredmessagingcomposit/package-summary.html">Monitoring of connection availability</a></em> - for early detection of a disconnection.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/composites/bufferedmessagingcomposit/package-summary.html">Buffered messaging and automatic reconnect</a></em> - for overcoming short disconnections (e.g. in case of unstable network).</span></span></li>
+			
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Security</big></strong><br />
+			The communication across the network is easy to observe and confidential data can be acquired by unauthorized persons. Therefore, you may want to protect your data:</span></span></p>
+		<ul>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">SSL or serializer using fast symmetric  AES encryption.</span></span></li>
+		</ul>
+		<p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><big><strong>Eneter Communication</strong></big><br /></span></span></p>
+		<p>
+			<img width="100%" alt="" title="EneterComponents" src="./doc-files/EneterComponents_JAVA.gif"/></p>
+	</body>
+</html>
