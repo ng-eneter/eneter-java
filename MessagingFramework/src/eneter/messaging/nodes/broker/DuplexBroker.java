@@ -334,7 +334,18 @@ class DuplexBroker implements IDuplexBroker
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            for (String aMessageType : messageTypes)
+            // Subscribe only messages that are not subscribed yet.
+            ArrayList<String> aMessagesToSubscribe = new ArrayList<String>(Arrays.asList(messageTypes));
+            for (TSubscriptionItem aSubscription : subscribtions)
+            {
+                if (aSubscription.getReceiverId().equals(responseReceiverId))
+                {
+                    aMessagesToSubscribe.remove(aSubscription.getMessageTypeId());
+                }
+            }
+            
+            // Subscribe
+            for (String aMessageType : aMessagesToSubscribe)
             {
                 subscribtions.add(new TSubscriptionItem(aMessageType, responseReceiverId));
             }
@@ -345,7 +356,7 @@ class DuplexBroker implements IDuplexBroker
         }
     }
     
-    private void unsubscribe(final String responseReceiverId, String[] messageTypes, HashSet<TSubscriptionItem> subscribtions) throws Exception
+    private void unsubscribe(final String responseReceiverId, final String[] messageTypes, HashSet<TSubscriptionItem> subscribtions) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -367,19 +378,29 @@ class DuplexBroker implements IDuplexBroker
             // If unsubscribe from specified messages
             else
             {
-                for (final String aMessageType : messageTypes)
-                {
-                    HashSetExt.removeWhere(subscribtions, new IFunction1<Boolean, TSubscriptionItem>()
+                HashSetExt.removeWhere(subscribtions, new IFunction1<Boolean, TSubscriptionItem>()
+                        {
+                            @Override
+                            public Boolean invoke(TSubscriptionItem x)
+                                    throws Exception
                             {
-                                @Override
-                                public Boolean invoke(TSubscriptionItem x)
-                                        throws Exception
+                                if (x.getReceiverId().equals(responseReceiverId))
                                 {
-                                    return x.getReceiverId().equals(responseReceiverId) && x.getMessageTypeId().equals(aMessageType);
+                                    // If it is one of messages that should be unsubscribed then return
+                                    // true indicating the item shall be removed.
+                                    for (String aMessageType : messageTypes)
+                                    {
+                                        if (aMessageType.equals(x.getMessageTypeId()))
+                                        {
+                                            return true;
+                                        }
+                                    }
                                 }
-                        
-                            });
-                }
+                                
+                                return false;
+                            }
+                    
+                        });
             }
         }
         finally
