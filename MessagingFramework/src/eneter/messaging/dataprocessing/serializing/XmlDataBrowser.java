@@ -136,9 +136,8 @@ class XmlDataBrowser
             }
         }
 
-        // If the element is null.
-        
-        if (anElement.myIsNull)
+        // If the element is null or the element is closed. e.g. <aaa />
+        if (anElement.myIsNull || getChar(anIdx - 1) == '/')
         {
             anElement.myNextElementStartPosition = anIdx + 1;
             anElement.myValueStartPosition = anIdx + 1;

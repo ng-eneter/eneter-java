@@ -312,19 +312,17 @@ public class XmlStringSerializer implements ISerializer
                         }
                     }
     
-                    // If the element was not found, then there is an error.
-                    if (anElement == null)
+                    // If the element was found then deserialize it.
+                    // Note: If the element is not found ignore it and keep there the default value.
+                    //       It will be null for referenced types. .NET has the same behaviour.
+                    if (anElement != null)
                     {
-                        String anErrorMsg = "Field '" + aFieldName + "' is missing.";
-                        EneterTrace.error(anErrorMsg);
-                        throw new IllegalStateException(anErrorMsg);
+                        // Recursively deserialize the object for the field.
+                        Object aValue = deserializeElement(xmlBrowser, anElement, aField.getType());
+        
+                        // Set the created object to the field.
+                        aDeserializedObject.getClass().getField(aFieldName).set(aDeserializedObject, aValue);
                     }
-                    
-                    // Recursively deserialize the object for the field.
-                    Object aValue = deserializeElement(xmlBrowser, anElement, aField.getType());
-    
-                    // Set the created object to the field.
-                    aDeserializedObject.getClass().getField(aFieldName).set(aDeserializedObject, aValue);
                 }
     
                 return aDeserializedObject;
