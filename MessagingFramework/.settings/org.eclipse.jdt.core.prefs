@@ -1,4 +1,4 @@
-#Mon Feb 13 21:11:52 CET 2012
+#Sat Apr 21 10:00:06 CEST 2012
 eclipse.preferences.version=1
 org.eclipse.jdt.core.compiler.codegen.inlineJsrBytecode=enabled
 org.eclipse.jdt.core.compiler.codegen.targetPlatform=1.6
@@ -51,7 +51,7 @@ org.eclipse.jdt.core.formatter.brace_position_for_anonymous_type_declaration=nex
 org.eclipse.jdt.core.formatter.brace_position_for_array_initializer=end_of_line
 org.eclipse.jdt.core.formatter.brace_position_for_block=next_line
 org.eclipse.jdt.core.formatter.brace_position_for_block_in_case=next_line
-org.eclipse.jdt.core.formatter.brace_position_for_constructor_declaration=end_of_line
+org.eclipse.jdt.core.formatter.brace_position_for_constructor_declaration=next_line
 org.eclipse.jdt.core.formatter.brace_position_for_enum_constant=next_line
 org.eclipse.jdt.core.formatter.brace_position_for_enum_declaration=next_line
 org.eclipse.jdt.core.formatter.brace_position_for_method_declaration=next_line
@@ -230,7 +230,7 @@ org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_annotation_t
 org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_anonymous_type_declaration=insert
 org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_array_initializer=insert
 org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_block=insert
-org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_constructor_declaration=insert
+org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_constructor_declaration=do not insert
 org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_enum_constant=insert
 org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_enum_declaration=insert
 org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_method_declaration=insert
