@@ -258,6 +258,53 @@ public class Test_XmlStringSerializer
     }
     
     @Test
+    public void serializeClassWithEmptyString() throws Exception
+    {
+        MyTestClass1 aClass = new MyTestClass1();
+        aClass.k = -10;
+        aClass.str = "";
+        
+        Object aSerializedData = TestedSerializer.serialize(aClass, MyTestClass1.class);
+        
+        assertEquals("<MyTestClass1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><k>-10</k><str></str></MyTestClass1>", (String)aSerializedData);
+        
+        MyTestClass1 aDeserializedData = TestedSerializer.deserialize(aSerializedData, MyTestClass1.class);
+        
+        assertEquals(aClass.k, aDeserializedData.k);
+        assertEquals(aClass.str, aDeserializedData.str);
+    }
+    
+    @Test
+    public void deserializeClassWithAlternativeEmptyString() throws Exception
+    {
+        String anXml = "<MyTestClass1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><k>-10</k><str /></MyTestClass1>";
+        
+        MyTestClass1 aDeserializedData = TestedSerializer.deserialize(anXml, MyTestClass1.class);
+        
+        assertEquals(-10, aDeserializedData.k);
+        assertEquals("", aDeserializedData.str);
+    }
+    
+    @Test
+    public void deserializeXmlWithMissingElements() throws Exception
+    {
+    	// Parameter 'vv' is missing. The deserialized class should have vv set to the value
+    	// provided by the default constructor.
+    	String anXml = "<MyTestClass2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><kk>111</kk><mm>222</mm></MyTestClass2>";
+    	
+       
+        MyTestClass2 aDeserializedData = TestedSerializer.deserialize(anXml, MyTestClass2.class);
+        
+        assertEquals(111, aDeserializedData.kk);
+        
+        // Default constructor of MyTestClass2 creates MyTestClass1 with following values.
+        assertEquals(100, aDeserializedData.vv.k);
+        assertEquals("Hello", aDeserializedData.vv.str);
+        
+        assertEquals(222, aDeserializedData.mm);
+    }
+    
+    @Test
     public void serializeEnum() throws Exception
     {
         MyEnum aData = MyEnum.Tuesday;
