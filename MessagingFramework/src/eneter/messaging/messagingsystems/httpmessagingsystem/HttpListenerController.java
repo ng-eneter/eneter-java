@@ -200,6 +200,22 @@ class HttpListenerController
                 EneterTrace.leaving(aTrace);
             }
         }
+        
+        public boolean existAnyPathListener()
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                synchronized (myPathListeners)
+                {
+                    return myPathListeners.size() > 0;
+                }
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
             
 
         // Handles TCP connection.
@@ -396,7 +412,7 @@ class HttpListenerController
                 
                 // If there is no a path listener then nobody is interested in incoming
                 // HTTP requests and the TCP listening can be stopped.
-                if (aHostListener.existPathListener(uri.getPath()) == false)
+                if (aHostListener.existAnyPathListener() == false)
                 {
                     myListeners.remove(aHostListener);
                 }
