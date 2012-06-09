@@ -1,27 +1,101 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2012 Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.*;
+import java.net.URI;
+import java.nio.*;
+import java.security.*;
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.regex.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.net.system.Convert;
-import eneter.net.system.StringExt;
+import eneter.net.system.*;
 
 class WebSocketFormatter
 {
+    public static byte[] EncodeOpenConnectionHttpRequest(URI address, byte[] websocketKey)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (websocketKey == null || websocketKey.length != 16)
+            {
+                throw new IllegalArgumentException("The input parameter websocketKey is not 16 bytes length.");
+            }
+
+            String aKey64baseEncoded = Convert.toBase64String(websocketKey);
+
+            String anHttpRequest = String.format("GET %s HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n",
+                address.getPath(), address.getAuthority(), aKey64baseEncoded);
+
+            return anHttpRequest.getBytes("UTF-8");
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
+    public static byte[] encodeOpenConnectionHttpResponse(String webSocketKey)
+        throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Create response key.
+            String aResponseKey = encryptWebSocketKey(webSocketKey);
+
+            // Create the response message.
+            String anHttpResponse = String.format("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n\r\n",
+                    aResponseKey);
+
+            // Convert response to bytes.
+            byte[] aMessageBytes = anHttpResponse.getBytes("UTF-8");
+
+            return aMessageBytes;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public static byte[] encodeBinaryMessageFrame(boolean isFinal, byte[] maskingKey, byte[] message)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return encodeMessage(isFinal, (byte)0x02, maskingKey, message);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public static byte[] encodeTextMessageFrame(boolean isFinal, byte[] maskingKey, String message)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            byte[] aTextMessage = message.getBytes("UTF-8");
+            return encodeMessage(isFinal, (byte)0x01, maskingKey, aTextMessage);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     public static byte[] encodeContinuationMessageFrame(boolean isFinal, byte[] maskingKey, String message)
             throws IOException
