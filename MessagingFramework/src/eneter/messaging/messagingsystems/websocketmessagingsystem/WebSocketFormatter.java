@@ -2,9 +2,11 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
@@ -19,48 +21,18 @@ import eneter.net.system.StringExt;
 
 class WebSocketFormatter
 {
-
     
-    public static HashMap<String, String> decodeOpenConnectionHttpRequest(InputStream inputStream)
+    
+    public static byte[] encodeContinuationMessageFrame(boolean isFinal, byte[] maskingKey, String message)
+            throws IOException
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Read incoming http message.
-            String anHttpRequest = readHttp(inputStream);
+            // Encode the text in UTF8.
+            byte[] aTextMessage = message.getBytes("UTF-8");
             
-            // Parse it.
-            Matcher aParser = myHttpOpenConnectionRequest.matcher(anHttpRequest);
-            
-            // Get fields of interest.
-            HashMap<String, String> aFields = new HashMap<String, String>();
-            int aLineIdx = 0;
-            while (http.find())
-            {
-                String aGroup = http.group();
-                
-                // If it is not the last group indicating the end of http.
-                if (!aGroup.equals("\r\n"))
-                {
-                    // If we are at the first line then get the path.
-                    if (aLineIdx == 0)
-                    {
-                        aHeaderFields.put("Path", http.group(2));
-                    }
-                    else
-                    {
-                        String aKey = http.group(4);
-                        if (!StringExt.isNullOrEmpty(aKey))
-                        {
-                            aHeaderFields.put(aKey, http.group(5));
-                        }
-                    }
-                }
-                
-                ++aLineIdx;
-            }
-
-            return aHeaderFields;
+            return encodeMessage(isFinal, (byte)0x00, maskingKey, aTextMessage);
         }
         finally
         {
@@ -68,6 +40,238 @@ class WebSocketFormatter
         }
     }
     
+    public static byte[] encodeContinuationMessageFrame(boolean isFinal, byte[] maskingKey, byte[] message)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return encodeMessage(isFinal, (byte)0x00, maskingKey, message);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public static byte[] encodeCloseFrame(byte[] maskingKey, short statusCode)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Convert short to bytes.
+            byte[] aShortBytes = { (byte)(statusCode & 0xFF), (byte)((statusCode >> 8) & 0xFF) };
+            
+            return encodeMessage(true, (byte)0x08, maskingKey, aShortBytes);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public static byte[] EncodePingFrame(byte[] maskingKey)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Note: If not data is added then ping has only 2 bytes and the message can stay in a computer buffer
+            //       for a very long time. So add some dummy data to the ping message. (websocket protocol supports that)
+            byte[] aDummy = { (byte)'H', (byte)'e', (byte)'l', (byte)'l', (byte)'o' };
+            return encodeMessage(true, (byte)0x09, maskingKey, aDummy);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public static byte[] encodePongFrame(byte[] maskingKey, byte[] pongData)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return encodeMessage(true, (byte)0x0A, maskingKey, pongData);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    public static byte[] encodeMessage(boolean isFinal, byte opCode, byte[] maskingKey, byte[] payload)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (maskingKey != null && maskingKey.length != 4)
+            {
+                throw new IllegalArgumentException("The input parameter maskingKey must be null or must have length 4.");
+            }
+
+            ByteArrayOutputStream aBuffer = new ByteArrayOutputStream();
+            try
+            {
+                DataOutputStream aWriter = new DataOutputStream(aBuffer);
+                    
+                byte aFirstByte = (byte)(((isFinal) ? 0x80 : 0x00) | opCode);
+                aWriter.writeByte(aFirstByte);
+
+                byte aLengthIndicator = (byte)((payload == null) ? 0 : (payload.length <= 125) ? payload.length : (payload.length <= 0xFFFF) ? 126 : 127);
+
+                byte aSecondByte = (byte)(((maskingKey != null) ? 0x80 : 0x00) | aLengthIndicator);
+                aWriter.writeByte(aSecondByte);
+
+                if (aLengthIndicator == 126)
+                {
+                    // Next 2 bytes indicate the length of data.
+                    
+                    // Note: Java uses big endian. It is same as websocket
+                    //       protocol requires. So no conversion is needed.
+                    aWriter.writeShort(payload.length);
+                }
+                else if (aLengthIndicator == 127)
+                {
+                    // Next 8 bytes indicate the length of data.
+                    
+                    // Note: Java uses big endian. It is same as websocket
+                    //       protocol requires. So no conversion is needed.
+                    aWriter.writeLong(payload.length);
+                }
+
+                if (maskingKey != null)
+                {
+                    aWriter.write(maskingKey);
+                }
+
+                if (payload != null)
+                {
+                    if (maskingKey != null)
+                    {
+                        for (int i = 0; i < payload.length; ++i)
+                        {
+                            aWriter.writeByte((byte)(payload[i] ^ maskingKey[i % 4]));
+                        }
+                    }
+                    else
+                    {
+                        aWriter.write(payload);
+                    }
+                }
+
+                return aBuffer.toByteArray();
+            }
+            finally
+            {
+                aBuffer.close();
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    
+    public static HashMap<String, String> decodeOpenConnectionHttpRequest(InputStream inputStream)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Read incoming http message.
+            String anHttp = readHttp(inputStream);
+            
+            // Parse it as the request opening connection.
+            Matcher aParser = myHttpOpenConnectionRequest.matcher(anHttp);
+            
+            // Get fields of interest.
+            HashMap<String, String> aFields = new HashMap<String, String>();
+            int aLineIdx = 0;
+            while (aParser.find())
+            {
+                String aGroup = aParser.group();
+                
+                // If it is not the last group indicating the end of http.
+                if (!aGroup.equals("\r\n"))
+                {
+                    // If we are at the first line then get the path.
+                    if (aLineIdx == 0)
+                    {
+                        aFields.put("Path", aParser.group(2));
+                    }
+                    else
+                    {
+                        String aKey = aParser.group(4);
+                        if (!StringExt.isNullOrEmpty(aKey))
+                        {
+                            aFields.put(aKey, aParser.group(5));
+                        }
+                    }
+                }
+                
+                ++aLineIdx;
+            }
+
+            return aFields;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public static HashMap<String, String> decodeOpenConnectionHttpResponse(InputStream inputStream)
+            throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Read incoming http message.
+            String anHttp = readHttp(inputStream);
+            
+            // Parse it as the response for opening connection.
+            Matcher aParser = myHttpOpenConnectionResponse.matcher(anHttp);
+            
+            // Get fields of interest.
+            HashMap<String, String> aFields = new HashMap<String, String>();
+            int aLineIdx = 0;
+            while (aParser.find())
+            {
+                String aGroup = aParser.group();
+                
+                // If it is not the last group indicating the end of http.
+                if (!aGroup.equals("\r\n"))
+                {
+                    // If we are at the first line then get the path.
+                    if (aLineIdx == 0)
+                    {
+                        aFields.put("Code", aParser.group(2));
+                    }
+                    else
+                    {
+                        String aKey = aParser.group(4);
+                        if (!StringExt.isNullOrEmpty(aKey))
+                        {
+                            aFields.put(aKey, aParser.group(5));
+                        }
+                    }
+                }
+                
+                ++aLineIdx;
+            }
+
+            return aFields;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     public static WebSocketFrame decodeFrame(InputStream inputStream) throws IOException
     {
@@ -167,7 +371,7 @@ class WebSocketFormatter
         return anEncryptedKeyBase64;
     }
     
-    private static String readHttp(InputStream inputStream) throws Exception
+    private static String readHttp(InputStream inputStream) throws IOException
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -203,9 +407,6 @@ class WebSocketFormatter
                 
                 byte[] anHttpHeaderBytes = anHttpHeaderBuffer.toByteArray();
                 String anHttpHeaderStr = new String(anHttpHeaderBytes, "UTF-8"); 
-
-                // Split the http message to lines.
-                String[] aResult = anHttpHeaderStr.split("\r\n");
                 
                 return anHttpHeaderStr;
             }
@@ -228,9 +429,9 @@ class WebSocketFormatter
             Pattern.CASE_INSENSITIVE);
     
     private static final Pattern myHttpOpenConnectionResponse = Pattern.compile(
-            "HTTP/1\\.1\\s([\\d]+)\\s.*\\r\\n" +
-            "(([^:\\r\\n]+):\\s([^\\r\\n]+)\\r\\n)+" +
-            "\\r\\n",        
+            "(^HTTP/1\\.1\\s([\\d]+)\\s.*\\r\\n)|" +
+            "(([^:\\r\\n]+):\\s([^\\r\\n]+)\\r\\n)|" +
+            "(\\r\\n)",        
             Pattern.CASE_INSENSITIVE); 
             
             
