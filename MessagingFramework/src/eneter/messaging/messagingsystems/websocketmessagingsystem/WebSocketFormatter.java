@@ -429,14 +429,15 @@ class WebSocketFormatter
         }
     }
     
-    public static String encryptWebSocketKey(String webSocketKeyBase64) throws NoSuchAlgorithmException
+    public static String encryptWebSocketKey(String webSocketKeyBase64)
+            throws NoSuchAlgorithmException, UnsupportedEncodingException
     {
         String anEncryptedKey = webSocketKeyBase64 + myWebSocketId;
 
         // Calculate SHA
-        ByteBuffer aByteBuffer = Charset.forName("US-ASCII").encode(anEncryptedKey);
+        byte[] anEncryptedKeyBytes = anEncryptedKey.getBytes("US-ASCII");
         MessageDigest aSHA1 = MessageDigest.getInstance("SHA-1");
-        aSHA1.update(aByteBuffer);
+        aSHA1.update(anEncryptedKeyBytes);
         byte[] anEncodedResponseKey = aSHA1.digest();
         
         // Convert to base 64bits digits.
