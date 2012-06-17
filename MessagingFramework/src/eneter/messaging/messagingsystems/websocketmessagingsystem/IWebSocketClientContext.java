@@ -14,15 +14,15 @@ public interface IWebSocketClientContext
     
     URI getAddress();
     
-    void sendMessage(Object data);
+    void sendMessage(Object data) throws Exception;
     
-    void sendMessage(Object data, boolean isFinal);
+    void sendMessage(Object data, boolean isFinal) throws Exception;
     
-    WebSocketMessage receiveMessage();
+    WebSocketMessage receiveMessage() throws Exception;
     
-    void sendPing();
+    void sendPing() throws Exception;
     
-    void sendPong();
+    void sendPong() throws Exception;
     
     void closeConnection();
 }

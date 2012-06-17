@@ -2,16 +2,13 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
 
-import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
+import eneter.messaging.dataprocessing.messagequeueing.MessageQueue;
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.net.system.*;
-import eneter.net.system.threading.ManualResetEvent;
 import eneter.net.system.threading.ThreadPool;
 
-public class WebSocketClient
+class WebSocketClientContext implements IWebSocketClientContext
 {
     private enum EMessageInSendProgress
     {
@@ -20,63 +17,14 @@ public class WebSocketClient
         Text
     }
     
-    // Identifies who is responsible for starting the thread listening to response messages.
-    // The point is, if nobody is subscribed to receive response messages, then we can significantly improve
-    // the performance if the listening thread is not started.
-    private enum EResponseListeningResponsible
-    {
-        // Open connection method is responsible for starting threads that will loop and receive incoming messages.
-        OpenConnection,
-
-        // Subscribing to MessageReceived or ConnectionClosed or PongReceived will start threads looping for incoming messages.
-        EventSubscription,
-
-        // Looping threads are already running, so nobody is supposed to start it.
-        Nobody
-    }
     
-    private class CustomEvent<T> implements Event<T>
-    {
-        public CustomEvent(Event<T> originalEvent)
-        {
-            myOriginalEvent = originalEvent;
-        }
-        
-        @Override
-        public void subscribe(EventHandler<T> eventHandler)
-        {
-            synchronized (myConnectionManipulatorLock)
-            {
-                if (myResponsibleForActivatingListening == EResponseListeningResponsible.EventSubscription)
-                {
-                    activateResponseListening();
-                }
-                myOriginalEvent.subscribe(eventHandler);
-            }
-        }
-
-        @Override
-        public void unsubscribe(EventHandler<T> eventHandler)
-        {
-            myOriginalEvent.unsubscribe(eventHandler);
-        }
-        
-        private Event<T> myOriginalEvent;
-    }
-    
-    
-    public WebSocketClient(URI address)
-    {
-        this(address, new NoneSecurityClientFactory());
-    }
-    
-    public WebSocketClient(URI address, IClientSecurityFactory clientSecurityFactory)
+    public WebSocketClientContext(URI address, Socket tcpClient)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myAddress = address;
-            myClientSecurityFactory = clientSecurityFactory;
+            myTcpClient = tcpClient;
         }
         finally
         {
@@ -84,28 +32,18 @@ public class WebSocketClient
         }
     }
     
-    public Event<Object> connectionOpened()
-    {
-        return myConnectionOpenedEvent.getApi();
-    }
     
     public Event<Object> connectionClosed()
     {
-        CustomEvent<Object> aCustomEvent = new CustomEvent<Object>(myConnectionClosedEvent.getApi());
-        return aCustomEvent;
+        return myConnectionClosedEvent.getApi();
     }
     
     public Event<Object> pongReceived()
     {
-        CustomEvent<Object> aCustomEvent = new CustomEvent<Object>(myPongReceivedEvent.getApi());
-        return aCustomEvent;
+        return myPongReceivedEvent.getApi();
     }
     
-    public Event<WebSocketMessage> messageReceived()
-    {
-        CustomEvent<WebSocketMessage> aCustomEvent = new CustomEvent<WebSocketMessage>(myMessageReceivedEvent.getApi());
-        return aCustomEvent;
-    }
+    
     
     
     public URI getAddress()
@@ -120,8 +58,7 @@ public class WebSocketClient
         {
             synchronized (myConnectionManipulatorLock)
             {
-                return myTcpClient != null && isResponseSubscribed() == false ||
-                       myTcpClient != null && isResponseSubscribed() == true && myIsListeningToResponses == true;
+                return myTcpClient != null && myIsListeningToResponses;
             }
         }
         finally
@@ -129,96 +66,7 @@ public class WebSocketClient
             EneterTrace.leaving(aTrace);
         }
     }
-    
-    public void openConnection() throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            synchronized (myConnectionManipulatorLock)
-            {
-                if (isConnected())
-                {
-                    String aMessage = TracedObject() + ErrorHandler.IsAlreadyConnected;
-                    EneterTrace.error(aMessage);
-                    throw new IllegalStateException(aMessage);
-                }
 
-                // If it is needed clear after previous connection
-                if (myTcpClient != null)
-                {
-                    try
-                    {
-                        closeTcp();
-                    }
-                    catch (Exception err)
-                    {
-                        // We tried to clean after the previous connection. The exception can be ignored.
-                    }
-                }
-
-                try
-                {
-                    myStopReceivingRequestedFlag = false;
-
-                    // Generate the key for this connection.
-                    byte[] aWebsocketKey = new byte[16];
-                    myGenerator.nextBytes(aWebsocketKey);
-
-                    // Send HTTP request to open the websocket communication.
-                    byte[] anOpenRequest = WebSocketFormatter.EncodeOpenConnectionHttpRequest(getAddress(), aWebsocketKey);
-
-                    // Open TCP connection.
-                    myTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
-                    myTcpClient.getOutputStream().write(anOpenRequest);
-                    
-                    // Wait for the HTTP response and check if the connection was open.
-                    HashMap<String, String> aResponseResult = WebSocketFormatter.decodeOpenConnectionHttpResponse(myTcpClient.getInputStream());
-                    
-                    validateOpenConnectionResponse(aResponseResult, aWebsocketKey);
-
-                    // If somebody is subscribed to receive some response messages then
-                    // the bidirectional communication is needed and listening threads must be activated.
-                    if (isResponseSubscribed())
-                    {
-                        activateResponseListening();
-                    }
-                    else
-                    {
-                        // Nobody is subscribed so delegate the responsibility to start listening threads
-                        // to the point when somebody subscribes to receive some response messages like
-                        // CloseConnection, Pong, MessageReceived.
-                        myResponsibleForActivatingListening = EResponseListeningResponsible.EventSubscription;
-                    }
-
-                    // Wait until the listening thread is running.
-                    //myListeningToResponsesStartedEvent.WaitOne(1000);
-
-                    // Notify opening the websocket connection.
-                    // Note: the notification is executed from a different thread.
-                    notify(myConnectionOpenedEvent);
-                }
-                catch (Exception err)
-                {
-                    try
-                    {
-                        closeTcp();
-                    }
-                    catch (Exception err2)
-                    {
-                    }
-
-                    EneterTrace.error(TracedObject() + ErrorHandler.OpenConnectionFailure, err);
-                    throw err;
-                }
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
     public void closeConnection()
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -231,11 +79,11 @@ public class WebSocketClient
 
                 if (myTcpClient != null)
                 {
+                    // Try to send the frame closing the communication.
                     try
                     {
                         // Generate the masking key.
-                        byte[] aMaskingKey = getMaskingKey();
-                        byte[] aCloseFrame = WebSocketFormatter.encodeCloseFrame(aMaskingKey, (short)1000);
+                        byte[] aCloseFrame = WebSocketFormatter.encodeCloseFrame(null, (short)1000);
                         myTcpClient.getOutputStream().write(aCloseFrame);
                     }
                     catch (Exception err)
@@ -255,49 +103,7 @@ public class WebSocketClient
                     myTcpClient = null;
                 }
 
-                if (myResponseReceiverThread != null && myResponseReceiverThread.getState() != Thread.State.NEW)
-                {
-                    try
-                    {
-                        myResponseReceiverThread.join(3000);
-                    }
-                    catch(Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myResponseReceiverThread.getId());
-                    }
-                    
-                    if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myResponseReceiverThread.getId());
-
-                        try
-                        {
-                            myResponseReceiverThread.stop();
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                        }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                            throw err;
-                        }
-                    }
-                }
-                myResponseReceiverThread = null;
-
-                try
-                {
-                    myMessageProcessingThread.unregisterMessageHandler();
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.UnregisterMessageHandlerThreadFailure, err);
-                }
-
-                // Reset the responsibility for starting of threads looping for response messages.
-                myResponsibleForActivatingListening = EResponseListeningResponsible.OpenConnection;
+                myReceivedMessages.unblockProcessingThreads();
             }
         }
         finally
@@ -305,7 +111,6 @@ public class WebSocketClient
             EneterTrace.leaving(aTrace);
         }
     }
-    
     
     public void sendMessage(Object data) throws Exception
     {
@@ -430,7 +235,7 @@ public class WebSocketClient
     }
     
     
-    public void SendPing() throws Exception
+    public void sendPing() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -470,41 +275,18 @@ public class WebSocketClient
         }
     }
     
-    
-    private void validateOpenConnectionResponse(HashMap<String, String> responseRegExResult, byte[] webSocketKey)
-            throws Exception
+    public WebSocketMessage receiveMessage() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            String aSecurityAccept = responseRegExResult.get("Sec-WebSocket-Accept");
-
-            // If some required header field is missing or has incorrect value.
-            if (!responseRegExResult.containsKey("Upgrade") ||
-                !responseRegExResult.containsKey("Connection") ||
-                StringExt.isNullOrEmpty(aSecurityAccept))
-            {
-                String anErrorMessage = TracedObject() + ErrorHandler.OpenConnectionFailure + " A required header field was missing.";
-                EneterTrace.error(anErrorMessage);
-                throw new IllegalStateException(anErrorMessage);
-            }
-
-            // Check the value of websocket accept.
-            String aWebSocketKeyBase64 = Convert.toBase64String(webSocketKey);
-            String aCalculatedAcceptance = WebSocketFormatter.encryptWebSocketKey(aWebSocketKeyBase64);
-            if (aCalculatedAcceptance != aSecurityAccept)
-            {
-                String anErrorMessage = TracedObject() + ErrorHandler.OpenConnectionFailure + " Sec-WebSocket-Accept has incorrect value.";
-                EneterTrace.error(anErrorMessage);
-                throw new IllegalStateException(anErrorMessage);
-            }
+            return myReceivedMessages.dequeueMessage();
         }
         finally
         {
             EneterTrace.leaving(aTrace);
         }
     }
-    
     
     private void sendFrame(IFunction1<byte[], byte[]> formatter) throws Exception
     {
@@ -523,9 +305,10 @@ public class WebSocketClient
                 try
                 {
                     // Encode the message frame.
-                    byte[] aMaskingKey = getMaskingKey();
-                    byte[] aFrame = formatter.invoke(aMaskingKey);
+                    // Note: According to the protocol, server shall not mask sent data.
+                    byte[] aFrame = formatter.invoke(null);
 
+                    // Send the message.
                     myTcpClient.getOutputStream().write(aFrame);
                 }
                 catch (Exception err)
@@ -533,11 +316,6 @@ public class WebSocketClient
                     EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                    throw err;
-                }
             }
         }
         finally
@@ -546,66 +324,16 @@ public class WebSocketClient
         }
     }
     
-    private void activateResponseListening()
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            if (!myIsListeningToResponses)
-            {
-                // Start thread processing decoded messages from the queue.
-                myMessageProcessingThread.registerMessageHandler(new IMethod1<WebSocketMessage>()
-                {
-                    @Override
-                    public void invoke(WebSocketMessage webSocketMessage) throws Exception
-                    {
-                        messageHandler(webSocketMessage);
-                    }
-                });
-
-                // Start listening to frames responded by websocket server.
-                //ThreadPool.QueueUserWorkItem(x => DoResponseListening());
-                myResponseReceiverThread = new Thread(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        doResponseListening();
-                    }
-                });
-                myResponseReceiverThread.start();
-
-                // Wait until the listening thread is running.
-                try
-                {
-                    myListeningToResponsesStartedEvent.waitOne(1000);
-                }
-                catch (Exception err)
-                {
-                }
-
-                // Listening to response messages is active. So nobody is responsible to activate it.
-                myResponsibleForActivatingListening = EResponseListeningResponsible.Nobody;
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    private void doResponseListening()
+    public void doRequestListening()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myIsListeningToResponses = true;
-            myListeningToResponsesStartedEvent.set();
             short aCloseCode = 0;
 
             try
             {
-                
                 PipedOutputStream aCurrentMessageStream = null;
 
                 while (!myStopReceivingRequestedFlag)
@@ -616,10 +344,10 @@ public class WebSocketClient
                     if (!myStopReceivingRequestedFlag && aFrame != null)
                     {
                         // Frames from server must be unmasked.
-                        // According the protocol, If the frame was masked, the client must close connection with the server.
-                        if (aFrame.MaskFlag)
+                        // According the protocol, If the frame was NOT masked, the server must close connection with the client.
+                        if (aFrame.MaskFlag == false)
                         {
-                            throw new IllegalStateException(TracedObject() + "received masked frame from the server. Frames from server shall be unmasked.");
+                            throw new IllegalStateException(TracedObject() + "received unmasked frame from the client. Frames from client shall be masked.");
                         }
 
                         // Process the frame.
@@ -657,8 +385,7 @@ public class WebSocketClient
                                 break;
                             }
 
-                            // Create stream where the message data will be written.
-                            // Also create the connected input stream from where data will be read.
+                            // Create stream where the message data will be writen.
                             aCurrentMessageStream = new PipedOutputStream();
                             PipedInputStream anMessageInputStream = new PipedInputStream(aCurrentMessageStream);
                             aCurrentMessageStream.write(aFrame.Message);
@@ -668,14 +395,12 @@ public class WebSocketClient
                             //       So that the client will not wait for unblock.
                             if (aFrame.IsFinal)
                             {
-                                // Close the output pipe so that the reading pipe will be unblocked.
                                 aCurrentMessageStream.close();
                             }
 
-                            // Put received message to the queue from where the processing thread will invoke the event MessageReceived.
-                            // Note: user will get events always in the same thread.
+                            // Put received message to the queue.
                             WebSocketMessage aReceivedMessage = new WebSocketMessage(aFrame.FrameType == EFrameType.Text, anMessageInputStream);
-                            myMessageProcessingThread.enqueueMessage(aReceivedMessage);
+                            myReceivedMessages.enqueueMessage(aReceivedMessage);
 
                             if (aFrame.IsFinal)
                             {
@@ -701,7 +426,6 @@ public class WebSocketClient
                             // If this is the final frame.
                             if (aFrame.IsFinal)
                             {
-                                // Close the output pipe so that the reading pipe will be unblocked.
                                 aCurrentMessageStream.close();
                                 aCurrentMessageStream = null;
                             }
@@ -732,10 +456,7 @@ public class WebSocketClient
                 // Try to send the close message.
                 try
                 {
-                    byte[] aMaskingKey = getMaskingKey();
-                    byte[] aCloseMessage = WebSocketFormatter.encodeCloseFrame(aMaskingKey, aCloseCode);
-
-
+                    byte[] aCloseMessage = WebSocketFormatter.encodeCloseFrame(null, aCloseCode);
                     myTcpClient.getOutputStream().write(aCloseMessage);
                 }
                 catch (Exception err)
@@ -743,19 +464,9 @@ public class WebSocketClient
                 }
             }
 
-            // Stop the thread processing messages
-            try
-            {
-                myMessageProcessingThread.unregisterMessageHandler();
-            }
-            catch (Exception err)
-            {
-                // We need just to close it, therefore we are not interested about exception.
-                // They can be ignored here.
-            }
-
             myIsListeningToResponses = false;
-            myListeningToResponsesStartedEvent.reset();
+
+            myReceivedMessages.unblockProcessingThreads();
 
             // Notify the listening to messages stoped.
             notify(myConnectionClosedEvent);
@@ -766,63 +477,25 @@ public class WebSocketClient
         }
     }
     
-        private void closeTcp()
-        {
-            EneterTrace aTrace = EneterTrace.entering();
-            try
-            {
-                try
-                {
-                    myMessageInSendProgress = EMessageInSendProgress.None;
     
-    
-                    if (myTcpClient != null)
-                    {
-                        myTcpClient.close();
-                        myTcpClient = null;
-                    }
-                }
-                catch (Exception err)
-                {
-                }
-            }
-            finally
-            {
-                EneterTrace.leaving(aTrace);
-            }
-        }
-    
-    private byte[] getMaskingKey()
-    {
-        byte[] aKey = new byte[4];
-        myGenerator.nextBytes(aKey);
-        return aKey;
-    }
-    
-    private void messageHandler(WebSocketMessage message)
+    private void closeTcp()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myMessageReceivedEvent.isSubscribed())
+            try
             {
-                try
+                myMessageInSendProgress = EMessageInSendProgress.None;
+
+
+                if (myTcpClient != null)
                 {
-                    myMessageReceivedEvent.raise(this, message);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
+                    myTcpClient.close();
+                    myTcpClient = null;
                 }
             }
-            else
+            catch (Exception err)
             {
-                EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
             }
         }
         finally
@@ -875,43 +548,23 @@ public class WebSocketClient
     }
     
     
-    private boolean isResponseSubscribed()
-    {
-        // If somebody is subscribed for response messages, then we need bidirectional communication.
-        // Note: It means, the thread listening to responses and the thread responsible for processing messages from the queue
-        //       are supposed to be started.
-        return myMessageReceivedEvent.isSubscribed() || myConnectionClosedEvent.isSubscribed() || myPongReceivedEvent.isSubscribed();
-    }
-
-    
-    
     private URI myAddress;
-    private InetSocketAddress mySocketAddress;
-    private IClientSecurityFactory myClientSecurityFactory;
     private Socket myTcpClient;
-    
-    private Random myGenerator = new Random();
-    
+
     private Object myConnectionManipulatorLock = new Object();
-    private EResponseListeningResponsible myResponsibleForActivatingListening = EResponseListeningResponsible.OpenConnection;
-    
-    private Thread myResponseReceiverThread;
+
     private boolean myStopReceivingRequestedFlag;
     private boolean myIsListeningToResponses;
-    private ManualResetEvent myListeningToResponsesStartedEvent = new ManualResetEvent(false);
     
     private EMessageInSendProgress myMessageInSendProgress = EMessageInSendProgress.None;
+    private MessageQueue<WebSocketMessage> myReceivedMessages = new MessageQueue<WebSocketMessage>();
     
-    private WorkingThread<WebSocketMessage> myMessageProcessingThread = new WorkingThread<WebSocketMessage>();
     
-    private EventImpl<Object> myConnectionOpenedEvent = new EventImpl<Object>();
     private EventImpl<Object> myConnectionClosedEvent = new EventImpl<Object>();
     private EventImpl<Object> myPongReceivedEvent = new EventImpl<Object>();
-    private EventImpl<WebSocketMessage> myMessageReceivedEvent = new EventImpl<WebSocketMessage>();
-    
     
     private String TracedObject()
     {
-        return "WebSocketClient " + getAddress() + " ";
+        return "WebSocketClientContext " + getAddress() + " ";
     }
 }

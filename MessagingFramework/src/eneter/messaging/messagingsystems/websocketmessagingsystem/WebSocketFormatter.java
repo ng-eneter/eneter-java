@@ -145,7 +145,7 @@ class WebSocketFormatter
         }
     }
     
-    public static byte[] EncodePingFrame(byte[] maskingKey)
+    public static byte[] encodePingFrame(byte[] maskingKey)
             throws IOException
     {
         EneterTrace aTrace = EneterTrace.entering();
