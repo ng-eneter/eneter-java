@@ -4,35 +4,15 @@ class WebSocketFrame
 {
     public WebSocketFrame(EFrameType frameType, boolean maskFlag, byte[] message, boolean isFinal)
     {
-        myFrameType = frameType;
-        myMaskFlag = maskFlag;
-        myMessage = message;
-        myIsFinal = isFinal;
+        FrameType = frameType;
+        MaskFlag = maskFlag;
+        Message = message;
+        IsFinal = isFinal;
     }
     
     
-    public EFrameType getFrameType()
-    {
-        return myFrameType;
-    }
-    
-    public boolean getMaskFlag()
-    {
-        return myMaskFlag;
-    }
-    
-    public byte[] getMessage()
-    {
-        return myMessage;
-    }
-    
-    public boolean isFinal()
-    {
-        return myIsFinal;
-    }
-    
-    private EFrameType myFrameType;
-    private boolean myMaskFlag;
-    private byte[] myMessage;
-    private boolean myIsFinal;
+    public final EFrameType FrameType;
+    public final boolean MaskFlag;
+    public final byte[] Message;
+    public final boolean IsFinal;
 }
