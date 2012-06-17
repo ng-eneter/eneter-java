@@ -8,6 +8,8 @@ import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.net.system.*;
+import eneter.net.system.threading.ManualResetEvent;
+import eneter.net.system.threading.ThreadPool;
 
 public class WebSocketClient
 {
