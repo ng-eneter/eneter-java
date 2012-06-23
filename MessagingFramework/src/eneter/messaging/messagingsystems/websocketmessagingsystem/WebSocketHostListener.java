@@ -4,7 +4,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.AbstractMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map.Entry;
 
 import eneter.messaging.diagnostic.EneterTrace;
@@ -14,15 +16,134 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpListenerProvider;
 import eneter.net.system.IFunction1;
 import eneter.net.system.IMethod1;
 import eneter.net.system.StringExt;
+import eneter.net.system.collections.generic.HashSetExt;
 import eneter.net.system.linq.EnumerableExt;
 import eneter.net.system.threading.ThreadPool;
 
 class WebSocketHostListener
 {
 
-
     
-    private void HandleConnection(Socket tcpClient)
+    public void registerListener(URI address, IMethod1<IWebSocketClientContext> processConnection)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myHandlers)
+            {
+                // If the path listener already exists then error, because only one instance can listen.
+                if (isAnyHandler(address))
+                {
+                    // The listener already exists.
+                    String anErrorMessage = TracedObject() + "detected the address is already used.";
+                    EneterTrace.error(anErrorMessage);
+                    throw new IllegalStateException(anErrorMessage);
+                }
+
+
+                // Add handler for this path.
+                Entry<URI, IMethod1<IWebSocketClientContext>> aHandler = new AbstractMap.SimpleEntry<URI, IMethod1<IWebSocketClientContext>>(address, processConnection);
+                myHandlers.add(aHandler);
+
+                // If the host listener does not listen to sockets yet, then start it.
+                if (myTcpListener.isListening() == false)
+                {
+                    try
+                    {
+                        myTcpListener.startListening()
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.Error(TracedObject + "failed to start the path listener.", err);
+
+                        UnregisterListener(address);
+
+                        throw err;
+                    }
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public void unregisterListener(final URI address)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                synchronized (myHandlers)
+                {
+                    // Remove handler for that path.
+                    HashSetExt.removeWhere(myHandlers, new IFunction1<Boolean, Entry<URI, IMethod1<IWebSocketClientContext>>>()
+                        {
+                            @Override
+                            public Boolean invoke(
+                                    Entry<URI, IMethod1<IWebSocketClientContext>> x)
+                                    throws Exception
+                            {
+                                return x.getKey().getPath().equals(address.getPath());
+                            }
+                        });
+                    
+                
+                    // If there is no the end point then nobody is handling messages and the listening can be stopped.
+                    if (myHandlers.isEmpty())
+                    {
+                        myTcpListener.stopListening();
+                    }
+                }
+            }
+            catch (Exception err)
+            {
+                String anErrorMessage = TracedObject() + "failed to unregister path-listener.";
+                EneterTrace.warning(anErrorMessage, err);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public boolean existListener(URI address) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myHandlers)
+            {
+                boolean isAny = isAnyHandler(address);
+                return isAny;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    public boolean existAnyListener()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myHandlers)
+            {
+                return myHandlers.size() > 0;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void handleConnection(Socket tcpClient)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -71,7 +192,7 @@ class WebSocketHostListener
                 {
                     final String anAbsolutePathFinal = anAbsolutePath;
                     Entry<URI, IMethod1<IWebSocketClientContext>> aPair =
-                            EnumerableExt.firstOrDefault(myHandlers.entrySet(), new IFunction1<Boolean, Entry<URI, IMethod1<IWebSocketClientContext>>>()
+                            EnumerableExt.firstOrDefault(myHandlers, new IFunction1<Boolean, Entry<URI, IMethod1<IWebSocketClientContext>>>()
                                 {
                                     @Override
                                     public Boolean invoke(
@@ -143,12 +264,29 @@ class WebSocketHostListener
     }
     
     
+    private boolean isAnyHandler(final URI address) throws Exception
+    {
+        boolean isAny = EnumerableExt.any(myHandlers, new IFunction1<Boolean, Entry<URI, IMethod1<IWebSocketClientContext>>>()
+                {
+                    @Override
+                    public Boolean invoke(
+                            Entry<URI, IMethod1<IWebSocketClientContext>> x)
+                            throws Exception
+                    {
+                        return x.getKey().getPath().equals(address.getPath());
+                    }
+                });
+        
+        return isAny;
+    }
+    
+    
     private InetSocketAddress myAddress;
     
     private IServerSecurityFactory mySecurityFactory;
     private TcpListenerProvider myTcpListener;
     
-    private HashMap<URI, IMethod1<IWebSocketClientContext>> myHandlers = new HashMap<URI, IMethod1<IWebSocketClientContext>>();
+    private HashSet<Entry<URI, IMethod1<IWebSocketClientContext>>> myHandlers = new HashSet<Entry<URI, IMethod1<IWebSocketClientContext>>>();
     
     private String TracedObject()
     {
