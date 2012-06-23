@@ -2,6 +2,8 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.io.*;
 import java.net.*;
+import java.util.Collections;
+import java.util.Map;
 
 import eneter.messaging.dataprocessing.messagequeueing.MessageQueue;
 import eneter.messaging.diagnostic.*;
@@ -18,12 +20,13 @@ class WebSocketClientContext implements IWebSocketClientContext
     }
     
     
-    public WebSocketClientContext(URI address, Socket tcpClient)
+    public WebSocketClientContext(URI address, Map<String, String> headerFields, Socket tcpClient)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myAddress = address;
+            myHeaderFields = headerFields;
             myTcpClient = tcpClient;
         }
         finally
@@ -46,9 +49,14 @@ class WebSocketClientContext implements IWebSocketClientContext
     
     
     
-    public URI getAddress()
+    public URI getUri()
     {
         return myAddress;
+    }
+    
+    public Map<String, String> getHeaderFields()
+    {
+        return Collections.unmodifiableMap(myHeaderFields);
     }
     
     public boolean isConnected()
@@ -550,6 +558,8 @@ class WebSocketClientContext implements IWebSocketClientContext
     
     private URI myAddress;
     private Socket myTcpClient;
+    
+    private Map<String, String> myHeaderFields;
 
     private Object myConnectionManipulatorLock = new Object();
 
@@ -565,6 +575,6 @@ class WebSocketClientContext implements IWebSocketClientContext
     
     private String TracedObject()
     {
-        return "WebSocketClientContext " + getAddress() + " ";
+        return "WebSocketClientContext " + getUri() + " ";
     }
 }

@@ -9,10 +9,10 @@
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.io.*;
-import java.net.URI;
-import java.nio.*;
 import java.security.*;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.regex.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
@@ -20,21 +20,50 @@ import eneter.net.system.*;
 
 class WebSocketFormatter
 {
-    public static byte[] EncodeOpenConnectionHttpRequest(URI address, byte[] websocketKey)
+    //public static byte[] encodeOpenConnectionHttpRequest(URI address, byte[] websocketKey)
+    //        throws IOException
+    //{
+    //    EneterTrace aTrace = EneterTrace.entering();
+    //    try
+    //    {
+    //        if (websocketKey == null || websocketKey.length != 16)
+    //        {
+    //            throw new IllegalArgumentException("The input parameter websocketKey is not 16 bytes length.");
+    //        }
+
+    //        String aKey64baseEncoded = Convert.toBase64String(websocketKey);
+
+    //        String anHttpRequest = String.format("GET %s HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n",
+    //            address.getPath(), address.getAuthority(), aKey64baseEncoded);
+
+    //        return anHttpRequest.getBytes("UTF-8");
+    //    }
+    //    finally
+    //    {
+    //        EneterTrace.leaving(aTrace);
+    //    }
+    //}
+    
+    public static byte[] encodeOpenConnectionHttpRequest(String pathAndQuery, HashMap<String, String> headerFields)
             throws IOException
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (websocketKey == null || websocketKey.length != 16)
+            StringBuilder anHttpRequestBuilder = new StringBuilder();
+            anHttpRequestBuilder.append(String.format("GET %s HTTP/1.1\r\n", pathAndQuery));
+
+            Iterator<Map.Entry<String, String>> anIt = headerFields.entrySet().iterator();
+            while (anIt.hasNext())
             {
-                throw new IllegalArgumentException("The input parameter websocketKey is not 16 bytes length.");
+                Map.Entry<String, String> aHeaderField = anIt.next();
+                
+                anHttpRequestBuilder.append(String.format("%s: %s\r\n", aHeaderField.getKey(), aHeaderField.getValue()));
             }
-
-            String aKey64baseEncoded = Convert.toBase64String(websocketKey);
-
-            String anHttpRequest = String.format("GET %s HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n",
-                address.getPath(), address.getAuthority(), aKey64baseEncoded);
+            
+            anHttpRequestBuilder.append("\r\n");
+            
+            String anHttpRequest = anHttpRequestBuilder.toString(); 
 
             return anHttpRequest.getBytes("UTF-8");
         }
@@ -251,7 +280,9 @@ class WebSocketFormatter
     }
     
     
-    public static HashMap<String, String> decodeOpenConnectionHttpRequest(InputStream inputStream)
+    public static void decodeOpenConnectionHttpRequest(InputStream inputStream,
+            HashMap<String, String> regExResult,
+            HashMap<String, String> headerFields)
             throws IOException
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -264,7 +295,6 @@ class WebSocketFormatter
             Matcher aParser = myHttpOpenConnectionRequest.matcher(anHttp);
             
             // Get fields of interest.
-            HashMap<String, String> aFields = new HashMap<String, String>();
             int aLineIdx = 0;
             while (aParser.find())
             {
@@ -276,22 +306,21 @@ class WebSocketFormatter
                     // If we are at the first line then get the path.
                     if (aLineIdx == 0)
                     {
-                        aFields.put("Path", aParser.group(2));
+                        regExResult.put("Path", aParser.group(2));
+                        regExResult.put("Query", aParser.group(3)); 
                     }
                     else
                     {
                         String aKey = aParser.group(4);
                         if (!StringExt.isNullOrEmpty(aKey))
                         {
-                            aFields.put(aKey, aParser.group(5));
+                            headerFields.put(aKey, aParser.group(5));
                         }
                     }
                 }
                 
                 ++aLineIdx;
             }
-
-            return aFields;
         }
         finally
         {

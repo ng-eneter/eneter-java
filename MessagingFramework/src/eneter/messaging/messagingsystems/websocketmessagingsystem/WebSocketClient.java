@@ -77,6 +77,11 @@ public class WebSocketClient
         {
             myAddress = address;
             myClientSecurityFactory = clientSecurityFactory;
+            
+            myHeaderFields.put("Host", myAddress.getAuthority());
+            myHeaderFields.put("Upgrade", "websocket");
+            myHeaderFields.put("Connection", "Upgrade");
+            myHeaderFields.put("Sec-WebSocket-Version", "13");
         }
         finally
         {
@@ -108,9 +113,14 @@ public class WebSocketClient
     }
     
     
-    public URI getAddress()
+    public URI getUri()
     {
         return myAddress;
+    }
+    
+    public HashMap<String, String> getHeaderFields()
+    {
+        return myHeaderFields;
     }
     
     public boolean isConnected()
@@ -164,9 +174,11 @@ public class WebSocketClient
                     // Generate the key for this connection.
                     byte[] aWebsocketKey = new byte[16];
                     myGenerator.nextBytes(aWebsocketKey);
+                    String aKey64baseEncoded = Convert.toBase64String(aWebsocketKey);
+                    myHeaderFields.put("Sec-WebSocket-Key", aKey64baseEncoded);
 
                     // Send HTTP request to open the websocket communication.
-                    byte[] anOpenRequest = WebSocketFormatter.EncodeOpenConnectionHttpRequest(getAddress(), aWebsocketKey);
+                    byte[] anOpenRequest = WebSocketFormatter.encodeOpenConnectionHttpRequest(myAddress.getPath() + myAddress.getQuery(), myHeaderFields);
 
                     // Open TCP connection.
                     myTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
@@ -890,6 +902,8 @@ public class WebSocketClient
     private IClientSecurityFactory myClientSecurityFactory;
     private Socket myTcpClient;
     
+    private HashMap<String, String> myHeaderFields = new HashMap<String, String>();
+    
     private Random myGenerator = new Random();
     
     private Object myConnectionManipulatorLock = new Object();
@@ -912,6 +926,6 @@ public class WebSocketClient
     
     private String TracedObject()
     {
-        return "WebSocketClient " + getAddress() + " ";
+        return "WebSocketClient " + getUri() + " ";
     }
 }

@@ -1,6 +1,8 @@
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 import eneter.net.system.Event;
 
@@ -12,7 +14,9 @@ public interface IWebSocketClientContext
     
     boolean isConnected();
     
-    URI getAddress();
+    URI getUri();
+    
+    Map<String, String> getHeaderFields();
     
     void sendMessage(Object data) throws Exception;
     
