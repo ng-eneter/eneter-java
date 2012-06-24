@@ -299,4 +299,181 @@ public class Test_WebSocketListener
         }
 
     }
+
+    @Test
+    public void multipleServicesOneTcpAddress() throws Exception
+    {
+        URI anAddress1 = new URI("ws://127.0.0.1:8087/MyService1/");
+        URI anAddress2 = new URI("ws://127.0.0.1:8087/MyService2/");
+
+        WebSocketListener aService1 = new WebSocketListener(anAddress1);
+        WebSocketClient aClient1 = new WebSocketClient(anAddress1);
+
+        WebSocketListener aService2 = new WebSocketListener(anAddress2);
+        WebSocketClient aClient2 = new WebSocketClient(anAddress2);
+
+        try
+        {
+            final AutoResetEvent aResponse1ReceivedEvent = new AutoResetEvent(false);
+            final AutoResetEvent aResponse2ReceivedEvent = new AutoResetEvent(false);
+
+            final String[] aReceivedTextMessage1 = {""};
+            final String[] aReceivedTextMessage2 = {""};
+
+            // Start listening.
+            aService1.startListening(new IMethod1<IWebSocketClientContext>()
+                {
+                    @Override
+                    public void invoke(IWebSocketClientContext clientContext) throws Exception
+                    {
+                        WebSocketMessage aWebSocketMessage;
+                        while ((aWebSocketMessage = clientContext.receiveMessage()) != null)
+                        {
+                            if (aWebSocketMessage.isText())
+                            {
+                                String aMessage = aWebSocketMessage.getWholeTextMessage();
+    
+                                // echo
+                                clientContext.sendMessage(aMessage);
+                            }
+                        }
+                    }
+                });
+            
+            aService2.startListening(new IMethod1<IWebSocketClientContext>()
+                {
+                    @Override
+                    public void invoke(IWebSocketClientContext clientContext) throws Exception
+                    {
+                        WebSocketMessage aWebSocketMessage;
+                        while ((aWebSocketMessage = clientContext.receiveMessage()) != null)
+                        {
+                            if (aWebSocketMessage.isText())
+                            {
+                                String aMessage = aWebSocketMessage.getWholeTextMessage();
+
+                                // echo
+                                clientContext.sendMessage(aMessage);
+                            }
+                        }
+                    }
+                });
+                    
+
+            // Client opens connection.
+            aClient1.messageReceived().subscribe(new EventHandler<WebSocketMessage>()
+            {
+                @Override
+                public void onEvent(Object x, WebSocketMessage y)
+                {
+                    try
+                    {
+                        if (y.isText())
+                        {
+                            aReceivedTextMessage1[0] = y.getWholeTextMessage();
+                        }
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error("Exception detected.", err);
+                    }
+
+                    aResponse1ReceivedEvent.set();
+                }
+            });
+            
+            aClient2.messageReceived().subscribe(new EventHandler<WebSocketMessage>()
+            {
+                @Override
+                public void onEvent(Object x, WebSocketMessage y)
+                {
+                    try
+                    {
+                        if (y.isText())
+                        {
+                            aReceivedTextMessage2[0] = y.getWholeTextMessage();
+                        }
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error("Exception detected.", err);
+                    }
+
+                    aResponse2ReceivedEvent.set();
+                }
+            });
+
+
+            aClient1.openConnection();
+            aClient2.openConnection();
+
+            aClient1.sendMessage("He", false);
+            aClient1.sendMessage("ll", false);
+            aClient2.sendMessage("Hello2");
+            aClient1.sendPing();
+            aClient1.sendMessage("o1", true);
+
+            aResponse1ReceivedEvent.waitOne();
+            aResponse2ReceivedEvent.waitOne();
+
+            assertEquals("Hello1", aReceivedTextMessage1[0]);
+            assertEquals("Hello2", aReceivedTextMessage2[0]);
+        }
+        finally
+        {
+            aClient1.closeConnection();
+            aClient2.closeConnection();
+            aService1.stopListening();
+            aService2.stopListening();
+        }
+    }
+    
+    @Test
+    public void query() throws Exception
+    {
+        URI anAddress = new URI("ws://localhost:8087/MyService/");
+        WebSocketListener aService = new WebSocketListener(anAddress);
+
+        // Client will connect with the query.
+        URI aClientUri = new URI(anAddress.toString() + "?UserName=user1&Amount=1");
+        WebSocketClient aClient = new WebSocketClient(aClientUri);
+
+        try
+        {
+            final AutoResetEvent aClientConnectedEvent = new AutoResetEvent(false);
+
+            final IWebSocketClientContext[] aClientContext = {null};
+
+            // Start listening.
+            aService.startListening(new IMethod1<IWebSocketClientContext>()
+            {
+                @Override
+                public void invoke(IWebSocketClientContext clientContext) throws Exception
+                {
+                    aClientContext[0] = clientContext;
+
+                    // Indicate the client is connected.
+                    aClientConnectedEvent.set();
+                }
+            });
+                    
+            aClient.openConnection();
+
+            // Wait until the service accepted and opened the connection.
+            //assertTrue(aClientConnectedEvent.waitOne(3000));
+            aClientConnectedEvent.waitOne();
+
+            // Check if the query is received.
+            assertEquals("UserName=user1&Amount=1", aClientContext[0].getUri().getQuery());
+            assertEquals(aClientUri, aClientContext[0].getUri());
+
+        }
+        finally
+        {
+            aClient.closeConnection();
+            aService.stopListening();
+        }
+
+    }
+    
 }
