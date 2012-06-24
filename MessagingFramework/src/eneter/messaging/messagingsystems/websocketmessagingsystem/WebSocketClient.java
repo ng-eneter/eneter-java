@@ -77,6 +77,7 @@ public class WebSocketClient
         {
             myAddress = address;
             myClientSecurityFactory = clientSecurityFactory;
+            mySocketAddress = new InetSocketAddress(address.getHost(), address.getPort());
             
             myHeaderFields.put("Host", myAddress.getAuthority());
             myHeaderFields.put("Upgrade", "websocket");
@@ -178,7 +179,12 @@ public class WebSocketClient
                     myHeaderFields.put("Sec-WebSocket-Key", aKey64baseEncoded);
 
                     // Send HTTP request to open the websocket communication.
-                    byte[] anOpenRequest = WebSocketFormatter.encodeOpenConnectionHttpRequest(myAddress.getPath() + myAddress.getQuery(), myHeaderFields);
+                    String aPathAndQuery = myAddress.getPath();
+                    if (!StringExt.isNullOrEmpty(myAddress.getQuery()))
+                    {
+                        aPathAndQuery += myAddress.getQuery();
+                    }
+                    byte[] anOpenRequest = WebSocketFormatter.encodeOpenConnectionHttpRequest(aPathAndQuery, myHeaderFields);
 
                     // Open TCP connection.
                     myTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
@@ -504,7 +510,7 @@ public class WebSocketClient
             // Check the value of websocket accept.
             String aWebSocketKeyBase64 = Convert.toBase64String(webSocketKey);
             String aCalculatedAcceptance = WebSocketFormatter.encryptWebSocketKey(aWebSocketKeyBase64);
-            if (aCalculatedAcceptance != aSecurityAccept)
+            if (!aCalculatedAcceptance.equals(aSecurityAccept))
             {
                 String anErrorMessage = TracedObject() + ErrorHandler.OpenConnectionFailure + " Sec-WebSocket-Accept has incorrect value.";
                 EneterTrace.error(anErrorMessage);

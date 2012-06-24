@@ -306,15 +306,16 @@ class WebSocketFormatter
                     // If we are at the first line then get the path.
                     if (aLineIdx == 0)
                     {
-                        regExResult.put("Path", aParser.group(2));
-                        regExResult.put("Query", aParser.group(3)); 
+                        regExResult.put("path", aParser.group(2));
+                        regExResult.put("query", aParser.group(3)); 
                     }
                     else
                     {
-                        String aKey = aParser.group(4);
+                        String aKey = aParser.group(5);
                         if (!StringExt.isNullOrEmpty(aKey))
                         {
-                            headerFields.put(aKey, aParser.group(5));
+                            String aValue = aParser.group(6);
+                            headerFields.put(aKey, aValue);
                         }
                     }
                 }
@@ -360,7 +361,8 @@ class WebSocketFormatter
                         String aKey = aParser.group(4);
                         if (!StringExt.isNullOrEmpty(aKey))
                         {
-                            aFields.put(aKey, aParser.group(5));
+                            String aValue = aParser.group(5);
+                            aFields.put(aKey, aValue);
                         }
                     }
                 }
@@ -528,7 +530,7 @@ class WebSocketFormatter
     
     private static final Pattern myHttpOpenConnectionRequest = Pattern.compile(
             "(^GET\\s([^\\s\\?]+)(\\?[^\\s]+)?\\sHTTP\\/1\\.1\\r\\n)|" +
-            "(([^:\\r\\n]+):\\s([^\\r\\n]+)\\r\\n)+" +
+            "(([^:\\r\\n]+):\\s([^\\r\\n]+)\\r\\n)|" +
             "\\r\\n",
             Pattern.CASE_INSENSITIVE);
     
