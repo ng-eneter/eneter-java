@@ -485,33 +485,6 @@ class WebSocketClientContext implements IWebSocketClientContext
         }
     }
     
-    
-    private void closeTcp()
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            try
-            {
-                myMessageInSendProgress = EMessageInSendProgress.None;
-
-
-                if (myTcpClient != null)
-                {
-                    myTcpClient.close();
-                    myTcpClient = null;
-                }
-            }
-            catch (Exception err)
-            {
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
     private void notify(final EventImpl<Object> eventHandler)
     {
         EneterTrace aTrace = EneterTrace.entering();
