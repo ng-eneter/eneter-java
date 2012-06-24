@@ -49,7 +49,7 @@ public final class WebSocketMessage
 
     }
     
-    public String GetWholeTextMessage() throws IOException
+    public String getWholeTextMessage() throws IOException
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -71,7 +71,7 @@ public final class WebSocketMessage
         }
     }
     
-    public boolean IsText()
+    public boolean isText()
     {
         return myIsText;
     }
