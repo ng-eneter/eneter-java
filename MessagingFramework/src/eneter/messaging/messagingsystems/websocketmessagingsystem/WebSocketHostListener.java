@@ -19,6 +19,11 @@ class WebSocketHostListener
         myTcpListener = new TcpListenerProvider(address, securityFactory);
     }
     
+    public InetSocketAddress getAddress()
+    {
+        return myAddress;
+    }
+    
     public void registerListener(URI address, IMethod1<IWebSocketClientContext> processConnection)
             throws Exception
     {
