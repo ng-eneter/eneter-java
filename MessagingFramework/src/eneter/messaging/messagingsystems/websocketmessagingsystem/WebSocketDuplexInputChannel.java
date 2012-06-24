@@ -427,9 +427,9 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
     private HashMap<String, TClient> myConnectedResponseReceivers = new HashMap<String, TClient>();
     private IProtocolFormatter<?> myProtocolFormatter;
     
-    private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEvent;
-    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEvent;
-    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEvent;
+    private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEvent = new EventImpl<DuplexChannelMessageEventArgs>();
+    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEvent = new EventImpl<ResponseReceiverEventArgs>();
+    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEvent = new EventImpl<ResponseReceiverEventArgs>();
     
     @Override
     protected String TracedObject()

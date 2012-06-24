@@ -390,9 +390,9 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
         }
     };
     
-    private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEvent;
-    private EventImpl<DuplexChannelEventArgs> myConnectionClosedEvent;
-    private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEvent;
+    private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEvent = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionClosedEvent = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEvent = new EventImpl<DuplexChannelMessageEventArgs>();
     
     
     private String TracedObject()

@@ -412,6 +412,7 @@ class WebSocketFormatter
                     
                     aMessageLength = aLength;
                 }
+                else
                 if (aMessageLength == 127)
                 {
                     // The length is encoded in next 8 bytes (64 bits).
