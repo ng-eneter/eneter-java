@@ -167,6 +167,13 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (!isListening())
+            {
+                String aMessage = TracedObject() + ErrorHandler.SendResponseNotListeningFailure;
+                EneterTrace.error(aMessage);
+                throw new IllegalStateException(aMessage);
+            }
+            
             try
             {
                 IOutputChannel aResponseOutputChannel = myMessagingSystemFactory.createOutputChannel(responseReceiverId);

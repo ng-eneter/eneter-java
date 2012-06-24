@@ -1,39 +1,32 @@
-/**
- * Project: Eneter.Messaging.Framework
- * Author: Ondrej Uzovic
- * 
- * Copyright © 2012 Ondrej Uzovic
- * 
- */
+package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
-package eneter.messaging.messagingsystems.tcpmessagingsystem;
+import java.nio.channels.IllegalSelectorException;
+import java.util.HashMap;
+import java.util.Map.Entry;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import eneter.messaging.diagnostic.*;
-import eneter.messaging.messagingsystems.connectionprotocols.*;
+import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.ErrorHandler;
+import eneter.messaging.messagingsystems.connectionprotocols.EProtocolMessageType;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.net.system.*;
 
-
-
-class TcpDuplexInputChannel extends TcpInputChannelBase
-                            implements IDuplexInputChannel
+class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
+                                  implements IDuplexInputChannel
 {
-    private static class TClient
+    private enum EConnectionState
     {
-        public enum EConnectionState
+        Open,
+        Closed
+    }
+    
+    private class TClient
+    {
+        public TClient(IWebSocketClientContext tcpClient)
         {
-            Open,
-            Closed
-        }
-
-        public TClient(Socket tcpClient) throws IOException
-        {
-            myTcpClient = tcpClient;
-            myCommunicationStream = tcpClient.getOutputStream();
+            myClient = tcpClient;
             myConnectionState = EConnectionState.Open;
         }
 
@@ -47,29 +40,38 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             myConnectionState = connectionState;
         }
 
-        public Socket getTcpClient()
+        public IWebSocketClientContext getClient()
         {
-            return myTcpClient;
-        }
-
-        public OutputStream getCommunicationStream()
-        {
-            return myCommunicationStream;
+            return myClient;
         }
         
         private EConnectionState myConnectionState;
-        private Socket myTcpClient;
-        private OutputStream myCommunicationStream;
+
+        private IWebSocketClientContext myClient;
     }
     
     
-    public TcpDuplexInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter,
-            IServerSecurityFactory serverSecurityFactory)
+    public Event<DuplexChannelMessageEventArgs> messageReceived()
+    {
+        return myMessageReceivedEvent.getApi();
+    }
+
+    public Event<ResponseReceiverEventArgs> responseReceiverConnected()
+    {
+        return myResponseReceiverConnectedEvent.getApi();
+    }
+
+    public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
+    {
+        return myResponseReceiverDisconnectedEvent.getApi();
+    }
+
+    
+    
+    public WebSocketDuplexInputChannel(String ipAddressAndPort, IServerSecurityFactory securityStreamFactory, IProtocolFormatter<?> protocolFormatter)
             throws Exception
     {
-        super(ipAddressAndPort,
-              new TcpListenerProvider(ipAddressAndPort, serverSecurityFactory),
-              serverSecurityFactory);
+        super(ipAddressAndPort, securityStreamFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -82,26 +84,6 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
         }
     }
     
-
-    @Override
-    public Event<DuplexChannelMessageEventArgs> messageReceived()
-    {
-        return myMessageReceivedEventImpl.getApi();
-    }
-
-    @Override
-    public Event<ResponseReceiverEventArgs> responseReceiverConnected()
-    {
-        return myResponseReceiverConnectedEventImpl.getApi();
-    }
-
-    @Override
-    public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
-    {
-        return myResponseReceiverDisconnectedEventImpl.getApi();
-    }
-
-    @Override
     public void sendResponseMessage(String responseReceiverId, Object message)
             throws Exception
     {
@@ -114,7 +96,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                 EneterTrace.error(aMessage);
                 throw new IllegalStateException(aMessage);
             }
-            
+
             TClient aClient;
             synchronized (myConnectedResponseReceivers)
             {
@@ -126,20 +108,18 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                 try
                 {
                     // Encode the response message.
-                    byte[] anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
-                    
-                    OutputStream aSendStream = aClient.getCommunicationStream();
-                    aSendStream.write(anEncodedMessage);
+                    Object anEncodedMessage = myProtocolFormatter.encodeMessage("", message);
+
+                    // Send the response message.
+                    aClient.getClient().sendMessage(anEncodedMessage);
                 }
                 catch (Exception err)
                 {
                     EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
 
-                    aClient.getCommunicationStream().close();
-
                     try
                     {
-                        aClient.getTcpClient().close();
+                        aClient.getClient().closeConnection();
                     }
                     catch (Exception err2)
                     {
@@ -159,28 +139,6 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
 
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-                    
-                    aClient.getCommunicationStream().close();
-
-                    try
-                    {
-                        aClient.getTcpClient().close();
-                    }
-                    catch (Exception err2)
-                    {
-                        // do not care if an exception during closing the tcp client.
-                    }
-
-                    synchronized (myConnectedResponseReceivers)
-                    {
-                        myConnectedResponseReceivers.remove(responseReceiverId);
-                    }
-                    
-                    throw err;
-                }
             }
             else
             {
@@ -194,9 +152,8 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             EneterTrace.leaving(aTrace);
         }
     }
-
-    @Override
-    public void disconnectResponseReceiver(String responseReceiverId) throws Exception
+    
+    public void disconnectResponseReceiver(String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -206,9 +163,8 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                 TClient aClient = myConnectedResponseReceivers.get(responseReceiverId);
                 if (aClient != null)
                 {
-                    aClient.getCommunicationStream().close();
-                    aClient.getTcpClient().close();
-                    aClient.setConnectionState(TClient.EConnectionState.Closed);
+                    aClient.getClient().closeConnection();
+                    aClient.setConnectionState(EConnectionState.Closed);
                 }
             }
         }
@@ -217,19 +173,18 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             EneterTrace.leaving(aTrace);
         }
     }
-
+    
     @Override
-    protected void disconnectClients() throws IOException
+    protected void disconnectClients()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             synchronized (myConnectedResponseReceivers)
             {
-                for (TClient aConnection : myConnectedResponseReceivers.values())
+                for (Entry<String, TClient> aConnection : myConnectedResponseReceivers.entrySet())
                 {
-                    aConnection.getCommunicationStream().close();
-                    aConnection.getTcpClient().close();
+                    aConnection.getValue().getClient().closeConnection();
                 }
                 myConnectedResponseReceivers.clear();
             }
@@ -239,65 +194,69 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             EneterTrace.leaving(aTrace);
         }
     }
-
+    
     @Override
-    protected void handleConnection(Socket clientSocket) throws Exception
+    protected void handleConnection(IWebSocketClientContext client)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             String aResponseReceiverId = ""; // will be set when the 1st message is received.
 
-            InputStream anInputStream = null;
-
             try
             {
-                anInputStream = clientSocket.getInputStream();
-                
-
                 // While the stop of listening is not requested and the connection is not closed.
                 boolean isConnectionClosed = false;
                 while (!isConnectionClosed)
                 {
                     // Block until a message is received or the connection is closed.
-                    ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
-
-                    if (aProtocolMessage != null)
+                    WebSocketMessage aWebSocketMessage = client.receiveMessage();
+                    if (aWebSocketMessage != null)
                     {
-                        // If response receiver connection open message
-                        if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
-                        {
-                            aResponseReceiverId = aProtocolMessage.ResponseReceiverId;
-                            
-                            synchronized (myConnectedResponseReceivers)
-                            {
-                                // Note: It is not allowed that 2 response receivers would have the same responseReceiverId.
-                                if (!myConnectedResponseReceivers.containsKey(aResponseReceiverId))
-                                {
-                                    myConnectedResponseReceivers.put(aResponseReceiverId, new TClient(clientSocket));
-                                }
-                                else
-                                {
-                                    throw new IllegalStateException("The resposne receiver '" + aResponseReceiverId + "' is already connected. It is not allowed, that response receivers share the same id.");
-                                }
-                            }
+                        ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(aWebSocketMessage.getInputStream());
 
-                            // Put the message to the queue from where the working thread removes it to notify
-                            // subscribers of the input channel.
-                            // Note: therfore subscribers of the input channel are notified allways in one thread.
-                            myMessageProcessingThread.enqueueMessage(aProtocolMessage);
-                        }
-                        // If response receiver connection closed message
-                        else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
+                        if (aProtocolMessage != null)
                         {
-                            isConnectionClosed = true;
+                            // If open connection request was received.
+                            if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
+                            {
+                                aResponseReceiverId = aProtocolMessage.ResponseReceiverId;
+
+                                synchronized (myConnectedResponseReceivers)
+                                {
+                                    // Note: It is not allowed that 2 response receivers would have the same responseReceiverId.
+                                    if (!myConnectedResponseReceivers.containsKey(aResponseReceiverId))
+                                    {
+                                        myConnectedResponseReceivers.put(aResponseReceiverId, new TClient(client));
+                                    }
+                                    else
+                                    {
+                                        throw new IllegalStateException("The resposne receiver '" + aResponseReceiverId + "' is already connected. It is not allowed, that response receivers share the same id.");
+                                    }
+                                }
+
+                                // Put the message to the queue from where the working thread removes it to notify
+                                // subscribers of the input channel.
+                                // Note: therfore subscribers of the input channel are notified allways in one thread.
+                                myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                            }
+                            // If response receiver connection closed message
+                            else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
+                            {
+                                isConnectionClosed = true;
+                            }
+                            else
+                            {
+                                // Put the message to the queue from where the working thread removes it to notify
+                                // subscribers of the input channel.
+                                // Note: therfore subscribers of the input channel are notified allways in one thread.
+                                myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                            }
                         }
                         else
                         {
-                            // Put the message to the queue from where the working thread removes it to notify
-                            // subscribers of the input channel.
-                            // Note: therfore subscribers of the input channel are notified allways in one thread.
-                            myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                            isConnectionClosed = true;
                         }
                     }
                     else
@@ -310,7 +269,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             {
                 if (!StringExt.isNullOrEmpty(aResponseReceiverId))
                 {
-                    TClient.EConnectionState aConnectionState = TClient.EConnectionState.Closed;
+                    EConnectionState aConnectionState = EConnectionState.Closed;
 
                     synchronized (myConnectedResponseReceivers)
                     {
@@ -325,7 +284,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
 
                     // If the connection was not closed from this duplex input channel (i.e. by stopping of listener
                     // or by calling 'DisconnectResponseReceiver()', then notify, that the client disconnected itself.
-                    if (aConnectionState == TClient.EConnectionState.Open)
+                    if (aConnectionState == EConnectionState.Open)
                     {
                         ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aResponseReceiverId, null);
 
@@ -342,7 +301,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             EneterTrace.leaving(aTrace);
         }
     }
-
+    
     @Override
     protected void handleMessage(ProtocolMessage protocolMessage)
     {
@@ -372,28 +331,23 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
-                throw err;
-            }
         }
         finally
         {
             EneterTrace.leaving(aTrace);
         }
     }
-
+    
     
     private void notifyResponseReceiverConnected(String responseReceiverId)
     {
-        if (myResponseReceiverConnectedEventImpl.isSubscribed())
+        if (myResponseReceiverConnectedEvent.isSubscribed())
         {
             ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
 
             try
             {
-                myResponseReceiverConnectedEventImpl.raise(this, aResponseReceiverEvent);
+                myResponseReceiverConnectedEvent.raise(this, aResponseReceiverEvent);
             }
             catch (Exception err)
             {
@@ -412,13 +366,13 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
+            if (myResponseReceiverDisconnectedEvent.isSubscribed())
             {
                 ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
 
                 try
                 {
-                    myResponseReceiverDisconnectedEventImpl.raise(this, aResponseReceiverEvent);
+                    myResponseReceiverDisconnectedEvent.raise(this, aResponseReceiverEvent);
                 }
                 catch (Exception err)
                 {
@@ -442,11 +396,11 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myMessageReceivedEventImpl.isSubscribed())
+            if (myMessageReceivedEvent.isSubscribed())
             {
                 try
                 {
-                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+                    myMessageReceivedEvent.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
                 }
                 catch (Exception err)
                 {
@@ -470,23 +424,16 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
     }
     
     
-    
-    
     private HashMap<String, TClient> myConnectedResponseReceivers = new HashMap<String, TClient>();
-    private IProtocolFormatter<byte[]> myProtocolFormatter;
+    private IProtocolFormatter<?> myProtocolFormatter;
     
-    
-    
-    private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
-    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
-    
-    
+    private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEvent;
+    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEvent;
+    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEvent;
     
     @Override
     protected String TracedObject()
     {
-        return "Tcp duplex input channel '" + getChannelId() + "' "; 
+        return "WebSocket duplex input channel '" + getChannelId() + "' "; 
     }
-
 }

@@ -29,6 +29,7 @@ public final class ErrorHandler
 
     public static final String SendResponseFailure = " failed to send the response message.";
     public static final String SendResponseNotConnectedFailure = " cannot send the response message when not connected.";
+    public static final String SendResponseNotListeningFailure = " cannot send the response message when duplex input channel is not listening.";
 
     public static final String DisconnectResponseReceiverFailure = " failed to disconnect the response receiver ";
     public static final String ReceiveMessageFailure = " failed to receive the message.";

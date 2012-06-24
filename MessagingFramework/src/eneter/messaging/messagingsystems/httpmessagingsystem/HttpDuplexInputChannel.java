@@ -131,6 +131,13 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (!isListening())
+            {
+                String aMessage = TracedObject() + ErrorHandler.SendResponseNotListeningFailure;
+                EneterTrace.error(aMessage);
+                throw new IllegalStateException(aMessage);
+            }
+            
             synchronized (myResponseMessages)
             {
                 TResponseReceiver aResponsesForParticularReceiver = EnumerableExt.firstOrDefault(myResponseMessages,
