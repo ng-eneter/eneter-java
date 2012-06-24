@@ -182,7 +182,7 @@ public class WebSocketClient
                     String aPathAndQuery = myAddress.getPath();
                     if (!StringExt.isNullOrEmpty(myAddress.getQuery()))
                     {
-                        aPathAndQuery += myAddress.getQuery();
+                        aPathAndQuery += "?" + myAddress.getQuery();
                     }
                     byte[] anOpenRequest = WebSocketFormatter.encodeOpenConnectionHttpRequest(aPathAndQuery, myHeaderFields);
 

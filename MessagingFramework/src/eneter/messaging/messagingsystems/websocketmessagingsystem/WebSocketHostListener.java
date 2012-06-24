@@ -225,7 +225,7 @@ class WebSocketHostListener
 
 
                 // Create the context for conecting client.
-                URI aClientContextUri = new URI(aHandlerUri.getScheme(), "", aHandlerUri.getHost(), myAddress.getPort(), anAbsolutePath, aRegExResult.get("Query"), "");
+                URI aClientContextUri = new URI(aHandlerUri.getScheme(), null, aHandlerUri.getHost(), myAddress.getPort(), anAbsolutePath, aRegExResult.get("query"), null);
                 final WebSocketClientContext aClientContext = new WebSocketClientContext(aClientContextUri, aHeaderFields, tcpClient);
 
 

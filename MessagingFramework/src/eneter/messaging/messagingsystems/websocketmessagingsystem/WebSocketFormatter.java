@@ -307,14 +307,14 @@ class WebSocketFormatter
                     if (aLineIdx == 0)
                     {
                         regExResult.put("path", aParser.group(2));
-                        regExResult.put("query", aParser.group(3)); 
+                        regExResult.put("query", aParser.group(4)); 
                     }
                     else
                     {
-                        String aKey = aParser.group(5);
+                        String aKey = aParser.group(6);
                         if (!StringExt.isNullOrEmpty(aKey))
                         {
-                            String aValue = aParser.group(6);
+                            String aValue = aParser.group(7);
                             headerFields.put(aKey, aValue);
                         }
                     }
@@ -529,7 +529,7 @@ class WebSocketFormatter
     
     
     private static final Pattern myHttpOpenConnectionRequest = Pattern.compile(
-            "(^GET\\s([^\\s\\?]+)(\\?[^\\s]+)?\\sHTTP\\/1\\.1\\r\\n)|" +
+            "(^GET\\s([^\\s\\?]+)(\\?([^\\s]+))?\\sHTTP\\/1\\.1\\r\\n)|" +
             "(([^:\\r\\n]+):\\s([^\\r\\n]+)\\r\\n)|" +
             "\\r\\n",
             Pattern.CASE_INSENSITIVE);
