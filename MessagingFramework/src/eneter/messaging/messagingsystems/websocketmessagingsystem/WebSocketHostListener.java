@@ -1,30 +1,26 @@
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.net.*;
+import java.util.*;
 import java.util.Map.Entry;
 
-import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.ErrorHandler;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpListenerProvider;
-import eneter.net.system.IFunction1;
-import eneter.net.system.IMethod1;
-import eneter.net.system.StringExt;
+import eneter.messaging.diagnostic.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
+import eneter.net.system.*;
 import eneter.net.system.collections.generic.HashSetExt;
 import eneter.net.system.linq.EnumerableExt;
 import eneter.net.system.threading.ThreadPool;
 
 class WebSocketHostListener
 {
-
+    public WebSocketHostListener(InetSocketAddress address, IServerSecurityFactory securityFactory)
+    {
+        myAddress = address;
+        myTcpListener = new TcpListenerProvider(address, securityFactory);
+    }
     
     public void registerListener(URI address, IMethod1<IWebSocketClientContext> processConnection)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -50,13 +46,13 @@ class WebSocketHostListener
                 {
                     try
                     {
-                        myTcpListener.startListening()
+                        myTcpListener.startListening(myHandleConnectionHandler);
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.Error(TracedObject + "failed to start the path listener.", err);
+                        EneterTrace.error(TracedObject() + "failed to start the path listener.", err);
 
-                        UnregisterListener(address);
+                        unregisterListener(address);
 
                         throw err;
                     }
@@ -282,11 +278,18 @@ class WebSocketHostListener
     
     
     private InetSocketAddress myAddress;
-    
-    private IServerSecurityFactory mySecurityFactory;
     private TcpListenerProvider myTcpListener;
     
     private HashSet<Entry<URI, IMethod1<IWebSocketClientContext>>> myHandlers = new HashSet<Entry<URI, IMethod1<IWebSocketClientContext>>>();
+    
+    private IMethod1<Socket> myHandleConnectionHandler = new IMethod1<Socket>()
+    {
+        @Override
+        public void invoke(Socket t) throws Exception
+        {
+            handleConnection(t);
+        }
+    };
     
     private String TracedObject()
     {
