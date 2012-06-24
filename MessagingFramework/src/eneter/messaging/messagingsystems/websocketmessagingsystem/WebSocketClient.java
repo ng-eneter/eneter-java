@@ -442,7 +442,7 @@ public class WebSocketClient
     }
     
     
-    public void SendPing() throws Exception
+    public void sendPing() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
