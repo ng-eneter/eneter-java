@@ -279,8 +279,11 @@ public class Test_WebSocketListener
 
             aResponseReceivedEvent.waitOne();
 
-            assertEquals(aBinaryMessage[0], aReceivedBinMessage[0]);
-            assertEquals(aBinaryMessage[0], aReceivedBinResponse[0]);
+            for (int i = 0; i < aBinaryMessage.length; ++i)
+            {
+                assertEquals(aBinaryMessage[i], aReceivedBinMessage[0][i]);
+                assertEquals(aBinaryMessage[i], aReceivedBinResponse[0][i]);
+            }
 
             aClient.closeConnection();
 
