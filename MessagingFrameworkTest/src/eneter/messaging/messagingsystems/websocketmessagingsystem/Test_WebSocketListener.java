@@ -476,4 +476,124 @@ public class Test_WebSocketListener
 
     }
     
+    
+    @Test
+    public void customHeaderFields() throws Exception
+    {
+        URI anAddress = new URI("ws://127.0.0.1:8087/MyService/");
+        WebSocketListener aService = new WebSocketListener(anAddress);
+
+        // Client will connect with the query.
+        WebSocketClient aClient = new WebSocketClient(anAddress);
+
+        try
+        {
+            final AutoResetEvent aClientConnectedEvent = new AutoResetEvent(false);
+
+            final IWebSocketClientContext[] aClientContext = {null};
+
+            // Start listening.
+            aService.startListening(new IMethod1<IWebSocketClientContext>()
+            {
+                @Override
+                public void invoke(IWebSocketClientContext clientContext) throws Exception
+                {
+                    aClientContext[0] = clientContext;
+
+                    // Indicate the client is connected.
+                    aClientConnectedEvent.set();
+                }
+            });
+
+            aClient.getHeaderFields().put("My-Key1", "hello1");
+            aClient.getHeaderFields().put("My-Key2", "hello2");
+            aClient.openConnection();
+
+            // Wait until the service accepted and opened the connection.
+            //Assert.IsTrue(aClientConnectedEvent.WaitOne(3000));
+            aClientConnectedEvent.waitOne();
+
+            // Check if the query is received.
+            assertEquals("hello1", aClientContext[0].getHeaderFields().get("My-Key1"));
+            assertEquals("hello2", aClientContext[0].getHeaderFields().get("My-Key2"));
+        }
+        finally
+        {
+            aClient.closeConnection();
+            aService.stopListening();
+        }
+
+    }
+    
+    @Test(expected = IllegalStateException.class)
+    public void twoSameListeners() throws Exception
+    {
+        URI anAddress = new URI("ws://127.0.0.1:8087/MyService/");
+        WebSocketListener aService1 = new WebSocketListener(anAddress);
+
+        WebSocketListener aService2 = new WebSocketListener(anAddress);
+
+        try
+        {
+            // Start the first listener.
+            aService1.startListening(new IMethod1<IWebSocketClientContext>()
+            {
+                @Override
+                public void invoke(IWebSocketClientContext t) throws Exception
+                {
+                }
+            });
+
+            // Start the second listener to the same path -> exception is expected.
+            aService2.startListening(new IMethod1<IWebSocketClientContext>()
+            {
+                @Override
+                public void invoke(IWebSocketClientContext t) throws Exception
+                {
+                }
+            });
+        }
+        finally
+        {
+             aService1.stopListening();
+             aService2.stopListening();
+        }
+    }
+    
+    @Test
+    public void restartListener() throws Exception
+    {
+        URI anAddress1 = new URI("ws://127.0.0.1:8087/MyService1/");
+        WebSocketListener aService1 = new WebSocketListener(anAddress1);
+
+        URI anAddress2 = new URI("ws://127.0.0.1:8087/MyService2/");
+        WebSocketListener aService2 = new WebSocketListener(anAddress2);
+
+        try
+        {
+            IMethod1<IWebSocketClientContext> anEmptyHandler = new IMethod1<IWebSocketClientContext>()
+            {
+                @Override
+                public void invoke(IWebSocketClientContext t) throws Exception
+                {
+                }
+            };
+            
+            // Start the first listener.
+            aService1.startListening(anEmptyHandler);
+
+            // Start the second listener.
+            aService2.startListening(anEmptyHandler);
+
+            aService2.stopListening();
+
+            aService2.startListening(anEmptyHandler);
+        }
+        finally
+        {
+            aService1.stopListening();
+            aService2.stopListening();
+        }
+
+    }
 }
