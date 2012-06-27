@@ -21,7 +21,7 @@ public class Test_WebSocketMessaging extends MessagingSystemBaseTester
     @Before
     public void Setup()
     {
-        EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
         Random aRandomPort = new Random();
         int aPort = 7000 + aRandomPort.nextInt(1000);
