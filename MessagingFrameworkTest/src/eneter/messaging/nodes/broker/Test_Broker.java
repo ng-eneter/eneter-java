@@ -212,4 +212,43 @@ public class Test_Broker
         assertEquals("TypeA", aClient1ReceivedMessage.get(0).getMessageTypeId());
         assertEquals("Message A", (String)aClient1ReceivedMessage.get(0).getMessage());
     }
+    
+    //@Test
+    public void notifyWithNullMessageType() throws Exception
+    {
+        // Create channels
+        IMessagingSystemFactory aMessagingSystem = new SynchronousMessagingSystemFactory();
+        
+        IDuplexInputChannel aBrokerInputChannel = aMessagingSystem.createDuplexInputChannel("BrokerChannel");
+        IDuplexOutputChannel aSubscriberClientOutputChannel = aMessagingSystem.createDuplexOutputChannel("BrokerChannel");
+        IDuplexOutputChannel aPublisherClientOutputChannel = aMessagingSystem.createDuplexOutputChannel("BrokerChannel");
+
+        IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory();
+
+        IDuplexBroker aBroker = aBrokerFactory.createBroker();
+        aBroker.attachDuplexInputChannel(aBrokerInputChannel);
+        
+        IDuplexBrokerClient aSubscriber = aBrokerFactory.createBrokerClient();
+        final ArrayList<BrokerMessageReceivedEventArgs> aClient1ReceivedMessage = new ArrayList<BrokerMessageReceivedEventArgs>();
+        aSubscriber.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
+        {
+            @Override
+            public void onEvent(Object x, BrokerMessageReceivedEventArgs y)
+            {
+                aClient1ReceivedMessage.add(y);
+            }
+        });
+        aSubscriber.attachDuplexOutputChannel(aSubscriberClientOutputChannel);
+
+        IDuplexBrokerClient aPublisher = aBrokerFactory.createBrokerClient();
+        aPublisher.attachDuplexOutputChannel(aPublisherClientOutputChannel);
+
+        // Subscribe.
+        String[] aTypes = {"*", null};
+        aSubscriber.subscribe(aTypes);
+        
+        // Notify the message with null message type.
+        String aMessageType = null;
+        aPublisher.sendMessage(aMessageType, "Message A");
+    }
 }
