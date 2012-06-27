@@ -41,10 +41,11 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
                 throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
             }
 
+            URI aUri;
             try
             {
                 // just check if the address is valid
-                myUri = new URI(ipAddressAndPort);
+                aUri = new URI(ipAddressAndPort);
             }
             catch (Exception err)
             {
@@ -52,7 +53,9 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
                 throw err;
             }
 
-            mySecurityStreamFactory = securityStreamFactory;
+            myClient = new WebSocketClient(aUri, securityStreamFactory);
+            myClient.connectionClosed().subscribe(myOnWebSocketConnectionClosed);
+            myClient.messageReceived().subscribe(myOnWebSocketMessageReceived);
 
             myChannelId = ipAddressAndPort;
 
@@ -108,9 +111,6 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
                 try
                 {
                     // Open WebSocket connection.
-                    myClient = new WebSocketClient(myUri, mySecurityStreamFactory);
-                    myClient.connectionClosed().subscribe(myOnWebSocketConnectionClosed);
-                    myClient.messageReceived().subscribe(myOnWebSocketMessageReceived);
                     myClient.openConnection();
 
                     // Encode the request to open the connection.
@@ -152,7 +152,7 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
         {
             synchronized (myConnectionManipulatorLock)
             {
-                if (myClient != null)
+                if (myClient != null && myClient.isConnected())
                 {
                     // Try to notify that the connection is closed
                     try
@@ -177,11 +177,6 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
                     {
                         EneterTrace.warning(TracedObject() + "failed to close Tcp connection.", err);
                     }
-
-                    myClient.messageReceived().unsubscribe(myOnWebSocketMessageReceived);
-                    myClient.connectionClosed().unsubscribe(myOnWebSocketConnectionClosed);
-
-                    myClient = null;
                 }
 
             }
@@ -362,12 +357,8 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
     private String myChannelId;
     private String myResponseReceiverId;
     
-    private URI myUri;
-
     private WebSocketClient myClient;
     private Object myConnectionManipulatorLock = new Object();
-    
-    private IClientSecurityFactory mySecurityStreamFactory;
     
     private IProtocolFormatter<?> myProtocolFormatter;
     
