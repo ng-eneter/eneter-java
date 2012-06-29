@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2012 Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.io.*;
@@ -11,6 +19,85 @@ import eneter.net.system.*;
 import eneter.net.system.threading.ManualResetEvent;
 import eneter.net.system.threading.ThreadPool;
 
+/**
+ * WebSocket client.
+ * Represents the client for the websocket communication.
+ * <br/>
+ * The following example shows how to communicate with a websocket server.
+ * <pre>
+ * {@code
+ * class MyClass
+ * {
+ * 
+ *     private EventHandler&lt;WebSocketMessage&gt; myOnResponseMessageReceived = EventHandler<WebSocketMessage>()
+ *         {
+ *             @Override
+ *             public void onEvent(Object sender, WebSocketMessage e)
+ *             {
+ *                 onResponseMessageReceived(sender, e);
+ *             }
+ *         }
+ * 
+ *     private WebSocketClient myClient;
+ * 
+ * 
+ *     public MyClass() throws Exception
+ *     {
+ *         // Instantiate websocket client.
+ *         myClient = new WebSocketClient("ws://127.0.0.1:8045/MyService/");
+ *         
+ *         // Subscribe to receive messages.
+ *         aClient.messageReceived().subscribe(myOnResponseMessageReceived);
+ *     }
+ * 
+ *     public void openConnection()
+ *     {
+ *         // Open the connection.
+ *         aClient.openConnection();
+ *     }
+ *     
+ *     public void closeConnection()
+ *     {
+ *         // Close the connection.
+ *         aClient.closeConnection();
+ *     }
+ * 
+ *     void sendHello()
+ *     {
+ *         // Send a text message.
+ *         aClient.sendMessage("Hello.");
+ *     }
+ *     
+ *     // Method called when a response message from the server is received.
+ *     private void onResponseMessageReceived(Object sender, WebSocketMessage e)
+ *     {
+ *         try
+ *         {
+ *             if (y.isText())
+ *             {
+ *                 // If server responded the text message.
+ *                 String aTextMessage = e.getWholeTextMessage();
+ *                 
+ *                 ...
+ *             }
+ *             else
+ *             {
+ *                 // The server responded the binary message.
+ *                 byte[] aBinaryMessage = e.getWholeMessage();
+ *                 
+ *                 ...
+ *             }
+ *         }
+ *         catch (Exception err)
+ *         {
+ *            ...
+ *         }
+ *     }
+ * 
+ * }
+ * </pre>
+ *
+ */
 public class WebSocketClient
 {
     private enum EMessageInSendProgress
@@ -64,12 +151,26 @@ public class WebSocketClient
         private Event<T> myOriginalEvent;
     }
     
-    
+    /**
+     * Constructs the websocket client.
+     * 
+     * @param address websocket uri address. Provide port number too. e.g. ws://127.0.0.1:8055/myservice/<br/>
+     * You can also specify the query that can be used to pass some open connection related parameters.
+     * e.g. ws://127.0.0.1:8055/myservice/?param1=10&param2=20
+     */
     public WebSocketClient(URI address)
     {
         this(address, new NoneSecurityClientFactory());
     }
     
+    /**
+     * Constructs the websocket client.
+     * 
+     * @param address websocket uri address. Provide port number too. e.g. ws://127.0.0.1:8055/myservice/<br/>
+     * You can also specify the query that can be used to pass some open connection related parameters.
+     * e.g. ws://127.0.0.1:8055/myservice/?param1=10&param2=20
+     * @param clientSecurityFactory Factory allowing SSL communication.
+     */
     public WebSocketClient(URI address, IClientSecurityFactory clientSecurityFactory)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -90,40 +191,67 @@ public class WebSocketClient
         }
     }
     
+    /**
+     * Event is invoked when the connection is open.
+     * @return
+     */
     public Event<Object> connectionOpened()
     {
         return myConnectionOpenedEvent.getApi();
     }
     
+    /**
+     * Event is invoked when the connection is closed.
+     * @return
+     */
     public Event<Object> connectionClosed()
     {
         CustomEvent<Object> aCustomEvent = new CustomEvent<Object>(myConnectionClosedEvent.getApi());
         return aCustomEvent;
     }
     
+    /**
+     * Event is invoked when the pong is received. E.g. when the server responded ping.
+     * @return
+     */
     public Event<Object> pongReceived()
     {
         CustomEvent<Object> aCustomEvent = new CustomEvent<Object>(myPongReceivedEvent.getApi());
         return aCustomEvent;
     }
     
+    /**
+     * The event is invoked when a data message from server is received.
+     * @return
+     */
     public Event<WebSocketMessage> messageReceived()
     {
         CustomEvent<WebSocketMessage> aCustomEvent = new CustomEvent<WebSocketMessage>(myMessageReceivedEvent.getApi());
         return aCustomEvent;
     }
     
-    
+    /**
+     * Returns address of websocket server.
+     * @return
+     */
     public URI getUri()
     {
         return myAddress;
     }
     
+    /**
+     * Allows to get and set header-fields which shall be sent in open connection request.
+     * @return
+     */
     public HashMap<String, String> getHeaderFields()
     {
         return myHeaderFields;
     }
     
+    /**
+     * Returns true if the connection to the server is open.
+     * @return
+     */
     public boolean isConnected()
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -141,6 +269,10 @@ public class WebSocketClient
         }
     }
     
+    /**
+     * Opens connection to the websocket server.
+     * @throws Exception
+     */
     public void openConnection() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -237,6 +369,10 @@ public class WebSocketClient
         }
     }
     
+    /**
+     * Closes connection with the webscocket server.
+     * It sends the close message to the service and closes the underlying tcp connection.
+     */
     public void closeConnection()
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -324,7 +460,14 @@ public class WebSocketClient
         }
     }
     
-    
+    /**
+     * Sends message to the client.
+     * The message must be type of string or byte[]. If the type is string then the message is sent as the text message via text frame.
+     * If the type is byte[] the message is sent as the binary message via binary frame.
+     * 
+     * @param data message to be sent to the client. Must be byte[] or string.
+     * @throws Exception If sending of the message failed.
+     */
     public void sendMessage(Object data) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -338,6 +481,32 @@ public class WebSocketClient
         }
     }
     
+    /**
+     * Sends message to the client. Allows to send the message via multiple frames.
+     * The message must be type of string or byte[]. If the type is string then the message is sent as the text message via text frame.
+     * If the type is byte[] the message is sent as the binary message via binary frame.<br/>
+     * It allows to send the message in multiple frames. The client then can receive all parts separately
+     * using WebSocketMessage.InputStream or as a whole message using WebSocketMessage.GetWholeMessage().
+     * <br/>
+     * The following example shows how to send 'Hello world.' in three parts.
+     * <pre>
+     * {@code
+     *     
+     *     // Send the first part of the message.
+     *     aClient.sendMessage("Hello ", false);
+     *     
+     *     // Send the second part.
+     *     aClient.sendMessage("wo", false);
+     *     
+     *     // Send the third final part.
+     *     aClient.sendMessage("rld.", true);
+     * }
+     * </pre>
+     * 
+     * @param data message to be sent to the client. The message can be byte[] or string.
+     * @param isFinal true if this is the last part of the message.
+     * @throws Exception If sending of the message failed.
+     */
     public void sendMessage(final Object data, final boolean isFinal) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -447,7 +616,10 @@ public class WebSocketClient
         }
     }
     
-    
+    /**
+     * Pings the server. According to websocket protocol, pong should be responded.
+     * @throws Exception
+     */
     public void sendPing() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -468,6 +640,10 @@ public class WebSocketClient
         }
     }
     
+    /**
+     * Sends unsolicited pong to the server.
+     * @throws Exception
+     */
     public void sendPong() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
