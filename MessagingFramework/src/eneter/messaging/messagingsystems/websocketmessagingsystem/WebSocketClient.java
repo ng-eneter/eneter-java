@@ -26,12 +26,11 @@ import eneter.net.system.threading.ThreadPool;
  * The following example shows how to communicate with a websocket server.
  * <pre>
  * {@code
- * class MyClass
+ * class MyClient
  * {
  * 
- *     private EventHandler&lt;WebSocketMessage&gt; myOnResponseMessageReceived = EventHandler<WebSocketMessage>()
+ *     private EventHandler<WebSocketMessage> myOnResponseMessageReceived = EventHandler<WebSocketMessage>()
  *         {
- *             @Override
  *             public void onEvent(Object sender, WebSocketMessage e)
  *             {
  *                 onResponseMessageReceived(sender, e);
@@ -47,25 +46,25 @@ import eneter.net.system.threading.ThreadPool;
  *         myClient = new WebSocketClient("ws://127.0.0.1:8045/MyService/");
  *         
  *         // Subscribe to receive messages.
- *         aClient.messageReceived().subscribe(myOnResponseMessageReceived);
+ *         myClient.messageReceived().subscribe(myOnResponseMessageReceived);
  *     }
  * 
  *     public void openConnection()
  *     {
  *         // Open the connection.
- *         aClient.openConnection();
+ *         myClient.openConnection();
  *     }
  *     
  *     public void closeConnection()
  *     {
  *         // Close the connection.
- *         aClient.closeConnection();
+ *         myClient.closeConnection();
  *     }
  * 
  *     void sendHello()
  *     {
  *         // Send a text message.
- *         aClient.sendMessage("Hello.");
+ *         myClient.sendMessage("Hello.");
  *     }
  *     
  *     // Method called when a response message from the server is received.
@@ -93,7 +92,7 @@ import eneter.net.system.threading.ThreadPool;
  *            ...
  *         }
  *     }
- * 
+ * }
  * }
  * </pre>
  *

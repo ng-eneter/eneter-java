@@ -36,7 +36,6 @@ import eneter.net.system.IMethod1;
  *            {
  *                // Method called if a client is connected.
  *                // The method is called is called in parallel for each connected client!
- *                @Override
  *                public void invoke(IWebSocketClientContext client) throws Exception
  *                {
  *                    WebSocketMessage aMessage;
@@ -191,7 +190,6 @@ public class WebSocketListener
     
     /**
      * Returns address of the service.
-     * @return
      */
     public URI getAddress()
     {

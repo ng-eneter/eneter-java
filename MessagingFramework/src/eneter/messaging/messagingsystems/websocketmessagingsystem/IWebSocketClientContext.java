@@ -15,10 +15,9 @@ import eneter.net.system.Event;
 
 /**
  * Represents the client context on the server side.
- * 
- * The interface represents the client that was connected to the websocket server.
- * This client context can be then used to receive messages from the client and to send back response messages.
- *
+ * The client context is obtained when a client opened the connection with the server and
+ * it provides functionality to receive messages from the client and send back response messages.
+ * To see the example refer to {@link WebSocketListener}.
  */
 public interface IWebSocketClientContext
 {

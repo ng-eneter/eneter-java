@@ -44,7 +44,7 @@ public interface IAttachableInputChannel
 	 * 
 	 * Notice, unlike version 1.0, the true value does not mean the channel is listening.
 	 * The method {@link IAttachableInputChannel.attachInputChannel} starts also the listening, but if the listening stops (for whatever reason),
-	 * the input channel stays attached. To figure out if the input channel is listening use property {@link IInputChannel.IsListening}.
+	 * the input channel stays attached. To figure out if the input channel is listening use property {@link IInputChannel.isListening}.
 	 * 
 	 * @return
 	 */
