@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Eneter websocket echo client.</string>
+    <string name="app_name">AndroidWebSocketEchoClient</string>
+    <string name="webSocketEchoService">Websocket Echo Service:</string>
+    <string name="webSocketEchoServiceAddress">ws://echo.websocket.org:80/</string>
+    <string name="textMessage">Text Message:</string>
+    <string name="sendEchoRequest">Send Echo Request</string>
+    <string name="emptyText">...</string>
+
+</resources>
