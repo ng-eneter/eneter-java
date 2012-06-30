@@ -160,13 +160,13 @@ class DuplexBrokerClient implements IDuplexBrokerClient
     }
 
     @Override
-    public void subscribe(String messageType) throws Exception
+    public void subscribe(String eventIds) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            String[] aMessageType = { messageType };
-            sendRequest(EBrokerRequest.Subscribe, aMessageType);
+            String[] aMessageType = { eventIds };
+            subscribe(aMessageType);
         }
         finally
         {
@@ -175,12 +175,30 @@ class DuplexBrokerClient implements IDuplexBrokerClient
     }
 
     @Override
-    public void subscribe(String[] messageTypes) throws Exception
+    public void subscribe(String[] eventIds) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            sendRequest(EBrokerRequest.Subscribe, messageTypes);
+            if (eventIds == null)
+            {
+                String anErrorMessage = TracedObject() + "cannot subscribe to null.";
+                EneterTrace.error(anErrorMessage);
+                throw new IllegalArgumentException(anErrorMessage);
+            }
+            
+            // Check input items.
+            for (String anInputItem : eventIds)
+            {
+                if (StringExt.isNullOrEmpty(anInputItem))
+                {
+                    String anErrorMessage = TracedObject() + "cannot subscribe to null.";
+                    EneterTrace.error(anErrorMessage);
+                    throw new IllegalArgumentException(anErrorMessage);
+                }
+            }
+            
+            sendRequest(EBrokerRequest.Subscribe, eventIds);
         }
         finally
         {
