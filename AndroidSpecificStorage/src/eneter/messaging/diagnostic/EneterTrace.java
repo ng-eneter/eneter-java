@@ -1,8 +1,8 @@
 /**
  * Project: Eneter.Messaging.Framework
- * Author: Martin Valach, Ondrej Uzovic
+ * Author: Ondrej Uzovic
  * 
- * Copyright © 2012 Martin Valach and Ondrej Uzovic
+ * Copyright © 2012 Ondrej Uzovic
  * 
  */
 package eneter.messaging.diagnostic;
@@ -20,7 +20,6 @@ import android.util.Log;
  * The EneterTrace allows to trace error messages, warning message, info messages and debug messages.
  * It also allows to trace entering and leaving from a method and measures the time spent in the method.
  * In order to trace entering - leaving and debug messages, you must set the detail level to 'Debug'.
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public class EneterTrace
