@@ -2,8 +2,12 @@ package net.subscribeclient;
 
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.composites.BufferedMonitoredMessagingFactory;
+import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.MonitoredMessagingFactory;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.NoneSecurityClientFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.NoneSecurityServerFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
 import eneter.messaging.nodes.broker.*;
 import eneter.net.system.EventHandler;
@@ -63,6 +67,9 @@ public class AndroidSubscribeClientActivity extends Activity
     
     private void openConnection() throws Exception
     {
+        // Tracing
+        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        
         // Create broker client.
         IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory();
         myBrokerClient = aBrokerFactory.createBrokerClient();
@@ -80,14 +87,21 @@ public class AndroidSubscribeClientActivity extends Activity
         // When the connection is reopen messages from the buffer are sent.
         IMessagingSystemFactory aMessaging = new BufferedMonitoredMessagingFactory(
             new TcpMessagingSystemFactory(), // underlying messaging system
-            new XmlStringSerializer(), // use default serializer
+            new GZipSerializer(),// new XmlStringSerializer(), // use default serializer
             60000 * 60,     // max offline time is 1 hour
             60000 * 20,     // client sends ping once per 20 minutes
             60000);         // expect response for the ping within 1 minute
         
+        //IMessagingSystemFactory aMessaging = new MonitoredMessagingFactory(
+        //        new TcpMessagingSystemFactory(), // underlying messaging system
+        //        new GZipSerializer(),// new XmlStringSerializer(), // use default serializer
+        //        60000 * 20,     // client sends ping once per 20 minutes
+        //        60000);         // expect response for the ping within 1 minute
+        
+        
         IDuplexOutputChannel anOutputChannel =
                 //aMessaging.createDuplexOutputChannel("tcp://10.0.2.2:7091/");
-                aMessaging.createDuplexOutputChannel("tcp://172.16.0.6:7091/");
+                aMessaging.createDuplexOutputChannel("tcp://192.168.1.102:7091/");
         
         // Attach the output channel and be able to subscribe, unsubscribe
         // and receive notify messages pushed from the service.

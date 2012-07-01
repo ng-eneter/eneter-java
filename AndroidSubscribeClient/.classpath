@@ -4,6 +4,6 @@
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
-	<classpathentry kind="lib" path="lib/eneter-messaging-android-4.0.1.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/eneter-messaging-android-4.1.0"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
