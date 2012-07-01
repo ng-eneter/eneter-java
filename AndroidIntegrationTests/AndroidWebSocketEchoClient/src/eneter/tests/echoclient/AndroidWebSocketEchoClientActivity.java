@@ -3,6 +3,8 @@ package eneter.tests.echoclient;
 import java.net.URI;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.SslClientFactory;
 import eneter.messaging.messagingsystems.websocketmessagingsystem.*;
 import eneter.net.system.EventHandler;
 import android.app.Activity;
@@ -43,8 +45,20 @@ public class AndroidWebSocketEchoClientActivity extends Activity
         final WebSocketClient aWebSocketClient;
         try
         {
+            // Get URI of the echo service.
+            URI anEchoServiceUri = new URI(anAddress);
+
+            // Determine if the echo service is SSL.
+            if (anEchoServiceUri.getScheme().toLowerCase().equals("wss"))
+            {
+                aWebSocketClient = new WebSocketClient(anEchoServiceUri, new SslClientFactory());
+            }
+            else
+            {
+                aWebSocketClient = new WebSocketClient(anEchoServiceUri);
+            }
+            
             // Open websocket connection.
-            aWebSocketClient = new WebSocketClient(new URI(anAddress));
             aWebSocketClient.openConnection();
             
             // Subscribe to receive response from the echo service.
