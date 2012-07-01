@@ -8,7 +8,6 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
-import java.nio.channels.IllegalSelectorException;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
