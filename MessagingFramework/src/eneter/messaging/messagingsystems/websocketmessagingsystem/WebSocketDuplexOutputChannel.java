@@ -9,6 +9,8 @@
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.net.URI;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 import eneter.messaging.diagnostic.*;
@@ -37,7 +39,9 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
     
     
     
-    public WebSocketDuplexOutputChannel(String ipAddressAndPort, String responseReceiverId, IClientSecurityFactory securityStreamFactory, IProtocolFormatter<?> protocolFormatter)
+    public WebSocketDuplexOutputChannel(String ipAddressAndPort, String responseReceiverId,
+            long pingFrequency,
+            IClientSecurityFactory securityStreamFactory, IProtocolFormatter<?> protocolFormatter)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -70,6 +74,8 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
             myResponseReceiverId = (StringExt.isNullOrEmpty(responseReceiverId)) ? ipAddressAndPort + "_" + UUID.randomUUID().toString() : responseReceiverId;
 
             myProtocolFormatter = protocolFormatter;
+            
+            myPingFrequency = pingFrequency;
         }
         finally
         {
@@ -127,6 +133,13 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
                     // Send the message.
                     myClient.sendMessage(anEncodedMessage);
                     
+                    // Set the timer to send pings with desired frequency.
+                    if (myPingFrequency > 0)
+                    {
+                        myPingTimer = new Timer("WebsocketPingTimer", true);
+                        myPingTimer.schedule(getTimerTask(), 0, myPingFrequency);
+                    }
+                    
                     // Invoke the event notifying, the connection was opened.
                     notifyConnectionOpened();
                 }
@@ -160,6 +173,14 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
         {
             synchronized (myConnectionManipulatorLock)
             {
+                // Cancel pinging.
+                if (myPingTimer != null)
+                {
+                    myPingTimer.cancel();
+                    myPingTimer.purge();
+                    myPingTimer = null;
+                }
+                
                 if (myClient != null && myClient.isConnected())
                 {
                     // Try to notify that the connection is closed
@@ -362,10 +383,59 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
+
+    /**
+     * This is intended for mobile devices to keep the connection open.
+     * Note: The problem is, if the connection is not active longer time,
+     *       the TCP connection is dropped.
+     */
+    private void onPingTick()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // We need jsut to keep the connection open.
+            // So if we send the pong instead of ping, then the server will not send
+            // back any response but it is ok - we do not need it.
+            myClient.sendPong();
+        }
+        catch (Exception err)
+        {
+            EneterTrace.warning(TracedObject() + "failed to send pong.", err);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    /*
+     * Helper method to get the new instance of the timer task.
+     * The problem is, the timer does not allow to reschedule the same instance of the TimerTask
+     * and the exception is thrown.
+     */
+    private TimerTask getTimerTask()
+    {
+        TimerTask aTimerTask = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                onPingTick();
+            }
+        };
+        
+        return aTimerTask;
+    }
+
+    
+    
     private String myChannelId;
     private String myResponseReceiverId;
     
     private WebSocketClient myClient;
+    private Timer myPingTimer;
+    private long myPingFrequency;
     private Object myConnectionManipulatorLock = new Object();
     
     private IProtocolFormatter<?> myProtocolFormatter;
