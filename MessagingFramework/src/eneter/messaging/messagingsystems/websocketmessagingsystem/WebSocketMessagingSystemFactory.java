@@ -33,6 +33,18 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     {
         this(300000, new EneterProtocolFormatter());
     }
+    
+    /**
+     * Constructs the websocket messaging factory.
+     * It allows to set the ping frequency. The pinging is intended to keep the connection alive in
+     * environments that would drop the connection if not active for some time.
+     * (e.g. Android phone can drop the connection if there is no activity several minutes.)
+     * @param pingFrequency frequency of pinging in milliseconds.
+     */
+    public WebSocketMessagingSystemFactory(long pingFrequency)
+    {
+        this(pingFrequency, new EneterProtocolFormatter());
+    }
 
     /**
      * Constructs the websocket messaging factory.
