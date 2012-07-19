@@ -106,7 +106,7 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
                 x.join();
             }
 
-            assertTrue(anEverythingProcessedEvent.waitOne(5000));//, "Timeout for processing of messages.");
+            assertTrue(anEverythingProcessedEvent.waitOne(10000));//, "Timeout for processing of messages.");
         }
         finally
         {
