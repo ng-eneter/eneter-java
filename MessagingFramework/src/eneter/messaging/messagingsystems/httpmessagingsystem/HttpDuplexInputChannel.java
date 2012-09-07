@@ -355,7 +355,7 @@ class HttpDuplexInputChannel extends TcpInputChannelBase
                     if (aResponseMessages != null && aSizeOfResponseMessages > 0)
                     {
                         aWriter.writeBytes("HTTP/1.1 200 OK\r\n");
-                        aWriter.writeBytes("Content-Type: \r\n");
+                        aWriter.writeBytes("Content-Type: application/octet-stream\r\n");
                         aWriter.writeBytes("Content-Length: " + aSizeOfResponseMessages + "\r\n\r\n");
                         
                         // Send also eneter response message in the context of HTTP.
