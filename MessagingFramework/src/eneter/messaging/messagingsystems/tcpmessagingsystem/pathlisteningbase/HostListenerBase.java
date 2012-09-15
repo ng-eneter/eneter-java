@@ -18,7 +18,14 @@ import eneter.net.system.*;
 import eneter.net.system.collections.generic.HashSetExt;
 import eneter.net.system.linq.EnumerableExt;
 
-abstract class HostListenerBase
+
+/**
+ * Represents the host listener maintaining path listeners for the given protocol.
+ * Derived classes implement hostlisteners for protocols.
+ * E.g. HttpHostListener, WebSocketHostListener.
+ *
+ */
+public abstract class HostListenerBase
 {
     public HostListenerBase(InetSocketAddress address, IServerSecurityFactory securityFactory)
     {
@@ -32,7 +39,17 @@ abstract class HostListenerBase
     }
     
     
-    public void registerListener(URI address, Object processConnection)
+    /**
+     * Starts tcp listening for the IP address and port available from the URI.
+     * When the connection is established then it calls abstract method 'handleConnection()'
+     * This method is implemented by the particular host listener (e.g. HttpHostListener)
+     * and is responsible to read the path from the protocol and forward the incoming
+     * messages to the handler provided by the user code.
+     * @param address
+     * @param processConnection
+     * @throws Exception
+     */
+    public void registerListener(URI address, IMethod1<Object> processConnection)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -51,7 +68,7 @@ abstract class HostListenerBase
 
 
                 // Add handler for this path.
-                Entry<URI, Object> aHandler = new AbstractMap.SimpleEntry<URI, Object>(address, processConnection);
+                Entry<URI, IMethod1<Object>> aHandler = new AbstractMap.SimpleEntry<URI, IMethod1<Object>>(address, processConnection);
                 myHandlers.add(aHandler);
 
                 // If the host listener does not listen to sockets yet, then start it.
@@ -88,10 +105,10 @@ abstract class HostListenerBase
                 synchronized (myHandlers)
                 {
                     // Remove handler for that path.
-                    HashSetExt.removeWhere(myHandlers, new IFunction1<Boolean, Entry<URI, Object>>()
+                    HashSetExt.removeWhere(myHandlers, new IFunction1<Boolean, Entry<URI, IMethod1<Object>>>()
                         {
                             @Override
-                            public Boolean invoke(Entry<URI, Object> x) throws Exception
+                            public Boolean invoke(Entry<URI, IMethod1<Object>> x) throws Exception
                             {
                                 return x.getKey().getPath().equals(address.getPath());
                             }
@@ -124,10 +141,10 @@ abstract class HostListenerBase
         {
             synchronized (myHandlers)
             {
-                boolean isAny = EnumerableExt.any(myHandlers, new IFunction1<Boolean, Entry<URI, Object>>()
+                boolean isAny = EnumerableExt.any(myHandlers, new IFunction1<Boolean, Entry<URI, IMethod1<Object>>>()
                     {
                         @Override
-                        public Boolean invoke(Entry<URI, Object> x) throws Exception
+                        public Boolean invoke(Entry<URI, IMethod1<Object>> x) throws Exception
                         {
                             return x.getKey().getPath().equals(address.getPath());
                         }
@@ -162,7 +179,7 @@ abstract class HostListenerBase
     private InetSocketAddress myAddress;
     private TcpListenerProvider myTcpListener;
 
-    protected HashSet<Entry<URI, Object>> myHandlers = new HashSet<Entry<URI, Object>>();
+    protected HashSet<Entry<URI, IMethod1<Object>>> myHandlers = new HashSet<Entry<URI, IMethod1<Object>>>();
     
     
     private IMethod1<Socket> myHandleConnectionHandler = new IMethod1<Socket>()

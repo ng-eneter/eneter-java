@@ -10,8 +10,8 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.net.URI;
 
-import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.PathListenerProviderBase;
 import eneter.net.system.IMethod1;
 
 /**
@@ -67,13 +67,33 @@ import eneter.net.system.IMethod1;
  */
 public class WebSocketListener
 {
+    private static class WebSocketListenerImpl extends PathListenerProviderBase
+    {
+        public WebSocketListenerImpl(URI webSocketUri)
+        {
+            super(new WebSocketHostListenerFactory(), webSocketUri, new NoneSecurityServerFactory());
+        }
+        
+        public WebSocketListenerImpl(URI webSocketUri, IServerSecurityFactory securityFactory)
+        {
+            super(new WebSocketHostListenerFactory(), webSocketUri, securityFactory);
+        }
+
+        @Override
+        protected String TracedObject()
+        {
+            return "WebSocketListener ";
+        }
+    }
+    
+    
     /**
      * Construct websocket service.
      * @param webSocketUri service address. Provide port number too.
      */
     public WebSocketListener(URI webSocketUri)
     {
-        this(webSocketUri, new NoneSecurityServerFactory());
+        myListenerImpl = new WebSocketListenerImpl(webSocketUri);
     }
     
     /**
@@ -83,16 +103,7 @@ public class WebSocketListener
      */
     public WebSocketListener(URI webSocketUri, IServerSecurityFactory securityFactory)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myAddress = webSocketUri;
-            mySecurityFactory = securityFactory;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myListenerImpl = new WebSocketListenerImpl(webSocketUri, securityFactory);
     }
     
     /**
@@ -102,42 +113,19 @@ public class WebSocketListener
      * @param connectionHandler callback handler handling incoming connections. It is called from multiple threads.
      * @throws Exception
      */
-    public void startListening(IMethod1<IWebSocketClientContext> connectionHandler) throws Exception
+    public void startListening(final IMethod1<IWebSocketClientContext> connectionHandler) throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            try
+        myListenerImpl.startListening(new IMethod1<Object>()
             {
-                synchronized (myListeningManipulatorLock)
+                @Override
+                public void invoke(Object t) throws Exception
                 {
-                    if (isListening())
+                    if (t instanceof IWebSocketClientContext)
                     {
-                        String aMessage = TracedObject() + ErrorHandler.IsAlreadyListening;
-                        EneterTrace.error(aMessage);
-                        throw new IllegalStateException(aMessage);
+                        connectionHandler.invoke((IWebSocketClientContext)t);
                     }
-
-                    if (connectionHandler == null)
-                    {
-                        throw new IllegalArgumentException("The input parameter connectionHandler is null.");
-                    }
-
-                    myConnectionHandler = connectionHandler;
-
-                    WebSocketListenerController.startListening(myAddress, myConnectionHandler, mySecurityFactory);
                 }
-            }
-            catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
-                throw err;
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+            });
     }
     
     /**
@@ -145,26 +133,7 @@ public class WebSocketListener
      */
     public void stopListening()
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            try
-            {
-                synchronized (myListeningManipulatorLock)
-                {
-                    WebSocketListenerController.stopListening(myAddress);
-                    myConnectionHandler = null;
-                }
-            }
-            catch (Exception err)
-            {
-                EneterTrace.warning(TracedObject() + ErrorHandler.StartListeningFailure, err);
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myListenerImpl.stopListening();
     }
     
     /**
@@ -174,18 +143,7 @@ public class WebSocketListener
      */
     public boolean isListening() throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            synchronized (myListeningManipulatorLock)
-            {
-                return WebSocketListenerController.isListening(myAddress);
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        return myListenerImpl.isListening();
     }
     
     /**
@@ -193,16 +151,9 @@ public class WebSocketListener
      */
     public URI getAddress()
     {
-        return myAddress;
+        return myListenerImpl.getAddress();
     }
     
-    private URI myAddress;
-    private IMethod1<IWebSocketClientContext> myConnectionHandler;
-    private IServerSecurityFactory mySecurityFactory;
-    private Object myListeningManipulatorLock = new Object();
     
-    private String TracedObject()
-    {
-        return "WebSocketListener ";
-    }
+    private WebSocketListenerImpl myListenerImpl;
 }

@@ -14,7 +14,7 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.net.system.IMethod1;
 
-abstract class PathListenerProviderBase<_TClientContext>
+public abstract class PathListenerProviderBase
 {
 
     public PathListenerProviderBase(IHostListenerFactory hostListenerFactory, URI webSocketUri)
@@ -37,7 +37,7 @@ abstract class PathListenerProviderBase<_TClientContext>
         }
     }
     
-    public void startListening(IMethod1<_TClientContext> connectionHandler) throws Exception
+    public void startListening(IMethod1<Object> connectionHandler) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -123,7 +123,7 @@ abstract class PathListenerProviderBase<_TClientContext>
     
     private URI myAddress;
     private IHostListenerFactory myHostListenerFactory;
-    private IMethod1<_TClientContext> myConnectionHandler;
+    private IMethod1<Object> myConnectionHandler;
     private IServerSecurityFactory mySecurityFactory;
     private Object myListeningManipulatorLock = new Object();
     

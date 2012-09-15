@@ -7,13 +7,28 @@ import java.util.ArrayList;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.net.system.IFunction1;
+import eneter.net.system.IMethod1;
 import eneter.net.system.linq.EnumerableExt;
 
+
+/**
+ * Internal static class maintaining registered hostlisteners
+ * listening to particular protocol and registered paths.
+ *
+ */
 class HostListenerController
 {
+    /**
+     * Starts listening to the given URI.
+     * @param address path to be listened.
+     * @param hostListenerFactory The factory creating the host listener if does not exist.
+     * @param connectionHandler Handler processing the connection.
+     * @param serverSecurityFactory The factory providing the security functionality on the server side.
+     * @throws Exception
+     */
     public static void startListening(URI address, 
                                       IHostListenerFactory hostListenerFactory,
-                                      Object connectionHandler,
+                                      IMethod1<Object> connectionHandler,
                                       IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
@@ -24,7 +39,7 @@ class HostListenerController
             {
                 synchronized (myListeners)
                 {
-                    // Get TCP listener.
+                    // Get listener for the address specified in the given uri.
                     HostListenerBase aHostListener = findHostListener(address);
                     if (aHostListener == null)
                     {
