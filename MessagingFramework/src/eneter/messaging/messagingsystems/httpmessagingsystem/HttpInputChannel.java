@@ -8,18 +8,15 @@
 
 package eneter.messaging.messagingsystems.httpmessagingsystem;
 
-import java.io.*;
-import java.net.Socket;
-
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpInputChannelBase;
+
 import eneter.net.system.*;
 
 
-class HttpInputChannel extends TcpInputChannelBase
+class HttpInputChannel extends HttpInputChannelBase
                        implements IInputChannel
 {
     
@@ -27,9 +24,7 @@ class HttpInputChannel extends TcpInputChannelBase
             IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(ipAddressAndPort,
-              new HttpListenerProvider(ipAddressAndPort, serverSecurityFactory),
-              serverSecurityFactory);
+        super(ipAddressAndPort, serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -50,51 +45,29 @@ class HttpInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    protected void disconnectClients() throws IOException
-    {
-        // In case of HTTP, the disconnection is not applicable.
-        return;
-    }
-
-    @Override
-    protected void handleConnection(Socket clientSocket) throws Exception
+    protected void handleConnection(HttpRequestContext httpClientContext)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Status that will be responsed back to the client.
-            // If everything is OK, the status will be changed to OK.
-            String anHttpResponseStatus = "HTTP/1.1 404 Not Found\r\n\r\n";
-            
-            try
-            {
-                // Source stream.
-                // Note: The stream position is set right behind the HTTP part.
-                InputStream anInputStream = clientSocket.getInputStream();
-                    
-                // Decode the incoming message.
-                ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
+            // First read the message to the buffer.
+            byte[] aRequestMessage = httpClientContext.getRequestMessage();
                 
-                // The incoming message was OK.
-                anHttpResponseStatus = "HTTP/1.1 200 OK\r\n\r\n";
-
-                if (aProtocolMessage != null)
+            // Decode the incoming message.
+            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(aRequestMessage);
+            if (aProtocolMessage != null)
+            {
+                if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
                 {
                     // Put the message to the queue from where the working thread removes it to notify
                     // subscribers of the input channel.
                     // Note: therefore subscribers of the input channel are notified always in one thread.
                     myMessageProcessingThread.enqueueMessage(aProtocolMessage);
                 }
-
-            }
-            finally
-            {
-                // The message was successfully received, so send the HTTP response.
-                DataOutputStream aResponseWriter = new DataOutputStream(clientSocket.getOutputStream());
-                aResponseWriter.writeBytes(anHttpResponseStatus);
-                
-                // Close the connection.
-                clientSocket.close();
+                else
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+                }
             }
         }
         finally

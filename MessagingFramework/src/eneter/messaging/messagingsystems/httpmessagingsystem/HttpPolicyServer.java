@@ -8,15 +8,12 @@
 
 package eneter.messaging.messagingsystems.httpmessagingsystem;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.net.Socket;
 import java.net.URI;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.ErrorHandler;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.IListenerProvider;
 import eneter.net.system.IMethod1;
+import eneter.net.system.StringExt;
 
 /**
  * HTTP policy server needed for the communication with Silverlight applications.
@@ -56,7 +53,8 @@ public class HttpPolicyServer
             String aPolicyXmlHttp = aUri.getScheme() + "://" + aUri.getAuthority() + myPolicyXmlPath;
             
             // Subscribe to listen to the xml policy path.
-            myHttpListenerProvider = new HttpListenerProvider(aPolicyXmlHttp);
+            URI aUriPolicyXml = new URI(aPolicyXmlHttp);
+            myHttpListenerProvider = new HttpListener(aUriPolicyXml);
         }
         finally
         {
@@ -84,7 +82,6 @@ public class HttpPolicyServer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myHttpResponse = buildHttpResponse(policyXml);
             myPolicyXml = policyXml;
         }
         finally
@@ -163,12 +160,17 @@ public class HttpPolicyServer
      * @param tcpClient
      * @throws Exception
      */
-    private void handleConnection(Socket tcpClient) throws Exception
+    private void handleConnection(HttpRequestContext httpClientContext) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            tcpClient.getOutputStream().write(myHttpResponse);
+            String aRequestedUrl = httpClientContext.getUri().getPath();
+            if (!StringExt.isNullOrEmpty(aRequestedUrl) && aRequestedUrl.compareToIgnoreCase("/clientaccesspolicy.xml") == 0)
+            {
+                byte[] aRespondedXmlPolicy = getPolicyXml().getBytes("UTF-8");
+                httpClientContext.response(aRespondedXmlPolicy);
+            }
         }
         finally
         {
@@ -205,36 +207,16 @@ public class HttpPolicyServer
         }
     }
     
-    private byte[] buildHttpResponse(String policyXml) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            ByteArrayOutputStream aBuffer = new ByteArrayOutputStream();
-            DataOutputStream aWriter = new DataOutputStream(aBuffer);
-            aWriter.writeBytes("HTTP/1.1 200 OK\r\n");
-            aWriter.writeBytes("Content-Type: \r\n");
-            aWriter.writeBytes("Content-Length: " + policyXml.length() + "\r\n\r\n");
-            aWriter.writeBytes(policyXml);
-            
-            return aBuffer.toByteArray();
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
     
-    private IListenerProvider myHttpListenerProvider;
+    private HttpListener myHttpListenerProvider;
     private String myPolicyXmlPath = "/clientaccesspolicy.xml";
     private String myHttpRootAddress;
-    private byte[] myHttpResponse;
     private String myPolicyXml;
     
-    private IMethod1<Socket> myHandleConnection = new IMethod1<Socket>()
+    private IMethod1<HttpRequestContext> myHandleConnection = new IMethod1<HttpRequestContext>()
     {
         @Override
-        public void invoke(Socket x) throws Exception
+        public void invoke(HttpRequestContext x) throws Exception
         {
             handleConnection(x);
         }

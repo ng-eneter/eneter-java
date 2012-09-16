@@ -30,12 +30,12 @@ class WebSocketFormatter
     //        {
     //            throw new IllegalArgumentException("The input parameter websocketKey is not 16 bytes length.");
     //        }
-
+    //
     //        String aKey64baseEncoded = Convert.toBase64String(websocketKey);
-
+    //
     //        String anHttpRequest = String.format("GET %s HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n",
     //            address.getPath(), address.getAuthority(), aKey64baseEncoded);
-
+    //
     //        return anHttpRequest.getBytes("UTF-8");
     //    }
     //    finally

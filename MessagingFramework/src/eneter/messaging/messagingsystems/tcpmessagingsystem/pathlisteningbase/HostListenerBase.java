@@ -174,7 +174,8 @@ public abstract class HostListenerBase
         }
     }
     
-    protected abstract void handleConnection(Socket tcpClient);
+    protected abstract void handleConnection(Socket tcpClient)
+            throws Exception;
 
     private InetSocketAddress myAddress;
     private TcpListenerProvider myTcpListener;
