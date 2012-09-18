@@ -83,6 +83,7 @@ public class HttpPolicyServer
         try
         {
             myPolicyXml = policyXml;
+            myPolicyXmlBufferedBytes = myPolicyXml.getBytes("UTF-8");
         }
         finally
         {
@@ -168,8 +169,7 @@ public class HttpPolicyServer
             String aRequestedUrl = httpClientContext.getUri().getPath();
             if (!StringExt.isNullOrEmpty(aRequestedUrl) && aRequestedUrl.compareToIgnoreCase("/clientaccesspolicy.xml") == 0)
             {
-                byte[] aRespondedXmlPolicy = getPolicyXml().getBytes("UTF-8");
-                httpClientContext.response(aRespondedXmlPolicy);
+                httpClientContext.response(myPolicyXmlBufferedBytes);
             }
         }
         finally
@@ -212,6 +212,7 @@ public class HttpPolicyServer
     private String myPolicyXmlPath = "/clientaccesspolicy.xml";
     private String myHttpRootAddress;
     private String myPolicyXml;
+    private byte[] myPolicyXmlBufferedBytes;
     
     private IMethod1<HttpRequestContext> myHandleConnection = new IMethod1<HttpRequestContext>()
     {

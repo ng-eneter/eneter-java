@@ -91,7 +91,7 @@ class HttpHostListener extends HostListenerBase
             URI aRequestUri = new URI(aHandlerUri.getScheme(), null, aHandlerUri.getHost(), getAddress().getPort(), anAbsolutePath, aRegExResult.get("query"), null);
 
             // Read the content of the request message.
-            byte[] aRequestMessage;
+            byte[] aRequestMessage = null;
             
             // If the request message comes in chunks then read chunks.
             String aChunkValue = aHeaderFields.get("Transfer-encoding");
@@ -114,7 +114,7 @@ class HttpHostListener extends HostListenerBase
 
                 aRequestMessage = aBuffer.toByteArray();
             }
-            else
+            else if (aRegExResult.get("method").equals("PUT"))
             {
                 // Get size of the message.
                 String aSizeStr = aHeaderFields.get("Content-Length");
@@ -142,25 +142,26 @@ class HttpHostListener extends HostListenerBase
                 }
 
                 aRequestMessage =  StreamUtil.readBytes(tcpClient.getInputStream(), aSize);
-                
-                // The message is not in chunks.
-                HttpRequestContext aClientContext = new HttpRequestContext(aRequestUri, aRequestMessage, tcpClient.getOutputStream());
-
-                try
-                {
-                    aPathHandler.invoke(aClientContext);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-
-                // If the response was not sent then sent OK response.
-                if (!aClientContext.isResponded())
-                {
-                    aClientContext.response(null);
-                }
             }
+            
+            // The message is not in chunks.
+            HttpRequestContext aClientContext = new HttpRequestContext(aRequestUri, aRequestMessage, tcpClient.getOutputStream());
+
+            try
+            {
+                aPathHandler.invoke(aClientContext);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
+
+            // If the response was not sent then sent OK response.
+            if (!aClientContext.isResponded())
+            {
+                aClientContext.response(null);
+            }
+            
         }
         catch (IOException err)
         {

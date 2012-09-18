@@ -39,9 +39,10 @@ class HttpFormatter
                 if (!aGroup.equals("\r\n"))
                 {
                     // If we are at the first line then get the path.
-                 // If we are at the first line then get the path.
+                    // If we are at the first line then get the path.
                     if (aLineIdx == 0)
                     {
+                        regExResult.put("method", aParser.group(2));
                         regExResult.put("path", aParser.group(3));
                         regExResult.put("query", aParser.group(5)); 
                     }
