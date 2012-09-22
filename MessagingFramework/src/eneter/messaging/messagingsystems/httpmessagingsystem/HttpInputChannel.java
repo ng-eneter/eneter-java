@@ -62,7 +62,14 @@ class HttpInputChannel extends HttpInputChannelBase
                     // Put the message to the queue from where the working thread removes it to notify
                     // subscribers of the input channel.
                     // Note: therefore subscribers of the input channel are notified always in one thread.
-                    myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                    try
+                    {
+                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error(TracedObject() + "failed to enque the message.", err);
+                    }
                 }
                 else
                 {

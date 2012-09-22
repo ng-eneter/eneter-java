@@ -8,10 +8,9 @@
  
 package eneter.messaging.dataprocessing.messagequeueing;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import eneter.messaging.dataprocessing.messagequeueing.internal.WorkingThreadInvoker;
 import eneter.messaging.diagnostic.*;
+import eneter.net.system.IMethod;
 import eneter.net.system.IMethod1;
 
 /**
@@ -41,6 +40,7 @@ public class WorkingThread<_MessageType>
         try
         {
             myWorkingThreadName = workingThreadName;
+            myWorker = new WorkingThreadInvoker(workingThreadName);
         }
         finally
         {
@@ -57,7 +57,7 @@ public class WorkingThread<_MessageType>
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myHandlerLock)
+            synchronized (myLock)
             {
                 if (myMessageHandler != null)
                 {
@@ -69,7 +69,7 @@ public class WorkingThread<_MessageType>
                 myMessageHandler = messageHandler;
                 
                 // Start the single thread with the queue.
-                myThreadPool = Executors.newSingleThreadExecutor();
+                myWorker.start();
             }
         }
         finally
@@ -87,27 +87,9 @@ public class WorkingThread<_MessageType>
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myHandlerLock)
+            synchronized (myLock)
             {
-                if (myThreadPool != null)
-                {
-                    try
-                    {
-                        myThreadPool.shutdownNow();
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + " failed to stop the thread processing messages in the queue.", err);
-                    }
-                    catch (Error err)
-                    {
-                        EneterTrace.error(TracedObject() + " failed to stop the thread processing messages in the queue.", err);
-                        throw err;
-                    }
-                    
-                    myThreadPool = null;
-                }
-                
+                myWorker.stop();
                 myMessageHandler = null;
             }
         }
@@ -120,54 +102,28 @@ public class WorkingThread<_MessageType>
     /**
      * Puts the message to the queue.
      * @param message message
+     * @throws Exception 
      */
-    public void enqueueMessage(final _MessageType message)
+    public void enqueueMessage(final _MessageType message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myHandlerLock)
+            synchronized (myLock)
             {
-                // Note: Only the execution of the following line and the instantiation of the
-                //       anonymous class are synchronized.
-                //       Methods in the anonymous class will be executed in a different thread
-                //       and so they are not running the scope of the synchronized statement.
-                myThreadPool.execute(new Runnable()
+                if (myMessageHandler == null)
                 {
-                    // Store the reference for the case, some other thread unregisters it meanwhile.
-                    IMethod1<_MessageType> aMyHandler = myMessageHandler;
-                    
-                    /**
-                     * NOTE: This method will be executed later, by another thread.
-                     *       Therefore, it will not run under this 'synchronize' scope!!!
-                     *       -> and it is desired behavior.
-                     */
+                    String aMessage = TracedObject() + "failed to enqueue the message because the message handler is not registered.";
+                    EneterTrace.error(aMessage);
+                    throw new IllegalStateException(aMessage);
+                }
+    
+                myWorker.invoke(new IMethod()
+                {
                     @Override
-                    public void run()
+                    public void invoke() throws Exception
                     {
-                        EneterTrace aTrace = EneterTrace.entering();
-                        try
-                        {
-                            if (aMyHandler != null)
-                            {
-                                try
-                                {
-                                    aMyHandler.invoke(message);
-                                }
-                                catch (Exception err)
-                                {
-                                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                                }
-                            }
-                            else
-                            {
-                                EneterTrace.warning(TracedObject() + "processed message from the queue but the processing callback method was not registered.");
-                            }
-                        }
-                        finally
-                        {
-                            EneterTrace.leaving(aTrace);
-                        }
+                        myMessageHandler.invoke(message);
                     }
                 });
             }
@@ -178,21 +134,20 @@ public class WorkingThread<_MessageType>
         }
     }
     
-    private String getWorkingThreadName()
-    {
-        return myWorkingThreadName;
-    }
     
-    private String myWorkingThreadName;
-    
-    private ExecutorService myThreadPool;
-    
+    /// <summary>
+    /// Handler called to process the message from the queue.
+    /// </summary>
     private IMethod1<_MessageType> myMessageHandler;
+
+    private WorkingThreadInvoker myWorker;
+
+    private String myWorkingThreadName = "";
     
-    private Object myHandlerLock = new Object();
+    private Object myLock = new Object();
     
     private String TracedObject()
     {
-        return "The Working Thread with the name '" + getWorkingThreadName() + "' ";
+        return "WorkingThread '" + myWorkingThreadName + "' ";
     }
 }

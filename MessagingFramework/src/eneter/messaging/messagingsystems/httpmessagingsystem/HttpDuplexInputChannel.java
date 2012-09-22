@@ -545,7 +545,14 @@ class HttpDuplexInputChannel extends HttpInputChannelBase
                         ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aResponseReceiver.getResponseReceiverId(), null);
 
                         // Enqueue the message.
-                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                        try
+                        {
+                            myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.error(TracedObject() + "failed to enque the message.", err);
+                        }
                     }
                 }
 
