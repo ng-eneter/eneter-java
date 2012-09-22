@@ -2,8 +2,6 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 
 import static org.junit.Assert.*;
 
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.net.ConnectException;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -13,8 +11,6 @@ import java.util.concurrent.Future;
 
 import org.junit.*;
 
-import eneter.messaging.diagnostic.*;
-import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
@@ -158,7 +154,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 @Override
                 public Object call() throws Exception
                 {
-                    sendMessageReceiveResponse(myChannelId, "Hello1", "Response1", 100, aTimeout);
+                    sendMessageReceiveResponse(myChannelId, "Hello1", "Response1", 1, 100, aTimeout);
                     return null;
                 }
             });
@@ -169,7 +165,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 public Object call() throws Exception
                 {
                     // One-way channel on the same TCP as duplex channel.
-                    sendMessageViaOutputChannel(myChannelId2, "Hello2", 100, aTimeout);
+                    sendMessageViaOutputChannel(myChannelId2, "Hello2", 1, 100, aTimeout);
                     return null;
                 }
             });
@@ -179,7 +175,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 @Override
                 public Object call() throws Exception
                 {
-                    sendMessageReceiveResponse(myChannelId3, "Hello3", "Response3", 100, aTimeout);
+                    sendMessageReceiveResponse(myChannelId3, "Hello3", "Response3", 1, 100, aTimeout);
                     return null;
                 }
             });

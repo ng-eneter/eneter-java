@@ -13,6 +13,204 @@ import eneter.net.system.threading.*;
 
 public abstract class MessagingSystemBaseTester
 {
+    private static class TDuplexClient
+    {
+        public TDuplexClient(IMessagingSystemFactory messaging, String channelId, String expectedResponseMessage,
+                int expectedNumberOfResponseMessages) throws Exception
+            {
+                OutputChannel = messaging.createDuplexOutputChannel(channelId);
+                OutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
+
+                ConnectionOpenEvent = new ManualResetEvent(false);
+                ResponsesReceivedEvent = new ManualResetEvent(false);
+                myExpectedResponseMessage = expectedResponseMessage;
+                myExpectedNumberOfResponses = expectedNumberOfResponseMessages;
+            }
+        
+        public void openConnection() throws Exception
+        {
+            OutputChannel.openConnection();
+            ConnectionOpenEvent.set();
+        }
+        
+        private void onResponseMessageReceived(DuplexChannelMessageEventArgs e)
+        {
+            synchronized(myResponseReceiverLock)
+            {
+                ++NumberOfReceivedResponses;
+
+                //EneterTrace.Info("Received Responses: " + NumberOfReceivedResponses);
+
+                if (myExpectedResponseMessage.equals((String)e.getMessage()) == false)
+                {
+                    ++NumberOfFailedResponses;
+                }
+
+                // Release helper thread when all messages are received.
+                if (NumberOfReceivedResponses == myExpectedNumberOfResponses)
+                {
+                    ResponsesReceivedEvent.set();
+                }
+            }
+        }
+        
+        public int NumberOfReceivedResponses;
+        public int NumberOfFailedResponses;
+        public IDuplexOutputChannel OutputChannel;
+
+        public ManualResetEvent ConnectionOpenEvent;
+        public ManualResetEvent ResponsesReceivedEvent;
+
+        private int myExpectedNumberOfResponses;
+        private String myExpectedResponseMessage;
+        private Object myResponseReceiverLock = new Object();
+        
+        
+        private EventHandler<DuplexChannelMessageEventArgs> myOnResponseMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
+        {
+            @Override
+            public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
+            {
+                onResponseMessageReceived(e);
+            }
+        };
+    }
+    
+    private static class TDuplexService
+    {
+        public TDuplexService(IMessagingSystemFactory messaging, String channelId, String expextedMessage,
+                int expextedNumberOfMessages,
+                String responseMessage) throws Exception
+            {
+                InputChannel = messaging.createDuplexInputChannel(channelId);
+                InputChannel.messageReceived().subscribe(myOnMessageReceived);
+
+                MessagesReceivedEvent = new ManualResetEvent(false);
+
+                myExpectedMessage = expextedMessage;
+                myExpectedNumberOfMessages = expextedNumberOfMessages;
+                myResponseMessage = responseMessage;
+            }
+        
+        private void onMessageReceived(DuplexChannelMessageEventArgs e) throws Exception
+        {
+            // Some messaging system can have a parallel access therefore we must ensure
+            // that results are put to the list synchronously.
+            synchronized (myLock)
+            {
+                ++NumberOfReceivedMessages;
+
+                //EneterTrace.Info("Received Messages: " + NumberOfReceivedMessages);
+
+                if (NumberOfReceivedMessages == myExpectedNumberOfMessages)
+                {
+                    MessagesReceivedEvent.set();
+                }
+
+                if (InputChannel.getChannelId().equals(e.getChannelId()) == false ||
+                    myExpectedMessage.equals((String)e.getMessage()) == false)
+                {
+                    ++NumberOfFailedMessages;
+                }
+                else
+                {
+                    // everything is ok -> send the response
+                    InputChannel.sendResponseMessage(e.getResponseReceiverId(), myResponseMessage);
+                }
+            }
+        }
+        
+        public IDuplexInputChannel InputChannel;
+        public ManualResetEvent MessagesReceivedEvent;
+
+        public int NumberOfReceivedMessages;
+        public int NumberOfFailedMessages;
+
+        private int myExpectedNumberOfMessages;
+        private String myExpectedMessage;
+        private String myResponseMessage;
+        private Object myLock = new Object();
+        
+        private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
+        {
+            @Override
+            public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
+            {
+                try
+                {
+                    onMessageReceived(e);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error("onMessageReceived failed.", err);
+                }
+            }
+        };
+    }
+    
+    private static class TOnewayClient
+    {
+        public TOnewayClient(IMessagingSystemFactory messaging, String channelId) throws Exception
+        {
+            OutputChannel = messaging.createOutputChannel(channelId);
+        }
+
+        public IOutputChannel OutputChannel;
+    }
+    
+    private static class TOnewayService
+    {
+       public TOnewayService(IMessagingSystemFactory messaging, String channelId, String expextedMessage,
+                int expextedNumberOfMessages) throws Exception
+            {
+                InputChannel = messaging.createInputChannel(channelId);
+                InputChannel.messageReceived().subscribe(myOnMessageReceived);
+
+                myExpectedMessage = expextedMessage;
+                myExpectedNumberOfMessage = expextedNumberOfMessages;
+
+                MessagesReceivedEvent = new ManualResetEvent(false);
+            }
+        
+        private void onMessageReceived(ChannelMessageEventArgs e)
+        {
+            synchronized (myLock)
+            {
+                ++NumberOfReceivedMessages;
+
+                if (NumberOfReceivedMessages == myExpectedNumberOfMessage)
+                {
+                    MessagesReceivedEvent.set();
+                }
+
+                if (InputChannel.getChannelId().equals(e.getChannelId()) == false ||
+                    myExpectedMessage.equals((String)e.getMessage()) == false)
+                {
+                    ++NumberOfFailedMessages;
+                }
+             }
+        }
+        
+        public IInputChannel InputChannel;
+        public int NumberOfReceivedMessages;
+        public int NumberOfFailedMessages;
+        public ManualResetEvent MessagesReceivedEvent;
+
+        private String myExpectedMessage;
+        private int myExpectedNumberOfMessage;
+        private Object myLock = new Object();
+        
+        private EventHandler<ChannelMessageEventArgs> myOnMessageReceived = new EventHandler<ChannelMessageEventArgs>()
+        {
+            @Override
+            public void onEvent(Object sender, ChannelMessageEventArgs e)
+            {
+                onMessageReceived(e);
+            }
+        };
+    }
+    
+    
     public MessagingSystemBaseTester()
     {
         myChannelId = "Channel1";
@@ -22,28 +220,42 @@ public abstract class MessagingSystemBaseTester
     public void A01_SendMessage()
             throws Exception
     {
-        sendMessageViaOutputChannel(myChannelId, "Message", 1, 5000);
+        sendMessageViaOutputChannel(myChannelId, "Message", 1, 1, 5000);
     }
     
     @Test
     public void A02_SendMessages500()
             throws Exception
     {
-        sendMessageViaOutputChannel(myChannelId, "Message", 500, 5000);
+        sendMessageViaOutputChannel(myChannelId, "Message", 1, 500, 5000);
+    }
+    
+    @Test
+    public void A02_SendMessages10Parallel50()
+            throws Exception
+    {
+        sendMessageViaOutputChannel(myChannelId, "Message", 10, 50, 5000);
     }
     
     @Test
     public void A05_SendMessageReceiveResponse()
             throws Exception
     {
-        sendMessageReceiveResponse(myChannelId, "Message", "Response", 1, 5000);
+        sendMessageReceiveResponse(myChannelId, "Message", "Response", 1, 1, 5000);
     }
     
     @Test
     public void A06_SendMessageReceiveResponse500()
             throws Exception
     {
-        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 500, 5000);
+        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 1, 500, 5000);
+    }
+    
+    @Test
+    public void A06_SendMessageReceiveResponse10Parallel50()
+            throws Exception
+    {
+        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 10, 50, 5000);
     }
     
     @Test(expected = IllegalStateException.class)
@@ -662,179 +874,153 @@ public abstract class MessagingSystemBaseTester
     
     
     
-    protected void sendMessageViaOutputChannel(final String channelId, final Object message, final int numberOfTimes, int timeOutForMessageProcessing)
+    protected void sendMessageViaOutputChannel(final String channelId,
+            final String message,
+            final int numberOfClients, final int numberOfTimes,
+            int timeOutForMessageProcessing)
             throws Exception
     {
-        IOutputChannel anOutputChannel = myMessagingSystemFactory.createOutputChannel(channelId);
-        IInputChannel anInputChannel = myMessagingSystemFactory.createInputChannel(channelId);
-
-        final ManualResetEvent aMessagesSentEvent = new ManualResetEvent(false);
-
-        final int[] aNumberOfReceivedMessages = new int[1];
-        final int[] aNumberOfFailures = new int[1];
-        
-        EventHandler<ChannelMessageEventArgs> aMessageReceivedEventHandler = new EventHandler<ChannelMessageEventArgs>()
+        TOnewayClient[] aClients = new TOnewayClient[numberOfClients];
+        for (int i = 0; i < aClients.length; ++i)
         {
-            @Override
-            public void onEvent(Object x, ChannelMessageEventArgs y)
-            {
-                // Some messaging system can have a parallel access therefore we must ensure
-                // that results are put to the list synchronously.
-                synchronized(myLock)
-                {
-                    ++aNumberOfReceivedMessages[0];
+            aClients[i] = new TOnewayClient(myMessagingSystemFactory, channelId);
+        }
 
-                    if (!channelId.equals(y.getChannelId()) || !message.equals(y.getMessage()))
-                    {
-                        ++aNumberOfFailures[0];
-                    }
-
-                    // Release helper thread when all messages are received.
-                    if (aNumberOfReceivedMessages[0] == numberOfTimes)
-                    {
-                        aMessagesSentEvent.set();
-                    }
-                }
-            }
-            
-            private Object myLock = new Object(); 
-        };
-        
-        
-        
-        anInputChannel.messageReceived().subscribe(aMessageReceivedEventHandler);
+        TOnewayService aService = new TOnewayService(myMessagingSystemFactory, channelId, message, numberOfTimes * numberOfClients);
 
         try
         {
-            anInputChannel.startListening();
+            aService.InputChannel.startListening();
 
-            // Send messages
-            for (int i = 0; i < numberOfTimes; ++i)
+            // Clients send messages in parallel.
+            for (TOnewayClient aClient : aClients)
             {
-                anOutputChannel.sendMessage(message);
+                final TOnewayClient aC = aClient;
+                ThreadPool.queueUserWorkItem(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            //EneterTrace.Info("Client idx = " + aIdx);
+    
+                            for (int j = 0; j < numberOfTimes; ++j)
+                            {
+                                // Send messages.
+                                aC.OutputChannel.sendMessage(message);
+                            }
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.error("Sending of messages failed.", err);
+                        }
+                    }
+                });
+
+                Thread.sleep(2);
             }
 
-            EneterTrace.info("Send messages to '" + channelId + "' completed - waiting while they are processed.");
-
             // Wait until all messages are processed.
-            assertTrue(aMessagesSentEvent.waitOne(timeOutForMessageProcessing));
-            //assertTrue(aMessagesSentEvent.waitOne(60000));
+            assertTrue(aService.MessagesReceivedEvent.waitOne(timeOutForMessageProcessing));
+            //Assert.IsTrue(aMessagesSentEvent.WaitOne());
 
             EneterTrace.info("Waiting for processing of messages on '" + channelId + "' completed.");
         }
         finally
         {
-            anInputChannel.stopListening();
+            aService.InputChannel.stopListening();
         }
 
-        assertEquals(0, aNumberOfFailures[0]);
-        assertEquals(numberOfTimes, aNumberOfReceivedMessages[0]);
+        assertEquals(0, aService.NumberOfFailedMessages);
     }
     
     
-    protected void sendMessageReceiveResponse(final String channelId, final Object message, final Object resonseMessage, final int numberOfTimes, int timeOutForMessageProcessing)
+    protected void sendMessageReceiveResponse(final String channelId,
+            final String message, final String resonseMessage,
+            final int numberOfClients, final int numberOfTimes, 
+            int timeOutForMessageProcessing)
             throws Exception
     {
-        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(channelId);
-        final IDuplexInputChannel anInputChannel = myMessagingSystemFactory.createDuplexInputChannel(channelId);
-
-        final AutoResetEvent aMessagesSentEvent = new AutoResetEvent(false);
-
-        final int[] aNumberOfReceivedMessages = new int[1];
-        final int[] aNumberOfFailedMessages = new int[1];
-        
-        EventHandler<DuplexChannelMessageEventArgs> aMessageReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
+        TDuplexClient[] aClients = new TDuplexClient[numberOfClients];
+        for (int i = 0; i < numberOfClients; ++i)
         {
-            @Override
-            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
-            {
-                // Some messaging system can have a parallel access therefore we must ensure
-                // that results are put to the list synchronously.
-                synchronized (amyMessageReceiverLock)
-                {
-                    ++aNumberOfReceivedMessages[0];
+            aClients[i] = new TDuplexClient(myMessagingSystemFactory, channelId, resonseMessage, numberOfTimes);
+        }
 
-                    if (!channelId.equals(y.getChannelId()) || !message.equals(y.getMessage()))
-                    {
-                        ++aNumberOfFailedMessages[0];
-                    }
-                    else
-                    {
-                        // everything is ok -> send the response
-                        try
-                        {
-							anInputChannel.sendResponseMessage(y.getResponseReceiverId(), resonseMessage);
-						}
-                        catch (Exception err)
-                        {
-							EneterTrace.error("Sending response message failed.", err);
-						}
-                    }
-                }
-            }
-            
-            private Object amyMessageReceiverLock = new Object();
-        };
-        
-        anInputChannel.messageReceived().subscribe(aMessageReceivedHandler);
-        
-        
-        final int[] aNumberOfReceivedResponses = new int[1];
-        final int[] aNumberOfFailedResponses = new int[1];
-        
-        EventHandler<DuplexChannelMessageEventArgs> aResponseReceivedHandler = new EventHandler<DuplexChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
-            {
-                synchronized (amyResponseReceiverLock)
-                {
-                    ++aNumberOfReceivedResponses[0];
-                    if (!resonseMessage.equals(y.getMessage()))
-                    {
-                        ++aNumberOfFailedResponses[0];
-                    }
+        TDuplexService aService = new TDuplexService(myMessagingSystemFactory, channelId, message, numberOfTimes * numberOfClients, resonseMessage);
 
-                    //EneterTrace.info("Responses: " + aNumberOfReceivedResponses[0]);
-                    
-                    // Release helper thread when all messages are received.
-                    if (aNumberOfReceivedResponses[0] == numberOfTimes)
-                    {
-                        aMessagesSentEvent.set();
-                    }
-                }
-            }
-            
-            private Object amyResponseReceiverLock = new Object();
-        };
-
-        anOutputChannel.responseMessageReceived().subscribe(aResponseReceivedHandler);
-
+        
         try
         {
             // Input channel starts listening
-            anInputChannel.startListening();
-            
-            // give some time to be sure the listening is fully activated.
-            Thread.sleep(100);
-            
-            // Output channel connects in order to be able to receive response messages.
-            anOutputChannel.openConnection();
-            
-            // give some time to be sure the connection is fully activated.
-            Thread.sleep(100);
+            aService.InputChannel.startListening();
 
-            // Send messages
-            for (int i = 0; i < numberOfTimes; ++i)
+            // Clients open connection in parallel.
+            for (TDuplexClient aClient : aClients)
             {
-                anOutputChannel.sendMessage(message);
+                final TDuplexClient aC = aClient;
+                ThreadPool.queueUserWorkItem(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            aC.openConnection();
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.error("Opening connection failed.", err);
+                        }
+                    }
+                });
+                
+                Thread.sleep(2);
             }
 
-            EneterTrace.info("Send messages to '" + channelId + "' completed - waiting while they are processed.");
+            // Wait until connections are open.
+            for (TDuplexClient aClient : aClients)
+            {
+                // Wait until the connection is open.
+                assertTrue(aClient.ConnectionOpenEvent.waitOne(10000));
+            }
+
+            // Clients send messages in parallel.
+            for (TDuplexClient aClient : aClients)
+            {
+                final TDuplexClient aC = aClient;
+                ThreadPool.queueUserWorkItem(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        //EneterTrace.Info("Client idx = " + aIdx);
+
+                        for (int j = 0; j < numberOfTimes; ++j)
+                        {
+                            // Send messages.
+                            try
+                            {
+                                aC.OutputChannel.sendMessage(message);
+                            }
+                            catch (Exception err)
+                            {
+                                EneterTrace.error("Sending of a message failed.", err);
+                            }
+                        }
+                    }
+                });
+
+                Thread.sleep(2);
+            }
 
             // Wait until all messages are processed.
-            //assertTrue(aMessagesSentEvent.waitOne(timeOutForMessageProcessing));
-            assertTrue(aMessagesSentEvent.waitOne(60000));
+            for (TDuplexClient aClient : aClients)
+            {
+                //assertTrue(aClient.ResponsesReceivedEvent.waitOne(timeOutForMessageProcessing));
+                aClient.ResponsesReceivedEvent.waitOne();
+            }
 
             EneterTrace.info("Waiting for processing of messages on '" + channelId + "' completed.");
         }
@@ -842,18 +1028,25 @@ public abstract class MessagingSystemBaseTester
         {
             try
             {
-                anOutputChannel.closeConnection();
+                for (TDuplexClient aClient : aClients)
+                {
+                    aClient.OutputChannel.closeConnection();
+                }
             }
             finally
             {
-                anInputChannel.stopListening();
+                aService.InputChannel.stopListening();
             }
         }
 
-        assertEquals("There are failed messages.", 0, aNumberOfFailedMessages[0]);
-        assertEquals("There are failed response messages.", 0, aNumberOfFailedResponses[0]);
-        assertEquals("Number of sent messages differs from number of received.", numberOfTimes, aNumberOfReceivedMessages[0]);
-        assertEquals("Number of received responses differs from number of sent responses.", numberOfTimes, aNumberOfReceivedResponses[0]);
+        for (TDuplexClient aClient : aClients)
+        {
+            assertEquals("There are failed response messages.", 0, aClient.NumberOfFailedResponses);
+            assertEquals("Number of received responses differs from number of sent responses.", numberOfTimes, aClient.NumberOfReceivedResponses);
+        }
+
+        assertEquals("There are failed messages.", 0, aService.NumberOfFailedMessages);
+        assertEquals("Number of sent messages differs from number of received.", numberOfTimes * numberOfClients, aService.NumberOfReceivedMessages);
     }
     
 
