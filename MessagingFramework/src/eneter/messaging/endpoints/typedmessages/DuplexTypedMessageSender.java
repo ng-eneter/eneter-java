@@ -11,7 +11,6 @@ package eneter.messaging.endpoints.typedmessages;
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.infrastructure.attachable.*;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexOutputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;
 import eneter.net.system.*;

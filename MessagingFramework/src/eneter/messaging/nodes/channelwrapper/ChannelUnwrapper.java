@@ -11,7 +11,6 @@ package eneter.messaging.nodes.channelwrapper;
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.dataprocessing.wrapping.*;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.infrastructure.attachable.*;
 import eneter.messaging.infrastructure.attachable.internal.AttachableInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
