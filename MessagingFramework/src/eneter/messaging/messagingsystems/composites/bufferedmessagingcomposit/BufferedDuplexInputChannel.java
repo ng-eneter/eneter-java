@@ -17,6 +17,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.HashSetExt;
 import eneter.net.system.internal.IFunction1;
+import eneter.net.system.internal.IMethod3;
 import eneter.net.system.linq.internal.EnumerableExt;
 
 class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuplexInputChannel
@@ -187,13 +188,13 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 {
                     // Create the response receiver context - it allows to enqueue response messages before connection of
                     // the response receiver.
-                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, getUnderlyingDuplexInputChannel(),
-                            new IMethod2<String, Boolean>()
+                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, "", getUnderlyingDuplexInputChannel(),
+                            new IMethod3<String, String, Boolean>()
                             {
                                 @Override
-                                public void invoke(String x, Boolean y) throws Exception
+                                public void invoke(String x, String y, Boolean z) throws Exception
                                 {
-                                    updateLastActivity(x, y);
+                                    updateLastActivity(x, y, z);
                                 }
                             });
                     myResponseReceivers.add(aResponseReceiverContext);
@@ -260,7 +261,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
         {
             // Update the time for the response receiver.
             // If the response receiver does not exist, then create it.
-            updateLastActivity(e.getResponseReceiverId(), true);
+            updateLastActivity(e.getResponseReceiverId(), e.getSenderAddress(), true);
 
             if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
@@ -291,7 +292,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
         {
             // Update the time for the response receiver.
             // If the response receiver does not exist, then create it.
-            updateLastActivity(e.getResponseReceiverId(), true);
+            updateLastActivity(e.getResponseReceiverId(), e.getSenderAddress(), true);
 
             if (myMessageReceivedEventImpl.isSubscribed())
             {
@@ -316,7 +317,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     }
     
 
-    private void updateLastActivity(final String responseReceiverId, boolean createNewIfDoesNotExistFlag)
+    private void updateLastActivity(final String responseReceiverId, final String clientAddress, boolean createNewIfDoesNotExistFlag)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -344,13 +345,13 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 {
                     // Create the response receiver context - it allows to enqueue response messages before connection of
                     // the response receiver.
-                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, getUnderlyingDuplexInputChannel(),
-                        new IMethod2<String, Boolean>()
+                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, clientAddress, getUnderlyingDuplexInputChannel(),
+                        new IMethod3<String, String, Boolean>()
                         {
                             @Override
-                            public void invoke(String x, Boolean y) throws Exception
+                            public void invoke(String x, String y, Boolean z) throws Exception
                             {
-                                updateLastActivity(x, y);
+                                updateLastActivity(x, y, z);
                             }
                         });
                     myResponseReceivers.add(aResponseReceiverContext);
@@ -443,7 +444,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 {
                     try
                     {
-                        ResponseReceiverEventArgs aMsg = new ResponseReceiverEventArgs(aResponseReceiverContext.getResponseReceiverId());
+                        ResponseReceiverEventArgs aMsg = new ResponseReceiverEventArgs(aResponseReceiverContext.getResponseReceiverId(), aResponseReceiverContext.getClientAddress());
                         myResponseReceiverDisconnectedEventImpl.raise(this, aMsg);
                     }
                     catch (Exception err)

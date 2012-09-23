@@ -150,7 +150,7 @@ public class SimpleInputChannel implements IInputChannel
             {
                 try
                 {
-                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(myChannelId, aProtocolMessage.Message));
+                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(myChannelId, aProtocolMessage.Message, ""));
                 }
                 catch (Exception err)
                 {

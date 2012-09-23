@@ -261,7 +261,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
         {
             if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
-                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
+                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId, "");
     
                 try
                 {
@@ -286,7 +286,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
         {
             if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
             {
-                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
+                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId, "");
     
                 try
                 {
@@ -313,7 +313,7 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
             {
                 try
                 {
-                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId, ""));
                 }
                 catch (Exception err)
                 {

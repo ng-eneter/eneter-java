@@ -6,7 +6,7 @@
  * 
  */
 
-package eneter.net.system;
+package eneter.net.system.internal;
 
 /**
  * Represents the callback method taking two input parameters and returning void.

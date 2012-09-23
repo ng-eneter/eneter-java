@@ -24,10 +24,11 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
 {
     private class TResponseReceiverContext
     {
-        public TResponseReceiverContext(String responseReceiverId, long lastUpdateTime)
+        public TResponseReceiverContext(String responseReceiverId, String clientAddress, long lastUpdateTime)
         {
             myResponseReceiverId = responseReceiverId;
             myLastUpdateTime = lastUpdateTime;
+            myClientAddress = clientAddress;
         }
 
         public String getResponseReceiverId()
@@ -40,8 +41,14 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             return myLastUpdateTime;
         }
         
+        public String getClientAddress()
+        {
+            return myClientAddress;
+        }
+        
         private String myResponseReceiverId;
         private long myLastUpdateTime;
+        private String myClientAddress;
     }
     
     
@@ -226,7 +233,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         try
         {
             // Update the activity time for the response receiver
-            updateResponseReceiver(e.getResponseReceiverId());
+            updateResponseReceiver(e.getResponseReceiverId(), e.getSenderAddress());
 
             if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
@@ -258,7 +265,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             try
             {
                 // Update the activity time for the response receiver
-                updateResponseReceiver(e.getResponseReceiverId());
+                updateResponseReceiver(e.getResponseReceiverId(), e.getSenderAddress());
 
                 // Deserialize the incoming message.
                 MonitorChannelMessage aMessage = mySerializer.deserialize(e.getMessage(), MonitorChannelMessage.class);
@@ -280,7 +287,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     // Notify the incoming message.
                     if (myMessageReceivedEventImpl.isSubscribed())
                     {
-                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId());
+                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
 
                         try
                         {
@@ -310,7 +317,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            final ArrayList<String> aTimeoutedResponseReceivers = new ArrayList<String>();
+            final ArrayList<TResponseReceiverContext> aTimeoutedResponseReceivers = new ArrayList<TResponseReceiverContext>();
 
             boolean aContinueTimerFlag = false;
 
@@ -328,7 +335,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                                 if (aCurrentTime - x.getLastUpdateTime() > myPingTimeout)
                                 {
                                     // Store the timeouted response receiver.
-                                    aTimeoutedResponseReceivers.add(x.getResponseReceiverId());
+                                    aTimeoutedResponseReceivers.add(x);
 
                                     // Indicate, that the response receiver can be removed.
                                     return true;
@@ -343,12 +350,12 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             }
 
             // Close connection for all timeouted response receivers.
-            for (String aResponseReceiverId : aTimeoutedResponseReceivers)
+            for (TResponseReceiverContext aResponseReceiver : aTimeoutedResponseReceivers)
             {
                 // Try to disconnect the response receiver.
                 try
                 {
-                    disconnectResponseReceiver(aResponseReceiverId);
+                    disconnectResponseReceiver(aResponseReceiver.getResponseReceiverId());
                 }
                 catch (Exception err)
                 {
@@ -357,7 +364,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 }
 
                 // Notify that the response receiver was disconected.
-                ResponseReceiverEventArgs e = new ResponseReceiverEventArgs(aResponseReceiverId);
+                ResponseReceiverEventArgs e = new ResponseReceiverEventArgs(aResponseReceiver.getResponseReceiverId(),
+                        aResponseReceiver.getClientAddress());
                 notifyResponseReceiverDisconnected(e);
             }
 
@@ -373,7 +381,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void updateResponseReceiver(final String responseReceiverId)
+    private void updateResponseReceiver(final String responseReceiverId, String clientAddress)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -398,7 +406,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
 
                 if (aResponseReceiverContext == null)
                 {
-                    aResponseReceiverContext = new TResponseReceiverContext(responseReceiverId, aCurrentTime);
+                    aResponseReceiverContext = new TResponseReceiverContext(responseReceiverId, clientAddress, aCurrentTime);
                     myResponseReceiverContexts.add(aResponseReceiverContext);
                 }
                 else

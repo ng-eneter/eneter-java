@@ -265,7 +265,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
                     // Notify the event to the subscriber.
                     if (myResponseMessageReceivedEventImpl.isSubscribed())
                     {
-                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId());
+                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
 
                         try
                         {
@@ -404,7 +404,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
                         {
                             try
                             {
-                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
+                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
                                 myConnectionClosedEventImpl.raise(this, aMsg);
                             }
                             catch (Exception err)

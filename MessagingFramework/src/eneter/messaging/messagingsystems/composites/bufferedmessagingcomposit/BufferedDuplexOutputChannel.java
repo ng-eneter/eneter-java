@@ -456,7 +456,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
                         {
                             try
                             {
-                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
+                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
                                 myConnectionOpenedEventImpl.raise(this, aMsg);
                             }
                             catch (Exception err)
@@ -491,7 +491,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
             {
                 try
                 {
-                    DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
+                    DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
                     myConnectionClosedEventImpl.raise(this, aMsg);
                 }
                 catch (Exception err)

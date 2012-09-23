@@ -13,12 +13,13 @@ import java.util.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.*;
+import eneter.net.system.internal.IMethod3;
 import eneter.net.system.threading.internal.*;
 
 class ResponseMessageSender
 {
-    public ResponseMessageSender(String responseReceiverId, IDuplexInputChannel duplexInputChannel, IMethod2<String, Boolean> lastActivityUpdater)
+    public ResponseMessageSender(String responseReceiverId, IDuplexInputChannel duplexInputChannel,
+            IMethod3<String, String, Boolean> lastActivityUpdater)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -137,7 +138,7 @@ class ResponseMessageSender
                             // Update the time for the response receiver.
                             // If the response receiver does not exist, then DO NOT create it.
                             // If the response receiver does not exist, it means there can be disconnecting.
-                            myLastActivityUpdater.invoke(myResponseReceiverId, false);
+                            myLastActivityUpdater.invoke(myResponseReceiverId, "", false);
 
                             // The message was successfuly sent, therefore it can be removed from the queue.
                             synchronized (myEnqueuedMessages)
@@ -183,7 +184,7 @@ class ResponseMessageSender
 
     private IDuplexInputChannel myDuplexInputChannel;
     
-    private IMethod2<String, Boolean> myLastActivityUpdater;
+    private IMethod3<String, String, Boolean> myLastActivityUpdater;
     
     private String TracedObject()
     {

@@ -10,8 +10,8 @@ package eneter.messaging.dataprocessing.messagequeueing;
 
 import eneter.messaging.dataprocessing.messagequeueing.internal.WorkingThreadInvoker;
 import eneter.messaging.diagnostic.*;
-import eneter.net.system.IMethod;
 import eneter.net.system.IMethod1;
+import eneter.net.system.internal.IMethod;
 
 /**
  * Implements the thread that has the message queue.

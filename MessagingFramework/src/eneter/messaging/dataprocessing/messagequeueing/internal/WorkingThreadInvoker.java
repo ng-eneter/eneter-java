@@ -5,7 +5,7 @@ import java.util.concurrent.Executors;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.net.system.IMethod;
+import eneter.net.system.internal.IMethod;
 
 
 

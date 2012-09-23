@@ -19,6 +19,8 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
+import eneter.net.system.internal.Cast;
+import eneter.net.system.internal.IMethod;
 
 class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
 {
@@ -83,6 +85,11 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
 
             try
             {
+                // Get IP address of connected client.
+                SocketAddress anEndPoint = clientSocket.getRemoteSocketAddress();
+                InetSocketAddress aRemoteAddress = Cast.as(anEndPoint, InetSocketAddress.class);
+                final String aClientIp = (aRemoteAddress != null) ? aRemoteAddress.getAddress().toString() : "";
+                
                 // Source stream.
                 InputStream anInputStream = clientSocket.getInputStream();
 
@@ -100,7 +107,7 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
                             @Override
                             public void invoke() throws Exception
                             {
-                                notifyMessageReceived(aProtocolMessage.Message);
+                                notifyMessageReceived(aProtocolMessage.Message, aClientIp);
                             }
                         });
                     }
@@ -128,7 +135,7 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
         }
     }
     
-    private void notifyMessageReceived(Object message)
+    private void notifyMessageReceived(Object message, String clientAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -137,7 +144,7 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
             {
                 try
                 {
-                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(getChannelId(), message));
+                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(getChannelId(), message, clientAddress));
                 }
                 catch (Exception err)
                 {

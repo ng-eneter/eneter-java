@@ -18,6 +18,8 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
+import eneter.net.system.internal.Cast;
+import eneter.net.system.internal.IMethod;
 import eneter.net.system.internal.StringExt;
 
 
@@ -38,6 +40,11 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             myTcpClient = tcpClient;
             myCommunicationStream = tcpClient.getOutputStream();
             myConnectionState = EConnectionState.Open;
+            
+            // Get IP address of connected client.
+            SocketAddress anEndPoint = tcpClient.getRemoteSocketAddress();
+            InetSocketAddress aRemoteAddress = Cast.as(anEndPoint, InetSocketAddress.class);
+            myClientIp = (aRemoteAddress != null) ? aRemoteAddress.getAddress().toString() : "";
         }
 
         public EConnectionState getConnectionState()
@@ -60,9 +67,15 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             return myCommunicationStream;
         }
         
+        public String getClientIp()
+        {
+            return myClientIp;
+        }
+        
         private EConnectionState myConnectionState;
         private Socket myTcpClient;
         private OutputStream myCommunicationStream;
+        private String myClientIp;
     }
     
     
@@ -154,12 +167,13 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                     }
 
                     // Notify connection closed from the working thread.
+                    final String aClientIp = aClient.getClientIp();
                     myMessageProcessingWorker.invoke(new IMethod()
                     {
                         @Override
                         public void invoke() throws Exception
                         {
-                            notifyEvent(myResponseReceiverDisconnectedEventImpl, responseReceiverId);
+                            notifyEvent(myResponseReceiverDisconnectedEventImpl, responseReceiverId, aClientIp);
                         }
                     });
 
@@ -230,6 +244,11 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            // Get IP address of connected client.
+            SocketAddress anEndPoint = clientSocket.getRemoteSocketAddress();
+            InetSocketAddress aRemoteAddress = Cast.as(anEndPoint, InetSocketAddress.class);
+            final String aClientIp = (aRemoteAddress != null) ? aRemoteAddress.getAddress().toString() : "";
+            
             String aResponseReceiverId = ""; // will be set when the 1st message is received.
 
             InputStream anInputStream = null;
@@ -272,7 +291,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                                 @Override
                                 public void invoke() throws Exception
                                 {
-                                    notifyEvent(myResponseReceiverConnectedEventImpl, aProtocolMessage.ResponseReceiverId);
+                                    notifyEvent(myResponseReceiverConnectedEventImpl, aProtocolMessage.ResponseReceiverId, aClientIp);
                                 }
                             });
                         }
@@ -289,7 +308,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                                 @Override
                                 public void invoke() throws Exception
                                 {
-                                    notifyMessageReceived(aProtocolMessage.Message, aProtocolMessage.ResponseReceiverId);
+                                    notifyMessageReceived(aProtocolMessage.Message, aProtocolMessage.ResponseReceiverId, aClientIp);
                                 }
                             });
                         }
@@ -333,7 +352,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                             @Override
                             public void invoke() throws Exception
                             {
-                                notifyEvent(myResponseReceiverDisconnectedEventImpl, aReceiverId);
+                                notifyEvent(myResponseReceiverDisconnectedEventImpl, aReceiverId, aClientIp);
                             }
                         });
                     }
@@ -347,14 +366,14 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
     }
 
  
-    private void notifyEvent(EventImpl<ResponseReceiverEventArgs> handler, String responseReceiverId)
+    private void notifyEvent(EventImpl<ResponseReceiverEventArgs> handler, String responseReceiverId, String clientAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             if (handler.isSubscribed())
             {
-                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
+                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId, clientAddress);
 
                 try
                 {
@@ -372,7 +391,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
         }
     }
     
-    private void notifyMessageReceived(Object message, String responseReceiverId)
+    private void notifyMessageReceived(Object message, String responseReceiverId, String clientAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -381,7 +400,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             {
                 try
                 {
-                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(myChannelId, message, responseReceiverId));
+                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(myChannelId, message, responseReceiverId, clientAddress));
                 }
                 catch (Exception err)
                 {

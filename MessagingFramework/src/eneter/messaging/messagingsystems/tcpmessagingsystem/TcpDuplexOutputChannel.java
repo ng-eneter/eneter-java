@@ -18,6 +18,7 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
+import eneter.net.system.internal.Cast;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.threading.internal.ManualResetEvent;
 import eneter.net.system.threading.internal.ThreadPool;
@@ -133,6 +134,10 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     //myTcpClient.setTcpNoDelay(true);
                     myTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
                     
+                    SocketAddress aLocalSocketAddress = myTcpClient.getLocalSocketAddress();
+                    InetSocketAddress anInetSocketAddress = Cast.as(aLocalSocketAddress, InetSocketAddress.class);
+                    myIpAddress = (anInetSocketAddress != null) ? anInetSocketAddress.getAddress().toString() : ""; 
+                    
                     myMessageProcessingThread.registerMessageHandler(myMessageHandlerHandler);
 
                     myResponseReceiverThread = new Thread(myResponseListeningRunnable);
@@ -152,7 +157,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     myTcpClient.getOutputStream().write(anEncodedMessage);
 
                     // Invoke the event notifying, the connection was opened.
-                    notifyConnectionOpened();
+                    notifyEvent(myConnectionOpenedEventImpl);
                 }
                 catch (Exception err)
                 {
@@ -375,11 +380,11 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
             }
 
 
-            myListeningToResponsesStartedEvent.reset();
             myIsListeningToResponses = false;
+            myListeningToResponsesStartedEvent.reset();
 
             // Notify the listening to messages stopped.
-            notifyConnectionClosed();
+            notifyEvent(myConnectionClosedEventImpl);
         }
         finally
         {
@@ -402,7 +407,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
             {
                 try
                 {
-                    myResponseMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(getChannelId(), protocolMessage.Message, getResponseReceiverId()));
+                    myResponseMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(getChannelId(), protocolMessage.Message, getResponseReceiverId(), myIpAddress));
                 }
                 catch (Exception err)
                 {
@@ -420,46 +425,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void notifyConnectionOpened()
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            ThreadPool.queueUserWorkItem(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    EneterTrace aTrace = EneterTrace.entering();
-                    try
-                    {
-                        try
-                        {
-                            if (myConnectionOpenedEventImpl.isSubscribed())
-                            {
-                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
-                                myConnectionOpenedEventImpl.raise(this, aMsg);
-                            }
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
-                    }
-                    finally
-                    {
-                        EneterTrace.leaving(aTrace);
-                    }
-                }
-            });
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    private void notifyConnectionClosed()
+    private void notifyEvent(final EventImpl<DuplexChannelEventArgs> eventHandler)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -477,10 +443,10 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     {
                         try
                         {
-                            if (myConnectionClosedEventImpl.isSubscribed())
+                            if (eventHandler.isSubscribed())
                             {
-                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
-                                myConnectionClosedEventImpl.raise(this, aMsg);
+                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), myIpAddress);
+                                eventHandler.raise(this, aMsg);
                             }
                         }
                         catch (Exception err)
@@ -501,12 +467,14 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
+
     
     private String myChannelId;
     private String myResponseReceiverId;
     
     private IClientSecurityFactory myClientSecurityFactory;
     private Socket myTcpClient;
+    private String myIpAddress;
     private InetSocketAddress mySocketAddress;
     private Object myConnectionManipulatorLock = new Object();
 

@@ -17,6 +17,7 @@ import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.net.system.*;
+import eneter.net.system.internal.IMethod;
 
 
 class WebSocketInputChannel extends WebSocketInputChannelBase implements IInputChannel

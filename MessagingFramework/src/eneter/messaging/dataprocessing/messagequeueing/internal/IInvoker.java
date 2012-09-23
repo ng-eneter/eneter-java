@@ -1,6 +1,6 @@
 package eneter.messaging.dataprocessing.messagequeueing.internal;
 
-import eneter.net.system.IMethod;
+import eneter.net.system.internal.IMethod;
 
 /**
  * 

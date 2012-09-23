@@ -9,13 +9,14 @@
 package eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit;
 
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.IMethod2;
+import eneter.net.system.internal.IMethod3;
 
 class ResponseReceiverContext
 {
-    public ResponseReceiverContext(String responseReceiverId, IDuplexInputChannel duplexInputChannel, IMethod2<String, Boolean> lastActivityUpdater)
+    public ResponseReceiverContext(String responseReceiverId, String clientAddress, IDuplexInputChannel duplexInputChannel, IMethod3<String, String, Boolean> lastActivityUpdater)
     {
         myResponseReceiverId = responseReceiverId;
+        myClientAddress = clientAddress;
         mySender = new ResponseMessageSender(responseReceiverId, duplexInputChannel, lastActivityUpdater);
         myLastActivityTime = System.currentTimeMillis();
     }
@@ -40,13 +41,19 @@ class ResponseReceiverContext
         return myResponseReceiverId;
     }
     
+    public String getClientAddress()
+    {
+        return myClientAddress;
+    }
+    
     public long getLastActivityTime()
     {
         return myLastActivityTime;
     }
     
     private String myResponseReceiverId;
-    public long myLastActivityTime;
+    private String myClientAddress;
+    private long myLastActivityTime;
 
     private ResponseMessageSender mySender;
 }
