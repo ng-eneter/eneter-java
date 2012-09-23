@@ -11,6 +11,7 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 import java.io.*;
 import java.net.*;
 
+import eneter.messaging.dataprocessing.streaming.internal.StreamUtil;
 import eneter.messaging.diagnostic.*;
 
 class HttpClient
@@ -83,15 +84,7 @@ class HttpClient
                 }
                 
                 InputStream aResponseStream = aConnection.getInputStream();
-                ByteArrayOutputStream aResponseContentStream = new ByteArrayOutputStream();
-                int aSize = 0;
-                byte[] aBuffer = new byte[32764];
-                while ((aSize = aResponseStream.read(aBuffer)) != -1)
-                {
-                    aResponseContentStream.write(aBuffer, 0, aSize);
-                }
-                
-                return aResponseContentStream.toByteArray();
+                return StreamUtil.readToEnd(aResponseStream);
             }
             finally
             {

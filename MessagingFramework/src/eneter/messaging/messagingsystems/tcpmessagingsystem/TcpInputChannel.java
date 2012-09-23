@@ -13,6 +13,7 @@ import java.net.*;
 import java.util.*;
 
 import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
+import eneter.messaging.dataprocessing.streaming.internal.StreamUtil;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
@@ -85,24 +86,10 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
                 // Source stream.
                 InputStream anInputStream = clientSocket.getInputStream();
 
-                // First read the message to the buffer.
-                ByteArrayOutputStream anOutputMemStream = new ByteArrayOutputStream();
-                try
-                {
-                    int aSize = 0;
-                    byte[] aBuffer = new byte[32768];
-                    while ((aSize = anInputStream.read(aBuffer, 0, aBuffer.length)) != -1)
-                    {
-                        anOutputMemStream.write(aBuffer, 0, aSize);
-                    }
-                }
-                finally
-                {
-                    anOutputMemStream.close();
-                }
-
-                // Decode the incoming message.
-                final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anOutputMemStream.toByteArray());
+                // Get the protocol message.
+                byte[] aMessageData = StreamUtil.readToEnd(anInputStream);
+                final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(aMessageData);
+                
                 if (aProtocolMessage != null)
                 {
                     if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)

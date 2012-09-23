@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.io.*;
 
+import eneter.messaging.dataprocessing.streaming.internal.StreamUtil;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
@@ -41,22 +42,7 @@ public final class WebSocketMessage
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            ByteArrayOutputStream anOutputMemStream = new ByteArrayOutputStream();
-            try
-            {
-                int aSize = 0;
-                byte[] aBuffer = new byte[32768];
-                while ((aSize = myInputStream.read(aBuffer, 0, aBuffer.length)) > 0)
-                {
-                    anOutputMemStream.write(aBuffer, 0, aSize);
-                }
-            }
-            finally
-            {
-                anOutputMemStream.close();
-            }
-            
-            return anOutputMemStream.toByteArray();
+            return StreamUtil.readToEnd(myInputStream);
         }
         finally
         {

@@ -303,7 +303,7 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                     {
                         ByteArrayInputStream aBufferedMessages = new ByteArrayInputStream(aResponseMessages);
                         
-                        // Decode message by message.
+                        // Decode message.
                         // Note: available() returns count - pos  in case of ByteArrayInputStream.
                         while (aBufferedMessages.available() > 0)
                         {
