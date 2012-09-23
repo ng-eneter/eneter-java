@@ -14,8 +14,8 @@ import org.junit.*;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
-import eneter.net.system.StringExt;
-import eneter.net.system.threading.*;
+import eneter.net.system.internal.StringExt;
+import eneter.net.system.threading.internal.*;
 
 public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
 {

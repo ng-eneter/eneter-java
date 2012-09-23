@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
-import eneter.net.system.threading.*;
+import eneter.net.system.threading.internal.*;
 
 public abstract class StringMessagesBaseTester
 {

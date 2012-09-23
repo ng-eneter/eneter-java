@@ -19,7 +19,7 @@ import org.junit.Test;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.EventHandler;
 import eneter.net.system.IMethod1;
-import eneter.net.system.threading.AutoResetEvent;
+import eneter.net.system.threading.internal.AutoResetEvent;
 
 public class Test_WebSocketListener
 {

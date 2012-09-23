@@ -10,7 +10,7 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
-import eneter.net.system.threading.AutoResetEvent;
+import eneter.net.system.threading.internal.AutoResetEvent;
 
 public abstract class TypedRequestResponseBaseTester
 {

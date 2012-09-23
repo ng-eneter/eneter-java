@@ -10,7 +10,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.composites.ICompositeDuplexInputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
-import eneter.net.system.threading.AutoResetEvent;
+import eneter.net.system.threading.internal.AutoResetEvent;
 
 public abstract class BufferedMessagingBaseTester
 {

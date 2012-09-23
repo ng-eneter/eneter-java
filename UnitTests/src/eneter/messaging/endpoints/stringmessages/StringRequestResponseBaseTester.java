@@ -9,7 +9,7 @@ import org.junit.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
-import eneter.net.system.threading.*;
+import eneter.net.system.threading.internal.*;
 
 public abstract class StringRequestResponseBaseTester
 {

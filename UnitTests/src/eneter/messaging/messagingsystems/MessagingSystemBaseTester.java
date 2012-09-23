@@ -9,7 +9,7 @@ import org.junit.Test;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
-import eneter.net.system.threading.*;
+import eneter.net.system.threading.internal.*;
 
 public abstract class MessagingSystemBaseTester
 {
@@ -922,8 +922,8 @@ public abstract class MessagingSystemBaseTester
             }
 
             // Wait until all messages are processed.
-            assertTrue(aService.MessagesReceivedEvent.waitOne(timeOutForMessageProcessing));
-            //Assert.IsTrue(aMessagesSentEvent.WaitOne());
+            //assertTrue(aService.MessagesReceivedEvent.waitOne(timeOutForMessageProcessing));
+            aService.MessagesReceivedEvent.waitOne();
 
             EneterTrace.info("Waiting for processing of messages on '" + channelId + "' completed.");
         }

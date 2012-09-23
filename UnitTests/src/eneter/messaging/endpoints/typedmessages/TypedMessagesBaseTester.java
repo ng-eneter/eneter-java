@@ -12,7 +12,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
 import eneter.messaging.messagingsystems.messagingsystembase.IOutputChannel;
 import eneter.net.system.*;
-import eneter.net.system.threading.ManualResetEvent;
+import eneter.net.system.threading.internal.ManualResetEvent;
 
 public abstract class TypedMessagesBaseTester
 {

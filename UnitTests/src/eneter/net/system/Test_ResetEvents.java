@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import eneter.net.system.threading.*;
+import eneter.net.system.threading.internal.*;
 
 public class Test_ResetEvents
 {

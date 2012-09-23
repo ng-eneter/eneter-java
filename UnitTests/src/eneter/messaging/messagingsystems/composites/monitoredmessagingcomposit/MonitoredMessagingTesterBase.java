@@ -9,7 +9,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
-import eneter.net.system.threading.*;
+import eneter.net.system.threading.internal.*;
 
 
 public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTester

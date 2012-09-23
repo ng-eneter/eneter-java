@@ -14,7 +14,7 @@ import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
-import eneter.net.system.threading.ManualResetEvent;
+import eneter.net.system.threading.internal.ManualResetEvent;
 
 public class Test_WebSocketMessaging extends MessagingSystemBaseTester
 {
