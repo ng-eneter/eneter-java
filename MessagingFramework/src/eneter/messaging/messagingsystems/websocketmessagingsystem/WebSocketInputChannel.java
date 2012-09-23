@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.util.ArrayList;
 
+import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
@@ -27,10 +28,12 @@ class WebSocketInputChannel extends WebSocketInputChannelBase implements IInputC
     }
  
     
-    public WebSocketInputChannel(String ipAddressAndPort, IServerSecurityFactory securityStreamFactory, IProtocolFormatter<?> protocolFormatter)
+    public WebSocketInputChannel(String ipAddressAndPort,
+            IInvoker invoker,
+            IServerSecurityFactory securityStreamFactory, IProtocolFormatter<?> protocolFormatter)
             throws Exception
     {
-        super(ipAddressAndPort, securityStreamFactory);
+        super(ipAddressAndPort, invoker, securityStreamFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -84,14 +87,26 @@ class WebSocketInputChannel extends WebSocketInputChannelBase implements IInputC
                 if (aWebSocketMessage != null)
                 {
                     // Read the message from the stream.
-                    ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(aWebSocketMessage.getInputStream());
+                    final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(aWebSocketMessage.getInputStream());
 
                     if (aProtocolMessage != null)
                     {
-                        // Put the message to the queue from where the working thread removes it to notify
-                        // subscribers of the input channel.
-                        // Note: therfore subscribers of the input channel are notified allways in one thread.
-                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                        if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+                        {
+                            // Notify message received from the working thread.
+                            myMessageProcessingWorker.invoke(new IMethod()
+                            {
+                                @Override
+                                public void invoke() throws Exception
+                                {
+                                    notifyMessageReceived(aProtocolMessage.Message);
+                                }
+                            });
+                        }
+                        else
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+                        }
                     }
                 }
             }
@@ -109,23 +124,16 @@ class WebSocketInputChannel extends WebSocketInputChannelBase implements IInputC
         }
     }
     
-    @Override
-    protected void handleMessage(ProtocolMessage protocolMessage)
+    private void notifyMessageReceived(Object message)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (protocolMessage.MessageType != EProtocolMessageType.MessageReceived)
-            {
-                EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
-                return;
-            }
-
             if (myMessageReceivedEvent.isSubscribed())
             {
                 try
                 {
-                    myMessageReceivedEvent.raise(this, new ChannelMessageEventArgs(getChannelId(), protocolMessage.Message));
+                    myMessageReceivedEvent.raise(this, new ChannelMessageEventArgs(myChannelId, message));
                 }
                 catch (Exception err)
                 {
@@ -142,6 +150,7 @@ class WebSocketInputChannel extends WebSocketInputChannelBase implements IInputC
             EneterTrace.leaving(aTrace);
         }
     }
+    
     
     private ArrayList<IWebSocketClientContext> myConnectedSenders = new ArrayList<IWebSocketClientContext>();
     

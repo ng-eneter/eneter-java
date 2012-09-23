@@ -8,6 +8,9 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
+import eneter.messaging.dataprocessing.messagequeueing.internal.CallingThreadInvoker;
+import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
+import eneter.messaging.dataprocessing.messagequeueing.internal.WorkingThreadInvoker;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -31,7 +34,26 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      */
     public WebSocketMessagingSystemFactory()
     {
-        this(300000, new EneterProtocolFormatter());
+        this(EConcurrencyMode.Synchronous, 300000, new EneterProtocolFormatter());
+    }
+    
+    /**
+     * Constructs the websocket messaging factory.
+     * @param concurrencyMode Specifies the threading mode for receiving messages in input channel and duplex input channel.
+     */
+    public WebSocketMessagingSystemFactory(EConcurrencyMode concurrencyMode)
+    {
+        this(concurrencyMode, 300000, new EneterProtocolFormatter());
+    }
+    
+    /**
+     * Constructs the websocket messaging factory.
+     * @param concurrencyMode Specifies the threading mode for receiving messages in input channel and duplex input channel.
+     * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
+     */
+    public WebSocketMessagingSystemFactory(EConcurrencyMode concurrencyMode, IProtocolFormatter<?> protocolFormatter)
+    {
+        this(concurrencyMode, 300000, protocolFormatter);
     }
     
     /**
@@ -43,9 +65,9 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      */
     public WebSocketMessagingSystemFactory(long pingFrequency)
     {
-        this(pingFrequency, new EneterProtocolFormatter());
+        this(EConcurrencyMode.Synchronous, pingFrequency, new EneterProtocolFormatter());
     }
-
+    
     /**
      * Constructs the websocket messaging factory.
      * It allows to set the ping frequency. The pinging is intended to keep the connection alive in
@@ -55,11 +77,27 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      * @param pingFrequency how often the client pings the server to keep the connection alive. If set to 0, the pinging will not start.
      * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
      */
-    public WebSocketMessagingSystemFactory(long pingFrequency,  IProtocolFormatter<?> protocolFormatter)
+    public WebSocketMessagingSystemFactory(long pingFrequency, IProtocolFormatter<?> protocolFormatter)
+    {
+        this(EConcurrencyMode.Synchronous, pingFrequency, new EneterProtocolFormatter());
+    }
+
+    /**
+     * Constructs the websocket messaging factory.
+     * It allows to set the ping frequency. The pinging is intended to keep the connection alive in
+     * environments that would drop the connection if not active for some time.
+     * (e.g. Android phone can drop the connection if there is no activity several minutes.) 
+     * 
+     * @param concurrencyMode Specifies the threading mode for receiving messages in input channel and duplex input channel.
+     * @param pingFrequency how often the client pings the server to keep the connection alive. If set to 0, the pinging will not start.
+     * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
+     */
+    private WebSocketMessagingSystemFactory(EConcurrencyMode concurrencyMode, long pingFrequency, IProtocolFormatter<?> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myConcurrencyMode = concurrencyMode;
             myPingFrequency = pingFrequency;
             myProtocolFormatter = protocolFormatter;
         }
@@ -99,7 +137,17 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new WebSocketInputChannel(channelId, myServerSecurityFactory, myProtocolFormatter);
+            IInvoker anInvoker = null;
+            if (myConcurrencyMode == EConcurrencyMode.Synchronous)
+            {
+                anInvoker = new WorkingThreadInvoker(channelId);
+            }
+            else
+            {
+                anInvoker = new CallingThreadInvoker();
+            }
+            
+            return new WebSocketInputChannel(channelId, anInvoker, myServerSecurityFactory, myProtocolFormatter);
         }
         finally
         {
@@ -176,7 +224,17 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new WebSocketDuplexInputChannel(channelId, myServerSecurityFactory, myProtocolFormatter);
+            IInvoker anInvoker = null;
+            if (myConcurrencyMode == EConcurrencyMode.Synchronous)
+            {
+                anInvoker = new WorkingThreadInvoker(channelId);
+            }
+            else
+            {
+                anInvoker = new CallingThreadInvoker();
+            }
+            
+            return new WebSocketDuplexInputChannel(channelId, anInvoker, myServerSecurityFactory, myProtocolFormatter);
         }
         finally
         {
@@ -222,6 +280,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     private IServerSecurityFactory myServerSecurityFactory = new NoneSecurityServerFactory();
     private IClientSecurityFactory myClientSecurityFactory = new NoneSecurityClientFactory();
 
+    private EConcurrencyMode myConcurrencyMode;
     private IProtocolFormatter<?> myProtocolFormatter;
     private long myPingFrequency;
 }

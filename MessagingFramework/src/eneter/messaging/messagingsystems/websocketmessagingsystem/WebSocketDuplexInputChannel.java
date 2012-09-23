@@ -11,6 +11,7 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.EProtocolMessageType;
@@ -76,10 +77,12 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
 
     
     
-    public WebSocketDuplexInputChannel(String ipAddressAndPort, IServerSecurityFactory securityStreamFactory, IProtocolFormatter<?> protocolFormatter)
+    public WebSocketDuplexInputChannel(String ipAddressAndPort,
+            IInvoker invoker,
+            IServerSecurityFactory securityStreamFactory, IProtocolFormatter<?> protocolFormatter)
             throws Exception
     {
-        super(ipAddressAndPort, securityStreamFactory);
+        super(ipAddressAndPort, invoker, securityStreamFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -92,7 +95,7 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
         }
     }
     
-    public void sendResponseMessage(String responseReceiverId, Object message)
+    public void sendResponseMessage(final String responseReceiverId, Object message)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -139,11 +142,15 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
                         myConnectedResponseReceivers.remove(responseReceiverId);
                     }
 
-                    // Put the message about the disconnections to the queue from where the working thread removes it to notify
-                    // subscribers of the input channel.
-                    // Note: therfore subscribers of the input channel are notified allways in one thread.
-                    ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, responseReceiverId, null);
-                    myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                    // Notify connection closed from the working thread.
+                    myMessageProcessingWorker.invoke(new IMethod()
+                    {
+                        @Override
+                        public void invoke() throws Exception
+                        {
+                            notifyEvent(myResponseReceiverDisconnectedEvent, responseReceiverId);
+                        }
+                    });
 
                     throw err;
                 }
@@ -222,7 +229,7 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
                     WebSocketMessage aWebSocketMessage = client.receiveMessage();
                     if (aWebSocketMessage != null)
                     {
-                        ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(aWebSocketMessage.getInputStream());
+                        final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(aWebSocketMessage.getInputStream());
 
                         if (aProtocolMessage != null)
                         {
@@ -244,22 +251,36 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
                                     }
                                 }
 
-                                // Put the message to the queue from where the working thread removes it to notify
-                                // subscribers of the input channel.
-                                // Note: therfore subscribers of the input channel are notified allways in one thread.
-                                myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                                // Notify open connection from the working thread.
+                                myMessageProcessingWorker.invoke(new IMethod()
+                                {
+                                    @Override
+                                    public void invoke() throws Exception
+                                    {
+                                        notifyEvent(myResponseReceiverConnectedEvent, aProtocolMessage.ResponseReceiverId);
+                                    }
+                                });
                             }
                             // If response receiver connection closed message
                             else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
                             {
                                 isConnectionClosed = true;
                             }
+                            else if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+                            {
+                                // Notify the message received from the working thread.
+                                myMessageProcessingWorker.invoke(new IMethod()
+                                {
+                                    @Override
+                                    public void invoke() throws Exception
+                                    {
+                                        notifyMessageReceived(aProtocolMessage.Message, aProtocolMessage.ResponseReceiverId);
+                                    }
+                                });
+                            }
                             else
                             {
-                                // Put the message to the queue from where the working thread removes it to notify
-                                // subscribers of the input channel.
-                                // Note: therfore subscribers of the input channel are notified allways in one thread.
-                                myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                                EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
                             }
                         }
                         else
@@ -294,12 +315,17 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
                     // or by calling 'DisconnectResponseReceiver()', then notify, that the client disconnected itself.
                     if (aConnectionState == EConnectionState.Open)
                     {
-                        ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aResponseReceiverId, null);
-
-                        // Put the message to the queue from where the working thread removes it to notify
-                        // subscribers of the input channel.
-                        // Note: therfore subscribers of the input channel are notified allways in one thread.
-                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                        final String aReceiverId = aResponseReceiverId;
+                        
+                        // Notify the connection closed from the working thread.
+                        myMessageProcessingWorker.invoke(new IMethod()
+                        {
+                            @Override
+                            public void invoke() throws Exception
+                            {
+                                notifyEvent(myResponseReceiverDisconnectedEvent, aReceiverId);
+                            }
+                        });
                     }
                 }
             }
@@ -310,86 +336,23 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
         }
     }
     
-    @Override
-    protected void handleMessage(ProtocolMessage protocolMessage)
+   
+    private void notifyEvent(EventImpl<ResponseReceiverEventArgs> handler, String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            try
-            {
-                if (protocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
-                {
-                    notifyResponseReceiverConnected(protocolMessage.ResponseReceiverId);
-                }
-                else if (protocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
-                {
-                    notifyResponseReceiverDisconnected(protocolMessage.ResponseReceiverId);
-                }
-                else if (protocolMessage.MessageType == EProtocolMessageType.MessageReceived)
-                {
-                    notifyMessageReceived(getChannelId(), protocolMessage.Message, protocolMessage.ResponseReceiverId);
-                }
-                else
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
-                }
-            }
-            catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    
-    private void notifyResponseReceiverConnected(String responseReceiverId)
-    {
-        if (myResponseReceiverConnectedEvent.isSubscribed())
-        {
-            ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
-
-            try
-            {
-                myResponseReceiverConnectedEvent.raise(this, aResponseReceiverEvent);
-            }
-            catch (Exception err)
-            {
-                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                throw err;
-            }
-        }
-    }
-    
-    private void notifyResponseReceiverDisconnected(String responseReceiverId)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            if (myResponseReceiverDisconnectedEvent.isSubscribed())
+            if (handler != null)
             {
                 ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
 
                 try
                 {
-                    myResponseReceiverDisconnectedEvent.raise(this, aResponseReceiverEvent);
+                    handler.raise(this, aResponseReceiverEvent);
                 }
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
                 }
             }
         }
@@ -399,7 +362,8 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
         }
     }
     
-    private void notifyMessageReceived(String channelId, Object message, String responseReceiverId)
+   
+    private void notifyMessageReceived(Object message, String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -408,7 +372,7 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
             {
                 try
                 {
-                    myMessageReceivedEvent.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+                    myMessageReceivedEvent.raise(this, new DuplexChannelMessageEventArgs(myChannelId, message, responseReceiverId));
                 }
                 catch (Exception err)
                 {

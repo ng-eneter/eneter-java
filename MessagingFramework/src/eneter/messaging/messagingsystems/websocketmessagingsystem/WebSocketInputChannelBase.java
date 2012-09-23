@@ -10,10 +10,9 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.net.URI;
 
-import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
+import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.net.system.*;
 import eneter.net.system.internal.StringExt;
@@ -21,7 +20,9 @@ import eneter.net.system.internal.StringExt;
 
 abstract class WebSocketInputChannelBase
 {
-    public WebSocketInputChannelBase(String ipAddressAndPort, IServerSecurityFactory securityFactory)
+    public WebSocketInputChannelBase(String ipAddressAndPort,
+            IInvoker invoker,
+            IServerSecurityFactory securityFactory)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -47,7 +48,7 @@ abstract class WebSocketInputChannelBase
             }
             myListener = new WebSocketListener(aUri, securityFactory);
 
-            myMessageProcessingThread = new WorkingThread<ProtocolMessage>(ipAddressAndPort);
+            myMessageProcessingWorker = invoker;
         }
         finally
         {
@@ -76,8 +77,8 @@ abstract class WebSocketInputChannelBase
 
                 try
                 {
-                    // Start the working thread for removing messages from the queue
-                    myMessageProcessingThread.registerMessageHandler(myHandleMessageHandler);
+                    // Start the working thread processing incoming messages.
+                    myMessageProcessingWorker.start();
 
                     // Start listener.
                     myListener.startListening(myHandleConnectionHandler);
@@ -126,15 +127,8 @@ abstract class WebSocketInputChannelBase
                 // Stop the listener.
                 myListener.stopListening();
 
-                // Stop thread processing the queue with messages.
-                try
-                {
-                    myMessageProcessingThread.unregisterMessageHandler();
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.UnregisterMessageHandlerThreadFailure, err);
-                }
+                // Stop thread processing incoming messages.
+                myMessageProcessingWorker.stop();
             }
         }
         finally
@@ -165,13 +159,11 @@ abstract class WebSocketInputChannelBase
     
     protected abstract void handleConnection(IWebSocketClientContext client) throws Exception;
     
-    protected abstract void handleMessage(ProtocolMessage protocolMessage);
     
-    
-    private String myChannelId;
+    protected String myChannelId;
     private Object myListeningManipulatorLock = new Object();
     private WebSocketListener myListener;
-    protected WorkingThread<ProtocolMessage> myMessageProcessingThread;
+    protected IInvoker myMessageProcessingWorker;
     
     
     private IMethod1<IWebSocketClientContext> myHandleConnectionHandler = new IMethod1<IWebSocketClientContext>()
@@ -180,15 +172,6 @@ abstract class WebSocketInputChannelBase
         public void invoke(IWebSocketClientContext t) throws Exception
         {
             handleConnection(t);
-        }
-    };
-    
-    private IMethod1<ProtocolMessage> myHandleMessageHandler = new IMethod1<ProtocolMessage>()
-    {
-        @Override
-        public void invoke(ProtocolMessage t) throws Exception
-        {
-            handleMessage(t);
         }
     };
     
