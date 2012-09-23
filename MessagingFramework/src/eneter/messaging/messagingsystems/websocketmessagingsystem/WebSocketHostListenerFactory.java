@@ -12,7 +12,7 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 import java.net.InetSocketAddress;
 
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.internal.*;
 
 
 class WebSocketHostListenerFactory implements IHostListenerFactory

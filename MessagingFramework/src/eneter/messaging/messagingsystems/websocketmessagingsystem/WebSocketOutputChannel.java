@@ -11,10 +11,11 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 import java.net.URI;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.IOutputChannel;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
-import eneter.net.system.StringExt;
+import eneter.net.system.internal.StringExt;
 
 class WebSocketOutputChannel implements IOutputChannel
 {

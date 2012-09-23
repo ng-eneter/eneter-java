@@ -12,13 +12,14 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.EProtocolMessageType;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.net.system.*;
+import eneter.net.system.internal.StringExt;
 
 class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
                                   implements IDuplexInputChannel

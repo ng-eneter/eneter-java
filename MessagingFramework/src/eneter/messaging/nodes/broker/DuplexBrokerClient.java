@@ -11,10 +11,12 @@ package eneter.messaging.nodes.broker;
 import java.util.regex.Pattern;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.endpoints.typedmessages.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.nodes.channelwrapper.*;
 import eneter.net.system.*;
+import eneter.net.system.internal.StringExt;
 
 class DuplexBrokerClient implements IDuplexBrokerClient
 {

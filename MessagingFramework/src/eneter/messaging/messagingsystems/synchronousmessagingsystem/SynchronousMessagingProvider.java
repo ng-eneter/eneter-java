@@ -11,7 +11,7 @@ package eneter.messaging.messagingsystems.synchronousmessagingsystem;
 import java.util.HashMap;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.IMessagingProvider;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IMessagingProvider;
 import eneter.net.system.IMethod1;
 
 class SynchronousMessagingProvider implements IMessagingProvider

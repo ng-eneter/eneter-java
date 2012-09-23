@@ -13,9 +13,11 @@ import java.net.*;
 import java.util.*;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
+import eneter.net.system.internal.StringExt;
 
 
 
@@ -67,9 +69,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(ipAddressAndPort,
-              new TcpListenerProvider(ipAddressAndPort, serverSecurityFactory),
-              serverSecurityFactory);
+        super(ipAddressAndPort, serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try

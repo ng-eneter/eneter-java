@@ -11,9 +11,9 @@ package eneter.messaging.messagingsystems.threadpoolmessagingsystem;
 import java.util.HashMap;
 
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.IMessagingProvider;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IMessagingProvider;
 import eneter.net.system.IMethod1;
-import eneter.net.system.threading.ThreadPool;
+import eneter.net.system.threading.internal.ThreadPool;
 
 class ThreadPoolMessagingProvider implements IMessagingProvider
 {

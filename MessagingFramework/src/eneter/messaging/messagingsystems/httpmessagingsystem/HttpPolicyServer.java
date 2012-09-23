@@ -11,9 +11,9 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 import java.net.URI;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.net.system.IMethod1;
-import eneter.net.system.StringExt;
+import eneter.net.system.internal.StringExt;
 
 /**
  * HTTP policy server needed for the communication with Silverlight applications.

@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.net.system.StringExt;
+import eneter.net.system.internal.StringExt;
 
 class HttpFormatter
 {

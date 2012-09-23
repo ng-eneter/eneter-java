@@ -3,8 +3,8 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 import java.net.InetSocketAddress;
 
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.HostListenerBase;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.IHostListenerFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.internal.HostListenerBase;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.internal.IHostListenerFactory;
 
 
 class HttpHostListenerFactory implements IHostListenerFactory

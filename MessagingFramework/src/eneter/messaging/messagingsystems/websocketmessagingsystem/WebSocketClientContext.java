@@ -15,8 +15,10 @@ import java.util.Map;
 
 import eneter.messaging.dataprocessing.messagequeueing.MessageQueue;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.net.system.*;
-import eneter.net.system.threading.ThreadPool;
+import eneter.net.system.internal.IFunction1;
+import eneter.net.system.threading.internal.ThreadPool;
 
 class WebSocketClientContext implements IWebSocketClientContext
 {

@@ -10,7 +10,8 @@ package eneter.messaging.endpoints.typedmessages;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.infrastructure.attachable.AttachableInputChannelBase;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.infrastructure.attachable.internal.AttachableInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.ChannelMessageEventArgs;
 import eneter.net.system.*;
 

@@ -13,10 +13,11 @@ import java.util.*;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.dataprocessing.wrapping.*;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.infrastructure.attachable.AttachableDuplexOutputChannelBase;
+import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexOutputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.IDuplexInputChannel;
 import eneter.net.system.*;
+import eneter.net.system.internal.StringExt;
 
 
 class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase

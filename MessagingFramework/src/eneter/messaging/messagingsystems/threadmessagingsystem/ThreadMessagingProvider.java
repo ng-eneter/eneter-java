@@ -12,7 +12,7 @@ import java.util.HashMap;
 
 import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.*;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.IMethod1;
 
 class ThreadMessagingProvider implements IMessagingProvider

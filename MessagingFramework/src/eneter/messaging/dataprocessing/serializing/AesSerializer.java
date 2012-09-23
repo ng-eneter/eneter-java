@@ -17,7 +17,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.net.system.security.cryptography.Rfc2898DeriveBytes;
+import eneter.net.system.security.cryptography.internal.Rfc2898DeriveBytes;
 
 /**
  * Serializer using AES (Advanced Encryption Standard).

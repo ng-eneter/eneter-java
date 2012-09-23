@@ -10,7 +10,9 @@ package eneter.messaging.endpoints.typedmessages;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.*;
+import eneter.messaging.infrastructure.attachable.internal.AttachableOutputChannelBase;
 
 class TypedMessageSender<_MessageData> extends AttachableOutputChannelBase
                                        implements ITypedMessageSender<_MessageData>

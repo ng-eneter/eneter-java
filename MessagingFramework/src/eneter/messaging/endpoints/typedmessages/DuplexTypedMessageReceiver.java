@@ -10,7 +10,8 @@ package eneter.messaging.endpoints.typedmessages;
 
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.infrastructure.attachable.AttachableDuplexInputChannelBase;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEventArgs;
 import eneter.net.system.*;

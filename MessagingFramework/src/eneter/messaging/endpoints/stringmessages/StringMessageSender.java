@@ -9,7 +9,8 @@
 package eneter.messaging.endpoints.stringmessages;
 
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.infrastructure.attachable.AttachableOutputChannelBase;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.infrastructure.attachable.internal.AttachableOutputChannelBase;
 
 class StringMessageSender extends AttachableOutputChannelBase 
                                        implements IStringMessageSender

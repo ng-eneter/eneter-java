@@ -15,10 +15,12 @@ import java.util.UUID;
 
 import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
-import eneter.net.system.threading.*;
+import eneter.net.system.internal.StringExt;
+import eneter.net.system.threading.internal.*;
 
 class HttpDuplexOutputChannel implements IDuplexOutputChannel
 {

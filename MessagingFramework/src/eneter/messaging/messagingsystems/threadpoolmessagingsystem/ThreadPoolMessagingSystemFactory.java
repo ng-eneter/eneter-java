@@ -12,7 +12,7 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.*;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 
 
 /**

@@ -11,6 +11,7 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 import java.util.ArrayList;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;

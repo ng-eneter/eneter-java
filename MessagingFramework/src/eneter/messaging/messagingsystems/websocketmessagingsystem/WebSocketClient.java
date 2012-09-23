@@ -14,10 +14,14 @@ import java.util.*;
 
 import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.net.system.*;
-import eneter.net.system.threading.ManualResetEvent;
-import eneter.net.system.threading.ThreadPool;
+import eneter.net.system.internal.Convert;
+import eneter.net.system.internal.IFunction1;
+import eneter.net.system.internal.StringExt;
+import eneter.net.system.threading.internal.ManualResetEvent;
+import eneter.net.system.threading.internal.ThreadPool;
 
 /**
  * WebSocket client.

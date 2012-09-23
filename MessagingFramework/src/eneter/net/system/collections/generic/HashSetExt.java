@@ -11,6 +11,7 @@ package eneter.net.system.collections.generic;
 import java.util.*;
 
 import eneter.net.system.*;
+import eneter.net.system.internal.IFunction1;
 
 public class HashSetExt
 {

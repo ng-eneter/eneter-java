@@ -1,6 +1,5 @@
 package eneter.messaging.messagingsystems.httpmessagingsystem;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -10,14 +9,14 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import eneter.messaging.dataprocessing.streaming.StreamUtil;
+import eneter.messaging.dataprocessing.streaming.internal.StreamUtil;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.*;
-import eneter.net.system.IFunction1;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.internal.*;
 import eneter.net.system.IMethod1;
-import eneter.net.system.linq.EnumerableExt;
+import eneter.net.system.internal.IFunction1;
+import eneter.net.system.linq.internal.EnumerableExt;
 
 class HttpHostListener extends HostListenerBase
 {
@@ -114,7 +113,7 @@ class HttpHostListener extends HostListenerBase
 
                 aRequestMessage = aBuffer.toByteArray();
             }
-            else if (aRegExResult.get("method").equals("PUT"))
+            else if (aRegExResult.get("method").equals("POST"))
             {
                 // Get size of the message.
                 String aSizeStr = aHeaderFields.get("Content-Length");

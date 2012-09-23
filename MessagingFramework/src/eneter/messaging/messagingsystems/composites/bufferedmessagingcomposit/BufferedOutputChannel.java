@@ -13,7 +13,7 @@ import java.util.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.composites.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.threading.ThreadPool;
+import eneter.net.system.threading.internal.ThreadPool;
 
 class BufferedOutputChannel implements IOutputChannel, ICompositeOutputChannel
 {

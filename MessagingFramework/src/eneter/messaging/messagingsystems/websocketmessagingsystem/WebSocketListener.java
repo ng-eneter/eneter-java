@@ -11,7 +11,7 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 import java.net.URI;
 
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.PathListenerProviderBase;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.internal.PathListenerProviderBase;
 import eneter.net.system.IMethod1;
 
 /**

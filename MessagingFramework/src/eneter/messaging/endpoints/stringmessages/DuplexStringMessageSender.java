@@ -9,7 +9,8 @@
 package eneter.messaging.endpoints.stringmessages;
 
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.infrastructure.attachable.AttachableDuplexOutputChannelBase;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexOutputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;
 import eneter.net.system.*;
 

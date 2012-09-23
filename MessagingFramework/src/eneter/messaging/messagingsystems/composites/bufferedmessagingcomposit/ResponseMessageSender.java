@@ -11,9 +11,10 @@ package eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit;
 import java.util.*;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
-import eneter.net.system.threading.*;
+import eneter.net.system.threading.internal.*;
 
 class ResponseMessageSender
 {

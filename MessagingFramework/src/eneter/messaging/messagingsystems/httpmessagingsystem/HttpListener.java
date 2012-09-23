@@ -4,7 +4,7 @@ import java.net.URI;
 
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.NoneSecurityServerFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.PathListenerProviderBase;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.internal.PathListenerProviderBase;
 import eneter.net.system.IMethod1;
 
 

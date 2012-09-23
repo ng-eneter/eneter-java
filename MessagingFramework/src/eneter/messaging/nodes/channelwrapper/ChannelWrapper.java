@@ -12,6 +12,7 @@ import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.dataprocessing.wrapping.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.infrastructure.attachable.*;
+import eneter.messaging.infrastructure.attachable.internal.AttachableOutputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 

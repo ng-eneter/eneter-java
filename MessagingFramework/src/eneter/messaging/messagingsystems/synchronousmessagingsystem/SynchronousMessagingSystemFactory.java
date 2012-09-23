@@ -11,7 +11,7 @@ package eneter.messaging.messagingsystems.synchronousmessagingsystem;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.*;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 
 /**
  * The factory class implements the messaging system delivering messages synchronously in the caller thread.

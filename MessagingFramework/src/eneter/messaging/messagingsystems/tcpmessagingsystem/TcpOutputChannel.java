@@ -12,9 +12,10 @@ import java.io.*;
 import java.net.*;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.StringExt;
+import eneter.net.system.internal.StringExt;
 
 class TcpOutputChannel implements IOutputChannel
 {

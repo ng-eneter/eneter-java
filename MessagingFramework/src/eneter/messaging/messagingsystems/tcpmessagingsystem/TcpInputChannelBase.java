@@ -13,13 +13,16 @@ import java.net.*;
 
 import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.TcpListenerProvider;
 import eneter.net.system.*;
+import eneter.net.system.internal.StringExt;
 
 
 public abstract class TcpInputChannelBase
 {
-    public TcpInputChannelBase(String ipAddressAndPort, IListenerProvider tcpListenerProvider, IServerSecurityFactory serverSecurityFactory) throws Exception
+    public TcpInputChannelBase(String ipAddressAndPort, IServerSecurityFactory serverSecurityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -30,7 +33,7 @@ public abstract class TcpInputChannelBase
                 throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
             }
             
-            myTcpListenerProvider = tcpListenerProvider;
+            myTcpListenerProvider = new TcpListenerProvider(ipAddressAndPort, serverSecurityFactory);
             
             myChannelId = ipAddressAndPort;
             myMessageProcessingThread = new WorkingThread<ProtocolMessage>(ipAddressAndPort);
@@ -185,7 +188,7 @@ public abstract class TcpInputChannelBase
    
    
     protected Object myListeningManipulatorLock = new Object();
-    private IListenerProvider myTcpListenerProvider;
+    private TcpListenerProvider myTcpListenerProvider;
     protected WorkingThread<ProtocolMessage> myMessageProcessingThread;
     
     

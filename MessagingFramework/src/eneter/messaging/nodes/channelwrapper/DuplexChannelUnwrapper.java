@@ -13,11 +13,14 @@ import java.util.*;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.dataprocessing.wrapping.*;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.*;
+import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.HashSetExt;
-import eneter.net.system.linq.*;
+import eneter.net.system.internal.IFunction1;
+import eneter.net.system.linq.internal.*;
 
 class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                              implements IDuplexChannelUnwrapper

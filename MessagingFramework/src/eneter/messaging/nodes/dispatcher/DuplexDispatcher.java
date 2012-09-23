@@ -11,7 +11,9 @@ package eneter.messaging.nodes.dispatcher;
 import java.util.*;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.*;
+import eneter.messaging.infrastructure.attachable.internal.AttachableMultipleDuplexInputChannelsBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 

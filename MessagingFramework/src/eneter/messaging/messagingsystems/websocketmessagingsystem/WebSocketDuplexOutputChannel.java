@@ -14,11 +14,13 @@ import java.util.TimerTask;
 import java.util.UUID;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
 import eneter.net.system.*;
-import eneter.net.system.threading.ThreadPool;
+import eneter.net.system.internal.StringExt;
+import eneter.net.system.threading.internal.ThreadPool;
 
 class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
 {

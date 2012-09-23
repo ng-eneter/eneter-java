@@ -17,6 +17,8 @@ import java.util.regex.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.*;
+import eneter.net.system.internal.Convert;
+import eneter.net.system.internal.StringExt;
 
 class WebSocketFormatter
 {

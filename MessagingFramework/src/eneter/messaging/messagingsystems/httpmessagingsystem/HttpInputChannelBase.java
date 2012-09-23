@@ -4,11 +4,11 @@ import java.net.URI;
 
 import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.net.system.IMethod1;
-import eneter.net.system.StringExt;
+import eneter.net.system.internal.StringExt;
 
 abstract class HttpInputChannelBase
 {
