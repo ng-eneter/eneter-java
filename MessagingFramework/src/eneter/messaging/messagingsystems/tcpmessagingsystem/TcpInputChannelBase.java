@@ -11,10 +11,9 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 import java.io.IOException;
 import java.net.*;
 
-import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
+import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.TcpListenerProvider;
 import eneter.net.system.*;
 import eneter.net.system.internal.StringExt;
@@ -22,7 +21,9 @@ import eneter.net.system.internal.StringExt;
 
 public abstract class TcpInputChannelBase
 {
-    public TcpInputChannelBase(String ipAddressAndPort, IServerSecurityFactory serverSecurityFactory) throws Exception
+    public TcpInputChannelBase(String ipAddressAndPort,
+            IInvoker invoker,
+            IServerSecurityFactory serverSecurityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -36,7 +37,7 @@ public abstract class TcpInputChannelBase
             myTcpListenerProvider = new TcpListenerProvider(ipAddressAndPort, serverSecurityFactory);
             
             myChannelId = ipAddressAndPort;
-            myMessageProcessingThread = new WorkingThread<ProtocolMessage>(ipAddressAndPort);
+            myMessageProcessingWorker = invoker;
         }
         finally
         {
@@ -66,8 +67,8 @@ public abstract class TcpInputChannelBase
                 
                 try
                 {
-                    // Start the working thread for removing messages from the queue
-                    myMessageProcessingThread.registerMessageHandler(myMessageHandlerHandler);
+                    // Start invoker processing incoming messages.
+                    myMessageProcessingWorker.start();
                     
                     // Start TCP listener.
                     myTcpListenerProvider.startListening(myHandleConnection);
@@ -137,20 +138,8 @@ public abstract class TcpInputChannelBase
                 // Stop the TCP listener.
                 myTcpListenerProvider.stopListening();
 
-                // Stop thread processing the queue with messages.
-                try
-                {
-                    myMessageProcessingThread.unregisterMessageHandler();
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.UnregisterMessageHandlerThreadFailure, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.UnregisterMessageHandlerThreadFailure, err);
-                    throw err;
-                }
+                // Stop invoker processing incoming messages.
+                myMessageProcessingWorker.stop();
             }
         }
         finally
@@ -181,15 +170,13 @@ public abstract class TcpInputChannelBase
     
     protected abstract void handleConnection(Socket clientSocket) throws Exception;
     
-    protected abstract void handleMessage(ProtocolMessage message);
-    
 
     protected String myChannelId = "";
    
    
     protected Object myListeningManipulatorLock = new Object();
     private TcpListenerProvider myTcpListenerProvider;
-    protected WorkingThread<ProtocolMessage> myMessageProcessingThread;
+    protected IInvoker myMessageProcessingWorker;
     
     
     private IMethod1<Socket> myHandleConnection = new IMethod1<Socket>()
@@ -202,14 +189,5 @@ public abstract class TcpInputChannelBase
     };
     
    
-    private IMethod1<ProtocolMessage> myMessageHandlerHandler = new IMethod1<ProtocolMessage>()
-    {
-        @Override
-        public void invoke(ProtocolMessage message) throws Exception
-        {
-            handleMessage(message);
-        }
-    };
-    
     protected abstract String TracedObject();
 }

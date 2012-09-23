@@ -12,6 +12,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
@@ -20,11 +21,13 @@ import eneter.net.system.*;
 
 class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
 {
-    public TcpInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter,
+    public TcpInputChannel(String ipAddressAndPort,
+            IInvoker invoker,
+            IProtocolFormatter<byte[]> protocolFormatter,
             IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(ipAddressAndPort, serverSecurityFactory);
+        super(ipAddressAndPort, invoker, serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -83,7 +86,6 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
                 InputStream anInputStream = clientSocket.getInputStream();
 
                 // First read the message to the buffer.
-                ProtocolMessage aProtocolMessage = null;
                 ByteArrayOutputStream anOutputMemStream = new ByteArrayOutputStream();
                 try
                 {
@@ -100,14 +102,25 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
                 }
 
                 // Decode the incoming message.
-                aProtocolMessage = myProtocolFormatter.decodeMessage(anOutputMemStream.toByteArray());
-
+                final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anOutputMemStream.toByteArray());
                 if (aProtocolMessage != null)
                 {
-                    // Put the message to the queue from where the working thread removes it to notify
-                    // subscribers of the input channel.
-                    // Note: therfore subscribers of the input channel are notified allways in one thread.
-                    myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                    if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+                    {
+                        // Notify message received from the working thread.
+                        myMessageProcessingWorker.invoke(new IMethod()
+                        {
+                            @Override
+                            public void invoke() throws Exception
+                            {
+                                notifyMessageReceived(aProtocolMessage.Message);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+                    }
                 }
             }
             finally
@@ -127,33 +140,21 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
             EneterTrace.leaving(aTrace);
         }
     }
-
-    @Override
-    protected void handleMessage(ProtocolMessage protocolMessage)
+    
+    private void notifyMessageReceived(Object message)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (protocolMessage.MessageType != EProtocolMessageType.MessageReceived)
-            {
-                EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
-                return;
-            }
-            
             if (myMessageReceivedEventImpl.isSubscribed())
             {
                 try
                 {
-                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(getChannelId(), protocolMessage.Message));
+                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(getChannelId(), message));
                 }
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
                 }
             }
             else
@@ -167,7 +168,7 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
         }
     }
     
-    
+   
     
     private ArrayList<Socket> myConnectedSenders = new ArrayList<Socket>();
     private IProtocolFormatter<byte[]> myProtocolFormatter;

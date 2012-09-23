@@ -8,6 +8,7 @@
 
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
+import eneter.messaging.dataprocessing.messagequeueing.internal.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -26,19 +27,30 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
      */
     public TcpMessagingSystemFactory()
     {
-        this(new EneterProtocolFormatter());
+        this(EConcurrencyMode.Synchronous, new EneterProtocolFormatter());
     }
 
     /**
      * Constructs the TCP messaging factory.
+     * @param concurrencyMode Specifies the threading mode for receiving messages in input channel and duplex input channel.
+     */
+    public TcpMessagingSystemFactory(EConcurrencyMode concurrencyMode)
+    {
+        this(concurrencyMode, new EneterProtocolFormatter());
+    }
+    
+    /**
+     * Constructs the TCP messaging factory.
      * 
+     * @param concurrencyMode Specifies the threading mode for receiving messages in input channel and duplex input channel.
      * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
      */
-    public TcpMessagingSystemFactory(IProtocolFormatter<byte[]> protocolFormatter)
+    public TcpMessagingSystemFactory(EConcurrencyMode concurrencyMode, IProtocolFormatter<byte[]> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myConcurrencyMode = concurrencyMode;
             myProtocolFormatter = protocolFormatter;
         }
         finally
@@ -81,7 +93,17 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpInputChannel(channelId, myProtocolFormatter, myServerSecurityFactory);
+            IInvoker anInvoker = null;
+            if (myConcurrencyMode == EConcurrencyMode.Synchronous)
+            {
+                anInvoker = new WorkingThreadInvoker(channelId);
+            }
+            else
+            {
+                anInvoker = new CallingThreadInvoker();
+            }
+            
+            return new TcpInputChannel(channelId, anInvoker, myProtocolFormatter, myServerSecurityFactory);
         }
         finally
         {
@@ -161,7 +183,17 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpDuplexInputChannel(channelId, myProtocolFormatter, myServerSecurityFactory);
+            IInvoker anInvoker = null;
+            if (myConcurrencyMode == EConcurrencyMode.Synchronous)
+            {
+                anInvoker = new WorkingThreadInvoker(channelId);
+            }
+            else
+            {
+                anInvoker = new CallingThreadInvoker();
+            }
+            
+            return new TcpDuplexInputChannel(channelId, anInvoker, myProtocolFormatter, myServerSecurityFactory);
         }
         finally
         {
@@ -204,6 +236,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     }
     
     
+    private EConcurrencyMode myConcurrencyMode;
     private IProtocolFormatter<byte[]> myProtocolFormatter;
     private IServerSecurityFactory myServerSecurityFactory = new NoneSecurityServerFactory();
     private IClientSecurityFactory myClientSecurityFactory = new NoneSecurityClientFactory();

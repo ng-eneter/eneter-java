@@ -12,6 +12,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
@@ -65,11 +66,13 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
     }
     
     
-    public TcpDuplexInputChannel(String ipAddressAndPort, IProtocolFormatter<byte[]> protocolFormatter,
+    public TcpDuplexInputChannel(String ipAddressAndPort,
+            IInvoker invoker,
+            IProtocolFormatter<byte[]> protocolFormatter,
             IServerSecurityFactory serverSecurityFactory)
             throws Exception
     {
-        super(ipAddressAndPort, serverSecurityFactory);
+        super(ipAddressAndPort, invoker, serverSecurityFactory);
         
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -102,7 +105,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
     }
 
     @Override
-    public void sendResponseMessage(String responseReceiverId, Object message)
+    public void sendResponseMessage(final String responseReceiverId, Object message)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -135,10 +138,9 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                 {
                     EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
 
-                    aClient.getCommunicationStream().close();
-
                     try
                     {
+                        aClient.getCommunicationStream().close();
                         aClient.getTcpClient().close();
                     }
                     catch (Exception err2)
@@ -151,34 +153,16 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                         myConnectedResponseReceivers.remove(responseReceiverId);
                     }
 
-                    // Put the message about the disconnections to the queue from where the working thread removes it to notify
-                    // subscribers of the input channel.
-                    // Note: therfore subscribers of the input channel are notified allways in one thread.
-                    ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, responseReceiverId, null);
-                    myMessageProcessingThread.enqueueMessage(aProtocolMessage);
-
-                    throw err;
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-                    
-                    aClient.getCommunicationStream().close();
-
-                    try
+                    // Notify connection closed from the working thread.
+                    myMessageProcessingWorker.invoke(new IMethod()
                     {
-                        aClient.getTcpClient().close();
-                    }
-                    catch (Exception err2)
-                    {
-                        // do not care if an exception during closing the tcp client.
-                    }
+                        @Override
+                        public void invoke() throws Exception
+                        {
+                            notifyEvent(myResponseReceiverDisconnectedEventImpl, responseReceiverId);
+                        }
+                    });
 
-                    synchronized (myConnectedResponseReceivers)
-                    {
-                        myConnectedResponseReceivers.remove(responseReceiverId);
-                    }
-                    
                     throw err;
                 }
             }
@@ -260,7 +244,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                 while (!isConnectionClosed)
                 {
                     // Block until a message is received or the connection is closed.
-                    ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
+                    final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(anInputStream);
 
                     if (aProtocolMessage != null)
                     {
@@ -282,22 +266,36 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                                 }
                             }
 
-                            // Put the message to the queue from where the working thread removes it to notify
-                            // subscribers of the input channel.
-                            // Note: therfore subscribers of the input channel are notified allways in one thread.
-                            myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                            // Notify open connection from the working thread.
+                            myMessageProcessingWorker.invoke(new IMethod()
+                            {
+                                @Override
+                                public void invoke() throws Exception
+                                {
+                                    notifyEvent(myResponseReceiverConnectedEventImpl, aProtocolMessage.ResponseReceiverId);
+                                }
+                            });
                         }
                         // If response receiver connection closed message
                         else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
                         {
                             isConnectionClosed = true;
                         }
+                        else if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+                        {
+                            // Notify the message received from the working thread.
+                            myMessageProcessingWorker.invoke(new IMethod()
+                            {
+                                @Override
+                                public void invoke() throws Exception
+                                {
+                                    notifyMessageReceived(aProtocolMessage.Message, aProtocolMessage.ResponseReceiverId);
+                                }
+                            });
+                        }
                         else
                         {
-                            // Put the message to the queue from where the working thread removes it to notify
-                            // subscribers of the input channel.
-                            // Note: therfore subscribers of the input channel are notified allways in one thread.
-                            myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                            EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
                         }
                     }
                     else
@@ -327,12 +325,17 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
                     // or by calling 'DisconnectResponseReceiver()', then notify, that the client disconnected itself.
                     if (aConnectionState == TClient.EConnectionState.Open)
                     {
-                        ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aResponseReceiverId, null);
-
-                        // Put the message to the queue from where the working thread removes it to notify
-                        // subscribers of the input channel.
-                        // Note: therfore subscribers of the input channel are notified allways in one thread.
-                        myMessageProcessingThread.enqueueMessage(aProtocolMessage);
+                        final String aReceiverId = aResponseReceiverId; 
+                        
+                        // Notify the connection closed from the working thread.
+                        myMessageProcessingWorker.invoke(new IMethod()
+                        {
+                            @Override
+                            public void invoke() throws Exception
+                            {
+                                notifyEvent(myResponseReceiverDisconnectedEventImpl, aReceiverId);
+                            }
+                        });
                     }
                 }
             }
@@ -343,91 +346,23 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
         }
     }
 
-    @Override
-    protected void handleMessage(ProtocolMessage protocolMessage)
+ 
+    private void notifyEvent(EventImpl<ResponseReceiverEventArgs> handler, String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            try
-            {
-                if (protocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
-                {
-                    notifyResponseReceiverConnected(protocolMessage.ResponseReceiverId);
-                }
-                else if (protocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
-                {
-                    notifyResponseReceiverDisconnected(protocolMessage.ResponseReceiverId);
-                }
-                else if (protocolMessage.MessageType == EProtocolMessageType.MessageReceived)
-                {
-                    notifyMessageReceived(getChannelId(), protocolMessage.Message, protocolMessage.ResponseReceiverId);
-                }
-                else
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
-                }
-            }
-            catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
-                throw err;
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    
-    private void notifyResponseReceiverConnected(String responseReceiverId)
-    {
-        if (myResponseReceiverConnectedEventImpl.isSubscribed())
-        {
-            ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
-
-            try
-            {
-                myResponseReceiverConnectedEventImpl.raise(this, aResponseReceiverEvent);
-            }
-            catch (Exception err)
-            {
-                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                throw err;
-            }
-        }
-    }
-    
-    private void notifyResponseReceiverDisconnected(String responseReceiverId)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
+            if (handler.isSubscribed())
             {
                 ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
 
                 try
                 {
-                    myResponseReceiverDisconnectedEventImpl.raise(this, aResponseReceiverEvent);
+                    handler.raise(this, aResponseReceiverEvent);
                 }
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
                 }
             }
         }
@@ -437,7 +372,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
         }
     }
     
-    private void notifyMessageReceived(String channelId, Object message, String responseReceiverId)
+    private void notifyMessageReceived(Object message, String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -446,16 +381,11 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             {
                 try
                 {
-                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(myChannelId, message, responseReceiverId));
                 }
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
                 }
             }
             else
