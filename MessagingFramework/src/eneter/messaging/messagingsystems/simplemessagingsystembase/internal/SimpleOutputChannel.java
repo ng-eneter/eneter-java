@@ -51,11 +51,6 @@ public class SimpleOutputChannel implements IOutputChannel
             EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
             throw err;
         }
-        catch (Error err)
-        {
-            EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-            throw err;
-        }
     }
     
     private IMessagingSystemBase myMessagingSystem;

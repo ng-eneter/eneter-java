@@ -73,11 +73,6 @@ public class JavaBinarySerializer implements ISerializer
             EneterTrace.error(TracedObject() + "failed to serialize object.", err);
             throw err;
         }
-        catch (Error err)
-        {
-            EneterTrace.error(TracedObject() + "failed to serialize object.", err);
-            throw err;
-        }
         finally
         {
             EneterTrace.leaving(aTrace);
@@ -101,11 +96,6 @@ public class JavaBinarySerializer implements ISerializer
             return (T)aResult;
         }
         catch (Exception err)
-        {
-            EneterTrace.error(TracedObject() + "failed to deserialize data.", err);
-            throw err;
-        }
-        catch (Error err)
         {
             EneterTrace.error(TracedObject() + "failed to deserialize data.", err);
             throw err;

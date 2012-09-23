@@ -58,11 +58,6 @@ class TypedMessageSender<_MessageData> extends AttachableOutputChannelBase
                 EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
                 throw err;
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                throw err;
-            }
         }
         finally
         {

@@ -93,21 +93,6 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
                     EneterTrace.error(aMessage, err);
                     throw err;
                 }
-                catch (Error err)
-                {
-                    // Try to clean after the failure
-                    try
-                    {
-                        detachDuplexInputChannel(duplexInputChannel.getChannelId());
-                    }
-                    catch(Exception err2)
-                    {
-                    }
-
-                    String aMessage = TracedObject() + "failed to start listening for '" + duplexInputChannel.getChannelId() + "'.";
-                    EneterTrace.error(aMessage, err);
-                    throw err;
-                }
             }
         }
         finally

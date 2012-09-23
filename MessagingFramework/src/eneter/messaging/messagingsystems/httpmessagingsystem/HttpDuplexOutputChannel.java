@@ -45,12 +45,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                 EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
                 throw err;
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
-                throw err;
-            }
-
 
             myChannelId = channelId;
             myPollingFrequencyMiliseconds = pullingFrequencyMiliseconds;
@@ -190,11 +184,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
                 }
-                catch (Error err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
-                    throw err;
-                }
 
                 // Wait until the polling stops.
                 if (myResponseListener != null && myResponseListener.getState() != State.NEW)
@@ -219,11 +208,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                         catch (Exception err)
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                        }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                            throw err;
                         }
                     }
                 }
@@ -292,11 +276,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                     EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                    throw err;
-                }
             }
         }
         finally
@@ -351,11 +330,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
             catch (Exception err)
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
-                throw err;
             }
 
             // Stop the thread processing polled message.
@@ -451,11 +425,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                         }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                            throw err;
-                        }
                     }
                     finally
                     {
@@ -497,11 +466,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
                         catch (Exception err)
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                            throw err;
                         }
                     }
                     finally

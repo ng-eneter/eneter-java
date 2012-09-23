@@ -77,11 +77,6 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
                 EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
                 throw err;
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-                throw err;
-            }
         }
         finally
         {
@@ -113,11 +108,6 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
                 EneterTrace.warning(TracedObject() + "failed to deserialize the request message.", err);
                 aRequestReceivedEventArgs = new TypedRequestReceivedEventArgs<_RequestType>(e.getResponseReceiverId(), err);
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + "failed to deserialize the request message.", err);
-                throw err;
-            }
 
             try
             {
@@ -126,10 +116,6 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
             catch (Exception err)
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
             }
         }
         finally

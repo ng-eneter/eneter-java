@@ -203,11 +203,6 @@ public class SimpleDuplexOutputChannel implements IDuplexOutputChannel
                     EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                    throw err;
-                }
             }
         }
         finally

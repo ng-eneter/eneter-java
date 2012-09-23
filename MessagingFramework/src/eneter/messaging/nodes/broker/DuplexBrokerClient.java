@@ -77,12 +77,6 @@ class DuplexBrokerClient implements IDuplexBrokerClient
                 EneterTrace.error(TracedObject() + "failed to attach the duplex output channel '" + aChannelId + "' and open connection.", err);
                 throw err;
             }
-            catch (Error err)
-            {
-                String aChannelId = (duplexOutputChannel != null) ? duplexOutputChannel.getChannelId() : "";
-                EneterTrace.error(TracedObject() + "failed to attach the duplex output channel '" + aChannelId + "' and open connection.", err);
-                throw err;
-            }
         }
         finally
         {
@@ -145,11 +139,6 @@ class DuplexBrokerClient implements IDuplexBrokerClient
                 myBrokerMessagesSender.sendRequestMessage(aBrokerMessage);
             }
             catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + "failed to send the message to the broker.", err);
-                throw err;
-            }
-            catch (Error err)
             {
                 EneterTrace.error(TracedObject() + "failed to send the message to the broker.", err);
                 throw err;
@@ -238,12 +227,6 @@ class DuplexBrokerClient implements IDuplexBrokerClient
                     Pattern.matches(aRegExpression, "");
                 }
                 catch (Exception err)
-                {
-                    EneterTrace.error(TracedObject() + "failed to subscribe the regular expression because the regular expression '"
-                        + aRegExpression + "' is incorrect.", err);
-                    throw err;
-                }
-                catch (Error err)
                 {
                     EneterTrace.error(TracedObject() + "failed to subscribe the regular expression because the regular expression '"
                         + aRegExpression + "' is incorrect.", err);
@@ -361,11 +344,6 @@ class DuplexBrokerClient implements IDuplexBrokerClient
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
-                }
             }
             else
             {
@@ -389,15 +367,6 @@ class DuplexBrokerClient implements IDuplexBrokerClient
                 myBrokerRequestSender.sendRequestMessage(aBrokerRequestMessage);
             }
             catch (Exception err)
-            {
-                String anError = (request == EBrokerRequest.Subscribe || request == EBrokerRequest.SubscribeRegExp) ?
-                    TracedObject() + "failed to subscribe in the Broker." :
-                    TracedObject() + "failed to unsubscribe in the Broker.";
-
-                EneterTrace.error(anError, err);
-                throw err;
-            }
-            catch (Error err)
             {
                 String anError = (request == EBrokerRequest.Subscribe || request == EBrokerRequest.SubscribeRegExp) ?
                     TracedObject() + "failed to subscribe in the Broker." :

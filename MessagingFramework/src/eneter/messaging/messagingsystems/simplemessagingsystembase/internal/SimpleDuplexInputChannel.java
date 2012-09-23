@@ -96,13 +96,6 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
                     
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
-                    stopListening();
-                    
-                    throw err;
-                }
             }
         }
         finally
@@ -128,11 +121,6 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
                     catch (Exception err)
                     {
                         EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
-                    }
-                    catch (Error err)
-                    {
-                        EneterTrace.error(TracedObject() + ErrorHandler.StopListeningFailure, err);
-                        throw err;
                     }
                     
                     myMessageReceiverInputChannel.messageReceived().unsubscribe(myMessageReceivedHandler);
@@ -194,15 +182,6 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
     
                 throw err;
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-    
-                // Sending the response message failed, therefore consider it as the disconnection with the reponse receiver.
-                notifyResponseReceiverDisconnected(responseReceiverId);
-    
-                throw err;
-            }
         }
         finally
         {
@@ -228,11 +207,6 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
             catch (Exception err)
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
-                throw err;
             }
         }
         finally
@@ -273,11 +247,6 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
-                throw err;
-            }
         }
         finally
         {
@@ -301,11 +270,6 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
                 }
             }
         }
@@ -332,11 +296,6 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
-                }
             }
         }
         finally
@@ -359,11 +318,6 @@ public class SimpleDuplexInputChannel implements IDuplexInputChannel
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
                 }
             }
             else

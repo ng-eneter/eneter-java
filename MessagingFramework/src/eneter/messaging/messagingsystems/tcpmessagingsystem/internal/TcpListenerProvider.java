@@ -146,22 +146,6 @@ public class TcpListenerProvider
 
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
-
-                    try
-                    {
-                        // Clear after failed start
-                        stopListening();
-                    }
-                    catch (Exception err2)
-                    {
-                        // We tried to clean after failure. The exception can be ignored.
-                    }
-
-                    throw err;
-                }
             }
         }
         finally
@@ -216,11 +200,6 @@ public class TcpListenerProvider
                         catch (Exception err)
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                        }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                            throw err;
                         }
                     }
                 }
@@ -313,11 +292,6 @@ public class TcpListenerProvider
             catch (Exception err)
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
-                throw err;
             }
             finally
             {

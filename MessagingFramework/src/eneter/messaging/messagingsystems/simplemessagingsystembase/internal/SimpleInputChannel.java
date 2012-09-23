@@ -83,13 +83,6 @@ public class SimpleInputChannel implements IInputChannel
                     
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
-                    stopListening();
-                    
-                    throw err;
-                }
             }
         }
         finally
@@ -112,11 +105,6 @@ public class SimpleInputChannel implements IInputChannel
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.StopListeningFailure, err);
-                    throw err;
                 }
     
                 myIsListeningFlag = false;

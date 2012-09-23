@@ -50,14 +50,6 @@ public abstract class AttachableInputChannelBase implements IAttachableInputChan
 
                     throw err;
                 }
-                catch (Error err)
-                {
-                    // Clean after the failure.
-                    myAttachedInputChannel.messageReceived().unsubscribe(myMessageReceivedHandler);
-                    myAttachedInputChannel = null;
-
-                    throw err;
-                }
             }
         }
         finally

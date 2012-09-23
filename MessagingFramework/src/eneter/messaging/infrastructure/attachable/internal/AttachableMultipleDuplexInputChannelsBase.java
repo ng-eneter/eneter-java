@@ -305,11 +305,6 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     EneterTrace.error(TracedObject() + "failed to send the message to the duplex output channel '" + duplexOutputChannelId + "'.", err);
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + "failed to send the message to the duplex output channel '" + duplexOutputChannelId + "'.", err);
-                    throw err;
-                }
             }
         }
         finally
@@ -370,11 +365,6 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     aDuplexInputChannelContext.getAttachedDuplexInputChannel().sendResponseMessage(anAssociatedConnection[0].getResponseReceiverId(), message);
                 }
                 catch (Exception err)
-                {
-                    EneterTrace.error(TracedObject() + "failed to send the response message for the response receiver '" + anAssociatedConnection[0].getResponseReceiverId() + "' through the duplex input channel '" + aDuplexInputChannelContext.getAttachedDuplexInputChannel().getChannelId() + "'.", err);
-                    throw err;
-                }
-                catch (Error err)
                 {
                     EneterTrace.error(TracedObject() + "failed to send the response message for the response receiver '" + anAssociatedConnection[0].getResponseReceiverId() + "' through the duplex input channel '" + aDuplexInputChannelContext.getAttachedDuplexInputChannel().getChannelId() + "'.", err);
                     throw err;

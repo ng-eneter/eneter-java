@@ -87,11 +87,6 @@ class DuplexBroker implements IDuplexBroker
                 EneterTrace.error(TracedObject() + "failed to attach duplex input channel '" + duplexInputChannel.getChannelId() + "'.", err);
                 throw err;
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + "failed to attach duplex input channel '" + duplexInputChannel.getChannelId() + "'.", err);
-                throw err;
-            }
 
             myDuplexInputChannelId = duplexInputChannel.getChannelId();
         }
@@ -115,11 +110,6 @@ class DuplexBroker implements IDuplexBroker
             catch (Exception err)
             {
                 EneterTrace.warning(TracedObject() + "failed to detach duplex input channel.", err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + "failed to detach duplex input channel.", err);
-                throw err;
             }
 
             myDuplexChannelUnwrapper.responseReceiverDisconnected().unsubscribe(myOnSubscriberDisconnectedHandler);
@@ -272,11 +262,6 @@ class DuplexBroker implements IDuplexBroker
                     {
                         EneterTrace.warning(TracedObject() + "failed to send a message to the subscriber '" + aSubscriber.getReceiverId() + "'", err);
                     }
-                    catch (Error err)
-                    {
-                        EneterTrace.error(TracedObject() + "failed to send a message to the subscriber '" + aSubscriber.getReceiverId() + "'", err);
-                        throw err;
-                    }
                 }
                 
                 // Notify subscribers subscribed via the regular expression.
@@ -289,11 +274,6 @@ class DuplexBroker implements IDuplexBroker
                     catch (Exception err)
                     {
                         EneterTrace.warning(TracedObject() + "failed to send a message to the subscriber '" + aSubscriber.getReceiverId() + "'", err);
-                    }
-                    catch (Error err)
-                    {
-                        EneterTrace.error(TracedObject() + "failed to send a message to the subscriber '" + aSubscriber.getReceiverId() + "'", err);
-                        throw err;
                     }
                 }
             }

@@ -178,11 +178,6 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
                         }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                            throw err;
-                        }
                     }
                 }
                 myPingingThread = null;
@@ -236,12 +231,6 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
                     myUnderlyingDuplexOutputChannel.sendMessage(aSerializedMessage);
                 }
                 catch (Exception err)
-                {
-                    String anErrorMessage = TracedObject() + ErrorHandler.SendMessageFailure;
-                    EneterTrace.error(anErrorMessage, err);
-                    throw err;
-                }
-                catch (Error err)
                 {
                     String anErrorMessage = TracedObject() + ErrorHandler.SendMessageFailure;
                     EneterTrace.error(anErrorMessage, err);

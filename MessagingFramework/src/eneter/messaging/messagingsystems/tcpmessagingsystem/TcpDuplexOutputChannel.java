@@ -244,11 +244,6 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
                         }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                            throw err;
-                        }
                     }
                 }
                 myResponseReceiverThread = null;
@@ -294,11 +289,6 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     aSendStream.write(anEncodedMessage);
                 }
                 catch (Exception err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                    throw err;
-                }
-                catch (Error err)
                 {
                     EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
                     throw err;
@@ -418,11 +408,6 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
-                }
             }
             else
             {
@@ -459,11 +444,6 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                         catch (Exception err)
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                            throw err;
                         }
                     }
                     finally
@@ -506,11 +486,6 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                         catch (Exception err)
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                            throw err;
                         }
                     }
                     finally

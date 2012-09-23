@@ -64,12 +64,6 @@ class DuplexTypedMessageSender<_ResponseType, _RequestType> extends AttachableDu
                 EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
                 throw err;
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                throw err;
-            }
-            
         }
         finally
         {

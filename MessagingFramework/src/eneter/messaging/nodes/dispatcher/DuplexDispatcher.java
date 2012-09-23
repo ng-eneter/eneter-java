@@ -12,7 +12,6 @@ import java.util.*;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.infrastructure.attachable.*;
 import eneter.messaging.infrastructure.attachable.internal.AttachableMultipleDuplexInputChannelsBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
@@ -114,11 +113,6 @@ class DuplexDispatcher extends AttachableMultipleDuplexInputChannelsBase
                     {
                         EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
                     }
-                    catch (Error err)
-                    {
-                        EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                        throw err;
-                    }
                 }
             }
         }
@@ -141,11 +135,6 @@ class DuplexDispatcher extends AttachableMultipleDuplexInputChannelsBase
             catch (Exception err)
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-                throw err;
             }
         }
         finally

@@ -366,11 +366,6 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                         }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                            throw err;
-                        }
                     }
                     finally
                     {

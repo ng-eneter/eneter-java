@@ -435,11 +435,6 @@ public class WebSocketClient
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
                         }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.AbortThreadFailure, err);
-                            throw err;
-                        }
                     }
                 }
                 myResponseReceiverThread = null;
@@ -730,11 +725,6 @@ public class WebSocketClient
                     EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
-                    throw err;
-                }
             }
         }
         finally
@@ -1011,11 +1001,6 @@ public class WebSocketClient
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
-                }
             }
             else
             {
@@ -1051,11 +1036,6 @@ public class WebSocketClient
                         catch (Exception err)
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
-                        catch (Error err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                            throw err;
                         }
                     }
                     finally

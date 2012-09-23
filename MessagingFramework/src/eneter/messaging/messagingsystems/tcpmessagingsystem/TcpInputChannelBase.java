@@ -89,22 +89,6 @@ public abstract class TcpInputChannelBase
 
                     throw err;
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
-
-                    try
-                    {
-                        // Clear after failed start
-                        stopListening();
-                    }
-                    catch (Exception err2)
-                    {
-                        // We tried to clean after failure. The exception can be ignored.
-                    }
-
-                    throw err;
-                }
             }
         }
         finally
@@ -128,11 +112,6 @@ public abstract class TcpInputChannelBase
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + "failed to close Tcp connections with clients.", err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + "failed to close Tcp connections with clients.", err);
-                    throw err;
                 }
                 
                 // Stop the TCP listener.

@@ -14,7 +14,6 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.dataprocessing.wrapping.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.infrastructure.attachable.*;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
@@ -91,11 +90,6 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                 EneterTrace.error(TracedObject() + "failed to unwrap the message.", err);
                 return;
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + "failed to unwrap the message.", err);
-                throw err;
-            }
 
             // WrappedData.AddedData represents the channel id.
             // Therefore if everything is ok then it must be string.
@@ -163,11 +157,6 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                     {
                         EneterTrace.error(TracedObject() + "failed to send the message to the output channel '" + aConectionToOutput.getDuplexOutputChannel().getChannelId() + "'.", err);
                     }
-                    catch (Error err)
-                    {
-                        EneterTrace.error(TracedObject() + "failed to send the message to the output channel '" + aConectionToOutput.getDuplexOutputChannel().getChannelId() + "'.", err);
-                        throw err;
-                    }
                 }
             }
             else
@@ -200,11 +189,6 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
                 }
             }
         }
@@ -271,11 +255,6 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
-                }
             }
         }
         catch (Exception err)
@@ -325,11 +304,6 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
             catch (Exception err)
             {
                 EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-                throw err;
             }
         }
         finally

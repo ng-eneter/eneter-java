@@ -169,14 +169,6 @@ class Dispatcher implements IDispatcher
                     EneterTrace.error(TracedObject() + "failed to attach the input channel '" + inputChannel.getChannelId() + "'.", err);
                     throw err;
                 }
-                catch (Error err)
-                {
-                    inputChannel.messageReceived().unsubscribe(myOnMessageReceivedHandler);
-                    myInputChannels.remove(anInputChannel);
-
-                    EneterTrace.error(TracedObject() + "failed to attach the input channel '" + inputChannel.getChannelId() + "'.", err);
-                    throw err;
-                }
             }
         }
         finally
@@ -294,11 +286,6 @@ class Dispatcher implements IDispatcher
                     catch (Exception err)
                     {
                         EneterTrace.error(TracedObject() + "failed to send the message to the output channel '" + anOuputChannel.getChannelId() + "'.", err);
-                    }
-                    catch (Error err)
-                    {
-                        EneterTrace.error(TracedObject() + "failed to send the message to the output channel '" + anOuputChannel.getChannelId() + "'.", err);
-                        throw err;
                     }
                 }
             }

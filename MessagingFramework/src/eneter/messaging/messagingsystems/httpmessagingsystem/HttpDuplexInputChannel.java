@@ -307,11 +307,6 @@ class HttpDuplexInputChannel extends HttpInputChannelBase
                     {
                         EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
                     }
-                    catch (Error err)
-                    {
-                        EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-                        throw err;
-                    }
                 }
                 else
                 {
@@ -448,11 +443,6 @@ class HttpDuplexInputChannel extends HttpInputChannelBase
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
-                }
             }
         }
         finally
@@ -478,11 +468,6 @@ class HttpDuplexInputChannel extends HttpInputChannelBase
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
-                }
             }
         }
         finally
@@ -505,11 +490,6 @@ class HttpDuplexInputChannel extends HttpInputChannelBase
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-                catch (Error err)
-                {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
-                    throw err;
                 }
             }
             else

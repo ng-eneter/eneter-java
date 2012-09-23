@@ -191,11 +191,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
                 throw err;
             }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
-                throw err;
-            }
         }
         finally
         {
@@ -217,11 +212,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             catch (Exception err)
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
-            }
-            catch (Error err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
-                throw err;
             }
         }
         finally
