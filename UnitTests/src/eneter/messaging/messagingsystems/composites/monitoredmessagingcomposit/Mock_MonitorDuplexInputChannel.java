@@ -147,7 +147,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
                 // Notify the incoming message.
                 if (myMessageReceivedEventImpl.isSubscribed())
                 {
-                    DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId());
+                    DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
 
                     try
                     {
