@@ -8,6 +8,7 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -18,6 +19,7 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.IpAddressUtil;
 import eneter.net.system.*;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.threading.internal.ThreadPool;
@@ -134,6 +136,10 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
 
                     // Send the message.
                     myClient.sendMessage(anEncodedMessage);
+                    
+                    // Get local IP address of this client.
+                    InetSocketAddress aLocalAddress = myClient.getLocalEndPoint();
+                    myIpAddress = IpAddressUtil.getIpAddress(aLocalAddress);
                     
                     // Set the timer to send pings with desired frequency.
                     if (myPingFrequency > 0)
@@ -287,7 +293,7 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
                         {
                             try
                             {
-                                DuplexChannelMessageEventArgs anEvent = new DuplexChannelMessageEventArgs(getChannelId(), aProtocolMessage.Message, getResponseReceiverId());
+                                DuplexChannelMessageEventArgs anEvent = new DuplexChannelMessageEventArgs(getChannelId(), aProtocolMessage.Message, getResponseReceiverId(), myIpAddress);
                                 myResponseMessageReceivedEvent.raise(this, anEvent);
                             }
                             catch (Exception err)
@@ -326,7 +332,7 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
             {
                 if (myConnectionClosedEvent.isSubscribed())
                 {
-                    DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
+                    DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), myIpAddress);
                     myConnectionClosedEvent.raise(this, aMsg);
                 }
             }
@@ -358,7 +364,7 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
                         {
                             if (myConnectionOpenedEvent.isSubscribed())
                             {
-                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId());
+                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), myIpAddress);
                                 myConnectionOpenedEvent.raise(this, aMsg);
                             }
                         }
@@ -431,6 +437,7 @@ class WebSocketDuplexOutputChannel implements IDuplexOutputChannel
     private String myResponseReceiverId;
     
     private WebSocketClient myClient;
+    private String myIpAddress;
     private Timer myPingTimer;
     private long myPingFrequency;
     private Object myConnectionManipulatorLock = new Object();

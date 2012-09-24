@@ -17,8 +17,8 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.IpAddressUtil;
 import eneter.net.system.*;
-import eneter.net.system.internal.Cast;
 import eneter.net.system.internal.IMethod;
 import eneter.net.system.internal.StringExt;
 
@@ -42,9 +42,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
             myConnectionState = EConnectionState.Open;
             
             // Get IP address of connected client.
-            SocketAddress anEndPoint = tcpClient.getRemoteSocketAddress();
-            InetSocketAddress aRemoteAddress = Cast.as(anEndPoint, InetSocketAddress.class);
-            myClientIp = (aRemoteAddress != null) ? aRemoteAddress.getAddress().toString() : "";
+            myClientIp = IpAddressUtil.getRemoteIpAddress(tcpClient);
         }
 
         public EConnectionState getConnectionState()
@@ -245,9 +243,7 @@ class TcpDuplexInputChannel extends TcpInputChannelBase
         try
         {
             // Get IP address of connected client.
-            SocketAddress anEndPoint = clientSocket.getRemoteSocketAddress();
-            InetSocketAddress aRemoteAddress = Cast.as(anEndPoint, InetSocketAddress.class);
-            final String aClientIp = (aRemoteAddress != null) ? aRemoteAddress.getAddress().toString() : "";
+            final String aClientIp = IpAddressUtil.getRemoteIpAddress(clientSocket);
             
             String aResponseReceiverId = ""; // will be set when the 1st message is received.
 

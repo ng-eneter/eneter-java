@@ -17,6 +17,7 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.net.system.*;
+import eneter.net.system.internal.Cast;
 import eneter.net.system.internal.Convert;
 import eneter.net.system.internal.IFunction1;
 import eneter.net.system.internal.StringExt;
@@ -249,6 +250,27 @@ public class WebSocketClient
     public HashMap<String, String> getHeaderFields()
     {
         return myHeaderFields;
+    }
+    
+    public InetSocketAddress getLocalEndPoint()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                if (myTcpClient != null)
+                {
+                    return Cast.as(myTcpClient.getLocalSocketAddress(), InetSocketAddress.class);
+                }
+                
+                return null;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
     /**

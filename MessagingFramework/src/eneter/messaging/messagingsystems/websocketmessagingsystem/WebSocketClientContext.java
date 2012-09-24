@@ -17,6 +17,7 @@ import eneter.messaging.dataprocessing.messagequeueing.MessageQueue;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.net.system.*;
+import eneter.net.system.internal.Cast;
 import eneter.net.system.internal.IFunction1;
 import eneter.net.system.threading.internal.ThreadPool;
 
@@ -67,6 +68,19 @@ class WebSocketClientContext implements IWebSocketClientContext
     public Map<String, String> getHeaderFields()
     {
         return Collections.unmodifiableMap(myHeaderFields);
+    }
+    
+    public InetSocketAddress getClientEndPoint()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return Cast.as(myTcpClient.getRemoteSocketAddress(), InetSocketAddress.class);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
     
     public boolean isConnected()

@@ -8,6 +8,7 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -19,6 +20,7 @@ import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.IpAddressUtil;
 import eneter.net.system.*;
 import eneter.net.system.internal.IMethod;
 import eneter.net.system.internal.StringExt;
@@ -38,6 +40,11 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
         {
             myClient = tcpClient;
             myConnectionState = EConnectionState.Open;
+            
+            // Get IP address of connected client.
+            InetSocketAddress aSocketAddress = tcpClient.getClientEndPoint();
+            myClientIp = IpAddressUtil.getIpAddress(aSocketAddress);
+            
         }
 
         public EConnectionState getConnectionState()
@@ -55,9 +62,14 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
             return myClient;
         }
         
+        public String getClientIp()
+        {
+            return myClientIp;
+        }
+        
         private EConnectionState myConnectionState;
-
         private IWebSocketClientContext myClient;
+        private String myClientIp;
     }
     
     
@@ -144,12 +156,13 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
                     }
 
                     // Notify connection closed from the working thread.
+                    final String aClientIp = aClient.getClientIp();
                     myMessageProcessingWorker.invoke(new IMethod()
                     {
                         @Override
                         public void invoke() throws Exception
                         {
-                            notifyEvent(myResponseReceiverDisconnectedEvent, responseReceiverId);
+                            notifyEvent(myResponseReceiverDisconnectedEvent, responseReceiverId, aClientIp);
                         }
                     });
 
@@ -218,6 +231,10 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            // Get IP address of connected client.
+            InetSocketAddress aSocketAddress = client.getClientEndPoint();
+            final String aClientIp = IpAddressUtil.getIpAddress(aSocketAddress); 
+            
             String aResponseReceiverId = ""; // will be set when the 1st message is received.
 
             try
@@ -258,7 +275,7 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
                                     @Override
                                     public void invoke() throws Exception
                                     {
-                                        notifyEvent(myResponseReceiverConnectedEvent, aProtocolMessage.ResponseReceiverId);
+                                        notifyEvent(myResponseReceiverConnectedEvent, aProtocolMessage.ResponseReceiverId, aClientIp);
                                     }
                                 });
                             }
@@ -275,7 +292,7 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
                                     @Override
                                     public void invoke() throws Exception
                                     {
-                                        notifyMessageReceived(aProtocolMessage.Message, aProtocolMessage.ResponseReceiverId);
+                                        notifyMessageReceived(aProtocolMessage.Message, aProtocolMessage.ResponseReceiverId, aClientIp);
                                     }
                                 });
                             }
@@ -324,7 +341,7 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
                             @Override
                             public void invoke() throws Exception
                             {
-                                notifyEvent(myResponseReceiverDisconnectedEvent, aReceiverId);
+                                notifyEvent(myResponseReceiverDisconnectedEvent, aReceiverId, aClientIp);
                             }
                         });
                     }
@@ -338,14 +355,14 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
     }
     
    
-    private void notifyEvent(EventImpl<ResponseReceiverEventArgs> handler, String responseReceiverId)
+    private void notifyEvent(EventImpl<ResponseReceiverEventArgs> handler, String responseReceiverId, String clientAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             if (handler != null)
             {
-                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
+                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId, clientAddress);
 
                 try
                 {
@@ -364,7 +381,7 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
     }
     
    
-    private void notifyMessageReceived(Object message, String responseReceiverId)
+    private void notifyMessageReceived(Object message, String responseReceiverId, String clientAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -373,7 +390,7 @@ class WebSocketDuplexInputChannel extends WebSocketInputChannelBase
             {
                 try
                 {
-                    myMessageReceivedEvent.raise(this, new DuplexChannelMessageEventArgs(myChannelId, message, responseReceiverId));
+                    myMessageReceivedEvent.raise(this, new DuplexChannelMessageEventArgs(myChannelId, message, responseReceiverId, clientAddress));
                 }
                 catch (Exception err)
                 {

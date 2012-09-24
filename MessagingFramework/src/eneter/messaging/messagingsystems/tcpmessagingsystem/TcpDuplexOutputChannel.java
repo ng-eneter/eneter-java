@@ -17,8 +17,8 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.IpAddressUtil;
 import eneter.net.system.*;
-import eneter.net.system.internal.Cast;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.threading.internal.ManualResetEvent;
 import eneter.net.system.threading.internal.ThreadPool;
@@ -134,9 +134,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     //myTcpClient.setTcpNoDelay(true);
                     myTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
                     
-                    SocketAddress aLocalSocketAddress = myTcpClient.getLocalSocketAddress();
-                    InetSocketAddress anInetSocketAddress = Cast.as(aLocalSocketAddress, InetSocketAddress.class);
-                    myIpAddress = (anInetSocketAddress != null) ? anInetSocketAddress.getAddress().toString() : ""; 
+                    myIpAddress = IpAddressUtil.getLocalIpAddress(myTcpClient);
                     
                     myMessageProcessingThread.registerMessageHandler(myMessageHandlerHandler);
 

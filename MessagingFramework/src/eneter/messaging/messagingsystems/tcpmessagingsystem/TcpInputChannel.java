@@ -18,8 +18,8 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.IpAddressUtil;
 import eneter.net.system.*;
-import eneter.net.system.internal.Cast;
 import eneter.net.system.internal.IMethod;
 
 class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
@@ -86,9 +86,7 @@ class TcpInputChannel extends TcpInputChannelBase implements IInputChannel
             try
             {
                 // Get IP address of connected client.
-                SocketAddress anEndPoint = clientSocket.getRemoteSocketAddress();
-                InetSocketAddress aRemoteAddress = Cast.as(anEndPoint, InetSocketAddress.class);
-                final String aClientIp = (aRemoteAddress != null) ? aRemoteAddress.getAddress().toString() : "";
+                final String aClientIp = IpAddressUtil.getRemoteIpAddress(clientSocket);
                 
                 // Source stream.
                 InputStream anInputStream = clientSocket.getInputStream();

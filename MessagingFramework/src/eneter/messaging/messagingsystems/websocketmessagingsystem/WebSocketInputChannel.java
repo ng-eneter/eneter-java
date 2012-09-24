@@ -8,6 +8,7 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 
 import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
@@ -16,6 +17,7 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.IpAddressUtil;
 import eneter.net.system.*;
 import eneter.net.system.internal.IMethod;
 
@@ -82,6 +84,10 @@ class WebSocketInputChannel extends WebSocketInputChannelBase implements IInputC
 
             try
             {
+                // Get IP address of connected client.
+                InetSocketAddress aSocketAddress = client.getClientEndPoint();
+                final String aClientIp = IpAddressUtil.getIpAddress(aSocketAddress);
+                
                 // Wait until a message starts to come.
                 WebSocketMessage aWebSocketMessage = client.receiveMessage();
 
@@ -100,7 +106,7 @@ class WebSocketInputChannel extends WebSocketInputChannelBase implements IInputC
                                 @Override
                                 public void invoke() throws Exception
                                 {
-                                    notifyMessageReceived(aProtocolMessage.Message);
+                                    notifyMessageReceived(aProtocolMessage.Message, aClientIp);
                                 }
                             });
                         }
@@ -125,7 +131,7 @@ class WebSocketInputChannel extends WebSocketInputChannelBase implements IInputC
         }
     }
     
-    private void notifyMessageReceived(Object message)
+    private void notifyMessageReceived(Object message, String clientAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -134,7 +140,7 @@ class WebSocketInputChannel extends WebSocketInputChannelBase implements IInputC
             {
                 try
                 {
-                    myMessageReceivedEvent.raise(this, new ChannelMessageEventArgs(myChannelId, message));
+                    myMessageReceivedEvent.raise(this, new ChannelMessageEventArgs(myChannelId, message, clientAddress));
                 }
                 catch (Exception err)
                 {

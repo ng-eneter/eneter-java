@@ -8,6 +8,7 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Map;
 
@@ -32,6 +33,12 @@ public interface IWebSocketClientContext
      * @return
      */
     Event<Object> pongReceived();
+    
+    /**
+     * Returns the IP address and port of the connected client.
+     * @return
+     */
+    InetSocketAddress getClientEndPoint();
     
     /**
      * Returns true if the client is connected.
