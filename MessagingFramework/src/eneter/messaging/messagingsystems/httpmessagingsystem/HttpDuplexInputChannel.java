@@ -433,7 +433,7 @@ class HttpDuplexInputChannel extends HttpInputChannelBase
         {
             if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
-                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
+                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId, "");
     
                 try
                 {
@@ -458,7 +458,7 @@ class HttpDuplexInputChannel extends HttpInputChannelBase
         {
             if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
             {
-                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId);
+                ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId, "");
 
                 try
                 {
@@ -485,7 +485,7 @@ class HttpDuplexInputChannel extends HttpInputChannelBase
             {
                 try
                 {
-                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId));
+                    myMessageReceivedEventImpl.raise(this, new DuplexChannelMessageEventArgs(channelId, message, responseReceiverId, ""));
                 }
                 catch (Exception err)
                 {

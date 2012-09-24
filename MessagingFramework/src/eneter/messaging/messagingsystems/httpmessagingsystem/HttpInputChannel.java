@@ -100,7 +100,7 @@ class HttpInputChannel extends HttpInputChannelBase
             {
                 try
                 {
-                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(getChannelId(), protocolMessage.Message));
+                    myMessageReceivedEventImpl.raise(this, new ChannelMessageEventArgs(getChannelId(), protocolMessage.Message, ""));
                 }
                 catch (Exception err)
                 {
