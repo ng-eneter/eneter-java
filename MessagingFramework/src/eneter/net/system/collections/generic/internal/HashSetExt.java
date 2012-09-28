@@ -6,7 +6,7 @@
  * 
  */
 
-package eneter.net.system.collections.generic;
+package eneter.net.system.collections.generic.internal;
 
 import java.util.*;
 

@@ -15,7 +15,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.infrastructure.attachable.IAttachableMultipleDuplexInputChannels;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
-import eneter.net.system.collections.generic.*;
+import eneter.net.system.collections.generic.internal.*;
 import eneter.net.system.internal.IFunction1;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.linq.internal.EnumerableExt;

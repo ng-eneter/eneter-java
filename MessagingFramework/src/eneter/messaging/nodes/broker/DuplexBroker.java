@@ -16,7 +16,7 @@ import eneter.messaging.endpoints.typedmessages.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.nodes.channelwrapper.*;
 import eneter.net.system.*;
-import eneter.net.system.collections.generic.HashSetExt;
+import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.IFunction1;
 import eneter.net.system.linq.internal.EnumerableExt;
 

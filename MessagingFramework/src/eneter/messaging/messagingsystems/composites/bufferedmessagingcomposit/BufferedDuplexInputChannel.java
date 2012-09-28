@@ -15,7 +15,7 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.composites.ICompositeDuplexInputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
-import eneter.net.system.collections.generic.HashSetExt;
+import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.IFunction1;
 import eneter.net.system.internal.IMethod3;
 import eneter.net.system.linq.internal.EnumerableExt;
