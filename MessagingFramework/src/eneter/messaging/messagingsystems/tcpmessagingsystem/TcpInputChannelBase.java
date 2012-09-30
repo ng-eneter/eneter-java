@@ -19,7 +19,7 @@ import eneter.net.system.*;
 import eneter.net.system.internal.StringExt;
 
 
-public abstract class TcpInputChannelBase
+abstract class TcpInputChannelBase
 {
     public TcpInputChannelBase(String ipAddressAndPort,
             IInvoker invoker,
