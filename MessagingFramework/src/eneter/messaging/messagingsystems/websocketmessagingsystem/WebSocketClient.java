@@ -19,7 +19,6 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.net.system.*;
 import eneter.net.system.internal.Cast;
 import eneter.net.system.internal.Convert;
-import eneter.net.system.internal.IFunction1;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.threading.internal.ManualResetEvent;
 import eneter.net.system.threading.internal.ThreadPool;

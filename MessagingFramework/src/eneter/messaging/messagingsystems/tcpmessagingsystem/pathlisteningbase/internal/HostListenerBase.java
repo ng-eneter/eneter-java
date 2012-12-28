@@ -17,7 +17,6 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.TcpListenerProvider;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
-import eneter.net.system.internal.IFunction1;
 import eneter.net.system.linq.internal.EnumerableExt;
 
 

@@ -14,7 +14,6 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
-import eneter.net.system.internal.IFunction1;
 
 public class ReliableMessageTimeTracker
 {

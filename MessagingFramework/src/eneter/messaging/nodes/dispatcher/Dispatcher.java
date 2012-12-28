@@ -14,7 +14,6 @@ import eneter.messaging.diagnostic.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
-import eneter.net.system.internal.IFunction1;
 import eneter.net.system.linq.internal.EnumerableExt;
 
 

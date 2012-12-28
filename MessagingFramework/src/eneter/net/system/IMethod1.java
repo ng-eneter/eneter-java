@@ -9,7 +9,8 @@
 package eneter.net.system;
 
 /**
- * Represents the callback method taking one input parameter of desired type and returning void.
+ * Callback method taking one input parameter of desired type and returning void.
+ * It is the equivalent of .NET Action<T>. 
  *
  * @param <T> type of the input parameter.
  */

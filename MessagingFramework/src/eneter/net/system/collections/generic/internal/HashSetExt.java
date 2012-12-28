@@ -10,7 +10,7 @@ package eneter.net.system.collections.generic.internal;
 
 import java.util.*;
 
-import eneter.net.system.internal.IFunction1;
+import eneter.net.system.IFunction1;
 
 public class HashSetExt
 {

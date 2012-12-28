@@ -14,8 +14,8 @@ import java.util.ArrayList;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
+import eneter.net.system.IFunction1;
 import eneter.net.system.IMethod1;
-import eneter.net.system.internal.IFunction1;
 import eneter.net.system.linq.internal.EnumerableExt;
 
 

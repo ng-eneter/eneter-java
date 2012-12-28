@@ -11,7 +11,7 @@ package eneter.net.system.linq.internal;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import eneter.net.system.internal.IFunction1;
+import eneter.net.system.IFunction1;
 
 public class EnumerableExt
 {
