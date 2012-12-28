@@ -101,12 +101,12 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
             try
             {
                 _RequestType aRequestMessage = mySerializer.deserialize(e.getMessage(), myRequestMessageClazz);
-                aRequestReceivedEventArgs = new TypedRequestReceivedEventArgs<_RequestType>(e.getResponseReceiverId(), aRequestMessage);
+                aRequestReceivedEventArgs = new TypedRequestReceivedEventArgs<_RequestType>(e.getResponseReceiverId(), e.getSenderAddress(), aRequestMessage);
             }
             catch (Exception err)
             {
                 EneterTrace.warning(TracedObject() + "failed to deserialize the request message.", err);
-                aRequestReceivedEventArgs = new TypedRequestReceivedEventArgs<_RequestType>(e.getResponseReceiverId(), err);
+                aRequestReceivedEventArgs = new TypedRequestReceivedEventArgs<_RequestType>(e.getResponseReceiverId(), e.getSenderAddress(), err);
             }
 
             try
