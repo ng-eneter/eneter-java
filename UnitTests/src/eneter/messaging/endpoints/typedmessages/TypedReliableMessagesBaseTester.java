@@ -92,6 +92,7 @@ public abstract class TypedReliableMessagesBaseTester
         try
         {
             MessageReceiver.attachDuplexInputChannel(DuplexInputChannel);
+            Thread.sleep(100);
             MessageSender.attachDuplexOutputChannel(DuplexOutputChannel);
 
             aSentMessageId = MessageSender.sendRequestMessage(2000);
@@ -193,6 +194,7 @@ public abstract class TypedReliableMessagesBaseTester
         try
         {
             MessageReceiver.attachDuplexInputChannel(DuplexInputChannel);
+            Thread.sleep(100);
             MessageSender.attachDuplexOutputChannel(DuplexOutputChannel);
 
             for (int i = 0; i < 1000; ++i)
@@ -280,12 +282,13 @@ public abstract class TypedReliableMessagesBaseTester
         try
         {
             aReceiver.attachDuplexInputChannel(DuplexInputChannel);
+            Thread.sleep(100);
             aSender.attachDuplexOutputChannel(DuplexOutputChannel);
 
             aSentMessageId = aSender.sendRequestMessage(2000);
 
             // Wait for the signal that the message is received.
-            assertTrue(aMessagesProcessedEvent.waitOne(1000));
+            assertTrue(aMessagesProcessedEvent.waitOne(2000));
         }
         finally
         {
@@ -335,12 +338,13 @@ public abstract class TypedReliableMessagesBaseTester
         try
         {
             aReceiver.attachDuplexInputChannel(DuplexInputChannel);
+            Thread.sleep(100);
             aSender.attachDuplexOutputChannel(DuplexOutputChannel);
 
             aSentMessageId = aReceiver.sendResponseMessage(aSender.getAttachedDuplexOutputChannel().getResponseReceiverId(), 2000);
 
             // Wait for the signal that the message is received.
-            assertTrue(aMessagesProcessedEvent.waitOne(1000));
+            assertTrue(aMessagesProcessedEvent.waitOne(2000));
         }
         finally
         {
