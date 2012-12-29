@@ -192,7 +192,7 @@ public abstract class SyncTypedMessagesBaseTester
             aReceiver.attachDuplexInputChannel(InputChannel);
             aSender.attachDuplexOutputChannel(OutputChannel);
 
-            // This call shoul throw exception.
+            // This call should throw exception.
             aSender.sendRequestMessage(100);
         }
         finally
