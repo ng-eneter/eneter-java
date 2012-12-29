@@ -22,6 +22,6 @@ public class Test_TypedReliableMessages_Tcp_JavaBinary extends TypedReliableMess
         String aChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
         ISerializer aSerializer = new JavaBinarySerializer();
 
-        Setup(aMessagingSystem, aChannelId, aSerializer);
+        setup(aMessagingSystem, aChannelId, aSerializer);
     }
 }

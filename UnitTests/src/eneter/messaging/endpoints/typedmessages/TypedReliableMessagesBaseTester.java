@@ -2,8 +2,7 @@ package eneter.messaging.endpoints.typedmessages;
 
 import static org.junit.Assert.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 import org.junit.Test;
 
@@ -15,7 +14,7 @@ import eneter.net.system.threading.internal.AutoResetEvent;
 
 public abstract class TypedReliableMessagesBaseTester
 {
-    protected void Setup(IMessagingSystemFactory messagingSystemFactory, String channelId, ISerializer serializer) throws Exception
+    protected void setup(IMessagingSystemFactory messagingSystemFactory, String channelId, ISerializer serializer) throws Exception
     {
         MessagingSystemFactory = messagingSystemFactory;
 

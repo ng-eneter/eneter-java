@@ -16,6 +16,6 @@ public class Test_TypedReliableMessages_Sync_JavaBinary extends TypedReliableMes
         String aChannelId = "Channel1";
         ISerializer aSerializer = new JavaBinarySerializer();
 
-        Setup(aMessagingSystem, aChannelId, aSerializer);
+        setup(aMessagingSystem, aChannelId, aSerializer);
     }
 }

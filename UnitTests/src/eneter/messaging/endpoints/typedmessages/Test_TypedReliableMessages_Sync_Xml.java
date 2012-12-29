@@ -16,6 +16,6 @@ public class Test_TypedReliableMessages_Sync_Xml extends TypedReliableMessagesBa
         String aChannelId = "Channel1";
         ISerializer aSerializer = new XmlStringSerializer();
 
-        Setup(aMessagingSystem, aChannelId, aSerializer);
+        setup(aMessagingSystem, aChannelId, aSerializer);
     }
 }
