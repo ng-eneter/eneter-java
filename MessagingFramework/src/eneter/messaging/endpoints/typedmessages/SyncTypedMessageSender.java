@@ -2,46 +2,93 @@ package eneter.messaging.endpoints.typedmessages;
 
 import java.util.ArrayList;
 
+import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
-import eneter.messaging.messagingsystems.messagingsystembase.IDuplexOutputChannel;
+import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
 import eneter.net.system.threading.internal.AutoResetEvent;
 
 class SyncTypedMessageSender<TResponse, TRequest> implements ISyncTypedMessageSender<TResponse, TRequest>
 {
+    public SyncTypedMessageSender(int responseReceiveTimeout, ISerializer serializer,
+            Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myResponseReceiveTimeout = responseReceiveTimeout;
+
+            IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory(serializer);
+            mySender = aSenderFactory.createDuplexTypedMessageSender(responseMessageClazz, requestMessageClazz);
+            
+            myResponseMessageClazz = responseMessageClazz;
+            myRequestMessageClazz = requestMessageClazz;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     @Override
     public void attachDuplexOutputChannel(
             IDuplexOutputChannel duplexOutputChannel) throws Exception
     {
-        // TODO Auto-generated method stub
-        
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myAttachDetachLock)
+            {
+                mySender.attachDuplexOutputChannel(duplexOutputChannel);
+                mySender.getAttachedDuplexOutputChannel().connectionClosed().subscribe(myConnectionClosedEventHandler);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
     public void detachDuplexOutputChannel()
     {
-        // TODO Auto-generated method stub
-        
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myAttachDetachLock)
+            {
+                // Stop waiting for the response.
+                myResponseAvailableEvent.set();
+
+                IDuplexOutputChannel anAttachedChannel = mySender.getAttachedDuplexOutputChannel();
+                if (anAttachedChannel != null)
+                {
+                    anAttachedChannel.connectionClosed().unsubscribe(myConnectionClosedEventHandler);
+                }
+
+                mySender.detachDuplexOutputChannel();
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
     public boolean isDuplexOutputChannelAttached()
     {
-        // TODO Auto-generated method stub
-        return false;
+        return mySender.isDuplexOutputChannelAttached();
     }
 
     @Override
     public IDuplexOutputChannel getAttachedDuplexOutputChannel()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return mySender.getAttachedDuplexOutputChannel();
     }
 
     @Override
-    public TResponse SendRequestMessage(TRequest message) throws Exception
+    public TResponse sendRequestMessage(TRequest message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -143,6 +190,15 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncTypedMessageSe
     
     private Class<TRequest> myRequestMessageClazz;
     private Class<TResponse> myResponseMessageClazz;
+    
+    private EventHandler<DuplexChannelEventArgs> myConnectionClosedEventHandler = new EventHandler<DuplexChannelEventArgs>()
+    {
+        @Override
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
+        {
+            onConnectionClosed(sender, e);
+        }
+    };
     
     
     private String TracedObject()
