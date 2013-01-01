@@ -3,9 +3,11 @@ package eneter.messaging.dataprocessing.serializing;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.security.MessageDigest;
+import java.security.cert.CertPath;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
+import java.util.ArrayList;
 
 
 import javax.crypto.Cipher;
@@ -27,7 +29,8 @@ public class RsaDigitalSignatureSerializer implements ISerializer
         try
         {
             mySignerPublicCertificate = signerPublicCertificate;
-            //myVerifySignerCertificate = (verifySignerCertificate == null) ? VerifySignerCertificate : verifySignerCertificate;
+            mySignerPrivateKey = signerPrivateKey;
+            myVerifySignerCertificate = (verifySignerCertificate == null) ? myVerifySignerCertificate : verifySignerCertificate;
             myUnderlyingSerializer = underlyingSerializer;
             myEncoderDecoder = new EncoderDecoder(underlyingSerializer);
         }
@@ -62,7 +65,7 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             aSignedData[2] = aCryptoProvider.doFinal(aHash);
             
             // Store the public certificate.
-            aSignedData[1] = mySignerPublicCertificate.getPublicKey().getEncoded();
+            aSignedData[1] = mySignerPublicCertificate.getEncoded();
             
             // Serialize data together with the signature.
             Object aSerializedSignedData = myUnderlyingSerializer.serialize(aSignedData, byte[][].class);
@@ -113,6 +116,25 @@ public class RsaDigitalSignatureSerializer implements ISerializer
     private EncoderDecoder myEncoderDecoder;
     private X509Certificate mySignerPublicCertificate;
     private RSAPrivateKey mySignerPrivateKey;
+    private IFunction1<Boolean, X509Certificate> myVerifySignerCertificate = new IFunction1<Boolean, X509Certificate>()
+        {
+            // If user does not provide his specific method to verify the certificate
+            // then this one is the default.
+            @Override
+            public Boolean invoke(X509Certificate certificate) throws Exception
+            {
+                ArrayList<X509Certificate> aCertificates = new ArrayList<X509Certificate>();
+                aCertificates.add(certificate);
+                
+                CertificateFactory aCertificateFactory = CertificateFactory.getInstance("X.509");
+                
+                // Get path of certificates.
+                CertPath aCertificatePath = aCertificateFactory.generateCertPath(aCertificates);
+                
+                
+                return null;
+            }
+        };
     
     private String TracedObject = "DigitalSignatureSerializer ";
 }
