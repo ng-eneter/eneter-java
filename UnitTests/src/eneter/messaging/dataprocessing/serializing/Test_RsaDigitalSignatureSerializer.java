@@ -29,7 +29,7 @@ public class Test_RsaDigitalSignatureSerializer
         X509Certificate aCertificate = (X509Certificate) aCertificateFactory.generateCertificate(aCertificateStream);
         
         // Private key
-        File aPrivateKeyFile = new File("d:/EneterSigner.pvk");
+        File aPrivateKeyFile = new File("d:/EneterSigner.pk8");
         BufferedInputStream aBufferedPrivateKey = new BufferedInputStream(new FileInputStream(aPrivateKeyFile));
         byte[] aPrivateKeyBytes = new byte[(int)aPrivateKeyFile.length()];
         aBufferedPrivateKey.read(aPrivateKeyBytes);
