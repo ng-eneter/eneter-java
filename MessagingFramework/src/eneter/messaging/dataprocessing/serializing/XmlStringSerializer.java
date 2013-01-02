@@ -51,7 +51,7 @@ public class XmlStringSerializer implements ISerializer
             StringBuilder aSerializedObjectStr = new StringBuilder(500);
 
             // Get the root name compatible with .Net
-            String aRootName = getRootName(clazz);
+            String aRootName = getElementName(clazz);
             
             // Note: keep the space character at the beginning of the name-space string!!!
             String aNameSpacesAndAttributes = " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"" + getAttributes(dataToSerialize, clazz);
@@ -512,12 +512,13 @@ public class XmlStringSerializer implements ISerializer
                     serializeElement("anyType", anAttributes, anItem, xmlResult);
                 }
             }
-            // If it is an array declared with som custom class. e.g. MyClass[].
+            // If it is an array declared with some custom class. e.g. MyClass[].
             else if (array instanceof Object[])
             {
                 for (Object anItem : (Object[]) array)
                 {
-                    serializeElement(anItem.getClass().getSimpleName(), "", anItem, xmlResult);
+                    String anElementName = getElementName(anItem.getClass());
+                    serializeElement(anElementName, "", anItem, xmlResult);
                 }
             }
         }
@@ -527,79 +528,100 @@ public class XmlStringSerializer implements ISerializer
         }
     }
     
-    private String getRootName(Class<?> clazz)
+    private String getElementName(Class<?> clazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            String aRootName;
+            String anElementName;
             
             // Correct the name according to .NET
             if (clazz == Integer.class)
             {
-                aRootName = "int";
+                anElementName = "int";
             }
             else if (clazz == Character.class)
             {
-                aRootName = "char";
+                anElementName = "char";
             }
             else if (clazz == Boolean.class ||
                      clazz == Byte.class || clazz == Long.class || clazz == Short.class ||
                      clazz == Double.class || clazz == Float.class ||
                      clazz == String.class)
             {
-                aRootName = clazz.getSimpleName().toLowerCase();
+                anElementName = clazz.getSimpleName().toLowerCase();
             }
             else if (clazz.isArray())
             {
                 if (clazz == boolean[].class || clazz == Boolean[].class)
                 {
-                    aRootName = "ArrayOfBoolean";
+                    anElementName = "ArrayOfBoolean";
                 }
                 else if (clazz == char[].class || clazz == Character[].class)
                 {
-                    aRootName = "ArrayOfChar";
+                    anElementName = "ArrayOfChar";
                 }
                 else if (clazz == byte[].class || clazz == Byte[].class)
                 {
-                    aRootName = "base64Binary";
+                    anElementName = "base64Binary";
                 }
                 else if (clazz == int[].class || clazz == Integer[].class)
                 {
-                    aRootName = "ArrayOfInt";
+                    anElementName = "ArrayOfInt";
                 }
                 else if (clazz == long[].class || clazz == Long[].class)
                 {
-                    aRootName = "ArrayOfLong";
+                    anElementName = "ArrayOfLong";
                 }
                 else if (clazz == short[].class || clazz == Short[].class)
                 {
-                    aRootName = "ArrayOfShort";
+                    anElementName = "ArrayOfShort";
                 }
                 else if (clazz == double[].class || clazz == Double[].class)
                 {
-                    aRootName = "ArrayOfDouble";
+                    anElementName = "ArrayOfDouble";
                 }
                 else if (clazz == float[].class || clazz == Float[].class)
                 {
-                    aRootName = "ArrayOfFloat";
+                    anElementName = "ArrayOfFloat";
                 }
                 else if (clazz == Object[].class)
                 {
-                    aRootName = "ArrayOfAnyType";
+                    anElementName = "ArrayOfAnyType";
                 }
                 else
                 {
-                    String aClassItemTypeName = clazz.getComponentType().getSimpleName();
-                    aRootName = "ArrayOf" + aClassItemTypeName;
+                    String aClassItemTypeName;
+                    Class<?> anItemType = clazz.getComponentType();
+                    if (anItemType.isArray())
+                    {
+                        aClassItemTypeName = getElementName(anItemType);
+                    }
+                    else
+                    {
+                        aClassItemTypeName = anItemType.getSimpleName();
+                    }
+
+                    // Uppercase the first character.
+                    if (aClassItemTypeName.length() > 1)
+                    {
+                        char aCapital = Character.toUpperCase(aClassItemTypeName.charAt(0));
+                        aClassItemTypeName = aCapital + aClassItemTypeName.substring(1);
+                    }
+                    else
+                    {
+                        aClassItemTypeName.toUpperCase();
+                    }
+                    
+                    anElementName = "ArrayOf" + aClassItemTypeName;
                 }
             }
             else
             {
-                aRootName = clazz.getSimpleName();
+                anElementName = clazz.getSimpleName();
             }   
             
-            return aRootName;
+            return anElementName;
         }
         finally
         {
