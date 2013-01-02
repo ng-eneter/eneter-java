@@ -148,6 +148,26 @@ public class Test_XmlStringSerializer
     }
     
     @Test
+    public void serializeArrayOfByteArrays() throws Exception
+    {
+        byte[][] aDataToSerialize = new byte[3][];
+        aDataToSerialize[0] = new byte[]{1,2,3};
+        aDataToSerialize[1] = new byte[]{4,5,6};
+        aDataToSerialize[2] = new byte[]{7,8,9};
+        
+        Object aSerializedData = TestedSerializer.serialize(aDataToSerialize, byte[][].class);
+        
+        assertEquals("<ArrayOfBase64Binary xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><base64Binary>AQID</base64Binary><base64Binary>BAUG</base64Binary><base64Binary>BwgJ</base64Binary></ArrayOfBase64Binary>", (String)aSerializedData);
+        
+        byte[][] aDeserializedData = TestedSerializer.deserialize(aSerializedData, byte[][].class);
+        
+        for (int i = 0; i < 3; ++i)
+        {
+            assertTrue(Arrays.equals(aDataToSerialize[i], aDeserializedData[i]));
+        }
+    }
+    
+    @Test
     public void serializeObjectArray() throws Exception
     {
         Object[] a = {(int)1,"Hello",(char)'A'};
