@@ -2,9 +2,15 @@ package eneter.messaging.dataprocessing.serializing;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.cert.CertPath;
+import java.security.cert.CertPathValidator;
 import java.security.cert.CertificateFactory;
+import java.security.cert.PKIXCertPathValidatorResult;
+import java.security.cert.PKIXParameters;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.ArrayList;
@@ -89,17 +95,32 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             
             // Calculate the hash.
             MessageDigest aSha1 = MessageDigest.getInstance("SHA1");
-            byte[] aHash = aSha1.digest(aSignedData[0]);
+            byte[] aCalculatedHash = aSha1.digest(aSignedData[0]);
             
             // Verify the certificate.
             CertificateFactory aCertificateFactory = CertificateFactory.getInstance("X.509");
             ByteArrayInputStream aCertificateStream = new ByteArrayInputStream(aSignedData[1]);
             X509Certificate aCertificate = (X509Certificate) aCertificateFactory.generateCertificate(aCertificateStream);
-            
-            
-            // Verify the signature.
+            if (!myVerifySignerCertificate.invoke(aCertificate))
+            {
+                throw new IllegalStateException(TracedObject + "failed to deserialize data because the verification of signer certificate failed.");
+            }
+
+            // Decrypt the signature and verify it.
             Cipher aCryptoProvider = Cipher.getInstance("RSA");
             aCryptoProvider.init(Cipher.DECRYPT_MODE, aCertificate);
+            byte[] aDecryptedHash = aCryptoProvider.doFinal(aSignedData[2]);
+            if (aDecryptedHash.length != aCalculatedHash.length)
+            {
+                throw new IllegalStateException(TracedObject + "failed to deserialize data because the signature verification failed.");
+            }
+            for (int i = 0; i < aDecryptedHash.length; ++i)
+            {
+                if (aDecryptedHash[i] != aCalculatedHash[i])
+                {
+                    throw new IllegalStateException(TracedObject + "failed to deserialize data because the signature verification failed.");
+                }
+            }
             
             // Deserialize data.
             ByteArrayInputStream aDeserializedData = new ByteArrayInputStream(aSignedData[0]);
@@ -123,16 +144,35 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             @Override
             public Boolean invoke(X509Certificate certificate) throws Exception
             {
-                ArrayList<X509Certificate> aCertificates = new ArrayList<X509Certificate>();
-                aCertificates.add(certificate);
+                certificate.checkValidity();
                 
-                CertificateFactory aCertificateFactory = CertificateFactory.getInstance("X.509");
+                //ArrayList<X509Certificate> aCertificates = new ArrayList<X509Certificate>();
+                //aCertificates.add(certificate);
                 
-                // Get path of certificates.
-                CertPath aCertificatePath = aCertificateFactory.generateCertPath(aCertificates);
+                //CertificateFactory aCertificateFactory = CertificateFactory.getInstance("X.509");
                 
+                //// Get chain of certificates.
+                //CertPath aCertificatePath = aCertificateFactory.generateCertPath(aCertificates);
                 
-                return null;
+                //KeyStore aKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                //aKeyStore.load(new FileInputStream(new File(System.getProperty("user.home"), ".keystore")), null);
+                
+                //PKIXParameters aPkiParameters = new PKIXParameters(aKeyStore);
+                
+                //CertPathValidator aCertificatePathValidator = CertPathValidator.getInstance("PKIX");
+                
+                //try
+                //{
+                //    PKIXCertPathValidatorResult result = (PKIXCertPathValidatorResult) aCertificatePathValidator.validate(aCertificatePath, aPkiParameters);
+                //}
+                //catch (Exception err)
+                //{
+                //    // Verification of the certificate failed.
+                //    return false;
+                //}
+                
+                // Verification passed.
+                return true;
             }
         };
     
