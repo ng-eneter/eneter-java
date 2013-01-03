@@ -100,6 +100,21 @@ public class AesSerializer implements ISerializer
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    public AesSerializer(Key key, IvParameterSpec iv, ISerializer underlyingSerializer)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myKey = key;
+            myInitializeVector = iv;
+            myEncoderDecoder = new EncoderDecoder(underlyingSerializer);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     @Override
     public <T> Object serialize(T dataToSerialize, Class<T> clazz)
