@@ -5,11 +5,13 @@ import java.security.KeyFactory;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.dataprocessing.serializing.RsaDigitalSignatureSerializer;
+import eneter.messaging.dataprocessing.serializing.RsaSerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.endpoints.typedmessages.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -49,7 +51,7 @@ public class Program
         KeySpec aKeySpec = new PKCS8EncodedKeySpec(aPrivateKeyBytes);
         RSAPrivateKey aPrivateKey = (RSAPrivateKey)KeyFactory.getInstance("RSA").generatePrivate(aKeySpec);
         
-        ISerializer aSerializer = new RsaDigitalSignatureSerializer(aPublicCertificate, aPrivateKey);
+        ISerializer aSerializer = new RsaSerializer((RSAPublicKey)aPublicCertificate.getPublicKey(), aPrivateKey);
         
         // Create receiver that receives MyRequestMsg and
         // responses MyResponseMsg
