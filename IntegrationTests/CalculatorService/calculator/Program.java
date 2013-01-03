@@ -1,7 +1,15 @@
 package calculator;
 
 import java.io.*;
+import java.security.KeyFactory;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
 
+import eneter.messaging.dataprocessing.serializing.ISerializer;
+import eneter.messaging.dataprocessing.serializing.RsaDigitalSignatureSerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.endpoints.typedmessages.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -12,17 +20,13 @@ public class Program
 {
     public static class MyRequestMsg
     {
-        public double Number1;
-        public double Number2;
+        public int Number1;
+        public int Number2;
     }
     
-    public static class MyResponseMsg
-    {
-        public double Result;
-    }
     
     // Receiver receiving MyResponseMsg and responding MyRequestMsg
-    private static IDuplexTypedMessageReceiver<MyResponseMsg, MyRequestMsg> myReceiver;
+    private static IDuplexTypedMessageReceiver<Integer, MyRequestMsg> myReceiver;
 
     public static void main(String[] args) throws Exception
     {
@@ -32,10 +36,25 @@ public class Program
         TcpPolicyServer aPolicyServer = new TcpPolicyServer();
         aPolicyServer.startPolicyServer();
         
+        // Digitally signed messages.
+        CertificateFactory aCertificateFactory = CertificateFactory.getInstance("X.509");
+        FileInputStream aCertificateStream = new FileInputStream("d:/EneterSigner.cer");
+        X509Certificate aPublicCertificate = (X509Certificate) aCertificateFactory.generateCertificate(aCertificateStream);
+        
+        File aPrivateKeyFile = new File("d:/EneterSigner.pk8");
+        BufferedInputStream aBufferedPrivateKey = new BufferedInputStream(new FileInputStream(aPrivateKeyFile));
+        byte[] aPrivateKeyBytes = new byte[(int)aPrivateKeyFile.length()];
+        aBufferedPrivateKey.read(aPrivateKeyBytes);
+        
+        KeySpec aKeySpec = new PKCS8EncodedKeySpec(aPrivateKeyBytes);
+        RSAPrivateKey aPrivateKey = (RSAPrivateKey)KeyFactory.getInstance("RSA").generatePrivate(aKeySpec);
+        
+        ISerializer aSerializer = new RsaDigitalSignatureSerializer(aPublicCertificate, aPrivateKey);
+        
         // Create receiver that receives MyRequestMsg and
         // responses MyResponseMsg
-        IDuplexTypedMessagesFactory aReceiverFactory = new DuplexTypedMessagesFactory();
-        myReceiver = aReceiverFactory.createDuplexTypedMessageReceiver(MyResponseMsg.class, MyRequestMsg.class);
+        IDuplexTypedMessagesFactory aReceiverFactory = new DuplexTypedMessagesFactory(aSerializer);
+        myReceiver = aReceiverFactory.createDuplexTypedMessageReceiver(Integer.class, MyRequestMsg.class);
         
         // Subscribe to handle incoming messages.
         myReceiver.messageReceived().subscribe(myOnMessageReceived);
@@ -57,21 +76,21 @@ public class Program
         
         // Stop the TCP policy server.
         aPolicyServer.stopPolicyServer();
+        
+        System.out.println("Calculator service stopped.");
     }
     
     private static void onMessageReceived(Object sender, TypedRequestReceivedEventArgs<MyRequestMsg> e)
     {
         // Calculate incoming numbers.
-        double aResult = e.getRequestMessage().Number1 + e.getRequestMessage().Number2;
+        int aResult = e.getRequestMessage().Number1 + e.getRequestMessage().Number2;
         
         System.out.println(e.getRequestMessage().Number1 + " + " + e.getRequestMessage().Number2 + " = " + aResult);
         
         // Response back the result.
-        MyResponseMsg aResponseMsg = new MyResponseMsg();
-        aResponseMsg.Result = aResult;
         try
         {
-            myReceiver.sendResponseMessage(e.getResponseReceiverId(), aResponseMsg);
+            myReceiver.sendResponseMessage(e.getResponseReceiverId(), aResult);
         }
         catch (Exception err)
         {
