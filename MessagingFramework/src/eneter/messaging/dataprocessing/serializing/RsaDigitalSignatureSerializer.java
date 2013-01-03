@@ -1,22 +1,9 @@
 package eneter.messaging.dataprocessing.serializing;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.security.KeyStore;
-import java.security.MessageDigest;
-import java.security.cert.CertPath;
-import java.security.cert.CertPathValidator;
-import java.security.cert.CertificateFactory;
-import java.security.cert.PKIXCertPathValidatorResult;
-import java.security.cert.PKIXParameters;
-import java.security.cert.X509Certificate;
+import java.io.*;
+import java.security.*;
+import java.security.cert.*;
 import java.security.interfaces.RSAPrivateKey;
-import java.util.ArrayList;
-
-
-import javax.crypto.Cipher;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.IFunction1;
@@ -55,25 +42,21 @@ public class RsaDigitalSignatureSerializer implements ISerializer
         {
             byte[][] aSignedData = new byte[3][];
             
-            // Serialize incoming data using underlying serializer.
+            // Encode message to the byte sequence.
             ByteArrayOutputStream aSerializedData = new ByteArrayOutputStream();
             myEncoderDecoder.serialize(aSerializedData, dataToSerialize, clazz);
             aSignedData[0] = aSerializedData.toByteArray();
             
-            // Calculate hash from serialized data.
-            MessageDigest aSha1 = MessageDigest.getInstance("SHA1");
-            byte[] aHash = aSha1.digest(aSignedData[0]);
-            
-            // Sign the hash.
-            // Note: The signature is the hash encrypted with the private key.
-            Cipher aCryptoProvider = Cipher.getInstance("RSA");
-            aCryptoProvider.init(Cipher.ENCRYPT_MODE, mySignerPrivateKey);
-            aSignedData[2] = aCryptoProvider.doFinal(aHash);
+            // Sign the message.
+            Signature aSigner = Signature.getInstance("SHA1withRSA");
+            aSigner.initSign(mySignerPrivateKey, new SecureRandom());
+            aSigner.update(aSignedData[0]);
+            aSignedData[2] = aSigner.sign();
             
             // Store the public certificate.
             aSignedData[1] = mySignerPublicCertificate.getEncoded();
             
-            // Serialize data together with the signature.
+            // Serialize everything with the underlying serializer.
             Object aSerializedSignedData = myUnderlyingSerializer.serialize(aSignedData, byte[][].class);
             return aSerializedSignedData;
         }
@@ -90,14 +73,10 @@ public class RsaDigitalSignatureSerializer implements ISerializer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Deserialize data containing the signature.
+            // Deserialize data with underlying serializer.
             byte[][] aSignedData = myUnderlyingSerializer.deserialize(serializedData, byte[][].class);
             
-            // Calculate the hash.
-            MessageDigest aSha1 = MessageDigest.getInstance("SHA1");
-            byte[] aCalculatedHash = aSha1.digest(aSignedData[0]);
-            
-            // Verify the certificate.
+            // Verify the public certificate coming with data.
             CertificateFactory aCertificateFactory = CertificateFactory.getInstance("X.509");
             ByteArrayInputStream aCertificateStream = new ByteArrayInputStream(aSignedData[1]);
             X509Certificate aCertificate = (X509Certificate) aCertificateFactory.generateCertificate(aCertificateStream);
@@ -106,23 +85,17 @@ public class RsaDigitalSignatureSerializer implements ISerializer
                 throw new IllegalStateException(TracedObject + "failed to deserialize data because the verification of signer certificate failed.");
             }
 
-            // Decrypt the signature and verify it.
-            Cipher aCryptoProvider = Cipher.getInstance("RSA");
-            aCryptoProvider.init(Cipher.DECRYPT_MODE, aCertificate);
-            byte[] aDecryptedHash = aCryptoProvider.doFinal(aSignedData[2]);
-            if (aDecryptedHash.length != aCalculatedHash.length)
+            // Verify the signature.
+            Signature aVerifier = Signature.getInstance("SHA1withRSA"); 
+            aVerifier.initVerify(aCertificate.getPublicKey());
+            aVerifier.update(aSignedData[0]);
+            boolean aResult = aVerifier.verify(aSignedData[2]);
+            if (aResult == false)
             {
                 throw new IllegalStateException(TracedObject + "failed to deserialize data because the signature verification failed.");
             }
-            for (int i = 0; i < aDecryptedHash.length; ++i)
-            {
-                if (aDecryptedHash[i] != aCalculatedHash[i])
-                {
-                    throw new IllegalStateException(TracedObject + "failed to deserialize data because the signature verification failed.");
-                }
-            }
             
-            // Deserialize data.
+            // Decode the byte sequence.
             ByteArrayInputStream aDeserializedData = new ByteArrayInputStream(aSignedData[0]);
             return myEncoderDecoder.deserialize(aDeserializedData, clazz);
         }
@@ -137,6 +110,7 @@ public class RsaDigitalSignatureSerializer implements ISerializer
     private EncoderDecoder myEncoderDecoder;
     private X509Certificate mySignerPublicCertificate;
     private RSAPrivateKey mySignerPrivateKey;
+    
     private IFunction1<Boolean, X509Certificate> myVerifySignerCertificate = new IFunction1<Boolean, X509Certificate>()
         {
             // If user does not provide his specific method to verify the certificate
