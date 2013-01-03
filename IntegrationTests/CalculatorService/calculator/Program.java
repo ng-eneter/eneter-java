@@ -10,7 +10,6 @@ import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
-import eneter.messaging.dataprocessing.serializing.RsaDigitalSignatureSerializer;
 import eneter.messaging.dataprocessing.serializing.RsaSerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.endpoints.typedmessages.*;
