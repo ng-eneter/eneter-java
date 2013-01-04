@@ -1,11 +1,30 @@
 package eneter.messaging.messagingsystems.androidusbcablemessagingsystem;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
 {
+    public AndroidUsbCableMessagingFactory()
+    {
+        this(5037, new EneterProtocolFormatter());
+    }
+    
+    public AndroidUsbCableMessagingFactory(int adbHostPort, IProtocolFormatter<byte[]> protocolFormatter)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myAdbHostPort = adbHostPort;
+            myProtocolFormatter = protocolFormatter;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     @Override
     public IOutputChannel createOutputChannel(String channelId)

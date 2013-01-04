@@ -138,7 +138,7 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
             aTcpClient.connect(anAdbHostAddress, 5000);
 
             // Encode the message for the ADB host.
-            String anAdbRequest = String.format("%.4X%s\n", aForwardRequest.length(), aForwardRequest);
+            String anAdbRequest = String.format("%04X%s\n", aForwardRequest.length(), aForwardRequest);
             byte[] aRequestContent = anAdbRequest.getBytes(anAsciiCharset);
 
             aTcpClient.getOutputStream().write(aRequestContent);
@@ -146,7 +146,7 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
             // Read the response from the ADB host.
             DataInputStream aReader = new DataInputStream(aTcpClient.getInputStream());
             byte[] aResponseContent = new byte[4];
-            aReader.readFully(aRequestContent, 0, 4);
+            aReader.readFully(aResponseContent, 0, aResponseContent.length);
             String aResponse = new String(aResponseContent, anAsciiCharset); 
 
             // If ADB response indicates something was wrong.
@@ -154,7 +154,7 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
             {
                 // Try to get the reason why it failed.
                 byte[] aLengthBuf = new byte[4]; 
-                aReader.readFully(aLengthBuf, 0, 4);
+                aReader.readFully(aLengthBuf, 0, aLengthBuf.length);
                 String aLengthStr = new String(aLengthBuf, anAsciiCharset);
 
                 int aReasonMessageLength = 0;
