@@ -50,7 +50,7 @@ public class NoneSecurityClientFactory implements IClientSecurityFactory
         {
             Socket aClientSocket = new Socket();
             
-            // Connect with the timeout 3 seconds.
+            // Connect with the timeout.
             aClientSocket.connect(socketAddress, myConnectionTimeout);
             aClientSocket.setTcpNoDelay(true);
             return aClientSocket;
