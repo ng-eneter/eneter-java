@@ -11,6 +11,7 @@ import eneter.messaging.endpoints.typedmessages.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.threadmessagingsystem.ThreadMessagingSystemFactory;
 import eneter.net.system.EventHandler;
+import eneter.net.system.threading.internal.AutoResetEvent;
 
 public class Test_LoadBalancer
 {
@@ -108,7 +109,7 @@ public class Test_LoadBalancer
     }
     
     @Test
-    public void CalculatePi()
+    public void CalculatePi() throws Exception
     {
         //EneterTrace.DetailLevel = EneterTrace.EDetailLevel.Debug;
         //EneterTrace.TraceLog = new StreamWriter("d:/tracefile.txt");
@@ -125,71 +126,80 @@ public class Test_LoadBalancer
         {
             for (int i = 0; i < 50; ++i)
             {
-                aServices.add(new CalculatorService("a" + i.ToString(), aThreadMessaging));
+                aServices.add(new CalculatorService("a" + Integer.toString(i), aThreadMessaging));
             }
 
             // Create Distributor
             ILoadBalancerFactory aDistributorFactory = new RoundRobinBalancerFactory(aThreadMessaging);
-            aDistributor = aDistributorFactory.CreateLoadBalancer();
+            aDistributor = aDistributorFactory.createLoadBalancer();
 
             // Attach available services to the distributor.
-            for (int i = 0; i < aServices.Count; ++i)
+            for (int i = 0; i < aServices.size(); ++i)
             {
-                aDistributor.AddDuplexOutputChannel("a" + i.ToString());
+                aDistributor.addDuplexOutputChannel("a" + Integer.toString(i));
             }
 
             // Attach input channel to the distributor.
-            IDuplexInputChannel anInputChannel = aThreadMessaging.CreateDuplexInputChannel("DistributorAddress");
-            aDistributor.AttachDuplexInputChannel(anInputChannel);
+            IDuplexInputChannel anInputChannel = aThreadMessaging.createDuplexInputChannel("DistributorAddress");
+            aDistributor.attachDuplexInputChannel(anInputChannel);
 
 
             // Create client that needs to calculate PI.
             IDuplexTypedMessagesFactory aTypedMessagesFactory = new DuplexTypedMessagesFactory();
-            aSender = aTypedMessagesFactory.CreateDuplexTypedMessageSender<double, Interval>();
+            aSender = aTypedMessagesFactory.createDuplexTypedMessageSender(Double.class, Interval.class);
 
-            AutoResetEvent aCalculationCompletedEvent = new AutoResetEvent(false);
-            int aCount = 0;
-            double aPi = 0.0;
-            aSender.ResponseReceived += (x, y) =>
+            final AutoResetEvent aCalculationCompletedEvent = new AutoResetEvent(false);
+            final int[] aCount = {0};
+            final double[] aPi = {0.0};
+            aSender.responseReceived().subscribe(new EventHandler<TypedResponseReceivedEventArgs<Double>>()
+            {
+                @Override
+                public void onEvent(Object x, TypedResponseReceivedEventArgs<Double> y)
                 {
-                    ++aCount;
-                    EneterTrace.Debug("Completed interval: " + aCount.ToString());
+                    ++aCount[0];
+                    EneterTrace.debug("Completed interval: " + Integer.toString(aCount[0]));
 
-                    aPi += y.ResponseMessage;
+                    aPi[0] += y.getResponseMessage();
 
-                    if (aCount == 400)
+                    if (aCount[0] == 400)
                     {
-                        aCalculationCompletedEvent.Set();
+                        aCalculationCompletedEvent.set();
                     }
-                };
+                }
+            });
+            
 
-            IDuplexOutputChannel anOutputChannel = aThreadMessaging.CreateDuplexOutputChannel("DistributorAddress");
-            aSender.AttachDuplexOutputChannel(anOutputChannel);
+            IDuplexOutputChannel anOutputChannel = aThreadMessaging.createDuplexOutputChannel("DistributorAddress");
+            aSender.attachDuplexOutputChannel(anOutputChannel);
 
             // Sender sends several parallel requests to calculate specified intervals.
             // 2 / 0.005 = 400 intervals.
             for (double i = -1.0; i <= 1.0; i += 0.005)
             {
                 Interval anInterval = new Interval(i, i + 0.005);
-                aSender.SendRequestMessage(anInterval);
+                aSender.sendRequestMessage(anInterval);
             }
 
             // Wait until all requests are calculated.
-            EneterTrace.Debug("Test waits until completion.");
-            aCalculationCompletedEvent.WaitOne();
+            EneterTrace.debug("Test waits until completion.");
+            aCalculationCompletedEvent.waitOne();
 
-            EneterTrace.Info("Calculated PI = " + aPi.ToString());
+            EneterTrace.info("Calculated PI = " + Double.toString(aPi[0]));
         }
         catch (Exception err)
         {
-            EneterTrace.Error("Test failed", err);
-            throw;
+            EneterTrace.error("Test failed", err);
+            throw err;
         }
         finally
         {
-            aSender.DetachDuplexOutputChannel();
-            aDistributor.DetachDuplexInputChannel();
-            aServices.ForEach(x => x.Dispose());
+            aSender.detachDuplexOutputChannel();
+            aDistributor.detachDuplexInputChannel();
+            
+            for (CalculatorService aService : aServices)
+            {
+                aService.dispose();
+            }
         }
     }
 }
