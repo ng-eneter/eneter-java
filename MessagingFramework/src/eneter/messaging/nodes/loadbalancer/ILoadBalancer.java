@@ -10,9 +10,9 @@ public interface ILoadBalancer extends IAttachableDuplexInputChannel
     
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
     
-    void addDuplexOutputChannel(String channelId);
+    void addDuplexOutputChannel(String channelId) throws Exception;
     
-    void removeDuplexOutputChannel(String channelId);
+    void removeDuplexOutputChannel(String channelId) throws Exception;
     
     void removeAllDuplexOutputChannels();
 }

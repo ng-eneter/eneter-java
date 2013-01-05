@@ -70,39 +70,348 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
         return myResponseReceiverDisconnectedEventImpl.getApi();
     }
 
+    
+    public RoundRobinBalancer(IMessagingSystemFactory outputMessagingFactory)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myOutputMessagingFactory = outputMessagingFactory;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    
     @Override
     public void addDuplexOutputChannel(String channelId)
     {
-        // TODO Auto-generated method stub
-        
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myAvailableReceivers)
+            {
+                TReceiver aReceiver = new TReceiver(channelId);
+                myAvailableReceivers.add(aReceiver);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
-    public void removeDuplexOutputChannel(String channelId)
+    public void removeDuplexOutputChannel(final String channelId) throws Exception
     {
-        // TODO Auto-generated method stub
-        
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myAvailableReceivers)
+            {
+                // Find the receiver with the given channel id.
+                TReceiver aReceiver = EnumerableExt.firstOrDefault(myAvailableReceivers,
+                        new IFunction1<Boolean, TReceiver>()
+                        {
+                            @Override
+                            public Boolean invoke(TReceiver x) throws Exception
+                            {
+                                return x.getChannelId().equals(channelId);
+                            }
+                        });
+                        
+                if (aReceiver != null)
+                {
+                    // Try to close all open duplex output channels.
+                    for (TReceiver.TConnection aConnection : aReceiver.getOpenConnections())
+                    {
+                        try
+                        {
+                            aConnection.getDuplexOutputChannel().closeConnection();
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + "failed to close connection to " + channelId, err);
+                        }
+
+                        aConnection.getDuplexOutputChannel().responseMessageReceived().unsubscribe(myOnResponseMessageReceivedHandler);
+
+                        // Note: The client (response receiver) cannot be disconnected because it can have connections
+                        //       with multiple services (receivers) from the pool.
+                    }
+
+                    // Remove the connection from available connections.
+                    myAvailableReceivers.remove(aReceiver);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
     public void removeAllDuplexOutputChannels()
     {
-        // TODO Auto-generated method stub
-        
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myAvailableReceivers)
+            {
+                // Go via all available receivers.
+                for (TReceiver aReceiver : myAvailableReceivers)
+                {
+                    // Try to close all open duplex output channels.
+                    for (TReceiver.TConnection aConnection : aReceiver.getOpenConnections())
+                    {
+                        try
+                        {
+                            aConnection.getDuplexOutputChannel().closeConnection();
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + "failed to close connection to " + aConnection.getDuplexOutputChannel().getChannelId(), err);
+                        }
+
+                        aConnection.getDuplexOutputChannel().responseMessageReceived().unsubscribe(myOnResponseMessageReceivedHandler);
+
+                        // Note: The client (response receiver) cannot be disconnected because even if all services (receivers)
+                        //       are removed from the pool, lated on can be added the new one which can process requests.
+                    }
+                }
+
+                // Clean available receivers.
+                myAvailableReceivers.clear();
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
+    /**
+     * Receives a message from the client and fords it to the first available service.
+     */
     @Override
-    protected void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e)
+    protected void onMessageReceived(Object sender, final DuplexChannelMessageEventArgs e)
     {
-        // TODO Auto-generated method stub
-        
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myAvailableReceivers)
+            {
+                if (myAvailableReceivers.size() == 0)
+                {
+                    EneterTrace.warning(TracedObject() + " could not forward the request because there are no attached duplex output channels.");
+                    return;
+                }
+
+                // Try to forward the incoming message to the first available receiver.
+                for (int i = 0; i < myAvailableReceivers.size(); ++i)
+                {
+                    TReceiver aReceiver = myAvailableReceivers.get(i);
+
+                    // If there is not open connection for the current response receiver id, then open it.
+                    TReceiver.TConnection aConnection = null; 
+                    try
+                    {
+                        aConnection = EnumerableExt.firstOrDefault(aReceiver.getOpenConnections(),
+                                new IFunction1<Boolean, TReceiver.TConnection>()
+                                {
+                                    @Override
+                                    public Boolean invoke(TReceiver.TConnection x)
+                                            throws Exception
+                                    {
+                                        return x.getResponseReceiverId().equals(e.getResponseReceiverId());
+                                    }
+                                });
+                    }
+                    catch (Exception err)
+                    {
+                        // If we are here then there is a programatical error in the invoke() method.
+                        EneterTrace.error(TracedObject() + "failed during EnumerableExt.firstOrDefault().", err);
+                    }
+                    if (aConnection == null)
+                    {
+                        try
+                        {
+                            IDuplexOutputChannel anOutputChannel = myOutputMessagingFactory.createDuplexOutputChannel(aReceiver.getChannelId());
+                            aConnection = new TReceiver.TConnection(e.getResponseReceiverId(), anOutputChannel);
+                            
+                            aConnection.getDuplexOutputChannel().responseMessageReceived().subscribe(myOnResponseMessageReceivedHandler);
+                            aConnection.getDuplexOutputChannel().openConnection();
+
+                            aReceiver.getOpenConnections().add(aConnection);
+                        }
+                        catch (Exception err)
+                        {
+                            aConnection.getDuplexOutputChannel().responseMessageReceived().unsubscribe(myOnResponseMessageReceivedHandler);
+                            EneterTrace.warning(TracedObject() + ErrorHandler.OpenConnectionFailure, err);
+                            
+                            // Try to forward the request to the next receiver.
+                            continue;
+                        }
+                    }
+
+                    // Forward the message to the "service".
+                    try
+                    {
+                        aConnection.getDuplexOutputChannel().sendMessage(e.getMessage());
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.SendMessageFailure, err);
+
+                        // Remove this unavailable connection from connections of this receiver.
+                        try
+                        {
+                            aConnection.getDuplexOutputChannel().closeConnection();
+                        }
+                        catch (Exception err2)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err2);
+                        }
+                        aConnection.getDuplexOutputChannel().responseMessageReceived().unsubscribe(myOnResponseMessageReceivedHandler);
+                        aReceiver.getOpenConnections().remove(aConnection);
+                        
+                        // Try to forward the request to the next receiver.
+                        continue;
+                    }
+
+                    // Put the used receiver to the end.
+                    myAvailableReceivers.remove(i);
+                    myAvailableReceivers.add(aReceiver);
+
+                    // The sending was successful.
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void onResponseMessageReceived(Object sender, final DuplexChannelMessageEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            String aResponseReceiverId = null;
+
+            synchronized (myAvailableReceivers)
+            {
+                // The response receiver id coming with the message belongs to the duplex output channel.
+                // So we need to find the response receiver id for the duplex input channel.
+                TReceiver aReceiver = null;
+                try
+                {
+                    aReceiver = EnumerableExt.firstOrDefault(myAvailableReceivers,
+                            new IFunction1<Boolean, TReceiver>()
+                            {
+                                @Override
+                                public Boolean invoke(TReceiver x) throws Exception
+                                {
+                                    return x.getChannelId().equals(e.getChannelId());
+                                }
+                            });
+                }
+                catch (Exception err)
+                {
+                    // If we are here then there is a programatical error in the invoke() method.
+                    EneterTrace.error(TracedObject() + "failed during EnumerableExt.firstOrDefault().", err);
+                }
+
+                if (aReceiver != null)
+                {
+                    TReceiver.TConnection aConnection = null;
+                    
+                    try
+                    {
+                        aConnection = EnumerableExt.firstOrDefault(aReceiver.getOpenConnections(),
+                                new IFunction1<Boolean, TReceiver.TConnection>()
+                                {
+                                    @Override
+                                    public Boolean invoke(TReceiver.TConnection x)
+                                            throws Exception
+                                    {
+                                        return x.getDuplexOutputChannel().getResponseReceiverId().equals(e.getResponseReceiverId());
+                                    }
+                                });
+                    }
+                    catch(Exception err)
+                    {
+                     // If we are here then there is a programatical error in the invoke() method.
+                        EneterTrace.error(TracedObject() + "failed during EnumerableExt.firstOrDefault().", err);
+                    }
+                            
+                    if (aConnection != null)
+                    {
+                        aResponseReceiverId = aConnection.getResponseReceiverId();
+                    }
+                }
+            }
+
+            if (aResponseReceiverId == null)
+            {
+                EneterTrace.warning(TracedObject() + "could not find receiver for the incoming response message.");
+                return;
+            }
+
+            synchronized (myDuplexInputChannelManipulatorLock)
+            {
+                IDuplexInputChannel aDuplexInputChannel = getAttachedDuplexInputChannel(); 
+                // Send the response message via the duplex input channel to the sender.
+                if (aDuplexInputChannel != null)
+                {
+                    try
+                    {
+                        aDuplexInputChannel.sendResponseMessage(aResponseReceiverId, e.getMessage());
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+                    }
+                }
+                else
+                {
+                    EneterTrace.error(TracedObject() + "cannot send the response message when the duplex input channel is not attached.");
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
     protected void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e)
     {
-        // TODO Auto-generated method stub
-        
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (myResponseReceiverConnectedEventImpl.isSubscribed())
+            {
+                try
+                {
+                    myResponseReceiverConnectedEventImpl.raise(this, e);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
     @Override
