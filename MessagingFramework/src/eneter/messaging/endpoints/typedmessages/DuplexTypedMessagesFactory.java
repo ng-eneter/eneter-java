@@ -23,7 +23,7 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
      */
     public DuplexTypedMessagesFactory()
     {
-        this(new XmlStringSerializer());
+        this(0, new XmlStringSerializer());
     }
 
     /**
@@ -37,7 +37,7 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
     
     public DuplexTypedMessagesFactory(ISerializer serializer)
     {
-        this(-1, serializer);
+        this(0, serializer);
     }
     
     public DuplexTypedMessagesFactory(int syncResponseReceiveTimeout, ISerializer serializer)
