@@ -8,7 +8,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 public class Program
 {
-    private static ISyncTypedMessageSender<String, String> mySender;
+    private static ISyncDuplexTypedMessageSender<String, String> mySender;
 
     /**
      * @param args
@@ -21,8 +21,8 @@ public class Program
             IMessagingSystemFactory aMessaging = new AndroidUsbCableMessagingFactory();
             IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("8090");
         
-            ISyncTypedMessagesFactory aReceiverFactory = new SyncTypedMessagesFactory();
-            mySender = aReceiverFactory.createSyncMessageSender(String.class, String.class);
+            IDuplexTypedMessagesFactory aReceiverFactory = new DuplexTypedMessagesFactory();
+            mySender = aReceiverFactory.createSyncDuplexTypedMessageSender(String.class, String.class);
             mySender.attachDuplexOutputChannel(anOutputChannel);
             
             String aResponse = mySender.sendRequestMessage("Hello");
