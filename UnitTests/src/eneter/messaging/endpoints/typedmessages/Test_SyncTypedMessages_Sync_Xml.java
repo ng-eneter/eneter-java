@@ -14,7 +14,6 @@ public class Test_SyncTypedMessages_Sync_Xml extends SyncTypedMessagesBaseTester
         InputChannel = aMessaging.createDuplexInputChannel("MyChannelId");
         OutputChannel = aMessaging.createDuplexOutputChannel("MyChannelId");
 
-        SyncTypedMessagesFactory = new SyncTypedMessagesFactory();
         DuplexTypedMessagesFactory = new DuplexTypedMessagesFactory();
     }
 }
