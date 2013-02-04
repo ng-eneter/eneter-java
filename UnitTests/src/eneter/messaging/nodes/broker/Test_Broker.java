@@ -27,6 +27,15 @@ public class Test_Broker
         IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory();
 
         IDuplexBroker aBroker = aBrokerFactory.createBroker();
+        final BrokerMessageReceivedEventArgs[] aBrokerReceivedMessage = { null };
+        aBroker.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
+        {
+            @Override
+            public void onEvent(Object sender, BrokerMessageReceivedEventArgs y)
+            {
+                aBrokerReceivedMessage[0] = y;
+            }
+        });
         aBroker.attachDuplexInputChannel(aBrokerInputChannel);
         
         IDuplexBrokerClient aBrokerClient1 = aBrokerFactory.createBrokerClient();
@@ -91,6 +100,8 @@ public class Test_Broker
         // Note: Subscribe for all message types starting with the character 'T'. 
         String[] aSubscription4 = { "^T.*" };
         aBrokerClient4.subscribeRegExp(aSubscription4);
+        
+        aBroker.subscribe("TypeA");
 
 
         aBrokerClient3.sendMessage("TypeA", "Message A");
@@ -107,11 +118,16 @@ public class Test_Broker
         assertEquals("TypeA", aClient4ReceivedMessage[0].getMessageTypeId());
         assertEquals("Message A", (String)aClient4ReceivedMessage[0].getMessage());
         assertEquals(null, aClient4ReceivedMessage[0].getReceivingError());
+        
+        assertEquals("TypeA", aBrokerReceivedMessage[0].getMessageTypeId());
+        assertEquals("Message A", (String)aBrokerReceivedMessage[0].getMessage());
+        assertEquals(null, aBrokerReceivedMessage[0].getReceivingError());
 
         aClient1ReceivedMessage[0] = null;
         aClient2ReceivedMessage[0] = null;
         aClient3ReceivedMessage[0] = null;
         aClient4ReceivedMessage[0] = null;
+        aBrokerReceivedMessage[0] = null;
 
         aBrokerClient2.unsubscribe();
         
@@ -126,12 +142,15 @@ public class Test_Broker
         assertEquals(null, aClient3ReceivedMessage[0].getReceivingError());
 
         assertEquals(null, aClient4ReceivedMessage[0]);
+        
+        assertEquals(null, aBrokerReceivedMessage[0]);
 
         
         aClient1ReceivedMessage[0] = null;
         aClient2ReceivedMessage[0] = null;
         aClient3ReceivedMessage[0] = null;
         aClient4ReceivedMessage[0] = null;
+        aBrokerReceivedMessage[0] = null;
 
         aBrokerClient3.sendMessage("TypeA", "Message A");
         assertEquals("TypeA", aClient1ReceivedMessage[0].getMessageTypeId());
@@ -145,14 +164,21 @@ public class Test_Broker
         assertEquals("TypeA", aClient4ReceivedMessage[0].getMessageTypeId());
         assertEquals("Message A", (String)aClient4ReceivedMessage[0].getMessage());
         assertEquals(null, aClient4ReceivedMessage[0].getReceivingError());
+        
+        assertEquals("TypeA", aBrokerReceivedMessage[0].getMessageTypeId());
+        assertEquals("Message A", (String)aBrokerReceivedMessage[0].getMessage());
+        assertEquals(null, aBrokerReceivedMessage[0].getReceivingError());
 
 
         aClient1ReceivedMessage[0] = null;
         aClient2ReceivedMessage[0] = null;
         aClient3ReceivedMessage[0] = null;
         aClient4ReceivedMessage[0] = null;
+        aBrokerReceivedMessage[0] = null;
 
 
+        aBroker.unsubscribe("TypeA");
+        
         String[] aNewMessageType = { "TypeA" };
         aBrokerClient3.subscribe(aNewMessageType);
         
@@ -166,6 +192,8 @@ public class Test_Broker
         assertEquals("TypeA", aClient3ReceivedMessage[0].getMessageTypeId());
         assertEquals("Message A", (String)aClient3ReceivedMessage[0].getMessage());
         assertEquals(null, aClient3ReceivedMessage[0].getReceivingError());
+        
+        assertEquals(null, aBrokerReceivedMessage[0]);
     }
     
     @Test
