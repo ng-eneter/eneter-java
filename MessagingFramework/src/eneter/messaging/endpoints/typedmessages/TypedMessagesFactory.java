@@ -31,6 +31,11 @@ public class TypedMessagesFactory implements ITypedMessagesFactory
      * Constructs the typed message factory with specified serializer.
      * @param serializer serializer
      */
+    public TypedMessagesFactory(int syncResponseReceiveTimeout)
+    {
+        this(new XmlStringSerializer());
+    }
+    
     public TypedMessagesFactory(ISerializer serializer)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -44,6 +49,7 @@ public class TypedMessagesFactory implements ITypedMessagesFactory
         }
     }
     
+
     /**
      * Creates the typed message sender.
      * The sender sends the messages via attached one-way output channel.

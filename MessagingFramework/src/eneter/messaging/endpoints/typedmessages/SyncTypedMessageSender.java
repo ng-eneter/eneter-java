@@ -8,7 +8,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
 import eneter.net.system.threading.internal.AutoResetEvent;
 
-class SyncTypedMessageSender<TResponse, TRequest> implements ISyncTypedMessageSender<TResponse, TRequest>
+class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMessageSender<TResponse, TRequest>
 {
     public SyncTypedMessageSender(int responseReceiveTimeout, ISerializer serializer,
             Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz)

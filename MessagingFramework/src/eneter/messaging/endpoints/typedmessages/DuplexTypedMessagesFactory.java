@@ -30,12 +30,23 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
      * Constructs the method factory with specified serializer.
      * @param serializer serializer used to serialize/deserialize messages
      */
+    public DuplexTypedMessagesFactory(int syncResponseReceiveTimeout)
+    {
+        this(syncResponseReceiveTimeout, new XmlStringSerializer());
+    }
+    
     public DuplexTypedMessagesFactory(ISerializer serializer)
+    {
+        this(-1, serializer);
+    }
+    
+    public DuplexTypedMessagesFactory(int syncResponseReceiveTimeout, ISerializer serializer)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             mySerializer = serializer;
+            mySyncResponseReceiveTimeout = syncResponseReceiveTimeout;
         }
         finally
         {
@@ -53,6 +64,21 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
         try
         {
             return new DuplexTypedMessageSender<_ResponseType, _RequestType>(mySerializer, responseMessageClazz, requestMessageClazz);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public <_ResponseType, _RequestType> ISyncDuplexTypedMessageSender<_ResponseType, _RequestType> createSyncDuplexTypedMessageSender(Class<_ResponseType> responseMessageClazz, Class<_RequestType> requestMessageClazz)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            SyncTypedMessageSender<_ResponseType, _RequestType> aSender = new SyncTypedMessageSender<_ResponseType, _RequestType>(mySyncResponseReceiveTimeout, mySerializer, responseMessageClazz, requestMessageClazz);
+            return aSender;
         }
         finally
         {
@@ -79,4 +105,5 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
 
     
     private ISerializer mySerializer;
+    private int mySyncResponseReceiveTimeout;
 }
