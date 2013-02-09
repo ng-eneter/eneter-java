@@ -87,7 +87,7 @@ class ReliableMessageTimeTracker
                                 @Override
                                 public Boolean invoke(TrackItem x) throws Exception
                                 {
-                                    return x.myMessageId == id;
+                                    return x.myMessageId.equals(id);
                                 }
                             });
                 }

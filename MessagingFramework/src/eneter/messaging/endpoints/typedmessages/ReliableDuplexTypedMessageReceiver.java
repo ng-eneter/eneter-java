@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2013 Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.endpoints.typedmessages;
 
 import java.util.UUID;
