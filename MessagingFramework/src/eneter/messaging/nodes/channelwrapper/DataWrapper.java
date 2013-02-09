@@ -7,7 +7,7 @@
  */
 
 
-package eneter.messaging.dataprocessing.wrapping;
+package eneter.messaging.nodes.channelwrapper;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;

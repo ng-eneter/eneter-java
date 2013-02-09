@@ -11,7 +11,6 @@ package eneter.messaging.nodes.channelwrapper;
 import java.util.*;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
-import eneter.messaging.dataprocessing.wrapping.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexOutputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;

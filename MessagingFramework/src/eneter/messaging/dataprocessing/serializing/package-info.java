@@ -7,6 +7,6 @@
  */
 
 /**
- * Serializers that can be used for encoding/decoding messages.
+ * Functionality to serialize and deserialize messages or data.
  */
 package eneter.messaging.dataprocessing.serializing;

@@ -6,7 +6,7 @@
  * 
  */
 
-package eneter.messaging.dataprocessing.wrapping;
+package eneter.messaging.nodes.channelwrapper;
 
 import java.io.Serializable;
 

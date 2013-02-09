@@ -8,19 +8,101 @@ import java.security.interfaces.RSAPrivateKey;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.IFunction1;
 
+/**
+ * Serializer digitaly signing data.
+ *
+ * Serialization:
+ * <ol>
+ * <li>Incoming data is serialized by underlying serializer (e.g. XmlStringSerializer)</li>
+ * <li>SHA1 hash is calculated from the serialized data.</li>
+ * <li>The hash is encrypted with RSA using the private key.</li>
+ * <li>The serialized data consists of serialized data, encoded hash (signature) and public certificate of the signer.</li>
+ * </ol>
+ * Deserialization:
+ * <ol>
+ * <li>The public certificate is taken from serialized data and verified. (you can provide your own verification)</li>
+ * <li>SHA1 hash is calculated from serialized data.</li>
+ * <li>Encrypted hash (signature) is decrypted by public key taken from the certificate.</li>
+ * <li>If the decrypted hash is same as calculated one the data is ok.</li>
+ * <li>Data is deserialized by the underlying serializer and returned.</li>
+ * </ol>
+ * <pre>
+ * {@code
+ * String aDataToSerialize = "Hello";
+ * 
+ * // Public certificate
+ * CertificateFactory aCertificateFactory = CertificateFactory.getInstance("X.509");
+ * FileInputStream aCertificateStream = new FileInputStream("d:/MySigner.cer");
+ * X509Certificate aCertificate = (X509Certificate) aCertificateFactory.generateCertificate(aCertificateStream);
+ * 
+ * // Private key
+ * File aPrivateKeyFile = new File("d:/MySigner.pk8");
+ * BufferedInputStream aBufferedPrivateKey = new BufferedInputStream(new FileInputStream(aPrivateKeyFile));
+ * byte[] aPrivateKeyBytes = new byte[(int)aPrivateKeyFile.length()];
+ * aBufferedPrivateKey.read(aPrivateKeyBytes);
+ * KeySpec aKeySpec = new PKCS8EncodedKeySpec(aPrivateKeyBytes);
+ * RSAPrivateKey aPrivateKey = (RSAPrivateKey)KeyFactory.getInstance("RSA").generatePrivate(aKeySpec);
+ * 
+ * // Create serializer
+ * ISerializer aSerializer = new RsaDigitalSignatureSerializer(aCertificate, aPrivateKey);
+ * 
+ * // Serialize
+ * Object aSerializedData = aSerializer.serialize(aDataToSerialize, String.class);
+ * 
+ * // Deserialize
+ * String aDeserializedData = aSerializer.deserialize(aSerializedData, String.class);
+ * }
+ * </pre>
+ *
+ */
 public class RsaDigitalSignatureSerializer implements ISerializer
 {
+    /**
+     * Constructs serializer with default parameters.
+     *
+     * It uses XmlStringSerializer as the underlying serializer and it uses default X509Certificate.checkValidity() method to verify
+     * the public certificate.
+     * 
+     * if parameters signerCertificate and signerPrivateKey are null then the serializer
+     * can be used only for deserialization.
+     * 
+     * @param signerCertificate public certificate of the signer. This certificate will be attached
+     * to serialized data so that the deserializer can verify the signer identity and
+     * can check if signed data are not changed. 
+     * 
+     * @param signerPrivateKey private key that will be used to sign data.
+     */
     public RsaDigitalSignatureSerializer(X509Certificate signerCertificate, RSAPrivateKey signerPrivateKey)
     {
         this(signerCertificate, signerPrivateKey, null, new XmlStringSerializer());
     }
     
-    
+    /**
+     * Constructs serializer with custom parameters.
+     * 
+     * if parameters signerCertificate and signerPrivateKey are null then the serializer
+     * can be used only for deserialization.
+     * 
+     * @param signerPublicCertificate public certificate of the signer. This certificate will be attached
+     * to serialized data so that the deserializer can verify the signer identity and
+     * can check if signed data are not changed.
+     * 
+     * @param signerPrivateKey private key that will be used to sign data.
+     * @param verifySignerCertificate Method that will check the signer public certificate before deserializing.
+     * If null then default X509Certificate.checkValidity() is used.
+     * @param underlyingSerializer underlying serializer used to serialize data. It can
+     * be any serializer from this namespace.
+     */
     public RsaDigitalSignatureSerializer(X509Certificate signerPublicCertificate, RSAPrivateKey signerPrivateKey, IFunction1<Boolean, X509Certificate> verifySignerCertificate, ISerializer underlyingSerializer)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (signerPublicCertificate != null && signerPrivateKey == null)
+            {
+                throw new IllegalArgumentException("The public certificate is present but the parameter signerPrivateKey is null.");
+            }
+            
             mySignerPublicCertificate = signerPublicCertificate;
             mySignerPrivateKey = signerPrivateKey;
             myVerifySignerCertificate = (verifySignerCertificate == null) ? myVerifySignerCertificate : verifySignerCertificate;
@@ -33,6 +115,9 @@ public class RsaDigitalSignatureSerializer implements ISerializer
         }
     }
 
+    /**
+     * Serializes data.
+     */
     @Override
     public <T> Object serialize(T dataToSerialize, Class<T> clazz)
             throws Exception
@@ -40,6 +125,11 @@ public class RsaDigitalSignatureSerializer implements ISerializer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (mySignerPublicCertificate == null)
+            {
+                throw new IllegalStateException(TracedObject + "failed to serialize data. The signer certificate is null and thus the serializer can be used only for deserialization.");
+            }
+            
             byte[][] aSignedData = new byte[3][];
             
             // Encode message to the byte sequence.
@@ -66,6 +156,9 @@ public class RsaDigitalSignatureSerializer implements ISerializer
         }
     }
 
+    /**
+     * Deserializes data.
+     */
     @Override
     public <T> T deserialize(Object serializedData, Class<T> clazz)
             throws Exception
@@ -119,31 +212,6 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             public Boolean invoke(X509Certificate certificate) throws Exception
             {
                 certificate.checkValidity();
-                
-                //ArrayList<X509Certificate> aCertificates = new ArrayList<X509Certificate>();
-                //aCertificates.add(certificate);
-                
-                //CertificateFactory aCertificateFactory = CertificateFactory.getInstance("X.509");
-                
-                //// Get chain of certificates.
-                //CertPath aCertificatePath = aCertificateFactory.generateCertPath(aCertificates);
-                
-                //KeyStore aKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-                //aKeyStore.load(new FileInputStream(new File(System.getProperty("user.home"), ".keystore")), null);
-                
-                //PKIXParameters aPkiParameters = new PKIXParameters(aKeyStore);
-                
-                //CertPathValidator aCertificatePathValidator = CertPathValidator.getInstance("PKIX");
-                
-                //try
-                //{
-                //    PKIXCertPathValidatorResult result = (PKIXCertPathValidatorResult) aCertificatePathValidator.validate(aCertificatePath, aPkiParameters);
-                //}
-                //catch (Exception err)
-                //{
-                //    // Verification of the certificate failed.
-                //    return false;
-                //}
                 
                 // Verification passed.
                 return true;
