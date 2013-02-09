@@ -7,32 +7,52 @@
  */
 
 /**
- * Extends the messaging system to work temporarily offline while the connection is not available.
- * 
- * The buffered messaging is intended to overcome relatively short time intervals when the connection is not available.
- * It means, the buffered messaging is able to hide the connection is not available and work offline while
- * trying to reconnect.<br/>
- * If the connection is not available, the buffered messaging stores sent messages (and sent response messages)
- * in the buffer and sends them when the connection is established.<br/>
- * Buffered messaging also checks if the between duplex output channel and duplex input channel is active.
- * If the connection is not used (messages do not flow between client and service) the buffered messaging
- * waits the specified maxOfflineTime and then disconnects the client.
- *  
- * Typical scenarios for buffered messaging:
+ * Provides the messaging system which buffers sent messages if the connection is not available.
+ *
+ *
+ * The buffered messaging is intended to temporarily store sent messages while the network connection is not available.
+ * Typical scenarios are:
  * <br/><br/>
  * <b>Short disconnections</b><br/>
- * The network connection is unstable and can be anytime interrupted. In case of the disconnection, sent messages are stored
- * in the buffer while the connection tries to be reopen. If the connection is established again,
- * the messages are sent from the buffer.<br/>
- * <br/>
+ * The network connection is unstable and can be interrupted. In case of the disconnection, the sent messages are stored
+ * in the buffer while the connection tries to be automatically reopen. If the reopen is successful and the connection
+ * is established, the messages are sent from the buffer.
+ * <br/><br/>
  * <b>Independent startup order</b><br/>
- * The communicating applications starts in undefined order and initiates the communication. 
- * The buffered messaging stores messages in the buffer while receiving application is started and ready to receive
- * messages.<br/> 
- * <br/>
- * <b>Note:</b><br/>
- * The buffered messaging does not require, that both communicating parts create channels with buffered messaging factory.
- * It means, e.g. the duplex output channel created with buffered messaging with underlying TCP, can send messages
- * directly to the duplex input channel created with just TCP messaging factory.
+ * The communicating applications starts in undefined order and initiates the communication. In case the application receiving
+ * messages is not up, the sent messages are stored in the buffer. Then when the receiving application is running, the messages
+ * are automatically sent from the buffer.
+ * 
+ * <pre>
+ * Simple client buffering messages in case of a disconnection.
+
+ * // Create TCP messaging.
+ * IMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
+ * 
+ * // Create buffered messaging that internally uses TCP.
+ * IMessagingSystemFactory aMessaging = new BufferedMessagingSystemFactory(anUnderlyingMessaging);
+ * 
+ * // Create the duplex output channel.
+ * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8045/");
+ * 
+ * // Create message sender to send simple string messages.
+ * IDuplexStringMessagesFactory aSenderFactory = new DuplexStringMessagesFactory();
+ * IDuplexStringMessageSender aSender = aSenderFactory.CreateDuplexStringMessageSender();
+ * 
+ * // Subscribe to receive responses.
+ * aSender.responseReceived().subscribe(myOnResponseReceived);
+ * 
+ * // Attach output channel an be able to send messages and receive responses.
+ * aSender.attachDuplexOutputChannel(anOutputChannel);
+ * 
+ * ...
+ * 
+ * // Send a message.
+ * // If the connection is broken the message will be stored in the buffer.
+ * // Note: The buffered messaging will try to reconnect automatically.
+ * aSender.SendMessage("Hello.");
+
+ * </pre>
+ *
  */
 package eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit;

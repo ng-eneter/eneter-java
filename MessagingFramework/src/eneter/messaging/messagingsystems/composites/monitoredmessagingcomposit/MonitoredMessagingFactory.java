@@ -13,15 +13,15 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
- * Implements the messaging factory extending the underlying messaging system by monitoring the connection
- * between duplex output channel and duplex input channel. 
+ * Provides the messaging system which monitors the connection in the underlying messaging system.
+ *
  *
  * When the connection is monitored, the duplex output channel periodically sends 'ping' messages
  * to the duplex input channel and waits for responses.
- * If the response comes within the specified time, the connection is open.
+ * If the response comes within the specified timeout, the connection is open.
  * <br/>
  * On the receiver side, the duplex input channel waits for the 'ping' messages and monitors if the connected
- * duplex output channel is still alive. If the 'ping' message does not come within the specified time,
+ * duplex output channel is still alive. If the 'ping' message does not come within the specified timeout,
  * the particular duplex output channel is disconnected.
  * <br/><br/>
  * Notice, the output channel and the input channel do not maintain an open connection.
@@ -33,6 +33,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  * by monitored factory. E.g. the channel created with the monitored messaging factory with underlying TCP
  * will not communicate with channels created directly with TCP messaging factory. The reason is, the
  * communicating channels must understand the 'ping' communication.
+ *
  */
 public class MonitoredMessagingFactory implements IMessagingSystemFactory
 {
@@ -45,7 +46,7 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
      * The duplex input channel expects the 'ping' request at least once per 2s. Otherwise the duplex output
      * channel is disconnected.
      * 
-     * @param underlyingMessaging underlying messaging system e.g. HTTP, TCP, ...
+     * @param underlyingMessaging underlying messaging system e.g. Websocket, TCP, ...
      */
     public MonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging)
     {
@@ -55,7 +56,7 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
     /**
      * Constructs the factory from specified parameters.
      * 
-     * @param underlyingMessaging underlying messaging system e.g. HTTP, TCP, ...
+     * @param underlyingMessaging underlying messaging system e.g. Websocket, TCP, ...
      * @param serializer serializer used to serialize 'ping' messages
      * @param pingFrequency how often the duplex output channel pings the connection
      * @param pingResponseTimeout For the duplex output channel: the maximum time, the response for the ping must be received

@@ -48,7 +48,7 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
      * 
      * The maximum offline time will be set to 10 seconds.
      * 
-     * @param underlyingMessaging underlying messaging system e.g. HTTP, TCP, ...
+     * @param underlyingMessaging underlying messaging system e.g. Websocket, TCP, ...
      */
     public BufferedMessagingFactory(IMessagingSystemFactory underlyingMessaging)
     {
@@ -58,8 +58,8 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
     /**
      * Constructs the factory from the specified parameters.
      * 
-     * @param underlyingMessaging underlying messaging system e.g. HTTP, TCP, ...
-     * @param maxOfflineTime the max time (in miliseconds), the communicating applications can be disconnected.
+     * @param underlyingMessaging underlying messaging system e.g. Websocket, TCP, ...
+     * @param maxOfflineTime the max time (in milliseconds), the communicating applications can be disconnected.
      */
     public BufferedMessagingFactory(IMessagingSystemFactory underlyingMessaging, long maxOfflineTime)
     {
