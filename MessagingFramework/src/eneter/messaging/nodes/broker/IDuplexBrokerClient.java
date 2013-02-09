@@ -13,8 +13,8 @@ import eneter.net.system.*;
 
 /**
  * Declares the broker client.
- * The broker client allows to send messages via the broker, so that broker will forward them to all subscribers.<br/>
- * It also allows to subscribe for messages the client is interested to.
+ * The broker client allows to publish events via the broker, so that broker will forward them to all subscribers.<br/>
+ * BrokerClient also allows to subscribe for events of interest.
  *
  */
 public interface IDuplexBrokerClient extends IAttachableDuplexOutputChannel
@@ -26,28 +26,36 @@ public interface IDuplexBrokerClient extends IAttachableDuplexOutputChannel
     Event<BrokerMessageReceivedEventArgs> brokerMessageReceived();
     
     /**
-     * Sends the message of the specified type to the broker.
-     * @param messageTypeId message type id
+     * Publishes the event via the broker.
+     * @param eventId event identifier
      * @param serializedMessage message content. If the message is not a primitive type or String then the input parameter expects the message is already serialized!
      * @throws Exception
      */
-    void sendMessage(String messageTypeId, Object serializedMessage) throws Exception;
+    void sendMessage(String eventId, Object serializedMessage) throws Exception;
     
     /**
-     * Subscribes the client for the message.
-     * @param messageType message type the client wants to observe
+     * Subscribes the client for the event.
+     * 
+     * If you can call this method multiple times to subscribe for multiple events.
+     * 
+     * @param eventId message type the client wants to observe
      * @throws Exception
      */
-    void subscribe(String messageType) throws Exception;
+    void subscribe(String eventId) throws Exception;
     
     /**
-     * Subscribes the client for list of messages.
-     * @param messageTypes list of message types the client wants to observe
+     * Subscribes the client for list of events.
+     * 
+     * If you can call this method multiple times to subscribe for multiple events.
+     * 
+     * @param eventIds list of events the client wants to observe
      * @throws Exception
      */
-    void subscribe(String[] messageTypes) throws Exception;
+    void subscribe(String[] eventIds) throws Exception;
     
     /**
+     * Subscribes for event ids matching with the given regular expression.
+     * 
      * When a published message comes to the broker, the broker will check the message type id
      * and will forward it to all subscribed clients.<br/>
      * The broker will use the given regular expression to recognize whether the client is subscribed
@@ -72,6 +80,8 @@ public interface IDuplexBrokerClient extends IAttachableDuplexOutputChannel
     void subscribeRegExp(String regularExpression) throws Exception;
     
     /**
+     * Subscribes for message ids matching with the given list of regular expressions.
+     * 
      * Subscribes the client for message types matching with the given list of regular expressions.
      * When a published message comes to the broker, the broker will check the message type id
      * and will forward it to all subscribed clients.<br/>
@@ -86,18 +96,18 @@ public interface IDuplexBrokerClient extends IAttachableDuplexOutputChannel
     void subscribeRegExp(String[] regularExpressions) throws Exception;
     
     /**
-     * Unsubscribes the client from the specified message.
-     * @param messageType message type the client does not want to observe anymore
+     * Unsubscribes the client from the specified event.
+     * @param eventId message type the client does not want to observe anymore
      * @throws Exception
      */
-    void unsubscribe(String messageType) throws Exception;
+    void unsubscribe(String eventId) throws Exception;
     
     /**
-     * Unsubscribes the client from specified messages.
-     * @param messageTypes list of message types the client does not want to observe anymore
+     * Unsubscribes the client from specified events.
+     * @param eventIds list of message types the client does not want to observe anymore
      * @throws Exception
      */
-    void unsubscribe(String[] messageTypes) throws Exception;
+    void unsubscribe(String[] eventIds) throws Exception;
     
     /**
      * Removes the regular expression subscription.
@@ -107,10 +117,11 @@ public interface IDuplexBrokerClient extends IAttachableDuplexOutputChannel
     void unsubscribeRegExp(String regularExpression) throws Exception;
     
     /**
-     * Removes all regular expression subscriptions.
+     * Removes regular expression subscriptions.
+     * 
      * When the broker receives this request, it will search if the given regular expression strings
      * exist for the calling client. If yes, they will be removed.
-     * @param regularExpressions
+     * @param regularExpressions Regular expressions that shall be removed from subscriptions.
      * @throws Exception
      */
     void unsubscribeRegExp(String[] regularExpressions) throws Exception;

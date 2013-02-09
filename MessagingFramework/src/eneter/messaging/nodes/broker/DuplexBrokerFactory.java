@@ -28,16 +28,16 @@ import eneter.messaging.nodes.channelwrapper.*;
  * IMessagingSystemFactory aMessagingFactory = new TcpMessagingSystemFactory();
  *
  * // Create duplex input channel listening to messages.
- * IDuplexInputChannel anInputChannel = aMessagingFactory.CreateDuplexInputChannel("tcp://127.0.0.1:7980/");
+ * IDuplexInputChannel anInputChannel = aMessagingFactory.createDuplexInputChannel("tcp://127.0.0.1:7980/");
  *
  * // Create the factory for the broker.
  * IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory();
  *
  * // Create the broker.
- * IDuplexBroker aBroker = aBrokerFactory.CreateBroker();
+ * IDuplexBroker aBroker = aBrokerFactory.createBroker();
  *
  * // Attach the Tcp duplex input channel to the broker and start listening.
- * aBroker.AttachDuplexInputChannel(anInputChannel);
+ * aBroker.attachDuplexInputChannel(anInputChannel);
  * }
  * </pre>
  * <br/>
@@ -49,20 +49,20 @@ import eneter.messaging.nodes.channelwrapper.*;
  * IMessagingSystemFactory aTcpMessagingFactory = new TcpMessagingSystemFactory();
  *
  * // Create duplex output channel to send and receive messages.
- * myOutputChannel = aTcpMessagingFactory.CreateDuplexOutputChannel("tcp://127.0.0.1:7980/");
+ * myOutputChannel = aTcpMessagingFactory.createDuplexOutputChannel("tcp://127.0.0.1:7980/");
  *
  * // Create the broker client
  * IDuplexBrokerFactory aDuplexBrokerFactory = new DuplexBrokerFactory();
- * myBrokerClient = aDuplexBrokerFactory.CreateBrokerClient();
+ * myBrokerClient = aDuplexBrokerFactory.createBrokerClient();
  *
  * // Handler to process notification messages.
- * myBrokerClient.BrokerMessageReceived += NotifyMessageReceived;
+ * myBrokerClient.brokerMessageReceived().subscribe(myNotifyMessageReceived);
  *
  * // Attach the channel to the broker client to be able to send and receive messages.
- * myBrokerClient.AttachDuplexOutputChannel(myOutputChannel);
+ * myBrokerClient.attachDuplexOutputChannel(myOutputChannel);
  *
  * // Subscribe in broker to receive chat messages.
- * myBrokerClient.Subscribe("MyChatMessageType");
+ * myBrokerClient.subscribe("MyChatMessageType");
  *
  *
  * ...
@@ -70,8 +70,8 @@ import eneter.messaging.nodes.channelwrapper.*;
  *
  * // Send message to the broker. The broker will then forward it to all subscribers.
  * XmlStringSerializer anXmlSerializer = new XmlStringSerializer();
- * object aSerializedChatMessage = anXmlSerializer.Serialize<ChatMessage>(aChatMessage);
- * myBrokerClient.SendMessage("MyChatMessageType", aSerializedChatMessage);
+ * Object aSerializedChatMessage = anXmlSerializer.Serialize(aChatMessage, ChatMessage.class);
+ * myBrokerClient.sendMessage("MyChatMessageType", aSerializedChatMessage);
  *
  * }
  * </pre>
