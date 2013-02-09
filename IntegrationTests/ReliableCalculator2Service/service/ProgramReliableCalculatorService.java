@@ -50,7 +50,6 @@ public class ProgramReliableCalculatorService
         
         // Detach the input channel to stop listening.
         aReceiver.detachDuplexInputChannel();
-
     }
     
     private static void onRequestReceived(Object sender, TypedRequestReceivedEventArgs<RequestMessage> e)
