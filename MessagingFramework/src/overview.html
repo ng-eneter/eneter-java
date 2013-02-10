@@ -5,10 +5,13 @@
 		<p>
 			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Welcome to the Eneter.Messaging.Framework, the cross-platform message oriented middleware.</span></span></p>
 		<p>
-			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong>Eneter Messaging Framework</strong> is a lightweight framework for the interprocess communication. It is easy to use and although the framework is lightweight, it provides functionality for advanced scenarios too.</span></span></p>
+			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong>Eneter Messaging Framework</strong> is a lightweight framework for the interprocess communication.
+			It is easy to use and it works across various platforms. The framework provides communication components
+			that can be used to create communication scenarios fitting your needs.
+			</span></span></p>
 		<p>
 			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Supported Platforms</big></strong><br />
-			The framework is available for multiple platforms. Therefore,  you can use it for communication between two Java applications but also for the communication between Java and .NET applications.<br />
+			The framework is available for multiple platforms. Therefore,  you can use it for communication between two Java applications but also for the communication between Java, Android and .NET applications.<br />
 			<br />
 			The framework is available for:</span></span></p>
 		<ul>
@@ -17,7 +20,7 @@
 			<li>
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Android 2.1 (or later)</span></span></li>
 			<li>
-				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">.NET 3.5, .NET 4.0</span></span></li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">.NET 3.5, .NET 4.0, .NET 4.5</span></span></li>
 			<li>
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">Windows Phone 7, Windows Phone 7.1</span></span></li>
 			<li>
@@ -35,7 +38,8 @@
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/websocketmessagingsystem/package-summary.html">Websocket</a></em> - for communication between processes running on different machines. It provides true bi-directional, full-duplex communication in environments which block non-standard Internet connections using a firewall.</span></span></li>
 			<li>
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/httpmessagingsystem/package-summary.html">HTTP</a></em> - for communication between processes running on different machines. It works in environments blocking non-standard Internet connections using a firewall.</span></span></li>
-			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/androidusbcablemessagingsystem/package-summary.html">Android USB Cable</a></em> - for communication between computer and Android device connected via the USB cable.</span></span></li>
 			<li>
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/threadmessagingsystem/package-summary.html">Thread Messaging</a></em> - for communication between threads running in the same process.</span></span></li>
 		</ul>
@@ -51,6 +55,10 @@
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/dataprocessing/serializing/AesSerializer.html">AES Serializer</a></em> - for encrypting using Advanced Encryption Standard <span style="color: rgb(0, 128, 0);">(works for the communication between Java and .NET)</span>.</span></span></li>
 			<li>
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/dataprocessing/serializing/GZipSerializer.html">GZip Serializer</a></em> - for compressing big messages before sending across the network <span style="color: rgb(0, 128, 0);">(works for the communication between Java and .NET)</span>.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/dataprocessing/serializing/RsaSerializer.html">RSA Serializer</a></em> - for encrypting messages by RSA algorithm using public and private keys <span style="color: rgb(0, 128, 0);">(works for the communication between Java and .NET)</span>.</span></span></li>
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/dataprocessing/serializing/RsaDigitalSignatureSerializer.html">RSA Digitally Signing Serializer</a></em> - for using digital signature to verify who sent the message and that the message was not changed <span style="color: rgb(0, 128, 0);">(works for the communication between Java and .NET)</span>.</span></span></li>
 		</ul>
 		<p>
 			<span style="color: rgb(0, 0, 255);"><span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">The communication API is not bound to a particular protocol or encoding format, therefore your implementation stays same, does not matter what you use.</span></span></span></p>
@@ -75,6 +83,9 @@
 			
 			<li>
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/nodes/channelwrapper/package-summary.html">Channel Wrapper/Unwrapper</a></em> - for receiving multiple type of messages on one address (no need for if ... else ... statement in the user code).</span></span></li>
+				
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/nodes/loadbalancer/package-summary.html">Load Balancer</a></em> - for distributing workload across more computers (or processes).</span></span></li>
 		</ul>
 		<p>
 			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Reliability</big></strong><br />
@@ -84,14 +95,15 @@
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/composites/monitoredmessagingcomposit/package-summary.html">Monitoring of connection availability</a></em> - for early detection of a disconnection.</span></span></li>
 			<li>
 				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/messagingsystems/composites/bufferedmessagingcomposit/package-summary.html">Buffered messaging and automatic reconnect</a></em> - for overcoming short disconnections (e.g. in case of unstable network).</span></span></li>
-			
+			<li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><em><a href="./eneter/messaging/endpoints/typedmessages/ReliableTypedmessagesFactory.html">Acknowledged messaging</a></em> - for getting notification whether a message was delivered or not.</span></span></li>
 		</ul>
 		<p>
 			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><strong><big>Security</big></strong><br />
 			The communication across the network is easy to observe and confidential data can be acquired by unauthorized persons. Therefore, you may want to protect your data:</span></span></p>
 		<ul>
 			<li>
-				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">SSL or serializer using fast symmetric  AES encryption.</span></span></li>
+				<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;">SSL or serializer using a cryptographic algorithm AES, RSA or RSA based digital signature.</span></span></li>
 		</ul>
 		<p>
 			<span style="font-size: 11px;"><span style="font-family: verdana,geneva,sans-serif;"><big><strong>Eneter Communication</strong></big><br /></span></span></p>
