@@ -252,7 +252,7 @@ class XmlDataBrowser
 
     public String getStringValue(int startIdx, int length)
     {
-        String aResult = "";
+        StringBuilder aResult = new StringBuilder(length);
 
         // Get the substring from the given position and decode xml key
         // words.
@@ -268,7 +268,7 @@ class XmlDataBrowser
             // string.
             if (c != '&')
             {
-                aResult += c;
+                aResult.append(c);
             } else
             {
                 ++i;
@@ -298,24 +298,24 @@ class XmlDataBrowser
                                         {
                                             if (c == ';')
                                             {
-                                                aResult += '&';
+                                                aResult.append('&');
                                             } else
                                             {
-                                                aResult += "&amp";
-                                                aResult += c;
+                                                aResult.append("&amp");
+                                                aResult.append(c);
                                             }
                                         } else
                                         {
-                                            aResult += "&amp";
+                                            aResult.append("&amp");
                                         }
                                     } else
                                     {
-                                        aResult += "&am";
-                                        aResult += c;
+                                        aResult.append("&am");
+                                        aResult.append(c);
                                     }
                                 } else
                                 {
-                                    aResult += "&am";
+                                    aResult.append("&am");
                                 }
                             } else if (c == 'p')
                             {
@@ -337,42 +337,42 @@ class XmlDataBrowser
                                                 {
                                                     if (c == ';')
                                                     {
-                                                        aResult += '\'';
+                                                        aResult.append('\'');
                                                     } else
                                                     {
-                                                        aResult += "&apos";
-                                                        aResult += c;
+                                                        aResult.append("&apos");
+                                                        aResult.append(c);
                                                     }
                                                 } else
                                                 {
-                                                    aResult += "&apos";
+                                                    aResult.append("&apos");
                                                 }
                                             } else
                                             {
-                                                aResult += "&apo";
-                                                aResult += c;
+                                                aResult.append("&apo");
+                                                aResult.append(c);
                                             }
                                         } else
                                         {
-                                            aResult += "&apo";
+                                            aResult.append("&apo");
                                         }
                                     } else
                                     {
-                                        aResult += "&ap";
-                                        aResult += c;
+                                        aResult.append("&ap");
+                                        aResult.append(c);
                                     }
                                 } else
                                 {
-                                    aResult += "&ap";
+                                    aResult.append("&ap");
                                 }
                             } else
                             {
-                                aResult += "&a";
-                                aResult += c;
+                                aResult.append("&a");
+                                aResult.append(c);
                             }
                         } else
                         {
-                            aResult += "&a";
+                            aResult.append("&a");
                         }
                     }
 
@@ -391,24 +391,24 @@ class XmlDataBrowser
                                 {
                                     if (c == ';')
                                     {
-                                        aResult += '<';
+                                        aResult.append('<');
                                     } else
                                     {
-                                        aResult += "&lt";
-                                        aResult += c;
+                                        aResult.append("&lt");
+                                        aResult.append(c);
                                     }
                                 } else
                                 {
-                                    aResult += "&lt";
+                                    aResult.append("&lt");
                                 }
                             } else
                             {
-                                aResult += "&l";
-                                aResult += c;
+                                aResult.append("&l");
+                                aResult.append(c);
                             }
                         } else
                         {
-                            aResult += "&l";
+                            aResult.append("&l");
                         }
                     }
 
@@ -427,24 +427,24 @@ class XmlDataBrowser
                                 {
                                     if (c == ';')
                                     {
-                                        aResult += '>';
+                                        aResult.append('>');
                                     } else
                                     {
-                                        aResult += "&gt";
-                                        aResult += c;
+                                        aResult.append("&gt");
+                                        aResult.append(c);
                                     }
                                 } else
                                 {
-                                    aResult += "&gt";
+                                    aResult.append("&gt");
                                 }
                             } else
                             {
-                                aResult += "&g";
-                                aResult += c;
+                                aResult.append("&g");
+                                aResult.append(c);
                             }
                         } else
                         {
-                            aResult += "&g";
+                            aResult.append("&g");
                         }
                     }
 
@@ -475,56 +475,56 @@ class XmlDataBrowser
                                                 {
                                                     if (c == ';')
                                                     {
-                                                        aResult += '"';
+                                                        aResult.append('"');
                                                     } else
                                                     {
-                                                        aResult += "&quot";
-                                                        aResult += c;
+                                                        aResult.append("&quot");
+                                                        aResult.append(c);
                                                     }
                                                 } else
                                                 {
-                                                    aResult += "&quot";
+                                                    aResult.append("&quot");
                                                 }
                                             } else
                                             {
-                                                aResult += "&quo";
-                                                aResult += c;
+                                                aResult.append("&quo");
+                                                aResult.append(c);
                                             }
                                         } else
                                         {
-                                            aResult += "&quo";
+                                            aResult.append("&quo");
                                         }
                                     } else
                                     {
-                                        aResult += "&qu";
-                                        aResult += c;
+                                        aResult.append("&qu");
+                                        aResult.append(c);
                                     }
                                 } else
                                 {
-                                    aResult += "&qu";
+                                    aResult.append("&qu");
                                 }
                             } else
                             {
-                                aResult += "&q";
-                                aResult += c;
+                                aResult.append("&q");
+                                aResult.append(c);
                             }
                         } else
                         {
-                            aResult += "&q";
+                            aResult.append("&q");
                         }
                     } else
                     {
-                        aResult += '&';
-                        aResult += c;
+                        aResult.append('&');
+                        aResult.append(c);
                     }
                 } else
                 {
-                    aResult += '&';
+                    aResult.append('&');
                 }
             }
         }
 
-        return aResult;
+        return aResult.toString();
     }
 
     public boolean getBooleanValue(int startIdx, int length)
