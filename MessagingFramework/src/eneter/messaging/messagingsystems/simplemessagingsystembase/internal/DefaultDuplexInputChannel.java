@@ -18,9 +18,9 @@ import eneter.net.system.*;
 import eneter.net.system.internal.StringExt;
 
 
-public class SimpleDuplexInputChannel implements IDuplexInputChannel
+public class DefaultDuplexInputChannel implements IDuplexInputChannel
 {
-    public SimpleDuplexInputChannel(String channelId, IMessagingSystemFactory messagingFactory,
+    public DefaultDuplexInputChannel(String channelId, IMessagingSystemFactory messagingFactory,
                                     IProtocolFormatter<?> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();

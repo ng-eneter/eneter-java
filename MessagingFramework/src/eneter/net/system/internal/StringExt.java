@@ -10,8 +10,8 @@ package eneter.net.system.internal;
 
 public final class StringExt
 {
-	public static final Boolean isNullOrEmpty(final String a)
+	public static boolean isNullOrEmpty(String s)
 	{
-		return a == null || a.length() == 0;	
+		return s == null || s.length() == 0;	
 	}
 }

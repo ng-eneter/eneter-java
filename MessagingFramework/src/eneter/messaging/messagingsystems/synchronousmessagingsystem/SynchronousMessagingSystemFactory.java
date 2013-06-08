@@ -66,7 +66,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleOutputChannel(channelId, myMessagingSystem, myProtocolFormatter);
+            return new DefaultOutputChannel(channelId, myMessagingSystem, myProtocolFormatter);
         }
         finally
         {
@@ -85,7 +85,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleInputChannel(channelId, myMessagingSystem, myProtocolFormatter);
+            return new DefaultInputChannel(channelId, myMessagingSystem, myProtocolFormatter);
         }
         finally
         {
@@ -138,7 +138,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleDuplexInputChannel(channelId, this, myProtocolFormatter);
+            return new DefaultDuplexInputChannel(channelId, this, myProtocolFormatter);
         }
         finally
         {
