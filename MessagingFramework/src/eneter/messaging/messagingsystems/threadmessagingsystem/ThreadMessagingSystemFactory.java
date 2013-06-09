@@ -9,8 +9,8 @@
 package eneter.messaging.messagingsystems.threadmessagingsystem;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
-import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
+import eneter.messaging.messagingsystems.connectionprotocols.internal.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 
@@ -38,7 +38,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
      */
     public ThreadMessagingSystemFactory()
     {
-        this(new EneterProtocolFormatter());
+        this(new LocalProtocolFormatter());
     }
     
     /**
@@ -54,8 +54,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myMessagingSystem = new SimpleMessagingSystem(new ThreadMessagingProvider());
-            myProtocolFormatter = protocolFormatter;
+            myDefaultMessagingFactory = new DefaultMessagingSystemFactory(new ThreadMessagingProvider(), protocolFormatter);
         }
         finally
         {
@@ -67,14 +66,15 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Creates the output channel sending messages to the specified input channel via the message queue processed by the working thread.
      * The output channel can send messages only to the input channel and not to the duplex input channel.
+     * @throws Exception 
      */
     @Override
-    public IOutputChannel createOutputChannel(String channelId)
+    public IOutputChannel createOutputChannel(String channelId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultOutputChannel(channelId, myMessagingSystem, myProtocolFormatter);
+            return myDefaultMessagingFactory.createOutputChannel(channelId);
         }
         finally
         {
@@ -85,14 +85,15 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Creates the input channel receiving messages from the output channel via the working thread.
      * The input channel can receive messages only from the output channel and not from the duplex output channel.
+     * @throws Exception 
      */
     @Override
-    public IInputChannel createInputChannel(String channelId)
+    public IInputChannel createInputChannel(String channelId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultInputChannel(channelId, myMessagingSystem, myProtocolFormatter);
+            return myDefaultMessagingFactory.createInputChannel(channelId);
         }
         finally
         {
@@ -117,7 +118,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleDuplexOutputChannel(channelId, null, this, myProtocolFormatter);
+            return myDefaultMessagingFactory.createDuplexOutputChannel(channelId);
         }
         finally
         {
@@ -144,7 +145,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleDuplexOutputChannel(channelId, responseReceiverId, this, myProtocolFormatter);
+            return myDefaultMessagingFactory.createDuplexOutputChannel(channelId, responseReceiverId);
         }
         finally
         {
@@ -158,14 +159,15 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
      * It can receive messages from the duplex output channel and send back response messages.
      * <br/><br/>
      * The duplex input channel can communicate only with the duplex output channel and not with the output channel.
+     * @throws Exception 
      */
     @Override
-    public IDuplexInputChannel createDuplexInputChannel(String channelId)
+    public IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultDuplexInputChannel(channelId, this, myProtocolFormatter);
+            return myDefaultMessagingFactory.createDuplexInputChannel(channelId);
         }
         finally
         {
@@ -174,6 +176,5 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     
-    private IMessagingSystemBase myMessagingSystem;
-    private IProtocolFormatter<?> myProtocolFormatter;
+    private DefaultMessagingSystemFactory myDefaultMessagingFactory;
 }

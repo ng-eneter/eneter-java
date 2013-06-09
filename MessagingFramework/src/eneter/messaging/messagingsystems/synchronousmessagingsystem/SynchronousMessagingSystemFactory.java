@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.synchronousmessagingsystem;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
+import eneter.messaging.messagingsystems.connectionprotocols.internal.LocalProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 
@@ -33,21 +34,20 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      */
     public SynchronousMessagingSystemFactory()
     {
-        this(new EneterProtocolFormatter());
+        this(new LocalProtocolFormatter());
     }
     
     /**
      * Constructs the factory representing the messaging system.
      * 
-     * @param protocolFromatter formatter used to encode low-level messages between channels
+     * @param protocolFormatter formatter used to encode low-level messages between channels
      */
-    public SynchronousMessagingSystemFactory(IProtocolFormatter<?> protocolFromatter)
+    public SynchronousMessagingSystemFactory(IProtocolFormatter<?> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myMessagingSystem = new SimpleMessagingSystem(new SynchronousMessagingProvider());
-            myProtocolFormatter = protocolFromatter;
+            myDefaultMessagingFactory = new DefaultMessagingSystemFactory(new SynchronousMessagingProvider(), protocolFormatter);
         }
         finally
         {
@@ -60,13 +60,14 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      * 
      * @param channelId identifies the receiving input channel
      * @return output channel
+     * @throws Exception 
      */
-    public IOutputChannel createOutputChannel(String channelId)
+    public IOutputChannel createOutputChannel(String channelId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultOutputChannel(channelId, myMessagingSystem, myProtocolFormatter);
+            return myDefaultMessagingFactory.createOutputChannel(channelId);
         }
         finally
         {
@@ -79,13 +80,14 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      * 
      * @param channelId identifies this input channel
      * @return input channel
+     * @throws Exception 
      */
-    public IInputChannel createInputChannel(String channelId)
+    public IInputChannel createInputChannel(String channelId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultInputChannel(channelId, myMessagingSystem, myProtocolFormatter);
+            return myDefaultMessagingFactory.createInputChannel(channelId);
         }
         finally
         {
@@ -103,7 +105,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleDuplexOutputChannel(channelId, null, this, myProtocolFormatter);
+            return myDefaultMessagingFactory.createDuplexOutputChannel(channelId);
         }
         finally
         {
@@ -121,7 +123,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SimpleDuplexOutputChannel(channelId, responseReceiverId, this, myProtocolFormatter);
+            return myDefaultMessagingFactory.createDuplexOutputChannel(channelId, responseReceiverId);
         }
         finally
         {
@@ -132,13 +134,14 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
     /**
      * Creates the duplex input channel listening to messages on the specified channel id.
      * The duplex input channel can send response messages back to the duplex output channel.
+     * @throws Exception 
      */
-    public IDuplexInputChannel createDuplexInputChannel(String channelId)
+    public IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultDuplexInputChannel(channelId, this, myProtocolFormatter);
+            return myDefaultMessagingFactory.createDuplexInputChannel(channelId);
         }
         finally
         {
@@ -147,6 +150,5 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
     }
     
     
-    private IMessagingSystemBase myMessagingSystem;
-    private IProtocolFormatter<?> myProtocolFormatter;
+    private DefaultMessagingSystemFactory myDefaultMessagingFactory;
 }
