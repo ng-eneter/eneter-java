@@ -7,6 +7,6 @@
 	<classpathentry kind="src" path="AndroidUsbCableClient"/>
 	<classpathentry kind="src" path="ReliableCalculator2Service"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/eneter-messaging-5.0.1"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/eneter-messaging-5.1.0"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
