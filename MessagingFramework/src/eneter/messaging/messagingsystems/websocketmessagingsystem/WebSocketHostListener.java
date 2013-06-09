@@ -78,13 +78,13 @@ class WebSocketHostListener extends HostListenerBase
                 }
 
                 // Get handler for that path.
-                URI aHandlerUri;
+                URI aHandlerUri = null;
                 final IMethod1<Object> aPathHandler;
                 synchronized (myHandlers)
                 {
                     final String anAbsolutePathFinal = anAbsolutePath;
                     Entry<URI, IMethod1<Object>> aPair =
-                            EnumerableExt.firstOrDefault(myHandlers,new IFunction1<Boolean, Entry<URI, IMethod1<Object>>>()
+                            EnumerableExt.firstOrDefault(myHandlers, new IFunction1<Boolean, Entry<URI, IMethod1<Object>>>()
                                 {
                                     @Override
                                     public Boolean invoke(
@@ -96,8 +96,15 @@ class WebSocketHostListener extends HostListenerBase
                                     
                                 });
                     
-                    aPathHandler = aPair.getValue(); 
-                    aHandlerUri = aPair.getKey();
+                    if (aPair != null)
+                    {
+                        aPathHandler = aPair.getValue(); 
+                        aHandlerUri = aPair.getKey();
+                    }
+                    else
+                    {
+                        aPathHandler = null;
+                    }
                 }
 
                 // If the listener does not exist.

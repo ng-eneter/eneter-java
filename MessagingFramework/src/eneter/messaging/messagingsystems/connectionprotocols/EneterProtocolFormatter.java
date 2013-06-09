@@ -28,14 +28,7 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
         try
         {
             ByteArrayOutputStream aBuffer = new ByteArrayOutputStream();
-            DataOutputStream aWriter = new DataOutputStream(aBuffer);
-
-            encodeHeader(aWriter);
-
-            aWriter.write(OPEN_CONNECTION_REQUEST);
-
-            encodeString(aWriter, responseReceiverId);
-
+            encodeOpenConnectionMessage(responseReceiverId, aBuffer);
             return aBuffer.toByteArray();
         }
         finally
@@ -43,6 +36,27 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    @Override
+    public void encodeOpenConnectionMessage(String responseReceiverId, OutputStream outputSream) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            DataOutputStream aWriter = new DataOutputStream(outputSream);
+
+            encodeHeader(aWriter);
+
+            aWriter.write(OPEN_CONNECTION_REQUEST);
+
+            encodeString(aWriter, responseReceiverId);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
 
     @Override
     public byte[] encodeCloseConnectionMessage(String responseReceiverId) throws Exception
@@ -51,13 +65,7 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
         try
         {
             ByteArrayOutputStream aBuffer = new ByteArrayOutputStream();
-            DataOutputStream aWriter = new DataOutputStream(aBuffer);
-
-            encodeHeader(aWriter);
-
-            aWriter.write(CLOSE_CONNECTION_REQUEST);
-
-            encodeString(aWriter, responseReceiverId);
+            encodeCloseConnectionMessage(responseReceiverId, aBuffer);
 
             return aBuffer.toByteArray();
         }
@@ -68,13 +76,50 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
     }
 
     @Override
+    public void encodeCloseConnectionMessage(String responseReceiverId, OutputStream outputSream) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            DataOutputStream aWriter = new DataOutputStream(outputSream);
+
+            encodeHeader(aWriter);
+
+            aWriter.write(CLOSE_CONNECTION_REQUEST);
+
+            encodeString(aWriter, responseReceiverId);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    
+    @Override
     public byte[] encodeMessage(String responseReceiverId, Object message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             ByteArrayOutputStream aBuffer = new ByteArrayOutputStream();
-            DataOutputStream aWriter = new DataOutputStream(aBuffer);
+            encodeMessage(responseReceiverId, message, aBuffer);
+
+            return aBuffer.toByteArray();
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public void encodeMessage(String responseReceiverId, Object message, OutputStream outputSream) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            DataOutputStream aWriter = new DataOutputStream(outputSream);
 
             encodeHeader(aWriter);
 
@@ -83,8 +128,6 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             encodeString(aWriter, responseReceiverId);
             
             encodeMessage(aWriter, message);
-
-            return aBuffer.toByteArray();
         }
         finally
         {
@@ -485,4 +528,5 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
     {
         return "EneterProtocolFormatter ";
     }
+
 }

@@ -8,7 +8,8 @@
 
 package eneter.messaging.messagingsystems.connectionprotocols;
 
-import java.io.InputStream;
+import java.io.*;
+
 
 /**
  * Declares functionality to encode and decode messages used for the communication between channels. 
@@ -27,6 +28,15 @@ public interface IProtocolFormatter<T>
      * @throws Exception
      */
     T encodeOpenConnectionMessage(String responseReceiverId) throws Exception;
+    
+    /**
+     * Encodes the open connection request message to the stream.
+     * 
+     * @param responseReceiverId id of the client opening the connection.
+     * @param outputSream output where the encoded message is written
+     * @throws Exception
+     */
+    void encodeOpenConnectionMessage(String responseReceiverId, OutputStream outputSream) throws Exception;
 
     /**
      * Encodes the close connecion request message.
@@ -38,6 +48,15 @@ public interface IProtocolFormatter<T>
      * @throws Exception
      */
     T encodeCloseConnectionMessage(String responseReceiverId) throws Exception;
+    
+    /**
+     * Encodes the close connecion request message to the stream.
+     * 
+     * @param responseReceiverId id of the client that wants to disconnect or that will be disconnected
+     * @param outputSream output where the encoded message is written
+     * @throws Exception
+     */
+    void encodeCloseConnectionMessage(String responseReceiverId, OutputStream outputSream) throws Exception;
 
     /**
      * Encodes a message or a response message.
@@ -51,6 +70,16 @@ public interface IProtocolFormatter<T>
      * @throws Exception
      */
     T encodeMessage(String responseReceiverId, Object message) throws Exception;
+    
+    /**
+     * Encodes a message or a response message to the stream.
+     * 
+     * @param responseReceiverId id of the client that wants to send the message. It is empty string if the response message is sent.
+     * @param message serialized message to be sent.
+     * @param outputSream output where the encoded message is written
+     * @throws Exception
+     */
+    void encodeMessage(String responseReceiverId, Object message, OutputStream outputSream) throws Exception;
 
     /**
      * Encodes message used by some duplex (e.g. HTTP duplex output channel) to send the poll request.

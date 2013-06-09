@@ -32,7 +32,7 @@ public class MessageContext
         return myResponseSender;
     }
     
-    public Object myMessage;
-    public String mySenderAddress;
-    public ISender myResponseSender;
+    private Object myMessage;
+    private String mySenderAddress;
+    private ISender myResponseSender;
 }
