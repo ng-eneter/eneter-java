@@ -643,7 +643,7 @@ class DuplexBroker implements IDuplexBroker
     
     private String TracedObject()
     {
-        return "The Broker atached to the duplex input channel '" + myDuplexInputChannelId + "' ";
+        return getClass().getSimpleName() + " '" + myDuplexInputChannelId + "' ";
     }
 
 }

@@ -312,6 +312,6 @@ class Dispatcher implements IDispatcher
     
     private String TracedObject()
     {
-        return "The Dispatcher ";
+        return getClass().getSimpleName() + " ";
     }
 }

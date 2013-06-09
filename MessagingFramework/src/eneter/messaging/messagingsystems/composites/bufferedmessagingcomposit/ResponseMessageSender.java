@@ -188,6 +188,6 @@ class ResponseMessageSender
     
     private String TracedObject()
     {
-        return "ResponseMessageSender '" + myResponseReceiverId + "' ";
+        return getClass().getSimpleName() + " '" + myResponseReceiverId + "' ";
     }
 }

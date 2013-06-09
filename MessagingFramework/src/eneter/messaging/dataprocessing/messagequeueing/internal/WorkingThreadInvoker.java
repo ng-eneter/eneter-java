@@ -142,6 +142,6 @@ public class WorkingThreadInvoker implements IInvoker
 
     private String TracedObject()
     {
-        return "WorkingThreadInvoker '" + myWorkingThreadName +"' ";
+        return getClass().getSimpleName() + " '" + myWorkingThreadName +"' ";
     }
 }

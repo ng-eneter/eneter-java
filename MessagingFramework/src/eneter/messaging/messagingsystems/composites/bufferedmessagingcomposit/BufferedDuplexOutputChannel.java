@@ -550,6 +550,6 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDup
     private String TracedObject()
     {
         String aChannelId = (myUnderlyingDuplexOutputChannel != null) ? myUnderlyingDuplexOutputChannel.getChannelId() : "";
-        return "Buffered duplex output channel '" + aChannelId + "' ";
+        return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
 }

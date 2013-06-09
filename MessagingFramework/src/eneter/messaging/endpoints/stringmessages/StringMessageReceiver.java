@@ -62,11 +62,11 @@ class StringMessageReceiver extends AttachableInputChannelBase
     
     private EventImpl<StringMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<StringMessageEventArgs>();
     
-    
-    private String TracedObject()
+    @Override
+    protected String TracedObject()
     {
         String anInputChannelId = (getAttachedInputChannel() != null) ? getAttachedInputChannel().getChannelId() : "";
-        return "The StringMessageReceiver atached to the input channel '" + anInputChannelId + "' ";
+        return getClass().getSimpleName() + " '" + anInputChannelId + "' ";
     }
 
 }

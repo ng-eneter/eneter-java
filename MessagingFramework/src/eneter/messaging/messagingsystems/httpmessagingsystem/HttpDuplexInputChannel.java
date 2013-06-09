@@ -586,7 +586,7 @@ class HttpDuplexInputChannel extends HttpInputChannelBase
     @Override
     protected String TracedObject()
     {
-        return "Http duplex input channel '" + getChannelId() + "' ";
+        return getClass().getSimpleName() + " '" + getChannelId() + "' ";
     }
 
 }

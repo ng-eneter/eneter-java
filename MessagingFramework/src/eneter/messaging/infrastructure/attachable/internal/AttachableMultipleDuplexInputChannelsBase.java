@@ -612,5 +612,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         }
     };
 
-    protected abstract String TracedObject();
+    protected String TracedObject()
+    {
+        return getClass().getSimpleName() + " ";
+    }
 }

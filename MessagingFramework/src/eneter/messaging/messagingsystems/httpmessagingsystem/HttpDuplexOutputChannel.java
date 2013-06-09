@@ -527,6 +527,6 @@ class HttpDuplexOutputChannel implements IDuplexOutputChannel
     
     private String TracedObject()
     {
-        return "Http duplex output channel '" + getChannelId() + "' "; 
+        return getClass().getSimpleName() + " '" + getChannelId() + "' "; 
     }
 }

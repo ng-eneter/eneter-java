@@ -510,7 +510,7 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
     @Override
     protected String TracedObject()
     {
-        return "RoundRobinBalancer ";
+        return getClass().getSimpleName() + " ";
     }
 
 }

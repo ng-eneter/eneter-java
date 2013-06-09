@@ -333,7 +333,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
     protected String TracedObject()
     {
         String aDuplexInputChannelId = (getAttachedDuplexInputChannel() != null) ? getAttachedDuplexInputChannel().getChannelId() : "";
-        return "The DuplexChannelUnwrapper attached to the duplex input channel '" + aDuplexInputChannelId + "' ";
+        return getClass().getSimpleName() + " '" + aDuplexInputChannelId + "' ";
     }
 
 }

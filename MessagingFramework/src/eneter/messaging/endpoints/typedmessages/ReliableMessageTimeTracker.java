@@ -94,7 +94,7 @@ class ReliableMessageTimeTracker
                 catch (Exception err)
                 {
                     // This can happen only if there is an error in the source code.
-                    EneterTrace.error(TracedObject + "failed to remove a timeouted message.", err);
+                    EneterTrace.error(TracedObject() + "failed to remove a timeouted message.", err);
                 }
             }
         }
@@ -140,7 +140,7 @@ class ReliableMessageTimeTracker
                 catch (Exception err)
                 {
                     // This can happen only if there is an error in the source code.
-                    EneterTrace.error(TracedObject + "failed to remove a timeouted message.", err);
+                    EneterTrace.error(TracedObject() + "failed to remove a timeouted message.", err);
                 }
             }
 
@@ -156,7 +156,7 @@ class ReliableMessageTimeTracker
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.warning(TracedObject + ErrorHandler.DetectedException, err);
+                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                     }
                 }
             }
@@ -203,5 +203,8 @@ class ReliableMessageTimeTracker
     
     private EventImpl<ReliableMessageIdEventArgs> myTrackingTimeoutEventImpl = new EventImpl<ReliableMessageIdEventArgs>();
     
-    String TracedObject = "ReliableMessageTimeTracker ";
+    private String TracedObject()
+    {
+        return getClass().getSimpleName() + " ";
+    }
 }

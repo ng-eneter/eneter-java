@@ -135,50 +135,57 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
             // Open TCP connection with ADB host.
             InetSocketAddress anAdbHostAddress = new InetSocketAddress("127.0.0.1", myAdbHostPort);
             Socket aTcpClient = new Socket();
-            aTcpClient.connect(anAdbHostAddress, 5000);
-
-            // Encode the message for the ADB host.
-            String anAdbRequest = String.format("%04X%s\n", aForwardRequest.length(), aForwardRequest);
-            byte[] aRequestContent = anAdbRequest.getBytes(anAsciiCharset);
-
-            aTcpClient.getOutputStream().write(aRequestContent);
-
-            // Read the response from the ADB host.
-            DataInputStream aReader = new DataInputStream(aTcpClient.getInputStream());
-            byte[] aResponseContent = new byte[4];
-            aReader.readFully(aResponseContent, 0, aResponseContent.length);
-            String aResponse = new String(aResponseContent, anAsciiCharset); 
-
-            // If ADB response indicates something was wrong.
-            if (!aResponse.toUpperCase().equals("OKAY"))
+            try
             {
-                // Try to get the reason why it failed.
-                byte[] aLengthBuf = new byte[4]; 
-                aReader.readFully(aLengthBuf, 0, aLengthBuf.length);
-                String aLengthStr = new String(aLengthBuf, anAsciiCharset);
-
-                int aReasonMessageLength = 0;
-                try
+                aTcpClient.connect(anAdbHostAddress, 5000);
+    
+                // Encode the message for the ADB host.
+                String anAdbRequest = String.format("%04X%s\n", aForwardRequest.length(), aForwardRequest);
+                byte[] aRequestContent = anAdbRequest.getBytes(anAsciiCharset);
+    
+                aTcpClient.getOutputStream().write(aRequestContent);
+    
+                // Read the response from the ADB host.
+                DataInputStream aReader = new DataInputStream(aTcpClient.getInputStream());
+                byte[] aResponseContent = new byte[4];
+                aReader.readFully(aResponseContent, 0, aResponseContent.length);
+                String aResponse = new String(aResponseContent, anAsciiCharset); 
+    
+                // If ADB response indicates something was wrong.
+                if (!aResponse.toUpperCase().equals("OKAY"))
                 {
-                    aReasonMessageLength = Integer.parseInt(aLengthStr, 16);
+                    // Try to get the reason why it failed.
+                    byte[] aLengthBuf = new byte[4]; 
+                    aReader.readFully(aLengthBuf, 0, aLengthBuf.length);
+                    String aLengthStr = new String(aLengthBuf, anAsciiCharset);
+    
+                    int aReasonMessageLength = 0;
+                    try
+                    {
+                        aReasonMessageLength = Integer.parseInt(aLengthStr, 16);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + "failed to parse '" + aLengthStr + "' into a number. A hex format of number was expected.");
+                    }
+    
+                    String aReasonStr = "";
+                    if (aReasonMessageLength > 0)
+                    {
+                        // Read the content of the error reason message.
+                        byte[] aReasonBuf = new byte[aReasonMessageLength];
+                        aReader.readFully(aReasonBuf, 0, aReasonMessageLength);
+                        aReasonStr = new String(aReasonBuf, anAsciiCharset);
+                    }
+    
+                    String anErrorMessage = TracedObject() + "failed to configure the ADB host for forwarding the communication. The ADB responded: " + aResponse + " " + aReasonStr;
+                    EneterTrace.error(anErrorMessage);
+                    throw new IllegalStateException(anErrorMessage);
                 }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + "failed to parse '" + aLengthStr + "' into a number. A hex format of number was expected.");
-                }
-
-                String aReasonStr = "";
-                if (aReasonMessageLength > 0)
-                {
-                    // Read the content of the error reason message.
-                    byte[] aReasonBuf = new byte[aReasonMessageLength];
-                    aReader.readFully(aReasonBuf, 0, aReasonMessageLength);
-                    aReasonStr = new String(aReasonBuf, anAsciiCharset);
-                }
-
-                String anErrorMessage = TracedObject() + "failed to configure the ADB host for forwarding the communication. The ADB responded: " + aResponse + " " + aReasonStr;
-                EneterTrace.error(anErrorMessage);
-                throw new IllegalStateException(anErrorMessage);
+            }
+            finally
+            {
+                aTcpClient.close();
             }
         }
         finally
@@ -305,6 +312,6 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
     private String TracedObject()
     {
         String aChannelId = (getChannelId() != null) ? getChannelId() : "";
-        return "The Tcp duplex output channel '" + aChannelId + "' ";
+        return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
 }

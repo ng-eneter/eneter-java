@@ -227,6 +227,6 @@ public class TcpPolicyServer
     
     private String TracedObject()
     {
-        return "TcpPolicyServer ";
+        return getClass().getSimpleName() + " ";
     }
 }

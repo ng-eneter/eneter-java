@@ -190,7 +190,7 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
         String aResponseMessageTypeName = (myResponseMessageClazz != null) ? myResponseMessageClazz.getSimpleName() : "...";
         String aRequestMessageTypeName = (myRequestMessageClazz != null) ? myRequestMessageClazz.getSimpleName() : "...";
         String aDuplexInputChannelId = (getAttachedDuplexInputChannel() != null) ? getAttachedDuplexInputChannel().getChannelId() : "";
-        return "The DuplexTypedMessageReceiver<" + aResponseMessageTypeName + ", " + aRequestMessageTypeName + "> atached to the duplex input channel '" + aDuplexInputChannelId + "' ";
+        return getClass().getSimpleName() + "<" + aResponseMessageTypeName + ", " + aRequestMessageTypeName + "> atached to the duplex input channel '" + aDuplexInputChannelId + "' ";
     }
 
 }

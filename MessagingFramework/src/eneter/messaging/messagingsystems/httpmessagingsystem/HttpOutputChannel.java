@@ -96,6 +96,6 @@ class HttpOutputChannel implements IOutputChannel
     
     private String TracedObject()
     {
-        return "The Http output channel '" + getChannelId() + "' "; 
+        return getClass().getSimpleName() + " '" + getChannelId() + "' "; 
     }
 }

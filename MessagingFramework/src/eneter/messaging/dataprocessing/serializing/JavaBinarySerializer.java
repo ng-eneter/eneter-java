@@ -109,6 +109,6 @@ public class JavaBinarySerializer implements ISerializer
     
     private String TracedObject()
     {
-        return "JavaBinarySerializer ";
+        return getClass().getSimpleName() + " ";
     }
 }

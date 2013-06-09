@@ -508,6 +508,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     private String TracedObject()
     {
         String aChannelId = (myUnderlyingInputChannel != null) ? myUnderlyingInputChannel.getChannelId() : "";
-        return "The monitor duplex input channel '" + aChannelId + "' ";
+        return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
 }

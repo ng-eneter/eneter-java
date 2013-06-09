@@ -150,7 +150,7 @@ class DuplexDispatcher extends AttachableMultipleDuplexInputChannelsBase
     @Override
     protected String TracedObject()
     {
-        return "The DuplexDispatcher ";
+        return getClass().getSimpleName() + " ";
     }
 
 }

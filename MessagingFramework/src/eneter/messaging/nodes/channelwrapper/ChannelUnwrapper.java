@@ -85,9 +85,10 @@ class ChannelUnwrapper extends AttachableInputChannelBase
     private IMessagingSystemFactory myOutputMessagingFactory;
     private ISerializer mySerializer;
     
-    private String TracedObject()
+    @Override
+    protected String TracedObject()
     {
         String anInputChannelId = (getAttachedInputChannel() != null) ? getAttachedInputChannel().getChannelId() : "";
-        return "The ChannelUnwrapper attached to the input channel '" + anInputChannelId + "' "; 
+        return getClass().getSimpleName() + " '" + anInputChannelId + "' "; 
     }
 }

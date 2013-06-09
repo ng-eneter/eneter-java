@@ -46,9 +46,10 @@ class StringMessageSender extends AttachableOutputChannelBase
     }
 
     
-    private String TracedObject()
+    @Override
+    protected String TracedObject()
     {
         String anOutputChannelId = (getAttachedOutputChannel() != null) ? getAttachedOutputChannel().getChannelId() : "";
-        return "The StringMessageSender attached to the output channel '" + anOutputChannelId + "' ";
+        return getClass().getSimpleName() + " '" + anOutputChannelId + "' ";
     }
 }

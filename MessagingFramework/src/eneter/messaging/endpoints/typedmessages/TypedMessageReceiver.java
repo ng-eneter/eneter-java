@@ -87,10 +87,11 @@ class TypedMessageReceiver<_MessageDataType> extends AttachableInputChannelBase
     
     private EventImpl<TypedMessageReceivedEventArgs<_MessageDataType>> myMessageReceivedEventImpl = new EventImpl<TypedMessageReceivedEventArgs<_MessageDataType>>();
     
-    private String TracedObject()
+    @Override
+    protected String TracedObject()
     {
         String aMessageTypeName = (myMessageClazz != null) ? myMessageClazz.getSimpleName() : "...";
         String anInputChannelId = (getAttachedInputChannel() != null) ? getAttachedInputChannel().getChannelId() : "";
-        return "The TypedMessageReceiver<" + aMessageTypeName + "> atached to the duplex input channel '" + anInputChannelId + "' ";
+        return getClass().getSimpleName() + "<" + aMessageTypeName + "> atached to the duplex input channel '" + anInputChannelId + "' ";
     }
 }

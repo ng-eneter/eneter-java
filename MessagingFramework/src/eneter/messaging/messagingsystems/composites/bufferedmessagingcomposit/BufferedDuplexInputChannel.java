@@ -527,6 +527,6 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     private String TracedObject()
     {
         String aChannelId = (getUnderlyingDuplexInputChannel() != null) ? getUnderlyingDuplexInputChannel().getChannelId() : "";
-        return "Buffered duplex input channel '" + aChannelId + "' ";
+        return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
 }

@@ -407,7 +407,7 @@ class DuplexBrokerClient implements IDuplexBrokerClient
    
     private String TracedObject()
     {
-        return "The DuplexBrokerClient atached to the duplex output channel '" + myDuplexOutputChannelId + "' ";
+        return getClass().getSimpleName() + " '" + myDuplexOutputChannelId + "' ";
     }
 
 }

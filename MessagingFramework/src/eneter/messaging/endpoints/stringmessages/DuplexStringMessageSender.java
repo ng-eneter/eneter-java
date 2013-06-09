@@ -92,7 +92,7 @@ class DuplexStringMessageSender extends AttachableDuplexOutputChannelBase
     protected String TracedObject()
     {
         String aDuplexOutputChannelId = (getAttachedDuplexOutputChannel() != null) ? getAttachedDuplexOutputChannel().getChannelId() : "";
-        return "The DuplexStringMessageSender atached to the duplex output channel '" + aDuplexOutputChannelId + "' ";
+        return getClass().getSimpleName() + " '" + aDuplexOutputChannelId + "' ";
     }
 
     

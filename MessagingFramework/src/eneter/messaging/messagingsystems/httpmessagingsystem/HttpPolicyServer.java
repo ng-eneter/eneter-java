@@ -225,6 +225,6 @@ public class HttpPolicyServer
     
     private String TracedObject()
     {
-        return "HttpPolicyServer '" + myHttpRootAddress + "' ";
+        return getClass().getSimpleName() + " '" + myHttpRootAddress + "' ";
     }
 }

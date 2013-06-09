@@ -190,9 +190,10 @@ class ChannelWrapper extends AttachableOutputChannelBase
             };
     
     
-    private String TracedObject()
+    @Override
+    protected String TracedObject()
     {
         String aDuplexOutputChannelId = (getAttachedOutputChannel() != null) ? getAttachedOutputChannel().getChannelId() : "";
-        return "The ChannelWrapper attached to the output channel '" + aDuplexOutputChannelId + "' ";
+        return getClass().getSimpleName() + " '" + aDuplexOutputChannelId + "' ";
     }
 }

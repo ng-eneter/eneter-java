@@ -128,7 +128,7 @@ class HttpInputChannel extends HttpInputChannelBase
     @Override
     protected String TracedObject()
     {
-        return "Http input channel '" + getChannelId() + "' "; 
+        return getClass().getSimpleName() + " '" + getChannelId() + "' "; 
     }
 
 }

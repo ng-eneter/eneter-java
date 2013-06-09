@@ -478,6 +478,6 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDu
     private String TracedObject()
     {
         String aChannelId = (myUnderlyingDuplexOutputChannel != null) ? myUnderlyingDuplexOutputChannel.getChannelId() : "";
-        return "The monitor duplex output channel '" + aChannelId + "' ";
+        return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
 }

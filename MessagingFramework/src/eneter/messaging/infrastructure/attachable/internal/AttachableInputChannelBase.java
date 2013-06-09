@@ -124,4 +124,9 @@ public abstract class AttachableInputChannelBase implements IAttachableInputChan
     private IInputChannel myAttachedInputChannel;
     private Object myLock = new Object();
     
+    protected String TracedObject()
+    {
+        return getClass().getSimpleName() + " ";
+    }
+    
 }

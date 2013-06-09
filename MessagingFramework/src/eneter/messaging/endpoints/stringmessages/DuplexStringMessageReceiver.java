@@ -164,6 +164,6 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
     protected String TracedObject()
     {
         String aDuplexInputChannelId = (getAttachedDuplexInputChannel() != null) ? getAttachedDuplexInputChannel().getChannelId() : "";
-        return "The StringResponser atached to the duplex input channel '" + aDuplexInputChannelId + "' ";
+        return getClass().getSimpleName() + " '" + aDuplexInputChannelId + "' ";
     }
 }

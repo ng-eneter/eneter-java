@@ -183,6 +183,6 @@ class HttpHostListener extends HostListenerBase
     @Override
     protected String TracedObject()
     {
-        return "HttpHostListener ";
+        return getClass().getSimpleName() + " ";
     }
 }

@@ -81,4 +81,9 @@ public abstract class AttachableOutputChannelBase implements IAttachableOutputCh
     
     private IOutputChannel myAttachedOutputChannel;
     private Object myLock = new Object();
+    
+    protected String TracedObject()
+    {
+        return getClass().getSimpleName() + " ";
+    }
 }

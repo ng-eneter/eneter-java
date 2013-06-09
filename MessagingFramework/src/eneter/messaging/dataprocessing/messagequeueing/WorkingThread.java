@@ -148,6 +148,6 @@ public class WorkingThread<_MessageType>
     
     private String TracedObject()
     {
-        return "WorkingThread '" + myWorkingThreadName + "' ";
+        return getClass().getSimpleName() + " '" + myWorkingThreadName + "' ";
     }
 }

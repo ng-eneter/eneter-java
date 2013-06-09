@@ -127,7 +127,7 @@ public class RsaDigitalSignatureSerializer implements ISerializer
         {
             if (mySignerPublicCertificate == null)
             {
-                throw new IllegalStateException(TracedObject + "failed to serialize data. The signer certificate is null and thus the serializer can be used only for deserialization.");
+                throw new IllegalStateException(TracedObject() + "failed to serialize data. The signer certificate is null and thus the serializer can be used only for deserialization.");
             }
             
             byte[][] aSignedData = new byte[3][];
@@ -175,7 +175,7 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             X509Certificate aCertificate = (X509Certificate) aCertificateFactory.generateCertificate(aCertificateStream);
             if (!myVerifySignerCertificate.invoke(aCertificate))
             {
-                throw new IllegalStateException(TracedObject + "failed to deserialize data because the verification of signer certificate failed.");
+                throw new IllegalStateException(TracedObject() + "failed to deserialize data because the verification of signer certificate failed.");
             }
 
             // Verify the signature.
@@ -185,7 +185,7 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             boolean aResult = aVerifier.verify(aSignedData[2]);
             if (aResult == false)
             {
-                throw new IllegalStateException(TracedObject + "failed to deserialize data because the signature verification failed.");
+                throw new IllegalStateException(TracedObject() + "failed to deserialize data because the signature verification failed.");
             }
             
             // Decode the byte sequence.
@@ -218,5 +218,8 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             }
         };
     
-    private String TracedObject = "DigitalSignatureSerializer ";
+    private String TracedObject()
+    {
+        return getClass().getSimpleName() + " ";
+    }
 }

@@ -69,10 +69,11 @@ class TypedMessageSender<_MessageData> extends AttachableOutputChannelBase
     
     private ISerializer mySerializer;
     
-    private String TracedObject()
+    @Override
+    protected String TracedObject()
     {
         String aMessageTypeName = (myMessageClazz != null) ? myMessageClazz.getSimpleName() : "...";
         String anOutputChannelId = (getAttachedOutputChannel() != null) ? getAttachedOutputChannel().getChannelId() : "";
-        return "The TypedMessageSender<" + aMessageTypeName + "> atached to the duplex input channel '" + anOutputChannelId + "' ";
+        return getClass().getSimpleName() + "<" + aMessageTypeName + "> atached to the duplex input channel '" + anOutputChannelId + "' ";
     }
 }
