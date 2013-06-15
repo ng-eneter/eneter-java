@@ -353,16 +353,11 @@ public class EneterTrace
     }
     
     
-    private static void writeMessage(final int priorityLevel, String message, int callStackIdx)
+    private static void writeMessage(final int priorityLevel, final String message, final int callStackIdx)
     {
         // Get the calling method
-        StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
-        // Note: in android the stack is does not point to this method. Therefore we must increase by 1.
-        StackTraceElement aCaller = aStackTraceElements[callStackIdx + 1];
-        final String aMethodName = aCaller.getClassName() + "." + aCaller.getMethodName();        
-        final String aMessage = String.format("~%1$3d %2$s %3$s",
-            Thread.currentThread().getId(),
-            aMethodName, message);
+        final StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+        final long aThreadId = Thread.currentThread().getId();
         
         // anonymous instance as a variable
         Runnable aDoWrite = new Runnable()
@@ -370,12 +365,17 @@ public class EneterTrace
             @Override
             public void run()
             {
+                // Note: in android the stack is does not point to this method. Therefore we must increase by 1.
+                StackTraceElement aCaller = aStackTraceElements[callStackIdx + 1];
+                String aMethodName = aCaller.getClassName() + "." + aCaller.getMethodName();        
+                
                 synchronized(myTraceLogLock)
                 {
                     // Check if the message matches with the filter.
                     // Note: If the filter is not set or string matches.
                     if (myNameSpaceFilter == null || myNameSpaceFilter.matcher(aMethodName).matches())
                     {
+                        String aMessage = String.format("~%1$3d %2$s %3$s", aThreadId, aMethodName, message);
                         Log.println(priorityLevel, myTag, aMessage);
                     }
                 }
