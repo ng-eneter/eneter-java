@@ -412,19 +412,12 @@ public class EneterTrace
     }
     
     
-    private static void writeMessage(final String prefix, String message, int callStackIdx)
+    private static void writeMessage(final String prefix, final String message, final int callStackIdx)
     {
-        //get current date time with Date()
-        Date aDate = new Date();
-
-        // Get the calling method
-        StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
-        StackTraceElement aCaller = aStackTraceElements[callStackIdx];
-        final String aMethodName = aCaller.getClassName() + "." + aCaller.getMethodName();        
-        final String aMessage = String.format("%1$tH:%1$tM:%1$tS.%1$tL ~%2$3d %3$s %4$s %5$s",
-            aDate,
-            Thread.currentThread().getId(),
-            prefix, aMethodName, message);
+        final Date aDate = new Date();
+        final StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+        final long aThreadId = Thread.currentThread().getId();
+        
         
         // anonymous instance as a variable
         Runnable aDoWrite = new Runnable()
@@ -432,12 +425,20 @@ public class EneterTrace
             @Override
             public void run()
             {
+                StackTraceElement aCaller = aStackTraceElements[callStackIdx];
+                String aMethodName = aCaller.getClassName() + "." + aCaller.getMethodName();        
+                
                 synchronized(myTraceLogLock)
                 {
                     // Check if the message matches with the filter.
                     // Note: If the filter is not set or string matches.
                     if (myNameSpaceFilter == null || myNameSpaceFilter.matcher(aMethodName).matches())
                     {
+                        String aMessage = String.format("%1$tH:%1$tM:%1$tS.%1$tL ~%2$3d %3$s %4$s %5$s",
+                                aDate,
+                                aThreadId,
+                                prefix, aMethodName, message);
+                        
                         // If a trace log is set, then use it.
                         if (myTraceLog != null)
                         {
