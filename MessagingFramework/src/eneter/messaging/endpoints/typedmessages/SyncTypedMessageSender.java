@@ -14,7 +14,7 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
-import eneter.net.system.threading.internal.AutoResetEvent;
+import eneter.net.system.threading.internal.ManualResetEvent;
 
 class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMessageSender<TResponse, TRequest>
 {
@@ -65,16 +65,21 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         {
             synchronized (myAttachDetachLock)
             {
-                // Stop waiting for the response.
-                myResponseAvailableEvent.set();
-
-                IDuplexOutputChannel anAttachedChannel = mySender.getAttachedDuplexOutputChannel();
-                if (anAttachedChannel != null)
+                try
                 {
-                    anAttachedChannel.connectionClosed().unsubscribe(myConnectionClosedEventHandler);
-                }
+                    IDuplexOutputChannel anAttachedChannel = mySender.getAttachedDuplexOutputChannel();
+                    if (anAttachedChannel != null)
+                    {
+                        anAttachedChannel.connectionClosed().unsubscribe(myConnectionClosedEventHandler);
+                    }
 
-                mySender.detachDuplexOutputChannel();
+                    mySender.detachDuplexOutputChannel();
+                }
+                finally
+                {
+                    // Stop waiting for the response.
+                    myResponseAvailableEvent.set();
+                }
             }
         }
         finally
@@ -120,6 +125,7 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
 
                 try
                 {
+                    myResponseAvailableEvent.reset();
                     mySender.sendRequestMessage(message);
 
                     // Wait auntil the response is received or the waiting was interrupted or timeout.
@@ -191,7 +197,7 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
     private Object myAttachDetachLock = new Object();
     private Object myRequestResponseLock = new Object();
 
-    private AutoResetEvent myResponseAvailableEvent = new AutoResetEvent(false);
+    private ManualResetEvent myResponseAvailableEvent = new ManualResetEvent(false);
 
     private int myResponseReceiveTimeout;
     private IDuplexTypedMessageSender<TResponse, TRequest> mySender;
