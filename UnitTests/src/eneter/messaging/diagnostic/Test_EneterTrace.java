@@ -138,7 +138,7 @@ public class Test_EneterTrace
 			// Eneter trace.
 			EneterTrace.setNameSpaceFilter(Pattern.compile("^eneter.*"));
 			EneterTrace.debug("This message shall be traced.");
-			Thread.sleep(10);
+			Thread.sleep(20);
 			assertTrue(aLog.toString().contains("This message shall be traced."));
 			
 			// Create the new "log".
