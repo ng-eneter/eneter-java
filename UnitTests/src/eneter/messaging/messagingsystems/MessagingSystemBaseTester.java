@@ -217,49 +217,28 @@ public abstract class MessagingSystemBaseTester
     }
     
     @Test
-    public void A01_SendMessage()
+    public void Oneway_01_Send1()
             throws Exception
     {
         sendMessageViaOutputChannel(myChannelId, "Message", 1, 1, 5000);
     }
     
     @Test
-    public void A02_SendMessages500()
+    public void Oneway_02_Send500()
             throws Exception
     {
         sendMessageViaOutputChannel(myChannelId, "Message", 1, 500, 5000);
     }
     
     @Test
-    public void A02_SendMessages10Parallel50()
+    public void Oneway_03_Send50_10Parallel()
             throws Exception
     {
         sendMessageViaOutputChannel(myChannelId, "Message", 10, 50, 5000);
     }
     
-    @Test
-    public void A05_SendMessageReceiveResponse()
-            throws Exception
-    {
-        sendMessageReceiveResponse(myChannelId, "Message", "Response", 1, 1, 5000);
-    }
-    
-    @Test
-    public void A06_SendMessageReceiveResponse500()
-            throws Exception
-    {
-        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 1, 500, 5000);
-    }
-    
-    @Test
-    public void A06_SendMessageReceiveResponse10Parallel50()
-            throws Exception
-    {
-        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 10, 50, 5000);
-    }
-    
     @Test(expected = IllegalStateException.class)
-    public void A07_StopListening()
+    public void Oneway_06_StopListening()
         throws Exception
     {
         IOutputChannel anOutputChannel = myMessagingSystemFactory.createOutputChannel(myChannelId);
@@ -287,86 +266,29 @@ public abstract class MessagingSystemBaseTester
         Thread.sleep(500);
     }
     
-    
     @Test
-    public void A08_MultithreadSendMessage()
-        throws Exception
+    public void Duplex_01_Send1()
+            throws Exception
     {
-        final IOutputChannel anOutputChannel = myMessagingSystemFactory.createOutputChannel(myChannelId);
-        final IInputChannel anInputChannel = myMessagingSystemFactory.createInputChannel(myChannelId);
-
-        final ManualResetEvent aMessagesSentEvent = new ManualResetEvent(false);
-
-        // Observe the input channel
-        final ArrayList<String> aReceivedMessages = new ArrayList<String>();
-        anInputChannel.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, ChannelMessageEventArgs y)
-            {
-                aReceivedMessages.add((String)y.getMessage());
-
-                if (aReceivedMessages.size() == 500)
-                {
-                    aMessagesSentEvent.set();
-                }
-            }
-        });
-        
-        
-        // Create 10 competing threads
-        final ArrayList<Thread> aThreads = new ArrayList<Thread>();
-        
-        for (int t = 0; t < 10; ++t)
-        {
-            Thread aThread = new Thread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                 // Send 50 messages
-                    for (int i = 0; i < 50; ++i)
-                    {
-                        try
-                        {
-                            Thread.sleep(1); // To mix the order of threads. (othewise it would go thread by thread)
-                            long aThreadId = Thread.currentThread().getId();
-                            anOutputChannel.sendMessage(String.valueOf(aThreadId));
-                        }
-                        catch (Exception err)
-                        {
-                        }
-                    }
-                }
-            }); 
-                    
-            aThreads.add(aThread);
-        }
-
-        try
-        {
-            anInputChannel.startListening();
-
-            // Start sending from threads
-            for (Thread t : aThreads)
-            {
-                t.start();
-            }
-
-            // Wait until all messages are received.
-            assertTrue(aMessagesSentEvent.waitOne(30000));
-        }
-        finally
-        {
-            anInputChannel.stopListening();
-        }
-
-        // Check
-        assertEquals(500, aReceivedMessages.size());
+        sendMessageReceiveResponse(myChannelId, "Message", "Response", 1, 1, 5000);
     }
     
     @Test
-    public void A09_OpenCloseConnection()
+    public void Duplex_02_Send500()
+            throws Exception
+    {
+        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 1, 500, 5000);
+    }
+    
+    @Test
+    public void Duplex_05_Send50_10Prallel()
+            throws Exception
+    {
+        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 10, 50, 5000);
+    }
+    
+    @Test
+    public void Duplex_06_OpenCloseConnection()
         throws Throwable
     {
         IDuplexInputChannel anInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
@@ -426,27 +348,26 @@ public abstract class MessagingSystemBaseTester
         try
         {
             anInputChannel.startListening();
+            
             anOutputChannel.openConnection();
+            assertTrue(anOutputChannel.isConnected());
 
             aConnectionOpenedEvent.waitOne();
-
             assertEquals(anOutputChannel.getChannelId(), aConnectionOpenedEventArgs[0].getChannelId());
             assertEquals(anOutputChannel.getResponseReceiverId(), aConnectionOpenedEventArgs[0].getResponseReceiverId());
 
             aResponseReceiverConnectedEvent.waitOne();
-
             assertEquals(anOutputChannel.getResponseReceiverId(), aConnectedReceiver[0]);
 
 
             anOutputChannel.closeConnection();
-
+            assertFalse(anOutputChannel.isConnected());
+            
             aConnectionClosedEvent.waitOne();
-
             assertEquals(anOutputChannel.getChannelId(), aConnectionClosedEventArgs[0].getChannelId());
             assertEquals(anOutputChannel.getResponseReceiverId(), aConnectionClosedEventArgs[0].getResponseReceiverId());
 
             aResponseReceiverDisconnectedEvent.waitOne();
-
             assertEquals(anOutputChannel.getResponseReceiverId(), aDisconnectedReceiver[0]);
         }
         catch (Throwable err)
@@ -465,7 +386,7 @@ public abstract class MessagingSystemBaseTester
     }
     
     @Test
-    public void A10_OpenConnectionIfDuplexInputChannelNotStarted() throws Exception
+    public void Duplex_07_OpenConnection_if_InputChannelNotStarted() throws Exception
     {
         IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
@@ -481,9 +402,79 @@ public abstract class MessagingSystemBaseTester
     }
     
     @Test
-    public void A11_DuplexInputChannelSuddenlyStopped() throws Exception
+    public void Duplex_08_OpenFromConnectionClosed()
+        throws Exception
+    {
+        final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
+        final IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+
+
+        final AutoResetEvent aConnectionReopenEvent = new AutoResetEvent(false);
+        final boolean[] isConnected = {true};
+        final boolean[] isConnectedAfter = {false};
+        aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
+        {
+            @Override
+            public void onEvent(Object t1, DuplexChannelEventArgs t2)
+            {
+                if (!isConnectedAfter[0])
+                {
+                    // it is disconnected, so false is expected.
+                    isConnected[0] = aDuplexOutputChannel.isConnected();
+
+                    // Try to open from the handler.
+                    try
+                    {
+                        aDuplexOutputChannel.openConnection();
+                        isConnectedAfter[0] = true;
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error("Open connection failed.", err);
+                    }
+
+                    aConnectionReopenEvent.set();
+                }
+            }
+        });
+        
+        try
+        {
+            aDuplexInputChannel.startListening();
+
+            aDuplexOutputChannel.openConnection();
+
+            Thread.sleep(500);
+
+            aDuplexInputChannel.disconnectResponseReceiver(aDuplexOutputChannel.getResponseReceiverId());
+
+            aConnectionReopenEvent.waitOne();
+        }
+        finally
+        {
+            aDuplexInputChannel.stopListening();
+            aDuplexOutputChannel.closeConnection();
+        }
+
+        assertFalse(isConnected[0]);
+        assertTrue(isConnectedAfter[0]);
+    }
+    
+    @Test
+    public void Duplex_09_StopListening_SendMessage() throws Exception
     {
         IDuplexInputChannel anInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
+        
+        final AutoResetEvent aResponseReceiverConnectedEvent = new AutoResetEvent(false);
+        anInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
+        {
+            @Override
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
+            {
+                aResponseReceiverConnectedEvent.set();
+            }
+        });
+        
         IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
 
         boolean isSomeException = false;
@@ -497,7 +488,7 @@ public abstract class MessagingSystemBaseTester
             anOutputChannel.openConnection();
             assertTrue(anOutputChannel.isConnected());
 
-            Thread.sleep(100);
+            aResponseReceiverConnectedEvent.waitOne();
 
 
             // Duplex input channel stops to listen.
@@ -525,14 +516,14 @@ public abstract class MessagingSystemBaseTester
     }
     
     @Test
-    public void A12_DuplexInputChannelDisconnectsResponseReceiver()
+    public void Duplex_10_DisconnectResponseReceiver()
         throws Exception
     {
         final AutoResetEvent aResponseReceiverConnectedEvent = new AutoResetEvent(false);
         final AutoResetEvent aConnectionClosedEvent = new AutoResetEvent(false);
 
         final boolean[] aResponseReceiverConnectedFlag = new boolean[1];
-        //bool aResponseReceiverDisconnectedFlag = false;
+        final boolean[] aResponseReceiverDisconnectedFlag = new boolean[1];
 
         final boolean[] aConnectionClosedReceivedInOutputChannelFlag = new boolean[1];
         final boolean[] aResponseMessageReceivedFlag = new boolean[1];
@@ -554,7 +545,7 @@ public abstract class MessagingSystemBaseTester
             @Override
             public void onEvent(Object t1, ResponseReceiverEventArgs t2)
             {
-                //aResponseReceiverDisconnectedFlag = true;
+                aResponseReceiverDisconnectedFlag[0] = true;
             }
         });
         
@@ -594,25 +585,24 @@ public abstract class MessagingSystemBaseTester
 
             // Wait until the response receiver is disconnected.
             aConnectionClosedEvent.waitOne();
+            
+            assertTrue(aResponseReceiverConnectedFlag[0]);
+            assertTrue(aConnectionClosedReceivedInOutputChannelFlag[0]);
+
+            assertFalse(aResponseMessageReceivedFlag[0]);
+            
+            // Disconnect response receiver shall generate the client disconnected event.
+            assertTrue(aResponseReceiverDisconnectedFlag[0]);
         }
         finally
         {
             aDuplexOutputChannel.closeConnection();
             aDuplexInputChannel.stopListening();
         }
-
-        assertTrue(aResponseReceiverConnectedFlag[0]);
-        assertTrue(aConnectionClosedReceivedInOutputChannelFlag[0]);
-
-        assertFalse(aResponseMessageReceivedFlag[0]);
-        
-        // Note: When the duplex input channel disconnected the duplex output channel, the notification, that
-        //       the duplex output channel was disconnected does not have to be invoked.
-        //Assert.IsFalse(aResponseReceiverDisconnectedFlag);
     }
     
     @Test
-    public void A13_DuplexOutputChannelClosesConnection()
+    public void Duplex_11_CloseConnection()
         throws Exception
     {
         IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
@@ -704,66 +694,7 @@ public abstract class MessagingSystemBaseTester
     }
     
     @Test
-    public void A14_DuplexOutputChannelDisconnected_OpenFromCloseHandler()
-        throws Exception
-    {
-        final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
-        final IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
-
-
-        final AutoResetEvent aConnectionReopenEvent = new AutoResetEvent(false);
-        final boolean[] isConnected = {true};
-        final boolean[] isConnectedAfter = {false};
-        aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
-        {
-            @Override
-            public void onEvent(Object t1, DuplexChannelEventArgs t2)
-            {
-                if (!isConnectedAfter[0])
-                {
-                	// it is disconnected, so false is expected.
-                    isConnected[0] = aDuplexOutputChannel.isConnected();
-
-                    // Try to open from the handler.
-                    try
-                    {
-						aDuplexOutputChannel.openConnection();
-						isConnectedAfter[0] = true;
-					}
-                    catch (Exception err)
-                    {
-						EneterTrace.error("Open connection failed.", err);
-					}
-
-                    aConnectionReopenEvent.set();
-                }
-            }
-        });
-        
-        try
-        {
-            aDuplexInputChannel.startListening();
-
-            aDuplexOutputChannel.openConnection();
-
-            Thread.sleep(500);
-
-            aDuplexInputChannel.disconnectResponseReceiver(aDuplexOutputChannel.getResponseReceiverId());
-
-            aConnectionReopenEvent.waitOne();
-        }
-        finally
-        {
-            aDuplexInputChannel.stopListening();
-            aDuplexOutputChannel.closeConnection();
-        }
-
-        assertFalse(isConnected[0]);
-        assertTrue(isConnectedAfter[0]);
-    }
-    
-    @Test
-    public void A15_DuplexOutputChannelConnected_CloseFromOpenHandler()
+    public void Duplex_12_CloseFromConnectionOpened()
         throws Exception
     {
         final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
@@ -815,7 +746,7 @@ public abstract class MessagingSystemBaseTester
     }
     
     @Test
-    public void A16_DuplexOutputChannelConnectionOpened_DisconnectFromOpenHandler()
+    public void Duplex_13_DisconnectFromResponseReceiverConnected()
         throws Exception
     {
         final IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
@@ -831,12 +762,12 @@ public abstract class MessagingSystemBaseTester
 
                 try
                 {
-					aDuplexInputChannel.disconnectResponseReceiver(aConnectedResponseReceiver[0]);
-				}
+                    aDuplexInputChannel.disconnectResponseReceiver(aConnectedResponseReceiver[0]);
+                }
                 catch (Exception err)
                 {
-					EneterTrace.error("Disconnecting the response receiver failed.", err);
-				}
+                    EneterTrace.error("Disconnecting the response receiver failed.", err);
+                }
             }
         });
         
@@ -870,8 +801,6 @@ public abstract class MessagingSystemBaseTester
             aDuplexOutputChannel.closeConnection();
         }
     }
-    
-    
     
     
     protected void sendMessageViaOutputChannel(final String channelId,

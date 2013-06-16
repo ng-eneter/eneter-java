@@ -34,9 +34,9 @@ public class Test_TcpMessagingSystem_Parallel extends MessagingSystemBaseTester
     
     @Test(expected = SocketException.class)
     @Override
-    public void A07_StopListening() throws Exception
+    public void Oneway_06_StopListening() throws Exception
     {
-        super.A07_StopListening();
+        super.Oneway_06_StopListening();
     }
     
     @Test

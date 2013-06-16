@@ -25,8 +25,8 @@ public class Test_MonitoredMessaging_Tcp_Xml extends MonitoredMessagingTesterBas
     
     @Test(expected = SocketException.class)
     @Override
-    public void A07_StopListening() throws Exception
+    public void Oneway_06_StopListening() throws Exception
     {
-        super.A07_StopListening();
+        super.Oneway_06_StopListening();
     }
 }

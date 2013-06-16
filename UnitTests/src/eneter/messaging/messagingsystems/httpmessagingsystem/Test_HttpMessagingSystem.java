@@ -50,10 +50,10 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
     
     @Test(expected = ConnectException.class)
     @Override
-    public void A07_StopListening()
+    public void Oneway_06_StopListening()
         throws Exception
     {
-        super.A07_StopListening();
+        super.Oneway_06_StopListening();
     }
     
     @Test

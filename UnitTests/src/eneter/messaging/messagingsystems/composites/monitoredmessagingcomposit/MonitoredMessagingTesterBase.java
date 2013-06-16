@@ -14,12 +14,12 @@ import eneter.net.system.threading.internal.*;
 
 public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTester
 {
-    public void A09_OpenCloseConnection()
+    public void Duplex_06_OpenCloseConnection()
     {
         // This test-case is not applicable, because the output channel sends the ping and that will reconnect the connection.
     }
 
-    public void A15_DuplexOutputChannelConnected_CloseFromOpenHandler()
+    public void Duplex_12_CloseFromConnectionOpened()
     {
         // This test-case is not applicable, because the output channel sends the ping and that will reconnect the connection.
     }
