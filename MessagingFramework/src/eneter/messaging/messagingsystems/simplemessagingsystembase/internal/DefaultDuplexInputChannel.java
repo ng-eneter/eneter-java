@@ -22,7 +22,7 @@ import eneter.net.system.linq.internal.EnumerableExt;
 import eneter.net.system.threading.internal.ThreadPool;
 
 
-class DefaultDuplexInputChannel extends DefaultInputChannelBase implements IDuplexInputChannel
+public class DefaultDuplexInputChannel extends DefaultInputChannelBase implements IDuplexInputChannel
 {
     private class TConnectionContext
     {
@@ -40,7 +40,7 @@ class DefaultDuplexInputChannel extends DefaultInputChannelBase implements IDupl
     public DefaultDuplexInputChannel(String channelId,
             IInvoker workingThreadInvoker,
             IProtocolFormatter<?> protocolFormatter,
-            IServiceConnectorFactory serviceConnectorFactory)
+            IServiceConnectorFactory serviceConnectorFactory) throws Exception
         {
             super(channelId, workingThreadInvoker, protocolFormatter, serviceConnectorFactory);
         }

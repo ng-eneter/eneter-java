@@ -21,7 +21,7 @@ import eneter.net.system.internal.*;
 import eneter.net.system.threading.internal.ThreadPool;
 
 
-class DefaultDuplexOutputChannel implements IDuplexOutputChannel
+public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
 {
     @Override
     public Event<DuplexChannelMessageEventArgs> responseMessageReceived()

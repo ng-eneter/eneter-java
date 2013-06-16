@@ -28,7 +28,7 @@ public class DefaultInputChannel extends DefaultInputChannelBase implements IInp
     public DefaultInputChannel(String channelId,
             IInvoker workingThreadInvoker,
             IProtocolFormatter<?> protocolFormatter,
-            IServiceConnectorFactory serviceConnectorFactory)
+            IServiceConnectorFactory serviceConnectorFactory) throws Exception
         {
             super(channelId, workingThreadInvoker, protocolFormatter, serviceConnectorFactory);
         }

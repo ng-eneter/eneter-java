@@ -23,7 +23,7 @@ abstract class DefaultInputChannelBase
     public DefaultInputChannelBase(String channelId,
             IInvoker workingThreadInvoker,
             IProtocolFormatter<?> protocolFormatter,
-            IServiceConnectorFactory serviceConnectorFactory)
+            IServiceConnectorFactory serviceConnectorFactory) throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try

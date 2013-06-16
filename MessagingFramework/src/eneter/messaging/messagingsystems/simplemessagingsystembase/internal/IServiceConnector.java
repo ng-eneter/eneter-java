@@ -12,7 +12,7 @@ import eneter.net.system.IFunction1;
 
 public interface IServiceConnector
 {
-    void startListening(IFunction1<Boolean, MessageContext> messageHandler);
+    void startListening(IFunction1<Boolean, MessageContext> messageHandler) throws Exception;
     void stopListening();
     boolean isListening();
 

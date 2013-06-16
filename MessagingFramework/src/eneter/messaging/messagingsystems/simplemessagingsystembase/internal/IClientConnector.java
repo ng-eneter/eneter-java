@@ -12,7 +12,7 @@ import eneter.net.system.IFunction1;
 
 public interface IClientConnector extends ISender
 {
-    void openConnection(IFunction1<Boolean, MessageContext> responseMessageHandler);
+    void openConnection(IFunction1<Boolean, MessageContext> responseMessageHandler) throws Exception;
     void closeConnection();
     boolean isConnected();
 }

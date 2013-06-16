@@ -10,5 +10,5 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
 public interface IClientConnectorFactory
 {
-    IClientConnector createClientConnector(String serviceConnectorAddress, String clientConnectorAddress);
+    IClientConnector createClientConnector(String serviceConnectorAddress, String clientConnectorAddress) throws Exception;
 }
