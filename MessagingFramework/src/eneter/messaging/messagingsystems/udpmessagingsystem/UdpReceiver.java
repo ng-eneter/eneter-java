@@ -61,8 +61,8 @@ class UdpReceiver
 
                     myWorkingThreadInvoker.start();
 
-
-                    mySocket = new DatagramSocket();
+                    // Create unbound socket.
+                    mySocket = new DatagramSocket(null);
                             
                     // Note: bigger buffer increases the chance the datagram is not lost.
                     mySocket.setReceiveBufferSize(1048576);
