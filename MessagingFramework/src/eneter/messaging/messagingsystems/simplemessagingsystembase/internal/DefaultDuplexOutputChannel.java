@@ -107,19 +107,10 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                     // Create sender responsible for sending messages.
                     myClientConnector = myClientConnectorFactory.createClientConnector(getChannelId(), getResponseReceiverId());
 
-                    IFunction1<Boolean, MessageContext> aResponseHandler = new IFunction1<Boolean, MessageContext>()
-                    {
-                        @Override
-                        public Boolean invoke(MessageContext x) throws Exception
-                        {
-                            return handleResponse(x);
-                        }
-                    };
-                    
                     if (!myStartReceiverAfterSendOpenRequest)
                     {
                         // Connect and start listening to response messages.
-                        myClientConnector.openConnection(aResponseHandler);
+                        myClientConnector.openConnection(myResponseHandler);
                     }
 
                     // Send the open connection request.
@@ -128,7 +119,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                     if (myStartReceiverAfterSendOpenRequest)
                     {
                         // Connect and start listening to response messages.
-                        myClientConnector.openConnection(aResponseHandler);
+                        myClientConnector.openConnection(myResponseHandler);
                     }
 
                     // Invoke the event notifying, the connection was opened.
@@ -408,6 +399,15 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceived = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<DuplexChannelEventArgs> myConnectionOpened = new EventImpl<DuplexChannelEventArgs>();
     private EventImpl<DuplexChannelEventArgs> myConnectionClosed = new EventImpl<DuplexChannelEventArgs>();
+    
+    IFunction1<Boolean, MessageContext> myResponseHandler = new IFunction1<Boolean, MessageContext>()
+    {
+        @Override
+        public Boolean invoke(MessageContext x) throws Exception
+        {
+            return handleResponse(x);
+        }
+    };
     
     
     private String TracedObject()

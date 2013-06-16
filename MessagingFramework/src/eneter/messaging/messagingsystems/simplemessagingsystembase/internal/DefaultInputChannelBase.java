@@ -71,14 +71,7 @@ abstract class DefaultInputChannelBase
                     myWorkingThreadInvoker.start();
 
                     // Start listen to messages.
-                    myServiceConnector.startListening(new IFunction1<Boolean, MessageContext>()
-                    {
-                        @Override
-                        public Boolean invoke(MessageContext x) throws Exception
-                        {
-                            return handleMessage(x);
-                        }
-                    });
+                    myServiceConnector.startListening(myHandleMessage);
                 }
                 catch (Exception err)
                 {
@@ -193,6 +186,16 @@ abstract class DefaultInputChannelBase
     protected String myChannelId;
 
     private Object myListeningManipulatorLock = new Object();
+    
+    
+    IFunction1<Boolean, MessageContext> myHandleMessage = new IFunction1<Boolean, MessageContext>()
+    {
+        @Override
+        public Boolean invoke(MessageContext x) throws Exception
+        {
+            return handleMessage(x);
+        }
+    };
     
     protected String TracedObject()
     {
