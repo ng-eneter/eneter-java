@@ -3,6 +3,7 @@ package eneter.messaging.messagingsystems;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import org.junit.Test;
 
@@ -220,21 +221,21 @@ public abstract class MessagingSystemBaseTester
     public void Oneway_01_Send1()
             throws Exception
     {
-        sendMessageViaOutputChannel(myChannelId, "Message", 1, 1, 5000);
+        sendMessageViaOutputChannel(myChannelId, "Message", 1, 1);
     }
     
     @Test
     public void Oneway_02_Send500()
             throws Exception
     {
-        sendMessageViaOutputChannel(myChannelId, "Message", 1, 500, 5000);
+        sendMessageViaOutputChannel(myChannelId, "Message", 1, 500);
     }
     
     @Test
     public void Oneway_03_Send50_10Parallel()
             throws Exception
     {
-        sendMessageViaOutputChannel(myChannelId, "Message", 10, 50, 5000);
+        sendMessageViaOutputChannel(myChannelId, "Message", 10, 50);
     }
     
     @Test(expected = IllegalStateException.class)
@@ -270,21 +271,33 @@ public abstract class MessagingSystemBaseTester
     public void Duplex_01_Send1()
             throws Exception
     {
-        sendMessageReceiveResponse(myChannelId, "Message", "Response", 1, 1, 5000);
+        sendMessageReceiveResponse(myChannelId, "Message", "Response", 1, 1);
     }
     
     @Test
     public void Duplex_02_Send500()
             throws Exception
     {
-        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 1, 500, 5000);
+        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 1, 500);
+    }
+    
+    @Test
+    public void Duplex_03_Send100_10MB() throws Exception
+    {
+        sendMessageReceiveResponse(myChannelId, myMessage_10MB, myMessage_10MB, 1, 100);
+    }
+    
+    @Test
+    public void Duplex_04_Send50000() throws Exception
+    {
+        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 1, 50000);
     }
     
     @Test
     public void Duplex_05_Send50_10Prallel()
             throws Exception
     {
-        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 10, 50, 5000);
+        sendMessageReceiveResponse(myChannelId, "Message", "Respones", 10, 50);
     }
     
     @Test
@@ -513,6 +526,84 @@ public abstract class MessagingSystemBaseTester
         }
 
         assertTrue(isSomeException);
+    }
+    
+    @Test
+    public void Duplex_09_StopListeing() throws Exception
+    {
+        IDuplexInputChannel anInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
+
+        final AutoResetEvent anAllConnected = new AutoResetEvent(false);
+        final int[] aNumber = { 0 };
+        anInputChannel.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
+        {
+            @Override
+            public void onEvent(Object sender, ResponseReceiverEventArgs e)
+            {
+                ++aNumber[0];
+                if (aNumber[0] == 3)
+                {
+                    anAllConnected.set();
+                }
+            }
+        });
+        
+        final AutoResetEvent anAllDisconnected = new AutoResetEvent(false);
+        final ArrayList<ResponseReceiverEventArgs> aDisconnects = new ArrayList<ResponseReceiverEventArgs>();
+        anInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
+        {
+            @Override
+            public void onEvent(Object x, ResponseReceiverEventArgs y)
+            {
+                synchronized (aDisconnects)
+                {
+                    aDisconnects.add(y);
+
+                    if (aDisconnects.size() == 3)
+                    {
+                        anAllDisconnected.set();
+                    }
+                }
+            }
+        });
+        
+        IDuplexOutputChannel anOutputChannel1 = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+        IDuplexOutputChannel anOutputChannel2 = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+        IDuplexOutputChannel anOutputChannel3 = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+
+        try
+        {
+            // Duplex input channel starts to listen.
+            anInputChannel.startListening();
+
+            // Open connections
+            anOutputChannel1.openConnection();
+            anOutputChannel2.openConnection();
+            anOutputChannel3.openConnection();
+            assertTrue(anOutputChannel1.isConnected());
+            assertTrue(anOutputChannel2.isConnected());
+            assertTrue(anOutputChannel3.isConnected());
+
+            anAllConnected.waitOne();
+
+            // Stop listening.
+            anInputChannel.stopListening();
+            assertFalse(anInputChannel.isListening());
+
+            anAllDisconnected.waitOne();
+
+            // Wait if e.g. more that three disconnects are delivered then error.
+            Thread.sleep(200);
+
+            assertEquals(3, aDisconnects.size());
+        }
+        finally
+        {
+            anOutputChannel1.closeConnection();
+            anOutputChannel2.closeConnection();
+            anOutputChannel3.closeConnection();
+            anInputChannel.stopListening();
+        }
     }
     
     @Test
@@ -805,8 +896,7 @@ public abstract class MessagingSystemBaseTester
     
     protected void sendMessageViaOutputChannel(final String channelId,
             final String message,
-            final int numberOfClients, final int numberOfTimes,
-            int timeOutForMessageProcessing)
+            final int numberOfClients, final int numberOfTimes)
             throws Exception
     {
         TOnewayClient[] aClients = new TOnewayClient[numberOfClients];
@@ -867,8 +957,7 @@ public abstract class MessagingSystemBaseTester
     
     protected void sendMessageReceiveResponse(final String channelId,
             final String message, final String resonseMessage,
-            final int numberOfClients, final int numberOfTimes, 
-            int timeOutForMessageProcessing)
+            final int numberOfClients, final int numberOfTimes)
             throws Exception
     {
         TDuplexClient[] aClients = new TDuplexClient[numberOfClients];
@@ -978,7 +1067,22 @@ public abstract class MessagingSystemBaseTester
         assertEquals("Number of sent messages differs from number of received.", numberOfTimes * numberOfClients, aService.NumberOfReceivedMessages);
     }
     
+    
+    protected static String getString(int length)
+    {
+        StringBuilder aStringBuilder = new StringBuilder();
+
+        for (int i = 0; i < length; ++i)
+        {
+            char ch = (char)((int)(Math.random() * 26 + 97)); 
+            aStringBuilder.append(ch);
+        }
+
+        return aStringBuilder.toString();
+    }
 
     protected IMessagingSystemFactory myMessagingSystemFactory;
     protected String myChannelId;
+    
+    private static String myMessage_10MB = getString(10000000);
 }

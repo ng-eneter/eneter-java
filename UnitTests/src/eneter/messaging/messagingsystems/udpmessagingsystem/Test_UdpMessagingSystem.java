@@ -31,6 +31,13 @@ public class Test_UdpMessagingSystem extends MessagingSystemBaseTester
     @Ignore
     @Test
     @Override
+    public void Duplex_03_Send100_10MB()
+    {
+    }
+    
+    @Ignore
+    @Test
+    @Override
     public void Duplex_07_OpenConnection_if_InputChannelNotStarted()
     {
     }

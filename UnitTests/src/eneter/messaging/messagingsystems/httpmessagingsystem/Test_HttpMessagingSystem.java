@@ -145,8 +145,6 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
     @Test
     public void B02_MoreListenersBasedOnSameTCP() throws Exception
     {
-        final int aTimeout = 60000;
-        
         ExecutorService aThreadPool = Executors.newFixedThreadPool(10);
         
         Future<?> anEnd1 = aThreadPool.submit(new Callable<Object>()
@@ -154,7 +152,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 @Override
                 public Object call() throws Exception
                 {
-                    sendMessageReceiveResponse(myChannelId, "Hello1", "Response1", 1, 100, aTimeout);
+                    sendMessageReceiveResponse(myChannelId, "Hello1", "Response1", 1, 100);
                     return null;
                 }
             });
@@ -165,7 +163,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 public Object call() throws Exception
                 {
                     // One-way channel on the same TCP as duplex channel.
-                    sendMessageViaOutputChannel(myChannelId2, "Hello2", 1, 100, aTimeout);
+                    sendMessageViaOutputChannel(myChannelId2, "Hello2", 1, 100);
                     return null;
                 }
             });
@@ -175,7 +173,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 @Override
                 public Object call() throws Exception
                 {
-                    sendMessageReceiveResponse(myChannelId3, "Hello3", "Response3", 1, 100, aTimeout);
+                    sendMessageReceiveResponse(myChannelId3, "Hello3", "Response3", 1, 100);
                     return null;
                 }
             });
