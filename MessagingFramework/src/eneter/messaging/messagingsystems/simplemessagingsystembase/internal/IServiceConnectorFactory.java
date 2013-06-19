@@ -10,5 +10,5 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
 public interface IServiceConnectorFactory
 {
-    IServiceConnector createServiceConnector(String serviceConnectorAddress) throws Exception;
+    IServiceConnector createServiceConnector(String receiverAddress) throws Exception;
 }

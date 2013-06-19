@@ -12,6 +12,7 @@ import eneter.messaging.dataprocessing.messagequeueing.internal.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 
 /**
  * Implements the messaging system delivering messages via TCP.
@@ -22,6 +23,74 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  */
 public class TcpMessagingSystemFactory implements IMessagingSystemFactory
 {
+    private class TcpServiceConnectorFactory implements IServiceConnectorFactory
+    {
+        public TcpServiceConnectorFactory(IServerSecurityFactory securityFactory)
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                mySecurityFactory = securityFactory;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+        @Override
+        public IServiceConnector createServiceConnector(
+                String receiverAddress) throws Exception
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                return new TcpServiceConnector(receiverAddress, mySecurityFactory);
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+        private IServerSecurityFactory mySecurityFactory;
+    }
+    
+    private class TcpClientConnectorFactory implements IClientConnectorFactory
+    {
+        public TcpClientConnectorFactory(IClientSecurityFactory securityFactory)
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                mySecurityFactory = securityFactory;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        @Override
+        public IClientConnector createClientConnector(
+                String serviceConnectorAddress, String clientConnectorAddress)
+                throws Exception
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                return new TcpClientConnector(serviceConnectorAddress, mySecurityFactory);
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+        private IClientSecurityFactory mySecurityFactory;
+    }
+    
+    
     /**
      * Constructs the TCP messaging factory.
      */
@@ -72,7 +141,9 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpOutputChannel(channelId, myProtocolFormatter, myClientSecurityFactory);
+            IClientConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
+
+            return new DefaultOutputChannel(channelId, myProtocolFormatter, aClientConnectorFactory);
         }
         finally
         {
@@ -103,7 +174,9 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
                 anInvoker = new CallingThreadInvoker();
             }
             
-            return new TcpInputChannel(channelId, anInvoker, myProtocolFormatter, myServerSecurityFactory);
+            IServiceConnectorFactory aFactory = new TcpServiceConnectorFactory(myServerSecurityFactory);
+
+            return new DefaultInputChannel(channelId, anInvoker, myProtocolFormatter, aFactory);
         }
         finally
         {
@@ -130,7 +203,9 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpDuplexOutputChannel(channelId, null, myProtocolFormatter, myClientSecurityFactory);
+            IInvoker anInvoker = new WorkingThreadInvoker();
+            IClientConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
+            return new DefaultDuplexOutputChannel(channelId, null, anInvoker, myProtocolFormatter, aClientConnectorFactory, false);
         }
         finally
         {
@@ -159,7 +234,9 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new TcpDuplexOutputChannel(channelId, responseReceiverId, myProtocolFormatter, myClientSecurityFactory);
+            IInvoker anInvoker = new WorkingThreadInvoker();
+            IClientConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, anInvoker, myProtocolFormatter, aClientConnectorFactory, false);
         }
         finally
         {
@@ -193,7 +270,8 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
                 anInvoker = new CallingThreadInvoker();
             }
             
-            return new TcpDuplexInputChannel(channelId, anInvoker, myProtocolFormatter, myServerSecurityFactory);
+            IServiceConnectorFactory aFactory = new TcpServiceConnectorFactory(myServerSecurityFactory);
+            return new DefaultDuplexInputChannel(channelId, anInvoker, myProtocolFormatter, aFactory);
         }
         finally
         {

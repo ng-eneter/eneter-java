@@ -130,8 +130,6 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                 {
                     myStopReceivingRequestedFlag = false;
 
-                    //myTcpClient = new Socket(InetAddress.getByName(aUri.getHost()), aUri.getPort());
-                    //myTcpClient.setTcpNoDelay(true);
                     myTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
                     
                     myIpAddress = IpAddressUtil.getLocalIpAddress(myTcpClient);
@@ -218,7 +216,7 @@ class TcpDuplexOutputChannel implements IDuplexOutputChannel
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.warning(TracedObject() + "failed to stop Tcp connection.", err);
+                        EneterTrace.warning(TracedObject() + "failed to close the socket.", err);
                     }
 
                     myTcpClient = null;
