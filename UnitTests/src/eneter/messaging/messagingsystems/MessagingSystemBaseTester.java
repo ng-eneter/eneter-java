@@ -1001,7 +1001,8 @@ public abstract class MessagingSystemBaseTester
             for (TDuplexClient aClient : aClients)
             {
                 // Wait until the connection is open.
-                assertTrue(aClient.ConnectionOpenEvent.waitOne(10000));
+                aClient.ConnectionOpenEvent.waitOne();
+                //assertTrue(aClient.ConnectionOpenEvent.waitOne(10000));
             }
 
             // Clients send messages in parallel.
