@@ -506,19 +506,21 @@ public abstract class MessagingSystemBaseTester
 
             // Duplex input channel stops to listen.
             anInputChannel.stopListening();
-
             assertFalse(anInputChannel.isListening());
 
-            //Thread.Sleep(3000);
+            Thread.sleep(500);
 
-            // Try to send a message via the duplex output channel.
-            anOutputChannel.sendMessage("Message");
-        }
-        catch (Exception err)
-        {
-            // Because the duplex input channel is not listening the sending must
-            // fail with an exception. The type of the exception depends from the type of messaging system.
-            isSomeException = true;
+            try
+            {
+                // Try to send a message via the duplex output channel.
+                anOutputChannel.sendMessage("Message");
+            }
+            catch (Exception err)
+            {
+                // Because the duplex input channel is not listening the sending must
+                // fail with an exception. The type of the exception depends from the type of messaging system.
+                isSomeException = true;
+            }
         }
         finally
         {
