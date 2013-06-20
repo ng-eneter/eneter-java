@@ -15,11 +15,12 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.*;
 import eneter.net.system.*;
+import eneter.net.system.internal.IDisposable;
 
 
 class TcpServiceConnector implements IServiceConnector
 {
-    private class ResponseSender implements ISender
+    private class ResponseSender implements ISender, IDisposable
     {
         public ResponseSender(OutputStream clientStream)
         {
@@ -27,6 +28,27 @@ class TcpServiceConnector implements IServiceConnector
             try
             {
                 myClientStream = clientStream;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+        //@Override
+        public void dispose()
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                if (myClientStream != null)
+                {
+                    myClientStream.close();
+                }
+            }
+            catch (IOException err)
+            {
+                EneterTrace.error(getClass().getSimpleName() + " failed to close the client socket.", err);
             }
             finally
             {

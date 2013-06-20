@@ -335,7 +335,6 @@ public class TcpListenerProvider
         }
     };
     
-    
     private String TracedObject()
     {
         return "TcpListenerProvider ";

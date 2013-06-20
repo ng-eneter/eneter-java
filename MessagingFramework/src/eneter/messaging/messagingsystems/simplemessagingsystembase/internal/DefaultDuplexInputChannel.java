@@ -136,6 +136,11 @@ public class DefaultDuplexInputChannel extends DefaultInputChannelBase implement
             {
                 for (Entry<String, TConnectionContext> aConnection : myConnectedClients.entrySet())
                 {
+                    if (aConnection.getValue().myResponseSender instanceof IDisposable)
+                    {
+                        ((IDisposable)aConnection.getValue().myResponseSender).dispose();
+                    }
+                    
                     notify(myResponseReceiverDisconnectedEvent, aConnection.getKey(), aConnection.getValue().mySenderAddress);
                 }
                 myConnectedClients.clear();
