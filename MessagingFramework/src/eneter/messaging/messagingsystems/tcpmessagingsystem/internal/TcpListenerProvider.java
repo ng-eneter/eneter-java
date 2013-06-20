@@ -258,10 +258,8 @@ public class TcpListenerProvider
             }
             catch (SocketException err)
             {
-                // If the server is not listening, then this exception occurred because the listening
-                // was stopped and tracing is not desired.
-                // If the server still listens, then there is some other problem that must be traced.
-                if (myServerSocket != null)
+                // If the stop listening is not requested to stop then it is an error.
+                if (!myStopTcpListeningRequested)
                 {
                     EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
                 }
