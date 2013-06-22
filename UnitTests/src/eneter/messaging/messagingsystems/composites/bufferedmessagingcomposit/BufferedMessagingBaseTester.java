@@ -7,6 +7,7 @@ import java.util.*;
 import org.junit.Test;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.composites.ICompositeDuplexInputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
@@ -394,6 +395,8 @@ public abstract class BufferedMessagingBaseTester
         });
 
 
+        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        
         try
         {
             aDuplexInputChannel.startListening();
@@ -461,7 +464,9 @@ public abstract class BufferedMessagingBaseTester
             aDuplexInputChannel.startListening();
             aDuplexOutputChannel.openConnection();
 
-            // No activity, therefore the duplex output channel should be after some time disconnected.
+            // Disconnect the output channel.
+            // The input channel should disconnect the client after max offline time.
+            aDuplexOutputChannel.closeConnection();
 
             assertTrue(aConnectionClosedEvent.waitOne(30000));
             assertTrue(aResponseReceiverDisconnectedEvent.waitOne(30000));
@@ -492,10 +497,7 @@ public abstract class BufferedMessagingBaseTester
                 {
                     anOpenConnections.add(y.getResponseReceiverId());
 
-                    if (anOpenConnections.size() == 2)
-                    {
-                        aConnectionsCompletedEvent.set();
-                    }
+                    aConnectionsCompletedEvent.set();
                 }
             }
         });
@@ -505,11 +507,14 @@ public abstract class BufferedMessagingBaseTester
             aDuplexInputChannel.startListening();
             aDuplexOutputChannel.openConnection();
 
+            // Wait until the connection is open.
+            aConnectionsCompletedEvent.waitOne();
+            
             // Disconnect the response receiver.
             aDuplexInputChannel.disconnectResponseReceiver(aDuplexOutputChannel.getResponseReceiverId());
 
             // The duplex output channel will try to connect again, therefore wait until connected.
-            assertTrue(aConnectionsCompletedEvent.waitOne(60000));
+            aConnectionsCompletedEvent.waitOne();
         }
         finally
         {
@@ -542,30 +547,32 @@ public abstract class BufferedMessagingBaseTester
                 synchronized (anOpenConnections)
                 {
                     anOpenConnections.add(y.getResponseReceiverId());
-
-                    if (anOpenConnections.size() == 2)
-                    {
-                        aConnectionsCompletedEvent.set();
-                    }
+                    aConnectionsCompletedEvent.set();
                 }
             }
         });
 
         try
         {
+            //EneterTrace.setDetailLevel(EDetailLevel.Debug);
+            
             aDuplexInputChannel.startListening();
             aDuplexOutputChannel.openConnection();
 
+            // Wait until the client is connected.
+            aConnectionsCompletedEvent.waitOne();
+            
             // Stop listenig.
             aDuplexInputChannel.stopListening();
 
+            // Give some time to stop.
             Thread.sleep(300);
 
             // Start listening again.
             aDuplexInputChannel.startListening();
 
             // The duplex output channel will try to connect again, therefore wait until connected.
-            assertTrue(aConnectionsCompletedEvent.waitOne(60000));
+            aConnectionsCompletedEvent.waitOne();
 
             assertTrue(aDuplexOutputChannel.isConnected());
         }
