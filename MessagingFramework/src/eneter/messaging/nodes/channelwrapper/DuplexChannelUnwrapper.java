@@ -71,7 +71,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
     }
 
     @Override
-    protected void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e)
+    protected void onRequestMessageReceived(Object sender, DuplexChannelMessageEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

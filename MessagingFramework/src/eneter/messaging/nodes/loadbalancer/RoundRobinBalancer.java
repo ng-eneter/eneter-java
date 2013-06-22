@@ -205,7 +205,7 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
      * Receives a message from the client and fords it to the first available service.
      */
     @Override
-    protected void onMessageReceived(Object sender, final DuplexChannelMessageEventArgs e)
+    protected void onRequestMessageReceived(Object sender, final DuplexChannelMessageEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

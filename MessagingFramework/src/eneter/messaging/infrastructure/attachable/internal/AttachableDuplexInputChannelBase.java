@@ -31,7 +31,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
         {
             synchronized (myDuplexInputChannelManipulatorLock)
             {
-                Attach(duplexInputChannel);
+                attach(duplexInputChannel);
 
                 try
                 {
@@ -105,7 +105,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
     }
 
 
-    private void Attach(IDuplexInputChannel duplexInputChannel)
+    private void attach(IDuplexInputChannel duplexInputChannel)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -147,7 +147,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
     }
 
 
-    protected abstract void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e);
+    protected abstract void onRequestMessageReceived(Object sender, DuplexChannelMessageEventArgs e);
 
     protected abstract void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e);
 
@@ -168,7 +168,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
         @Override
         public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
         {
-            onMessageReceived(sender, e);
+            onRequestMessageReceived(sender, e);
         }
     };
     

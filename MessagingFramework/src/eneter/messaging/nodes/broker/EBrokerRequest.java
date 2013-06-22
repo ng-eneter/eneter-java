@@ -41,5 +41,10 @@ public enum EBrokerRequest
     /**
      * Request to unsubscribe all messages and regular expressions.
      */
-    UnsubscribeAll
+    UnsubscribeAll,
+    
+    /**
+     * Request to publish a message.
+     */
+    Publish
 }

@@ -68,7 +68,7 @@ class DuplexStringMessageReceiver extends AttachableDuplexInputChannelBase
     }
 
     @Override
-    protected void onMessageReceived(Object sender,
+    protected void onRequestMessageReceived(Object sender,
             DuplexChannelMessageEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();

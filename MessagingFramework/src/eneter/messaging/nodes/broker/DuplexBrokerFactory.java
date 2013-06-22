@@ -8,11 +8,8 @@
 
 package eneter.messaging.nodes.broker;
 
-import eneter.messaging.dataprocessing.serializing.ISerializer;
+import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.endpoints.typedmessages.*;
-import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousMessagingSystemFactory;
-import eneter.messaging.nodes.channelwrapper.*;
 
 /**
  * Implents the factory creating broker and broker client.
@@ -87,16 +84,7 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
      */
     public DuplexBrokerFactory()
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myChannelWrapperFactory = new ChannelWrapperFactory();
-            myTypedRequestResponseFactory = new DuplexTypedMessagesFactory();
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        this(true, new XmlStringSerializer());
     }
     
     /**
@@ -105,11 +93,40 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
      */
     public DuplexBrokerFactory(ISerializer serializer)
     {
+        this(true, serializer);
+    }
+    
+    /**
+     * Constructs the broker factory.
+     * It allows to specify if the broker client gets notification from the broker for its own published events.
+     * E.g. if the broker client is subscribed to the event 'StatusChanged' and if this broker client also publishes the
+     * event 'StatusChanged' then if the parmater publisherCanBeNotified is false the broker client will not get notification events
+     * from its own published events.
+     * 
+     * @param publisherCanBeNotified false - broker does not send notifications to the broker client which published the event.
+     */
+    public DuplexBrokerFactory(boolean publisherCanBeNotified)
+    {
+        this(publisherCanBeNotified, new XmlStringSerializer());
+    }
+    
+    /**
+     * Constructs the broker factory.
+     * It allows to specify if the broker client gets notification from the broker for its own published events.
+     * E.g. if the broker client is subscribed to the event 'StatusChanged' and if this broker client also publishes the
+     * event 'StatusChanged' then if the parmater publisherCanBeNotified is false the broker client will not get notification events
+     * from its own published events.
+     * 
+     * @param publisherCanBeNotified false - broker does not send notifications to the broker client which published the event.
+     * @param serializer serializer used by the broker
+     */
+    public DuplexBrokerFactory(boolean publisherCanBeNotified, ISerializer serializer)
+    {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myChannelWrapperFactory = new ChannelWrapperFactory(serializer);
-            myTypedRequestResponseFactory = new DuplexTypedMessagesFactory(serializer);
+            myIsPublisherNotified = publisherCanBeNotified;
+            mySerializer = serializer;
         }
         finally
         {
@@ -123,7 +140,7 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DuplexBrokerClient(new SynchronousMessagingSystemFactory(), myChannelWrapperFactory, myTypedRequestResponseFactory);
+            return new DuplexBrokerClient(mySerializer);
         }
         finally
         {
@@ -137,7 +154,7 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DuplexBroker(new SynchronousMessagingSystemFactory(), myChannelWrapperFactory, myTypedRequestResponseFactory);
+            return new DuplexBroker(myIsPublisherNotified, mySerializer);
         }
         finally
         {
@@ -147,6 +164,6 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
     
     
     
-    private IChannelWrapperFactory myChannelWrapperFactory;
-    private IDuplexTypedMessagesFactory myTypedRequestResponseFactory;
+    private ISerializer mySerializer;
+    private boolean myIsPublisherNotified;
 }
