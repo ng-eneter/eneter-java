@@ -320,7 +320,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                             @Override
                             public Boolean invoke(TSubscriptionItem x) throws Exception
                             {
-                                return (myIsPublisherSelfnotified || x.getReceiverId().equals(publisherResponseReceiverId)) && 
+                                return (myIsPublisherSelfnotified || !x.getReceiverId().equals(publisherResponseReceiverId)) && 
                                         x.getMessageTypeId().equals(message.MessageTypes[0]);
                             }
                         });
@@ -331,7 +331,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                         @Override
                         public Boolean invoke(TSubscriptionItem x) throws Exception
                         {
-                            if (myIsPublisherSelfnotified || x.getReceiverId().equals(publisherResponseReceiverId))
+                            if (myIsPublisherSelfnotified || !x.getReceiverId().equals(publisherResponseReceiverId))
                             {
                                 try
                                 {
