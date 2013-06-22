@@ -13,20 +13,17 @@ import java.util.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.internal.IMethod3;
 import eneter.net.system.threading.internal.*;
 
 class ResponseMessageSender
 {
-    public ResponseMessageSender(String responseReceiverId, IDuplexInputChannel duplexInputChannel,
-            IMethod3<String, String, Boolean> lastActivityUpdater)
+    public ResponseMessageSender(String responseReceiverId, IDuplexInputChannel duplexInputChannel)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myResponseReceiverId = responseReceiverId;
             myDuplexInputChannel = duplexInputChannel;
-            myLastActivityUpdater = lastActivityUpdater;
         }
         finally
         {
@@ -50,22 +47,7 @@ class ResponseMessageSender
                     myThreadIsSendingFlag = true;
                     mySendingThreadStoppedEvent.reset();
 
-                    Runnable aSender = new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                messageSender();
-                            } 
-                            catch (Exception e)
-                            {
-                            }
-                        }
-                    };
-
-                    ThreadPool.queueUserWorkItem(aSender);
+                    ThreadPool.queueUserWorkItem(myMessageSenderHandler);
                 }
             }
         }
@@ -75,7 +57,7 @@ class ResponseMessageSender
         }
     }
     
-    public void stopSending() throws Exception
+    public void stopSending()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -86,9 +68,16 @@ class ResponseMessageSender
                 mySendingThreadShallStopFlag = true;
 
                 // Wait until the thread is stopped.
-                if (!mySendingThreadStoppedEvent.waitOne(5000))
+                try
                 {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure);
+                    if (!mySendingThreadStoppedEvent.waitOne(5000))
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure);
+                    }
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
 
                 // Remove all messages.
@@ -101,7 +90,7 @@ class ResponseMessageSender
         }
     }
     
-    private void messageSender() throws Exception
+    private void messageSender()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -135,18 +124,13 @@ class ResponseMessageSender
                             // Send the message using the underlying output channel.
                             myDuplexInputChannel.sendResponseMessage(myResponseReceiverId, aMessage);
 
-                            // Update the time for the response receiver.
-                            // If the response receiver does not exist, then DO NOT create it.
-                            // If the response receiver does not exist, it means there can be disconnecting.
-                            myLastActivityUpdater.invoke(myResponseReceiverId, "", false);
-
-                            // The message was successfuly sent, therefore it can be removed from the queue.
+                            // The message was successfully sent, therefore it can be removed from the queue.
                             synchronized (myEnqueuedMessages)
                             {
                                 myEnqueuedMessages.remove(0);
                             }
 
-                            // The message was successfuly sent.
+                            // The message was successfully sent.
                             break;
                         }
                         catch (Exception err)
@@ -158,7 +142,7 @@ class ResponseMessageSender
                         // If sending thread is not asked to stop.
                         if (!mySendingThreadShallStopFlag)
                         {
-                                Thread.sleep(300);
+                            Thread.sleep(300);
                         }
                     }
                 }
@@ -168,6 +152,10 @@ class ResponseMessageSender
                 myThreadIsSendingFlag = false;
                 mySendingThreadStoppedEvent.set();
             }
+        }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException);
         }
         finally
         {
@@ -184,7 +172,14 @@ class ResponseMessageSender
 
     private IDuplexInputChannel myDuplexInputChannel;
     
-    private IMethod3<String, String, Boolean> myLastActivityUpdater;
+    private Runnable myMessageSenderHandler = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            messageSender();
+        }
+    };
     
     private String TracedObject()
     {

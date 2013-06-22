@@ -9,32 +9,46 @@
 package eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit;
 
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.internal.IMethod3;
 
 class ResponseReceiverContext
 {
-    public ResponseReceiverContext(String responseReceiverId, String clientAddress, IDuplexInputChannel duplexInputChannel, IMethod3<String, String, Boolean> lastActivityUpdater)
+    public ResponseReceiverContext(String responseReceiverId, String clientAddress, IDuplexInputChannel duplexInputChannel)
     {
         myResponseReceiverId = responseReceiverId;
         myClientAddress = clientAddress;
-        mySender = new ResponseMessageSender(responseReceiverId, duplexInputChannel, lastActivityUpdater);
-        myLastActivityTime = System.currentTimeMillis();
+        mySender = new ResponseMessageSender(responseReceiverId, duplexInputChannel);
+        
+        setConnectionState(false);
     }
     
-    public void updateLastActivityTime()
+    public void setConnectionState(boolean isConnected)
     {
-        myLastActivityTime = System.currentTimeMillis();
+        synchronized (myResponseReceiverManipulatorLock)
+        {
+            myLastConnectionChangeTime = System.currentTimeMillis();
+            myIsResponseReceiverConnected = isConnected;
+        }
     }
-
+    
+    public boolean isResponseReceiverConnected()
+    {
+        synchronized (myResponseReceiverManipulatorLock)
+        {
+            return myIsResponseReceiverConnected;
+        }
+    }
+    
     public void sendResponseMessage(Object message)
     {
         mySender.sendResponseMessage(message);
     }
     
-    public void stopSendingOfResponseMessages() throws Exception
+    public void stopSendingOfResponseMessages()
     {
         mySender.stopSending();
     }
+    
+    
     
     public String getResponseReceiverId()
     {
@@ -46,14 +60,24 @@ class ResponseReceiverContext
         return myClientAddress;
     }
     
-    public long getLastActivityTime()
+    public void setClientAddress(String clientAddress)
     {
-        return myLastActivityTime;
+        myClientAddress = clientAddress;
     }
+    
+    public long getLastConnectionChangeTime()
+    {
+        return myLastConnectionChangeTime;
+    }
+    
+    
     
     private String myResponseReceiverId;
     private String myClientAddress;
-    private long myLastActivityTime;
+    private long myLastConnectionChangeTime;
 
     private ResponseMessageSender mySender;
+    
+    private boolean myIsResponseReceiverConnected;
+    private Object myResponseReceiverManipulatorLock = new Object();
 }
