@@ -28,7 +28,8 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
         int aPort = 7000 + aRandomPort.nextInt(1000);
         
         myMessagingSystemFactory = new TcpMessagingSystemFactory();
-        myChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
+        //myChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
+        myChannelId = "tcp://[::1]:" + Integer.toString(aPort) + "/";
     }
     
     @Ignore
