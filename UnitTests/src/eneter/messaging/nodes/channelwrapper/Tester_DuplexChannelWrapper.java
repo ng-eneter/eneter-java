@@ -143,6 +143,98 @@ public class Tester_DuplexChannelWrapper
         assertNull(aReceivedMessage1[0]);//, "Message receiver 1 should not receive a message.");
         assertNull(aReceivedResponse1[0]);//, "Response receiver 1 should not receive a message.");
     }
+    
+    @Test
+    public void AssociatedResponseReceiverId() throws Exception
+    {
+        // Wrapped/unwrapped channels
+        String aChannel1Id = "Channel1Id";
+        String aChannel2Id = "Channel2Id";
+
+        IDuplexStringMessagesFactory aStringMessagesFactory = new DuplexStringMessagesFactory();
+
+        IDuplexStringMessageReceiver aStringMessageReceiver1 = aStringMessagesFactory.createDuplexStringMessageReceiver();
+        IDuplexStringMessageReceiver aStringMessageReceiver2 = aStringMessagesFactory.createDuplexStringMessageReceiver();
+
+        IDuplexStringMessageSender aStringMessageSender1 = aStringMessagesFactory.createDuplexStringMessageSender();
+        IDuplexStringMessageSender aStringMessageSender2 = aStringMessagesFactory.createDuplexStringMessageSender();
+
+        // Attach input channels to string receivers.
+        aStringMessageReceiver1.attachDuplexInputChannel(myLocalMessaging2.createDuplexInputChannel(aChannel1Id));
+        aStringMessageReceiver2.attachDuplexInputChannel(myLocalMessaging2.createDuplexInputChannel(aChannel2Id));
+
+        // Connect string senders with the channel wrapper.
+        myDuplexChannelWrapper.attachDuplexInputChannel(myLocalMessaging1.createDuplexInputChannel(aChannel1Id));
+        aStringMessageSender1.attachDuplexOutputChannel(myLocalMessaging1.createDuplexOutputChannel(aChannel1Id));
+        
+        myDuplexChannelWrapper.attachDuplexInputChannel(myLocalMessaging1.createDuplexInputChannel(aChannel2Id));
+        aStringMessageSender2.attachDuplexOutputChannel(myLocalMessaging1.createDuplexOutputChannel(aChannel2Id));
+        
+        try
+        {
+            // Connect wrapper and unwrapper to global channels.
+            myDuplexChannelUnwrapper.attachDuplexInputChannel(myDuplexGlobalInputChannel);
+            myDuplexChannelWrapper.attachDuplexOutputChannel(myDuplexGlobalOutputChannel);
+    
+    
+            final StringRequestReceivedEventArgs[] aReceivedMessage1 = { null };
+            aStringMessageReceiver1.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
+            {
+                @Override
+                public void onEvent(Object x, StringRequestReceivedEventArgs y)
+                {
+                    aReceivedMessage1[0] = y;
+                }
+            });
+            
+            final boolean[] aResponseReceiverChannel1Disconnected = { false };
+            aStringMessageReceiver1.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
+            {
+                @Override
+                public void onEvent(Object x, ResponseReceiverEventArgs y)
+                {
+                    aResponseReceiverChannel1Disconnected[0] = true;
+                }
+            });
+            
+            final StringRequestReceivedEventArgs[] aReceivedMessage2 = { null };
+            aStringMessageReceiver2.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
+            {
+                @Override
+                public void onEvent(Object x, StringRequestReceivedEventArgs y)
+                {
+                    aReceivedMessage2[0] = y;
+                }
+            });
+            
+            final boolean[] aResponseReceiverChannel2Disconnected = { false };
+            aStringMessageReceiver2.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
+            {
+                @Override
+                public void onEvent(Object sender, ResponseReceiverEventArgs e)
+                {
+                    aResponseReceiverChannel2Disconnected[0] = true;
+                }
+            });
+            
+            aStringMessageSender1.sendMessage("Message1");
+            aStringMessageSender2.sendMessage("Message2");
+    
+            String anAssociatedId1 = myDuplexChannelUnwrapper.getAssociatedResponseReceiverId(aReceivedMessage1[0].getResponseReceiverId());
+            String anAssociatedId2 = myDuplexChannelUnwrapper.getAssociatedResponseReceiverId(aReceivedMessage2[0].getResponseReceiverId());
+    
+            assertEquals(anAssociatedId1, anAssociatedId2);
+    
+            myDuplexChannelUnwrapper.getAttachedDuplexInputChannel().disconnectResponseReceiver(anAssociatedId1);
+            assertTrue(aResponseReceiverChannel1Disconnected[0]);
+            assertTrue(aResponseReceiverChannel2Disconnected[0]);
+        }
+        finally
+        {
+            myDuplexChannelUnwrapper.detachDuplexInputChannel();
+            myDuplexChannelWrapper.detachDuplexOutputChannel();
+        }
+    }
 
     private IMessagingSystemFactory myGlobalMessaging;
     private IMessagingSystemFactory myLocalMessaging1;

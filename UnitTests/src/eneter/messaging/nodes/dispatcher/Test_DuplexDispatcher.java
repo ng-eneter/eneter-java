@@ -295,7 +295,53 @@ public class Test_DuplexDispatcher
         assertEquals("", aReceivedResponse22[0]);
     }
     
-    
+    @Test
+    public void GetAssociatedResponseReceiverId() throws Exception
+    {
+        myDuplexDispatcher.attachDuplexInputChannel(myMessagingSystemFactory.createDuplexInputChannel("ChannelA_1"));
+        myDuplexDispatcher.attachDuplexInputChannel(myMessagingSystemFactory.createDuplexInputChannel("ChannelA_2"));
+        
+        myStringMessageSender11.attachDuplexOutputChannel(myMessagingSystemFactory.createDuplexOutputChannel("ChannelA_1"));
+        myStringMessageSender12.attachDuplexOutputChannel(myMessagingSystemFactory.createDuplexOutputChannel("ChannelA_2"));
+
+        myStringMessageReceiver1.attachDuplexInputChannel(myMessagingSystemFactory.createDuplexInputChannel("ChannelB_1"));
+        myStringMessageReceiver2.attachDuplexInputChannel(myMessagingSystemFactory.createDuplexInputChannel("ChannelB_2"));
+
+        myDuplexDispatcher.addDuplexOutputChannel("ChannelB_1");
+        myDuplexDispatcher.addDuplexOutputChannel("ChannelB_2");
+
+        final String[] aResponseReceiverId1 = { "" };
+        myStringMessageReceiver1.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
+        {
+            @Override
+            public void onEvent(Object x, StringRequestReceivedEventArgs y)
+            {
+                aResponseReceiverId1[0] = y.getResponseReceiverId();
+            }
+        });
+
+        final String[] aResponseReceiverId2 = { "" };
+        myStringMessageReceiver2.requestReceived().subscribe(new EventHandler<StringRequestReceivedEventArgs>()
+        {
+            @Override
+            public void onEvent(Object x, StringRequestReceivedEventArgs y)
+            {
+                aResponseReceiverId2[0] = y.getResponseReceiverId();
+            }
+        });
+
+        myStringMessageSender11.sendMessage("Message1");
+        String aClientId1FromReceiver1 = myDuplexDispatcher.getAssociatedResponseReceiverId(aResponseReceiverId1[0]);
+        String aClientId1FromReceiver2 = myDuplexDispatcher.getAssociatedResponseReceiverId(aResponseReceiverId2[0]);
+        assertEquals(myStringMessageSender11.getAttachedDuplexOutputChannel().getResponseReceiverId(), aClientId1FromReceiver1);
+        assertEquals(myStringMessageSender11.getAttachedDuplexOutputChannel().getResponseReceiverId(), aClientId1FromReceiver2);
+
+        myStringMessageSender12.sendMessage("Message2");
+        String aClientId2FromReceiver1 = myDuplexDispatcher.getAssociatedResponseReceiverId(aResponseReceiverId1[0]);
+        String aClientId2FromReceiver2 = myDuplexDispatcher.getAssociatedResponseReceiverId(aResponseReceiverId2[0]);
+        assertEquals(myStringMessageSender12.getAttachedDuplexOutputChannel().getResponseReceiverId(), aClientId2FromReceiver1);
+        assertEquals(myStringMessageSender12.getAttachedDuplexOutputChannel().getResponseReceiverId(), aClientId2FromReceiver2);
+    }
     
     
     private IMessagingSystemFactory myMessagingSystemFactory;
