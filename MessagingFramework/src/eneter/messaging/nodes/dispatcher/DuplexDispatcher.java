@@ -152,5 +152,4 @@ class DuplexDispatcher extends AttachableMultipleDuplexInputChannelsBase
     {
         return getClass().getSimpleName() + " ";
     }
-
 }

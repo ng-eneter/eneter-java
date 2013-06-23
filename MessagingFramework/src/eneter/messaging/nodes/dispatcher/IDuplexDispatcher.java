@@ -40,4 +40,12 @@ public interface IDuplexDispatcher extends IAttachableMultipleDuplexInputChannel
      * @throws Exception
      */
     void removeAllDuplexOutputChannels() throws Exception;
+    
+    /**
+     * Returns response receiver id of the client connected to the dispatcher.
+     * @param responseReceiverId responseRecieverId after dispatching
+     * @return responseReceiverId of the client connected to the dispatcher. Returns null if it does not exist.
+     * @throws Exception
+     */
+    String getAssociatedResponseReceiverId(String responseReceiverId) throws Exception;
 }

@@ -71,6 +71,37 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
     }
 
     @Override
+    public String getAssociatedResponseReceiverId(final String responseReceiverId) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnections)
+            {
+                TDuplexConnection aConnection = EnumerableExt.firstOrDefault(myConnections, new IFunction1<Boolean, TDuplexConnection>()
+                {
+                    @Override
+                    public Boolean invoke(TDuplexConnection x) throws Exception
+                    {
+                        return x.getDuplexOutputChannel().getResponseReceiverId().equals(responseReceiverId);
+                    }
+                });
+                        
+                if (aConnection != null)
+                {
+                    return aConnection.getResponseReceiverId();
+                }
+
+                return null;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
     protected void onRequestMessageReceived(Object sender, DuplexChannelMessageEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -335,5 +366,4 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
         String aDuplexInputChannelId = (getAttachedDuplexInputChannel() != null) ? getAttachedDuplexInputChannel().getChannelId() : "";
         return getClass().getSimpleName() + " '" + aDuplexInputChannelId + "' ";
     }
-
 }

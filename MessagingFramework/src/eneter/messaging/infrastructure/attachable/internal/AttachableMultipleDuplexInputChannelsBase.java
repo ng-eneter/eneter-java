@@ -249,6 +249,42 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    public String getAssociatedResponseReceiverId(final String responseReceiverId) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myDuplexInputChannelContextManipulatorLock)
+            {
+                // Go via all attached input channel contexts.
+                for (TDuplexInputChannelContext aContext : myDuplexInputChannelContexts)
+                {
+                    // Check if some open connection for that input channel does not contain duplex output channel with
+                    // passed responseReceiverId.
+                    TConnection aConnection = EnumerableExt.firstOrDefault(aContext.getOpenConnections(), new IFunction1<Boolean, TConnection>()
+                    {
+                        @Override
+                        public Boolean invoke(TConnection x) throws Exception
+                        {
+                            return x.getConnectedDuplexOutputChannel().getResponseReceiverId().equals(responseReceiverId);
+                        }
+                    });
+                            
+                    if (aConnection != null)
+                    {
+                        return aConnection.getResponseReceiverId();
+                    }
+                }
+
+                return null;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     protected void closeDuplexOutputChannel(final String duplexOutputChannelId)
             throws Exception

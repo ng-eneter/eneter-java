@@ -37,4 +37,12 @@ public interface IDuplexChannelUnwrapper extends IAttachableDuplexInputChannel
      * @return
      */
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
+    
+    /**
+     * Returns response receiver id of the client connected to the unwrapper.
+     * @param responseReceiverId responseRecieverId from unwrapped message
+     * @return responseReceiverId of the client connected to the channel unwrapper. Returns null if it does not exist.
+     * @throws Exception 
+     */
+    String getAssociatedResponseReceiverId(String responseReceiverId) throws Exception;
 }
