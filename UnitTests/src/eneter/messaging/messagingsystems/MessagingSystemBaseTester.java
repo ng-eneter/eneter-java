@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import eneter.messaging.diagnostic.EneterTrace;
@@ -281,6 +282,7 @@ public abstract class MessagingSystemBaseTester
         sendMessageReceiveResponse(myChannelId, "Message", "Respones", 1, 500);
     }
     
+    @Ignore
     @Test
     public void Duplex_03_Send100_10MB() throws Exception
     {

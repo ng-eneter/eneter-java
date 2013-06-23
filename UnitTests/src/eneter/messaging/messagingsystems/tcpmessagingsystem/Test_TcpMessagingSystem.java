@@ -2,6 +2,8 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
 import static org.junit.Assert.*;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Random;
@@ -20,8 +22,9 @@ import eneter.net.system.threading.internal.ManualResetEvent;
 public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
 {
     @Before
-    public void Setup()
+    public void Setup() throws FileNotFoundException
     {
+        //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
         //EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
         Random aRandomPort = new Random();

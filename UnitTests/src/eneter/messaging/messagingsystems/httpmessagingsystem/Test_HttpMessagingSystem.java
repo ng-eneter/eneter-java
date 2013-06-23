@@ -48,6 +48,20 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
         myChannelId3 = "http://127.0.0.1:" + Integer.toString(aPort) + "/";
     }
     
+    @Ignore
+    @Test
+    @Override
+    public void Duplex_03_Send100_10MB() throws Exception
+    {
+    }
+    
+    @Ignore
+    @Test
+    @Override
+    public void Duplex_04_Send50000() throws Exception
+    {
+    }
+    
     @Test(expected = ConnectException.class)
     @Override
     public void Oneway_06_StopListening()
@@ -55,6 +69,14 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
     {
         super.Oneway_06_StopListening();
     }
+    
+    @Ignore
+    @Test
+    @Override
+    public void Duplex_09_StopListeing() throws Exception
+    {
+    }
+    
     
     @Test
     public void B01_InactivityTimeout() throws Exception
