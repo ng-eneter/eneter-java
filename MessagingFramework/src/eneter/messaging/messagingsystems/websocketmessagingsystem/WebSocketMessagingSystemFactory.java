@@ -8,12 +8,11 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
-import eneter.messaging.dataprocessing.messagequeueing.internal.CallingThreadInvoker;
-import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
-import eneter.messaging.dataprocessing.messagequeueing.internal.WorkingThreadInvoker;
+import eneter.messaging.dataprocessing.messagequeueing.internal.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 
 
@@ -25,6 +24,74 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
  */
 public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
 {
+    private class WebSocketServerConnectorFactory implements IServiceConnectorFactory
+    {
+        public WebSocketServerConnectorFactory(IServerSecurityFactory serverSecurityFactory)
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                myServerSecurityFactory = serverSecurityFactory;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        @Override
+        public IServiceConnector createServiceConnector(String receiverAddress)
+                throws Exception
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                return new WebSocketServiceConnector(receiverAddress, myServerSecurityFactory);
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+        private IServerSecurityFactory myServerSecurityFactory;
+    }
+    
+    private class WebSocketClientConnectorFactory implements IClientConnectorFactory
+    {
+        public WebSocketClientConnectorFactory(IClientSecurityFactory clientSecurityFactory)
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                myClientSecurityFactory = clientSecurityFactory;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        @Override
+        public IClientConnector createClientConnector(
+                String serviceConnectorAddress, String clientConnectorAddress)
+                throws Exception
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                return new WebSocketClientConnector(serviceConnectorAddress, myClientSecurityFactory);
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+     
+        private IClientSecurityFactory myClientSecurityFactory;
+    }
+    
+    
     /**
      * Constructs the websocket messaging factory.
      * The ping frequency is set to default value 5 minutes.
@@ -119,7 +186,8 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new WebSocketOutputChannel(channelId, myClientSecurityFactory, myProtocolFormatter);
+            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myClientSecurityFactory);
+            return new DefaultOutputChannel(channelId, myProtocolFormatter, aFactory);
         }
         finally
         {
@@ -147,7 +215,8 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
                 anInvoker = new CallingThreadInvoker();
             }
             
-            return new WebSocketInputChannel(channelId, anInvoker, myServerSecurityFactory, myProtocolFormatter);
+            IServiceConnectorFactory aFactory = new WebSocketServerConnectorFactory(myServerSecurityFactory);
+            return new DefaultInputChannel(channelId, anInvoker, myProtocolFormatter, aFactory);
         }
         finally
         {
@@ -173,7 +242,9 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new WebSocketDuplexOutputChannel(channelId, null, myPingFrequency, myClientSecurityFactory, myProtocolFormatter);
+            IInvoker anInvoker = new WorkingThreadInvoker();
+            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myClientSecurityFactory);
+            return new DefaultDuplexOutputChannel(channelId, null, anInvoker, myProtocolFormatter, aFactory, false);
         }
         finally
         {
@@ -201,7 +272,9 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new WebSocketDuplexOutputChannel(channelId, responseReceiverId, myPingFrequency, myClientSecurityFactory, myProtocolFormatter);
+            IInvoker anInvoker = new WorkingThreadInvoker();
+            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myClientSecurityFactory);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, anInvoker, myProtocolFormatter, aFactory, false);
         }
         finally
         {
@@ -234,7 +307,8 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
                 anInvoker = new CallingThreadInvoker();
             }
             
-            return new WebSocketDuplexInputChannel(channelId, anInvoker, myServerSecurityFactory, myProtocolFormatter);
+            IServiceConnectorFactory aFactory = new WebSocketServerConnectorFactory(myServerSecurityFactory);
+            return new DefaultDuplexInputChannel(channelId, anInvoker, myProtocolFormatter, aFactory);
         }
         finally
         {
