@@ -19,7 +19,7 @@ public interface IMessagingSystemFactory
 	/**
 	 * Creates the output channel sending messages to specified input channel.
 	 * 
-	 * @param channelId identifies the receiving input channel
+	 * @param channelId receiver address.
 	 * @return output channel
 	 * @throws Exception 
 	 */
@@ -28,7 +28,7 @@ public interface IMessagingSystemFactory
     /**
      * Creates the input channel listening to messages on the specified channel id.
      * 
-     * @param channelId identifies this input channel
+     * @param channelId listener address.
      * @return input channel
      * @throws Exception 
      */
@@ -43,7 +43,7 @@ public interface IMessagingSystemFactory
      * This method generates the unique response receiver id automatically.
      * <br/><br/>
      * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
-     * @param channelId identifies the receiving duplex input channel
+     * @param channelId receiver address.
      * @return duplex output channel
      */
     IDuplexOutputChannel createDuplexOutputChannel(String channelId) throws Exception;
@@ -58,7 +58,7 @@ public interface IMessagingSystemFactory
      * id is supposed to be unique.
      * <br/><br/>
      * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
-     * @param channelId identifies the receiving duplex input channel
+     * @param channelId receiver address.
      * @param responseReceiverId unique identifier of the response receiver represented by this duplex output channel.
      * @return duplex output channel
      */
@@ -70,7 +70,7 @@ public interface IMessagingSystemFactory
      * It can receive messages from the duplex output channel and send back response messages.
      * <br/><br/>
      * The duplex input channel can communicate only with the duplex output channel and not with the output channel.
-     * @param channelId identifies the address, the duplex input channel listens to
+     * @param channelId listener address.
      * @return duplex input channel
      */
     IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception;

@@ -7,6 +7,6 @@
  */
 
 /**
- * The messaging system transfering messages between threads by using the thread pool.
+ * The messaging system transferring messages between threads by using the thread pool.
  */
 package eneter.messaging.messagingsystems.threadpoolmessagingsystem;
