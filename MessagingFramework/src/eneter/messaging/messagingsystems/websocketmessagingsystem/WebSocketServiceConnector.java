@@ -10,7 +10,6 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.io.OutputStream;
 import java.net.URI;
-import java.util.ArrayList;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
@@ -239,5 +238,4 @@ class WebSocketServiceConnector implements IServiceConnector
     private WebSocketListener myListener;
     private IFunction1<Boolean, MessageContext> myMessageHandler;
     private Object myListenerManipulatorLock = new Object();
-    private ArrayList<IWebSocketClientContext> myConnectedSenders = new ArrayList<IWebSocketClientContext>();
 }

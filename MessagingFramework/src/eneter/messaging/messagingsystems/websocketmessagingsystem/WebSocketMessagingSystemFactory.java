@@ -59,11 +59,12 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     
     private class WebSocketClientConnectorFactory implements IClientConnectorFactory
     {
-        public WebSocketClientConnectorFactory(IClientSecurityFactory clientSecurityFactory)
+        public WebSocketClientConnectorFactory(int pingFrequency, IClientSecurityFactory clientSecurityFactory)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
+                myPingingFrequency = pingFrequency;
                 myClientSecurityFactory = clientSecurityFactory;
             }
             finally
@@ -80,7 +81,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new WebSocketClientConnector(serviceConnectorAddress, myClientSecurityFactory);
+                return new WebSocketClientConnector(serviceConnectorAddress, myPingingFrequency, myClientSecurityFactory);
             }
             finally
             {
@@ -89,6 +90,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
      
         private IClientSecurityFactory myClientSecurityFactory;
+        private int myPingingFrequency;
     }
     
     
@@ -130,7 +132,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      * (e.g. Android phone can drop the connection if there is no activity several minutes.)
      * @param pingFrequency frequency of pinging in milliseconds.
      */
-    public WebSocketMessagingSystemFactory(long pingFrequency)
+    public WebSocketMessagingSystemFactory(int pingFrequency)
     {
         this(EConcurrencyMode.Synchronous, pingFrequency, new EneterProtocolFormatter());
     }
@@ -144,7 +146,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      * @param pingFrequency how often the client pings the server to keep the connection alive. If set to 0, the pinging will not start.
      * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
      */
-    public WebSocketMessagingSystemFactory(long pingFrequency, IProtocolFormatter<?> protocolFormatter)
+    public WebSocketMessagingSystemFactory(int pingFrequency, IProtocolFormatter<?> protocolFormatter)
     {
         this(EConcurrencyMode.Synchronous, pingFrequency, new EneterProtocolFormatter());
     }
@@ -159,7 +161,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      * @param pingFrequency how often the client pings the server to keep the connection alive. If set to 0, the pinging will not start.
      * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
      */
-    private WebSocketMessagingSystemFactory(EConcurrencyMode concurrencyMode, long pingFrequency, IProtocolFormatter<?> protocolFormatter)
+    private WebSocketMessagingSystemFactory(EConcurrencyMode concurrencyMode, int pingFrequency, IProtocolFormatter<?> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -186,7 +188,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myClientSecurityFactory);
+            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myPingFrequency, myClientSecurityFactory);
             return new DefaultOutputChannel(channelId, myProtocolFormatter, aFactory);
         }
         finally
@@ -243,7 +245,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IInvoker anInvoker = new WorkingThreadInvoker();
-            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myClientSecurityFactory);
+            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myPingFrequency, myClientSecurityFactory);
             return new DefaultDuplexOutputChannel(channelId, null, anInvoker, myProtocolFormatter, aFactory, false);
         }
         finally
@@ -273,7 +275,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IInvoker anInvoker = new WorkingThreadInvoker();
-            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myClientSecurityFactory);
+            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myPingFrequency, myClientSecurityFactory);
             return new DefaultDuplexOutputChannel(channelId, responseReceiverId, anInvoker, myProtocolFormatter, aFactory, false);
         }
         finally
@@ -356,5 +358,5 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
 
     private EConcurrencyMode myConcurrencyMode;
     private IProtocolFormatter<?> myProtocolFormatter;
-    private long myPingFrequency;
+    private int myPingFrequency;
 }

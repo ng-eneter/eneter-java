@@ -10,6 +10,8 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
@@ -19,7 +21,7 @@ import eneter.net.system.*;
 
 class WebSocketClientConnector implements IClientConnector
 {
-    public WebSocketClientConnector(String serviceConnectorAddress, IClientSecurityFactory clientSecurityFactory) throws Exception
+    public WebSocketClientConnector(String serviceConnectorAddress, int pingFrequency, IClientSecurityFactory clientSecurityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -36,6 +38,8 @@ class WebSocketClientConnector implements IClientConnector
             }
             
             myClient = new WebSocketClient(aUri, clientSecurityFactory);
+            myPingFrequency = pingFrequency;
+            myTimer = new Timer("ReliableMessageTimeTracker", true);
         }
         finally
         {
@@ -61,6 +65,11 @@ class WebSocketClientConnector implements IClientConnector
             myClient.openConnection();
 
             myIpAddress = (myClient.getLocalEndPoint() != null) ? myClient.getLocalEndPoint().toString() : "";
+            
+            if (myPingFrequency > 0)
+            {
+                myTimer.schedule(getTimerTask(), myPingFrequency);
+            }
         }
         finally
         {
@@ -159,9 +168,57 @@ class WebSocketClientConnector implements IClientConnector
         }
     }
     
+    private void onTimerTick()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                myClient.sendPing();
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + "failed to send the ping.", err);
+            }
+            
+            // If the connection is open then schedule the next ping.
+            if (isConnected())
+            {
+                myTimer.schedule(getTimerTask(), myPingFrequency);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    /*
+     * Helper method to get the new instance of the timer task.
+     * The problem is, the timer does not allow to reschedule the same instance of the TimerTask
+     * and the exception is thrown.
+     */
+    private TimerTask getTimerTask()
+    {
+        TimerTask aTimerTask = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                onTimerTick();
+            }
+        };
+        
+        return aTimerTask;
+    }
+    
     private WebSocketClient myClient;
     private IFunction1<Boolean, MessageContext> myResponseMessageHandler;
     private String myIpAddress;
+    private Timer myTimer;
+    private int myPingFrequency;
+
     
     private EventHandler<WebSocketMessage> myOnWebSocketMessageReceived = new EventHandler<WebSocketMessage>()
     {
