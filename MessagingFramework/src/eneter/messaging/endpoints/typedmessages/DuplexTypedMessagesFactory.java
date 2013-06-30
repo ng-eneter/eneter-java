@@ -144,7 +144,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
 {
     /**
-     * Constructs the factory with xml serializer.
+     * Constructs the factory.
      */
     public DuplexTypedMessagesFactory()
     {
@@ -152,19 +152,28 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
     }
 
     /**
-     * Constructs the method factory with specified serializer.
-     * @param serializer serializer used to serialize/deserialize messages
+     * Constructs the factory with specified timeout for synchronous messaging.
+     * @param syncResponseReceiveTimeout maximum waiting time when synchronous message sender is used. 
      */
     public DuplexTypedMessagesFactory(int syncResponseReceiveTimeout)
     {
         this(syncResponseReceiveTimeout, new XmlStringSerializer());
     }
     
+    /**
+     * Constructs the factory with specified serializer that will be used to serialize/deserialize messages.
+     * @param serializer serializer that will be used to serialize/deserialize messages.
+     */
     public DuplexTypedMessagesFactory(ISerializer serializer)
     {
         this(0, serializer);
     }
     
+    /**
+     * Constructs the factory with specified parameters.
+     * @param syncResponseReceiveTimeout maximum waiting time when synchronous message sender is used.
+     * @param serializer serializer that will be used to serialize/deserialize messages.
+     */
     public DuplexTypedMessagesFactory(int syncResponseReceiveTimeout, ISerializer serializer)
     {
         EneterTrace aTrace = EneterTrace.entering();
