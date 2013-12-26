@@ -36,35 +36,6 @@ public class ChannelWrapperFactory implements IChannelWrapperFactory
         }
     }
     
-    @Override
-    public IChannelWrapper createChannelWrapper()
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return new ChannelWrapper(mySerializer);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
-    public IChannelUnwrapper createChannelUnwrapper(
-            IMessagingSystemFactory outputMessagingSystem)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return new ChannelUnwrapper(outputMessagingSystem, mySerializer);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
 
     @Override
     public IDuplexChannelWrapper createDuplexChannelWrapper()

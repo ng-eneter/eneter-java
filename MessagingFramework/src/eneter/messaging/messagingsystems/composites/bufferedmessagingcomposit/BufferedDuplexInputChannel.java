@@ -12,21 +12,20 @@ import java.util.*;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.messagingsystems.composites.ICompositeDuplexInputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.linq.internal.EnumerableExt;
 
-class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuplexInputChannel
+class BufferedDuplexInputChannel implements IDuplexInputChannel
 {
     public BufferedDuplexInputChannel(IDuplexInputChannel underlyingDuplexInputChannel, long maxOfflineTime)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myUnderlyingDuplexInputChannel = underlyingDuplexInputChannel;
+            myUnderlyingInputChannel = underlyingDuplexInputChannel;
             myMaxOfflineTime = maxOfflineTime;
 
             myMaxOfflineChecker = new Timer("MaxOfflineChecker",true);
@@ -61,15 +60,9 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     @Override
     public String getChannelId()
     {
-        return getUnderlyingDuplexInputChannel().getChannelId();
+        return myUnderlyingInputChannel.getChannelId();
     }
     
-    @Override
-    public IDuplexInputChannel getUnderlyingDuplexInputChannel()
-    {
-        return myUnderlyingDuplexInputChannel;
-    }
-
     @Override
     public void startListening() throws Exception
     {
@@ -78,26 +71,19 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
         {
             synchronized (myListeningManipulatorLock)
             {
-                if (isListening())
-                {
-                    String aMessage = TracedObject() + ErrorHandler.IsAlreadyListening;
-                    EneterTrace.error(aMessage);
-                    throw new IllegalStateException(aMessage);
-                }
-
-                getUnderlyingDuplexInputChannel().responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
-                getUnderlyingDuplexInputChannel().responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
-                getUnderlyingDuplexInputChannel().messageReceived().subscribe(myOnMessageReceived);
+                myUnderlyingInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
+                myUnderlyingInputChannel.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
+                myUnderlyingInputChannel.messageReceived().subscribe(myOnMessageReceived);
 
                 try
                 {
-                    getUnderlyingDuplexInputChannel().startListening();
+                    myUnderlyingInputChannel.startListening();
                 }
                 catch (Exception err)
                 {
-                    getUnderlyingDuplexInputChannel().responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
-                    getUnderlyingDuplexInputChannel().responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
-                    getUnderlyingDuplexInputChannel().messageReceived().unsubscribe(myOnMessageReceived);
+                    myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
+                    myUnderlyingInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
+                    myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
 
                     EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
                 }
@@ -136,16 +122,16 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 
                 try
                 {
-                    getUnderlyingDuplexInputChannel().stopListening();
+                    myUnderlyingInputChannel.stopListening();
                 }
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
                 }
 
-                getUnderlyingDuplexInputChannel().responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
-                getUnderlyingDuplexInputChannel().responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
-                getUnderlyingDuplexInputChannel().messageReceived().unsubscribe(myOnMessageReceived);
+                myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
+                myUnderlyingInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
+                myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
             }
         }
         finally
@@ -162,7 +148,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
         {
             synchronized (myListeningManipulatorLock)
             {
-                return getUnderlyingDuplexInputChannel().isListening();
+                return myUnderlyingInputChannel.isListening();
             }
         }
         finally
@@ -203,7 +189,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 {
                     // Create the response receiver context - it allows to enqueue response messages before connection of
                     // the response receiver.
-                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, "", getUnderlyingDuplexInputChannel());
+                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, "", myUnderlyingInputChannel);
                     myResponseReceivers.add(aResponseReceiverContext);
 
                     // If it is the first response receiver, then start the timer checking which response receivers
@@ -256,7 +242,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 }
             }
 
-            getUnderlyingDuplexInputChannel().disconnectResponseReceiver(responseReceiverId);
+            myUnderlyingInputChannel.disconnectResponseReceiver(responseReceiverId);
         }
         finally
         {
@@ -274,17 +260,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
             // If the response receiver does not exist, then create it.
             updateResponseReceiverContext(e.getResponseReceiverId(), e.getSenderAddress(), true, true);
 
-            if (myResponseReceiverConnectedEventImpl.isSubscribed())
-            {
-                try
-                {
-                    myResponseReceiverConnectedEventImpl.raise(this, e);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-            }
+            notifyEvent(myResponseReceiverConnectedEventImpl, e, false);
         }
         catch (Exception err)
         {
@@ -322,18 +298,8 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
             // Update the time for the response receiver.
             // If the response receiver does not exist, then create it.
             updateResponseReceiverContext(e.getResponseReceiverId(), e.getSenderAddress(), true, true);
-
-            if (myMessageReceivedEventImpl.isSubscribed())
-            {
-                try
-                {
-                    myMessageReceivedEventImpl.raise(this, e);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-            }
+            
+            notifyEvent(myMessageReceivedEventImpl, e, true);
         }
         catch (Exception err)
         {
@@ -374,7 +340,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 {
                     // Create the response receiver context - it allows to enqueue response messages before connection of
                     // the response receiver.
-                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, clientAddress, getUnderlyingDuplexInputChannel());
+                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, clientAddress, myUnderlyingInputChannel);
                     aResponseReceiverContext.setConnectionState(isConnected);
                     myResponseReceivers.add(aResponseReceiverContext);
 
@@ -446,12 +412,6 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 aTimerShallContinueFlag = myResponseReceivers.size() > 0;
             }
 
-            // Do nothing if there is a request to stop.
-            if (myMaxOfflineCheckerRequestedToStop)
-            {
-                return;
-            }
-
             // Notify disconnected response receivers.
             for (ResponseReceiverContext aResponseReceiverContext : aTimeoutedResponseReceivers)
             {
@@ -466,7 +426,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                 // Try to disconnect the response receiver.
                 try
                 {
-                    getUnderlyingDuplexInputChannel().disconnectResponseReceiver(aResponseReceiverContext.getResponseReceiverId());
+                    myUnderlyingInputChannel.disconnectResponseReceiver(aResponseReceiverContext.getResponseReceiverId());
                 }
                 catch (Exception err)
                 {
@@ -474,24 +434,41 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
                     // It is ok.
                 }
 
-                if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
-                {
-                    try
-                    {
-                        ResponseReceiverEventArgs aMsg = new ResponseReceiverEventArgs(aResponseReceiverContext.getResponseReceiverId(), aResponseReceiverContext.getClientAddress());
-                        myResponseReceiverDisconnectedEventImpl.raise(this, aMsg);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                    }
-                }
+                ResponseReceiverEventArgs aMsg = new ResponseReceiverEventArgs(aResponseReceiverContext.getResponseReceiverId(), aResponseReceiverContext.getClientAddress());
+                notifyEvent(myResponseReceiverDisconnectedEventImpl, aMsg, false);
             }
 
             // If the timer checking the timeout for response receivers shall continue
             if (!myMaxOfflineCheckerRequestedToStop && aTimerShallContinueFlag)
             {
                 myMaxOfflineChecker.schedule(getTimerTask(), 300);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private <T> void notifyEvent(EventImpl<T> handler, T event, boolean isNobodySubscribedWarning)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (handler != null)
+            {
+                try
+                {
+                    handler.raise(this, event);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+            else if (isNobodySubscribedWarning)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
             }
         }
         finally
@@ -526,13 +503,13 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     }
     
     
-    private IDuplexInputChannel myUnderlyingDuplexInputChannel;
     
     private Object myListeningManipulatorLock = new Object();
     
     private long myMaxOfflineTime;
     private Timer myMaxOfflineChecker;
     private boolean myMaxOfflineCheckerRequestedToStop;
+    private IDuplexInputChannel myUnderlyingInputChannel;
 
     private HashSet<ResponseReceiverContext> myResponseReceivers = new HashSet<ResponseReceiverContext>();
     
@@ -570,7 +547,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel, ICompositeDuple
     
     private String TracedObject()
     {
-        String aChannelId = (getUnderlyingDuplexInputChannel() != null) ? getUnderlyingDuplexInputChannel().getChannelId() : "";
+        String aChannelId = (myUnderlyingInputChannel != null) ? myUnderlyingInputChannel.getChannelId() : "";
         return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
 }

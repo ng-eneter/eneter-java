@@ -16,24 +16,6 @@ package eneter.messaging.messagingsystems.messagingsystembase;
  */
 public interface IMessagingSystemFactory
 {
-	/**
-	 * Creates the output channel sending messages to specified input channel.
-	 * 
-	 * @param channelId receiver address.
-	 * @return output channel
-	 * @throws Exception 
-	 */
-    IOutputChannel createOutputChannel(String channelId) throws Exception;
-
-    /**
-     * Creates the input channel listening to messages on the specified channel id.
-     * 
-     * @param channelId listener address.
-     * @return input channel
-     * @throws Exception 
-     */
-    IInputChannel createInputChannel(String channelId) throws Exception;
-    
     /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
      * The duplex output channel is intended for the bidirectional communication.

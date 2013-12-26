@@ -13,12 +13,11 @@ import java.lang.Thread.State;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.messagingsystems.composites.ICompositeDuplexOutputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.threading.internal.*;
 
-class MonitoredDuplexOutputChannel implements IDuplexOutputChannel, ICompositeDuplexOutputChannel
+class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
 {
     public MonitoredDuplexOutputChannel(IDuplexOutputChannel underlyingOutputChannel, ISerializer serializer, long pingFrequency, long pingResponseTimeout)
     {

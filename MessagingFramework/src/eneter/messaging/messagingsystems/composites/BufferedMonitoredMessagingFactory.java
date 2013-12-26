@@ -103,56 +103,6 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
     
 
     /**
-     * Creates the output channel sending messages to the input channel.
-     * 
-     * This output channel provides the buffered messaging. Since the the output channel does not maintain open
-     * connection, the connection monitoring is not applicable.<br/>
-     * If the input channel is not available, the sent messages are stored in the buffer from where they are sent again
-     * when the input channel is available.
-     * If the message is not sent from the buffer (because the input channel is not available) within the specified offline time,
-     * the message is removed from the buffer.
-     * <br/>
-     * Notice, when the message was successfully sent, it does not mean the message was delivered. It still can be lost on the way.
-     * 
-     * @return composit output channel ICompositeOutputChannel
-     */
-    @Override
-    public IOutputChannel createOutputChannel(String channelId)
-            throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myBufferedMessaging.createOutputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
-     * Creates the input channel receiving messages from the output channel.
-     * 
-     * The buffering as well as the connection monitoring are not applicable.
-     * This method just uses the underlying messaging system to create the input channel.
-     * 
-     */
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myBufferedMessaging.createInputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
      * 
      * This duplex output channel provides the buffered messaging and the connection monitoring.

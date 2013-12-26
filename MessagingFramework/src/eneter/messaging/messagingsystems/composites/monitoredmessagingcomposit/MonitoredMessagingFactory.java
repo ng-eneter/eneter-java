@@ -84,49 +84,6 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the output channel sending messages to the input channel.
-     * 
-     * Since the output channel communicates oneway and does not maintain the open connection,
-     * the monitoring of the connection is not applicable.
-     * Therefore, the implementation of the method just uses the underlying messaging to create the output channel.
-     */
-    @Override
-    public IOutputChannel createOutputChannel(String channelId)
-            throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myUnderlyingMessaging.createOutputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
-     * Creates the input channel receiving messages from the output channel.
-     * 
-     * Since the input channel communicates oneway and does not maintain the open connection,
-     * the monitoring of the connection is not applicable.
-     * Therefore, the implementation of the method just uses the underlying messaging to create the input channel.
-     */
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myUnderlyingMessaging.createInputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
      * 
      * The channel also regularly checks if the connection is available. It sends 'ping' messages and expect 'ping' responses

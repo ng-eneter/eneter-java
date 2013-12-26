@@ -186,25 +186,6 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Not supported in Android messaging via the USB cable. Throws UnsupportedOperationException.
-     */
-    @Override
-    public IOutputChannel createOutputChannel(String channelId)
-            throws Exception
-    {
-        throw new UnsupportedOperationException("One-way output channel is not supported for Android USB cable messaging.");
-    }
-
-    /**
-     * Not supported in Android messaging via the USB cable. Throws UnsupportedOperationException.
-     */
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        throw new UnsupportedOperationException("One-way input channel is not supported for Android USB cable messaging.");
-    }
-
-    /**
      * Creates the duplex output channel sending messages via the USB cable to the duplex input channel on Android device.
      * 
      * @param channelId Port number where the Android application is listening.

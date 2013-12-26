@@ -76,56 +76,6 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the output channel sending messages to the input channel.
-     * 
-     * If the input channel is not available, sent messages are stored in the buffer from where they are sent again
-     * when the input channel is available.
-     * If the message is not sent from the buffer (because the input channel is not available) within the specified offline time,
-     * the message is removed from the buffer.
-     * <br/>
-     * Note, when the message was successfully sent, it does not mean the message was delivered.
-     * It still can be lost on the way.
-     * <br/>
-     * The returned output channel is the composite channel. Therefore, if you need to reach underlying channels,
-     * you can cast it to ICompositeOutputChannel.
-     */
-    @Override
-    public IOutputChannel createOutputChannel(String channelId)
-            throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            IOutputChannel anUnderlyingOutputChannel = myUnderlyingMessaging.createOutputChannel(channelId);
-            return new BufferedOutputChannel(anUnderlyingOutputChannel, myMaxOfflineTime);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
-     * Creates the input channel receiving messages from the output channel.
-     * 
-     * The buffering functionality is not applicable for the input channel.
-     * Therefore, this method just uses the underlying messaging system to create the input channel.
-     */
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myUnderlyingMessaging.createInputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
      * 
      * If the connection is not established, it puts sent messages to the buffer while trying to reconnect.

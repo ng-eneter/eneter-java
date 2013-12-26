@@ -17,19 +17,6 @@ import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFac
 public interface IChannelWrapperFactory
 {
     /**
-     * Creates the channel wrapper.
-     * @return
-     */
-    IChannelWrapper createChannelWrapper();
-    
-    /**
-     * Creates the channel unwrapper.
-     * @param outputMessagingSystem Messaging used to create output channels where unwrapped messages will be sent.
-     * @return
-     */
-    IChannelUnwrapper createChannelUnwrapper(IMessagingSystemFactory outputMessagingSystem);
-    
-    /**
      * Creates the duplex channel wrapper.
      * @return
      */
