@@ -16,7 +16,7 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.*;
 
-class UdpClientConnector implements IClientConnector
+class UdpClientConnector implements IOutputConnector
 {
     public UdpClientConnector(String ipAddressAndPort) throws Exception
     {

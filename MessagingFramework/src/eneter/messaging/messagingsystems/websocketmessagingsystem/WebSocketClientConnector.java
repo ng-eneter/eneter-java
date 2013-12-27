@@ -19,7 +19,7 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
 import eneter.net.system.*;
 
-class WebSocketClientConnector implements IClientConnector
+class WebSocketClientConnector implements IOutputConnector
 {
     public WebSocketClientConnector(String serviceConnectorAddress, int pingFrequency, IClientSecurityFactory clientSecurityFactory) throws Exception
     {

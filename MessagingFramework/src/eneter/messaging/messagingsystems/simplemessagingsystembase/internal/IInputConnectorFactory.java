@@ -8,7 +8,7 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
-public interface IClientConnectorFactory
+public interface IInputConnectorFactory
 {
-    IClientConnector createClientConnector(String serviceConnectorAddress, String clientConnectorAddress) throws Exception;
+    IInputConnector createInputConnector(String receiverAddress) throws Exception;
 }

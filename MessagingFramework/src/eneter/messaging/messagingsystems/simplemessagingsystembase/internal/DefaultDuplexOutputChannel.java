@@ -11,11 +11,11 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 import java.io.InputStream;
 import java.util.UUID;
 
-import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.IDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.internal.*;
 import eneter.net.system.threading.internal.ThreadPool;
@@ -43,10 +43,10 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     
     
     public DefaultDuplexOutputChannel(String channelId, String responseReceiverId,
-            IInvoker workingThreadInvoker,
+            IDispatcher dispatcher,
+            IOutputConnectorFactory outputConnectorFactory,
             IProtocolFormatter<?> protocolFormatter,
-            IClientConnectorFactory clientConnectorFactory,
-            boolean startReceiverAfterSendOpenRequest)
+            boolean startReceiverAfterSendOpenRequest) throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
@@ -61,9 +61,9 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                 myResponseReceiverId = (StringExt.isNullOrEmpty(responseReceiverId)) ? channelId + "_" + UUID.randomUUID().toString() : responseReceiverId;
 
                 myProtocolFormatter = protocolFormatter;
-
-                myWorkingThreadInvoker = workingThreadInvoker;
-                myClientConnectorFactory = clientConnectorFactory;
+                myDispatcher = dispatcher;
+                
+                myOutputConnector = outputConnectorFactory.createOutputConnector(myChannelId, myResponseReceiverId);
                 myStartReceiverAfterSendOpenRequest = startReceiverAfterSendOpenRequest;
             }
             finally
@@ -102,29 +102,40 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
 
                 try
                 {
-                    myWorkingThreadInvoker.start();
-
-                    // Create sender responsible for sending messages.
-                    myClientConnector = myClientConnectorFactory.createClientConnector(getChannelId(), getResponseReceiverId());
-
                     if (!myStartReceiverAfterSendOpenRequest)
                     {
                         // Connect and start listening to response messages.
-                        myClientConnector.openConnection(myResponseHandler);
+                        myOutputConnector.openConnection(myResponseHandler);
                     }
 
                     // Send the open connection request.
-                    SenderUtil.SendOpenConnection(myClientConnector, getResponseReceiverId(), myProtocolFormatter);
+                    SenderUtil.SendOpenConnection(myOutputConnector, getResponseReceiverId(), myProtocolFormatter);
 
                     if (myStartReceiverAfterSendOpenRequest)
                     {
                         // Connect and start listening to response messages.
-                        myClientConnector.openConnection(myResponseHandler);
+                        myOutputConnector.openConnection(myResponseHandler);
                     }
 
                     // Invoke the event notifying, the connection was opened.
                     myConnectionIsCorrectlyOpen = true;
-                    notify(myConnectionOpened);
+                    
+                    // Invoke the event notifying, the connection was opened.
+                    ThreadPool.queueUserWorkItem(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            myDispatcher.invoke(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    notifyEvent(myConnectionOpened);
+                                }
+                            });
+                        }
+                    });
                 }
                 catch (Exception err)
                 {
@@ -168,7 +179,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     {
         synchronized (myConnectionManipulatorLock)
         {
-            return (myClientConnector != null && myClientConnector.isConnected());
+            return (myOutputConnector.isConnected());
         }
     }
 
@@ -190,7 +201,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                 try
                 {
                     // Send the message.
-                    SenderUtil.sendMessage(myClientConnector, getResponseReceiverId(), message, myProtocolFormatter);
+                    SenderUtil.sendMessage(myOutputConnector, getResponseReceiverId(), message, myProtocolFormatter);
                 }
                 catch (Exception err)
                 {
@@ -203,6 +214,13 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         {
             EneterTrace.leaving(aTrace);
         }
+    }
+    
+    
+    @Override
+    public IDispatcher getDispatcher()
+    {
+        return myDispatcher;
     }
     
     private boolean handleResponse(MessageContext messageContext) throws Exception
@@ -229,35 +247,8 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                 EneterTrace.warning(TracedObject() + "detected null response message. It means the listening to responses stopped.");
             }
 
-            // Invoke processing of the protocol message according to the thread model.
-            final ProtocolMessage aProtocolMessageTmp = aProtocolMessage;
-            myWorkingThreadInvoker.invoke(new IMethod()
+            if (aProtocolMessage == null || aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
             {
-                @Override
-                public void invoke() throws Exception
-                {
-                    handleResponseMessage(aProtocolMessageTmp);
-                }
-            });
-
-            return aProtocolMessage != null;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    private void handleResponseMessage(ProtocolMessage protocolMessage)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            if (protocolMessage == null || protocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
-            {
-                // Note: This is the working thread handling response messages.
-                //       The following CloseConnection() will try to stop this thread. Therefore to avoid the deadlock
-                //       CloseConnection() must be executed from a different thread.
                 ThreadPool.queueUserWorkItem(new Runnable()
                 {
                     @Override
@@ -267,28 +258,24 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                     }
                 });
             }
-            else if (protocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+            else if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
             {
-                if (myResponseMessageReceived.isSubscribed())
+                final Object aMessageData = aProtocolMessage.Message;
+                myDispatcher.invoke(new Runnable()
                 {
-                    try
+                    @Override
+                    public void run()
                     {
-                        myResponseMessageReceived.raise(this, new DuplexChannelMessageEventArgs(getChannelId(), protocolMessage.Message, getResponseReceiverId(), ""));
+                        notifyResponseMessageReceived(aMessageData);
                     }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                    }
-                }
-                else
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
-                }
+                });
             }
             else
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
             }
+
+            return aProtocolMessage != null;
         }
         finally
         {
@@ -301,45 +288,52 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            boolean aNotifyFlag;
+            
             synchronized (myConnectionManipulatorLock)
             {
                 // Try to notify that the connection is closed
-                if (myClientConnector != null)
+                if (sendCloseMessageFlag)
                 {
-                    if (sendCloseMessageFlag)
-                    {
-                        try
-                        {
-                            // Send the close connection request.
-                            SenderUtil.sendCloseConnection(myClientConnector, getResponseReceiverId(), myProtocolFormatter);
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
-                        }
-                    }
-
                     try
                     {
-                        myClientConnector.closeConnection();
+                        // Send the close connection request.
+                        SenderUtil.sendCloseConnection(myOutputConnector, getResponseReceiverId(), myProtocolFormatter);
                     }
                     catch (Exception err)
                     {
                         EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
                     }
-
-                    myClientConnector = null;
                 }
 
-                myWorkingThreadInvoker.stop();
-
-                // Notify the connection closed only if it was successfuly open before.
-                // E.g. It will be not notified if the CloseConnection() is called for already closed connection.
-                if (myConnectionIsCorrectlyOpen)
+                try
                 {
-                    myConnectionIsCorrectlyOpen = false;
-                    notify(myConnectionClosed);
+                    myOutputConnector.closeConnection();
                 }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
+                }
+
+
+                 // Note: the notification must run outside the lock because of potententional deadlock.
+                aNotifyFlag = myConnectionIsCorrectlyOpen;
+                myConnectionIsCorrectlyOpen = false;
+            }
+        
+        
+            // Notify the connection closed only if it was successfuly open before.
+            // E.g. It will be not notified if the CloseConnection() is called for already closed connection.
+            if (aNotifyFlag)
+            {
+                myDispatcher.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyEvent(myConnectionClosed);
+                    }
+                });
             }
         }
         finally
@@ -348,33 +342,50 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void notify(final EventImpl<DuplexChannelEventArgs> eventHandler)
+    private void notifyResponseMessageReceived(Object message)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            Runnable anInvoker = new Runnable()
+            if (myResponseMessageReceived.isSubscribed())
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
-                    {
-                        if (eventHandler.isSubscribed())
-                        {
-                            DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
-                            eventHandler.raise(this, aMsg);
-                        }
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                    }
+                    myResponseMessageReceived.raise(this, new DuplexChannelMessageEventArgs(myChannelId, message, myResponseReceiverId, ""));
                 }
-            };
-
-            // Invoke the event in a different thread.
-            ThreadPool.queueUserWorkItem(anInvoker);
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+            else
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void notifyEvent(final EventImpl<DuplexChannelEventArgs> eventHandler)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                if (eventHandler.isSubscribed())
+                {
+                    DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
+                    eventHandler.raise(this, aMsg);
+                }
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
         }
         finally
         {
@@ -383,22 +394,21 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     }
     
     
-    private IClientConnectorFactory myClientConnectorFactory;
-    private IClientConnector myClientConnector;
+    private IOutputConnector myOutputConnector;
     private boolean myStartReceiverAfterSendOpenRequest;
     private boolean myConnectionIsCorrectlyOpen;
     private Object myConnectionManipulatorLock = new Object();
     
+    private IProtocolFormatter<?> myProtocolFormatter;
+
     private String myChannelId;
     private String myResponseReceiverId;
-    
-    private IProtocolFormatter<?> myProtocolFormatter;
-    private IInvoker myWorkingThreadInvoker;
-    
+    private IDispatcher myDispatcher;
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceived = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<DuplexChannelEventArgs> myConnectionOpened = new EventImpl<DuplexChannelEventArgs>();
     private EventImpl<DuplexChannelEventArgs> myConnectionClosed = new EventImpl<DuplexChannelEventArgs>();
+    
     
     IFunction1<Boolean, MessageContext> myResponseHandler = new IFunction1<Boolean, MessageContext>()
     {
@@ -414,4 +424,6 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     {
         return getClass().getSimpleName() + " '" + myChannelId + "' ";
     }
+
+    
 }

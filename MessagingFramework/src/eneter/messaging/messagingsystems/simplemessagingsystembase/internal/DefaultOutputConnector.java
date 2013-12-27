@@ -13,10 +13,10 @@ import java.io.OutputStream;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.*;
 
-class DefaultClientConnector implements IClientConnector
+class DefaultOutputConnector implements IOutputConnector
 {
 
-    public DefaultClientConnector(String serviceConnectorAddress, String clientConnectorAddress, IMessagingProvider messagingProvider)
+    public DefaultOutputConnector(String serviceConnectorAddress, String clientConnectorAddress, IMessagingProvider messagingProvider)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -41,19 +41,20 @@ class DefaultClientConnector implements IClientConnector
         {
             synchronized (myConnectionManipulatorLock)
             {
-                // If it shall listen to response messages.
-                if (responseMessageHandler != null)
+                if (responseMessageHandler == null)
                 {
-                    myMessagingProvider.registerMessageHandler(myClientConnectorAddress, new IMethod1<Object>()
-                    {
-                        @Override
-                        public void invoke(Object x) throws Exception
-                        {
-                            responseMessageHandler.invoke(new MessageContext(x, "", null));
-                        }
-                    });
-                    myIsResponseListenerRegistered = true;
+                    throw new IllegalArgumentException("Input parameter responseMessageHandler is null.");
                 }
+                
+                myMessagingProvider.registerMessageHandler(myClientConnectorAddress, new IMethod1<Object>()
+                {
+                    @Override
+                    public void invoke(Object x) throws Exception
+                    {
+                        responseMessageHandler.invoke(new MessageContext(x, "", null));
+                    }
+                });
+                myIsResponseListenerRegistered = true;
                 myIsConnected = true;
             }
         }

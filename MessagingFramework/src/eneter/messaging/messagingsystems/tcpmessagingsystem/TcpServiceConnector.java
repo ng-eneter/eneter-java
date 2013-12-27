@@ -18,7 +18,7 @@ import eneter.net.system.*;
 import eneter.net.system.internal.IDisposable;
 
 
-class TcpServiceConnector implements IServiceConnector
+class TcpServiceConnector implements IInputConnector
 {
     private class ResponseSender implements ISender, IDisposable
     {

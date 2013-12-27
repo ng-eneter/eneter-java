@@ -10,7 +10,7 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
 import eneter.net.system.IFunction1;
 
-public interface IClientConnector extends ISender
+public interface IOutputConnector extends ISender
 {
     void openConnection(IFunction1<Boolean, MessageContext> responseMessageHandler) throws Exception;
     void closeConnection();

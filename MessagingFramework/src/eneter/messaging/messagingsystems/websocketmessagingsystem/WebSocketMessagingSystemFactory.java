@@ -24,7 +24,7 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
  */
 public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
 {
-    private class WebSocketServerConnectorFactory implements IServiceConnectorFactory
+    private class WebSocketServerConnectorFactory implements IInputConnectorFactory
     {
         public WebSocketServerConnectorFactory(IServerSecurityFactory serverSecurityFactory)
         {
@@ -40,7 +40,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
 
         @Override
-        public IServiceConnector createServiceConnector(String receiverAddress)
+        public IInputConnector createServiceConnector(String receiverAddress)
                 throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
@@ -57,7 +57,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         private IServerSecurityFactory myServerSecurityFactory;
     }
     
-    private class WebSocketClientConnectorFactory implements IClientConnectorFactory
+    private class WebSocketClientConnectorFactory implements IOutputConnectorFactory
     {
         public WebSocketClientConnectorFactory(int pingFrequency, IClientSecurityFactory clientSecurityFactory)
         {
@@ -74,7 +74,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
 
         @Override
-        public IClientConnector createClientConnector(
+        public IOutputConnector createOutputConnector(
                 String serviceConnectorAddress, String clientConnectorAddress)
                 throws Exception
         {
@@ -177,56 +177,6 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     }
     
     /**
-     * Creates the output channel sending messages to the specified input channel by using WebSocket.
-     * The output channel can send messages only to the input channel and not to the duplex input channel.
-     * 
-     * @param channelId Identifies the receiving output channel. The channel id must be a valid URI address e.g. ws://127.0.0.1:8090/MyService/
-     */
-    @Override
-    public IOutputChannel createOutputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myPingFrequency, myClientSecurityFactory);
-            return new DefaultOutputChannel(channelId, myProtocolFormatter, aFactory);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    /**
-     * Creates the input channel receiving messages from output channel by using WebSocket.
-     * @param channelId The addres, the input channel will listen to. The channel id must be a valid URI address e.g. ws://127.0.0.1:8090/MyService/.
-     */
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            IInvoker anInvoker = null;
-            if (myConcurrencyMode == EConcurrencyMode.Synchronous)
-            {
-                anInvoker = new WorkingThreadInvoker(channelId);
-            }
-            else
-            {
-                anInvoker = new CallingThreadInvoker();
-            }
-            
-            IServiceConnectorFactory aFactory = new WebSocketServerConnectorFactory(myServerSecurityFactory);
-            return new DefaultInputChannel(channelId, anInvoker, myProtocolFormatter, aFactory);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using WebSocket.
      * The duplex output channel is intended for the bidirectional communication.
      * Therefore, it can send messages to the duplex input channel and receive response messages.
@@ -245,7 +195,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IInvoker anInvoker = new WorkingThreadInvoker();
-            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myPingFrequency, myClientSecurityFactory);
+            IOutputConnectorFactory aFactory = new WebSocketClientConnectorFactory(myPingFrequency, myClientSecurityFactory);
             return new DefaultDuplexOutputChannel(channelId, null, anInvoker, myProtocolFormatter, aFactory, false);
         }
         finally
@@ -275,7 +225,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IInvoker anInvoker = new WorkingThreadInvoker();
-            IClientConnectorFactory aFactory = new WebSocketClientConnectorFactory(myPingFrequency, myClientSecurityFactory);
+            IOutputConnectorFactory aFactory = new WebSocketClientConnectorFactory(myPingFrequency, myClientSecurityFactory);
             return new DefaultDuplexOutputChannel(channelId, responseReceiverId, anInvoker, myProtocolFormatter, aFactory, false);
         }
         finally
@@ -309,7 +259,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
                 anInvoker = new CallingThreadInvoker();
             }
             
-            IServiceConnectorFactory aFactory = new WebSocketServerConnectorFactory(myServerSecurityFactory);
+            IInputConnectorFactory aFactory = new WebSocketServerConnectorFactory(myServerSecurityFactory);
             return new DefaultDuplexInputChannel(channelId, anInvoker, myProtocolFormatter, aFactory);
         }
         finally

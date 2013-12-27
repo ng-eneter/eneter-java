@@ -62,45 +62,6 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     }
     
     /**
-     * Creates the output channel sending messages to the specified input channel via the thread pool.
-     * The output channel can send messages only to the input channel and not to the duplex input channel.
-     * @throws Exception 
-     */
-    @Override
-    public IOutputChannel createOutputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return mySimpleMessagingFactory.createOutputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
-     * Creates the input channel receiving messages from the output channel via the thread pool.
-     * The input channel can receive messages only from the output channel and not from the duplex output channel.
-     * @throws Exception 
-     * 
-     */
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return mySimpleMessagingFactory.createInputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using the thread pool.
      * The duplex output channel is intended for the bidirectional communication.
      * Therefore, it can send messages to the duplex input channel and receive response messages.

@@ -8,19 +8,23 @@
 
 package eneter.messaging.messagingsystems.messagingsystembase;
 
+import eneter.messaging.threading.dispatching.IDispatcher;
 import eneter.net.system.Event;
 
 /**
  * Declares the duplex input channel that can receive messages from the duplex output channel and send back response messages.
- * Notice, the duplex input channel works only with duplex output channel and not with output channel.
  * 
  */
 public interface IDuplexInputChannel
 {
     /**
-     * The event is invoked when a message was received.
+     * The event is invoked before a duplex output channel opens the connection.
+     * 
+     * The event allows to grant or deny the connection.
+     * E.g. if the IsConnectionAllowed is set to false the connection will not be open.<br/>
+     * This event does not use the dispatcher. Therefore the event can be raised in whatever thread.
      */
-    Event<DuplexChannelMessageEventArgs> messageReceived();
+    Event<ConnectionTokenEventArgs> responseReceiverConnecting();
 
     /**
      * The event is invoked when a duplex output channel opened the connection.
@@ -32,6 +36,11 @@ public interface IDuplexInputChannel
      */
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
 
+    /**
+     * The event is invoked when a message was received.
+     */
+    Event<DuplexChannelMessageEventArgs> messageReceived();
+    
     /**
      * Returns id of this duplex input channel.
      * The id represents the 'address' the duplex input channel is listening to.
@@ -68,4 +77,12 @@ public interface IDuplexInputChannel
      * @throws Exception 
      */
     void disconnectResponseReceiver(String responseReceiverId) throws Exception;
+    
+    /**
+     * Returns dispatcher that defines the threading model for raising events.
+     * Dispatcher is responsible for raising ConnectionOpened, ConnectionClosed and ResponseMessageReceived events
+     * in desired thread. It allows to specify which threading mechanism/model is used to raise asynchronous events.
+     * E.g. events are queued and raised by one thread. Or e.g. in Silverlight events can be raised in the Silverlight thread.
+     */
+    IDispatcher getDispatcher();
 }

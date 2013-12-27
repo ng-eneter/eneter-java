@@ -10,7 +10,7 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
 import eneter.net.system.IFunction1;
 
-public interface IServiceConnector
+public interface IInputConnector
 {
     void startListening(IFunction1<Boolean, MessageContext> messageHandler) throws Exception;
     void stopListening();

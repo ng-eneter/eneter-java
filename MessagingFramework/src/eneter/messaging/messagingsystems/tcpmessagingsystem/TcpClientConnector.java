@@ -20,7 +20,7 @@ import eneter.net.system.*;
 import eneter.net.system.threading.internal.*;
 
 
-class TcpClientConnector implements IClientConnector
+class TcpClientConnector implements IOutputConnector
 {
     public TcpClientConnector(String ipAddressAndPort, IClientSecurityFactory clientSecurityFactory) throws Exception
     {

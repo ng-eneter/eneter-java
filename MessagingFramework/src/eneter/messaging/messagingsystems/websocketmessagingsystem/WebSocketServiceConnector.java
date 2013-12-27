@@ -20,7 +20,7 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFacto
 import eneter.net.system.*;
 import eneter.net.system.internal.IDisposable;
 
-class WebSocketServiceConnector implements IServiceConnector
+class WebSocketServiceConnector implements IInputConnector
 {
     private class WebSocketResponseSender implements ISender, IDisposable
     {

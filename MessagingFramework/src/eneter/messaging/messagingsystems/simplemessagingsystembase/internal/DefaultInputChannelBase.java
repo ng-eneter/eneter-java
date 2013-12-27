@@ -23,7 +23,7 @@ abstract class DefaultInputChannelBase
     public DefaultInputChannelBase(String channelId,
             IInvoker workingThreadInvoker,
             IProtocolFormatter<?> protocolFormatter,
-            IServiceConnectorFactory serviceConnectorFactory) throws Exception
+            IInputConnectorFactory serviceConnectorFactory) throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
@@ -37,7 +37,7 @@ abstract class DefaultInputChannelBase
                 myChannelId = channelId;
                 myWorkingThreadInvoker = workingThreadInvoker;
                 myProtocolFormatter = protocolFormatter;
-                myServiceConnector = serviceConnectorFactory.createServiceConnector(channelId);
+                myServiceConnector = serviceConnectorFactory.createInputConnector(channelId);
             }
             finally
             {
@@ -179,7 +179,7 @@ abstract class DefaultInputChannelBase
     
     protected abstract void disconnectClients();
     
-    protected IServiceConnector myServiceConnector;
+    protected IInputConnector myServiceConnector;
     protected IProtocolFormatter<?> myProtocolFormatter;
     protected IInvoker myWorkingThreadInvoker;
     

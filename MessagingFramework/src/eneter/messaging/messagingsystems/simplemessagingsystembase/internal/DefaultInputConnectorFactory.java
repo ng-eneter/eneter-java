@@ -10,9 +10,9 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
 import eneter.messaging.diagnostic.EneterTrace;
 
-class DefaultServiceConnectorFactory implements IServiceConnectorFactory
+class DefaultInputConnectorFactory implements IInputConnectorFactory
 {
-    public DefaultServiceConnectorFactory(IMessagingProvider messagingProvider)
+    public DefaultInputConnectorFactory(IMessagingProvider messagingProvider)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -27,12 +27,12 @@ class DefaultServiceConnectorFactory implements IServiceConnectorFactory
     
 
     @Override
-    public IServiceConnector createServiceConnector(String serviceConnectorAddress)
+    public IInputConnector createInputConnector(String serviceConnectorAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultServiceConnector(serviceConnectorAddress, myMessagingProvider);
+            return new DefaultInputConnector(serviceConnectorAddress, myMessagingProvider);
         }
         finally
         {

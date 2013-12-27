@@ -23,7 +23,7 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
  */
 public class TcpMessagingSystemFactory implements IMessagingSystemFactory
 {
-    private class TcpServiceConnectorFactory implements IServiceConnectorFactory
+    private class TcpServiceConnectorFactory implements IInputConnectorFactory
     {
         public TcpServiceConnectorFactory(IServerSecurityFactory securityFactory)
         {
@@ -39,7 +39,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
         
         @Override
-        public IServiceConnector createServiceConnector(
+        public IInputConnector createInputConnector(
                 String receiverAddress) throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
@@ -56,7 +56,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         private IServerSecurityFactory mySecurityFactory;
     }
     
-    private class TcpClientConnectorFactory implements IClientConnectorFactory
+    private class TcpClientConnectorFactory implements IOutputConnectorFactory
     {
         public TcpClientConnectorFactory(IClientSecurityFactory securityFactory)
         {
@@ -72,7 +72,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
 
         @Override
-        public IClientConnector createClientConnector(
+        public IOutputConnector createClientConnector(
                 String serviceConnectorAddress, String clientConnectorAddress)
                 throws Exception
         {
@@ -128,61 +128,6 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
-    /**
-     * Creates the output channel sending messages to the specified input channel by using TCP.
-     * 
-     * The output channel can send messages only to the input channel and not to the duplex input channel.
-     * 
-     * @param channelId Identifies the receiving input channel. The channel id must be a valid URI address e.g. tcp://127.0.0.1:8090/
-     */
-    @Override
-    public IOutputChannel createOutputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            IClientConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
-
-            return new DefaultOutputChannel(channelId, myProtocolFormatter, aClientConnectorFactory);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
-     * Creates the input channel receiving messages from output channel by using TCP.
-     * 
-     * The input channel can receive messages only from the output channel and not from the duplex output channel.
-     * 
-     * @param channelId The addres, the input channel will listen to. The channel id must be a valid URI address e.g. tcp://127.0.0.1:8090/
-     */
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            IInvoker anInvoker = null;
-            if (myConcurrencyMode == EConcurrencyMode.Synchronous)
-            {
-                anInvoker = new WorkingThreadInvoker(channelId);
-            }
-            else
-            {
-                anInvoker = new CallingThreadInvoker();
-            }
-            
-            IServiceConnectorFactory aFactory = new TcpServiceConnectorFactory(myServerSecurityFactory);
-
-            return new DefaultInputChannel(channelId, anInvoker, myProtocolFormatter, aFactory);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
 
     /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using TCP.
@@ -204,7 +149,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IInvoker anInvoker = new WorkingThreadInvoker();
-            IClientConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
+            IOutputConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
             return new DefaultDuplexOutputChannel(channelId, null, anInvoker, myProtocolFormatter, aClientConnectorFactory, false);
         }
         finally
@@ -235,7 +180,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IInvoker anInvoker = new WorkingThreadInvoker();
-            IClientConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
+            IOutputConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
             return new DefaultDuplexOutputChannel(channelId, responseReceiverId, anInvoker, myProtocolFormatter, aClientConnectorFactory, false);
         }
         finally
@@ -270,7 +215,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
                 anInvoker = new CallingThreadInvoker();
             }
             
-            IServiceConnectorFactory aFactory = new TcpServiceConnectorFactory(myServerSecurityFactory);
+            IInputConnectorFactory aFactory = new TcpServiceConnectorFactory(myServerSecurityFactory);
             return new DefaultDuplexInputChannel(channelId, anInvoker, myProtocolFormatter, aFactory);
         }
         finally

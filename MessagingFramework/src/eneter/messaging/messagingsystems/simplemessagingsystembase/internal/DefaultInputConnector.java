@@ -13,7 +13,7 @@ import java.io.OutputStream;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.*;
 
-class DefaultServiceConnector implements IServiceConnector
+class DefaultInputConnector implements IInputConnector
 {
     private class DefaultResponseSender implements ISender
     {
@@ -64,7 +64,7 @@ class DefaultServiceConnector implements IServiceConnector
 
     
     
-    public DefaultServiceConnector(String serviceConnectorAddress, IMessagingProvider messagingProvider)
+    public DefaultInputConnector(String serviceConnectorAddress, IMessagingProvider messagingProvider)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -87,6 +87,11 @@ class DefaultServiceConnector implements IServiceConnector
         {
             synchronized (myListeningManipulatorLock)
             {
+                if (messageHandler == null)
+                {
+                    throw new IllegalArgumentException("Input parameter messageHandler is null.");
+                }
+                
                 myMessagingProvider.registerMessageHandler(myServiceConnectorAddress, new IMethod1<Object>()
                 {
                     @Override

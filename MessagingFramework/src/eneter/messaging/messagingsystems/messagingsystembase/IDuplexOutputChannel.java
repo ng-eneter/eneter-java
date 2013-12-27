@@ -8,6 +8,7 @@
 
 package eneter.messaging.messagingsystems.messagingsystembase;
 
+import eneter.messaging.threading.dispatching.IDispatcher;
 import eneter.net.system.Event;
 
 /**
@@ -75,4 +76,12 @@ public interface IDuplexOutputChannel
      * Returns true if the duplex output channel is connected to the duplex input channel and listens to response messages.
      */
     boolean isConnected();
+    
+    /**
+     * Returns dispatcher that defines the threading model for raising events.
+     * Dispatcher is responsible for raising ConnectionOpened, ConnectionClosed and ResponseMessageReceived events
+     * in desired thread. It allows to specify which threading mechanism/model is used to raise asynchronous events.
+     * E.g. events are queued and raised by one thread. Or e.g. in Silverlight events can be raised in the Silverlight thread.
+     */
+    IDispatcher getDispatcher();
 }

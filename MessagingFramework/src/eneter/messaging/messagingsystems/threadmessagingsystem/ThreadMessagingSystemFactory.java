@@ -61,45 +61,6 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace.leaving(aTrace);
         }
     }
-    
-
-    /**
-     * Creates the output channel sending messages to the specified input channel via the message queue processed by the working thread.
-     * The output channel can send messages only to the input channel and not to the duplex input channel.
-     * @throws Exception 
-     */
-    @Override
-    public IOutputChannel createOutputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myDefaultMessagingFactory.createOutputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
-     * Creates the input channel receiving messages from the output channel via the working thread.
-     * The input channel can receive messages only from the output channel and not from the duplex output channel.
-     * @throws Exception 
-     */
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myDefaultMessagingFactory.createInputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
 
     /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using the working thread.

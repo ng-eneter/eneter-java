@@ -56,46 +56,6 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
     }
     
     /**
-     * Creates the output channel sending messages to specified input channel using the synchronous local call.
-     * 
-     * @param channelId identifies the receiving input channel
-     * @return output channel
-     * @throws Exception 
-     */
-    public IOutputChannel createOutputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myDefaultMessagingFactory.createOutputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
-     * Creates the input channel receiving messages on the specified channel id via the synchronous local call.
-     * 
-     * @param channelId identifies this input channel
-     * @return input channel
-     * @throws Exception 
-     */
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myDefaultMessagingFactory.createInputChannel(channelId);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
      * Creates the duplex output channel communicating with the specified duplex input channel using synchronous local call.
      * The duplex output channel can send messages and receive response messages. 
      * @throws Exception 

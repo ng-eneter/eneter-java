@@ -23,8 +23,8 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
             myProtocolFormatter = protocolFromatter;
             myWorkingThreadInvoker = new CallingThreadInvoker();
 
-            myClientConnectorFactory = new DefaultClientConnectorFactory(messagingProvider);
-            myServiceConnectorFactory = new DefaultServiceConnectorFactory(messagingProvider);
+            myClientConnectorFactory = new DefaultOutputConnectorFactory(messagingProvider);
+            myServiceConnectorFactory = new DefaultInputConnectorFactory(messagingProvider);
         }
         finally
         {
@@ -108,7 +108,7 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
 
     
     private IProtocolFormatter<?> myProtocolFormatter;
-    private IClientConnectorFactory myClientConnectorFactory;
-    private IServiceConnectorFactory myServiceConnectorFactory;
+    private IOutputConnectorFactory myClientConnectorFactory;
+    private IInputConnectorFactory myServiceConnectorFactory;
     private IInvoker myWorkingThreadInvoker;
 }

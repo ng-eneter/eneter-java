@@ -16,7 +16,7 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.IFunction1;
 import eneter.net.system.internal.StringExt;
 
-class UdpServiceConnector implements IServiceConnector
+class UdpServiceConnector implements IInputConnector
 {
     public UdpServiceConnector(String ipAddressAndPort) throws Exception
     {
