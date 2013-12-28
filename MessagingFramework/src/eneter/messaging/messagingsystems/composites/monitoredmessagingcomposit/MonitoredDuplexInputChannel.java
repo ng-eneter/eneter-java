@@ -363,8 +363,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 }
 
                 // Notify that the response receiver was disconected.
-                ResponseReceiverEventArgs e = new ResponseReceiverEventArgs(aResponseReceiver.getResponseReceiverId(),
-                        aResponseReceiver.getClientAddress());
+                ResponseReceiverEventArgs e = new ResponseReceiverEventArgs(aResponseReceiver.getResponseReceiverId(), aResponseReceiver.getClientAddress());
                 notifyResponseReceiverDisconnected(e);
             }
 

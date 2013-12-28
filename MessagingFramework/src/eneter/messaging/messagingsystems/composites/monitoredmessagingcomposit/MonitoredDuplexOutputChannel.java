@@ -24,7 +24,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myUnderlyingDuplexOutputChannel = underlyingOutputChannel;
+            myUnderlyingOutputChannel = underlyingOutputChannel;
 
             mySerializer = serializer;
             myPingFrequency = pingFrequency;
@@ -34,12 +34,6 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         {
             EneterTrace.leaving(aTrace);
         }
-    }
-
-    @Override
-    public IDuplexOutputChannel getUnderlyingDuplexOutputChannel()
-    {
-        return myUnderlyingDuplexOutputChannel;
     }
 
     @Override
@@ -63,13 +57,13 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
     @Override
     public String getChannelId()
     {
-        return myUnderlyingDuplexOutputChannel.getChannelId();
+        return myUnderlyingOutputChannel.getChannelId();
     }
 
     @Override
     public String getResponseReceiverId()
     {
-        return myUnderlyingDuplexOutputChannel.getResponseReceiverId();
+        return myUnderlyingOutputChannel.getResponseReceiverId();
     }
 
     @Override
@@ -87,20 +81,18 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     throw new IllegalStateException(aMessage);
                 }
 
-                myUnderlyingDuplexOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
-                myUnderlyingDuplexOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);
-                myUnderlyingDuplexOutputChannel.connectionClosed().subscribe(myOnConnectionClosed);
+                myUnderlyingOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
+                myUnderlyingOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);
 
                 try
                 {
                     // Open connection in the underlying channel.
-                    myUnderlyingDuplexOutputChannel.openConnection();
+                    myUnderlyingOutputChannel.openConnection();
                 }
                 catch (Exception err)
                 {
-                    myUnderlyingDuplexOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
-                    myUnderlyingDuplexOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
-                    myUnderlyingDuplexOutputChannel.connectionClosed().unsubscribe(myOnConnectionClosed);
+                    myUnderlyingOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
+                    myUnderlyingOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
 
                     EneterTrace.error(TracedObject() + ErrorHandler.OpenConnectionFailure, err);
 
@@ -196,7 +188,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         {
             synchronized (myConnectionManipulatorLock)
             {
-                return myUnderlyingDuplexOutputChannel.isConnected();
+                return myUnderlyingOutputChannel.isConnected();
             }
         }
         finally
@@ -227,7 +219,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     Object aSerializedMessage = mySerializer.serialize(aMessage, MonitorChannelMessage.class);
     
                     // Send the message by using the underlying messaging system.
-                    myUnderlyingDuplexOutputChannel.sendMessage(aSerializedMessage);
+                    myUnderlyingOutputChannel.sendMessage(aSerializedMessage);
                 }
                 catch (Exception err)
                 {
@@ -262,19 +254,8 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                 else
                 {
                     // Notify the event to the subscriber.
-                    if (myResponseMessageReceivedEventImpl.isSubscribed())
-                    {
-                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
-
-                        try
-                        {
-                            myResponseMessageReceivedEventImpl.raise(this, aMsg);
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
-                    }
+                    DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
+                    notifyEvent(myResponseMessageReceivedEventImpl, aMsg, true);
                 }
             }
             catch (Exception err)
@@ -293,30 +274,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myConnectionOpenedEventImpl.isSubscribed())
-            {
-                try
-                {
-                    myConnectionOpenedEventImpl.raise(this, e);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            closeConnection();
+            notifyEvent(myConnectionOpenedEventImpl, e, false);
         }
         finally
         {
@@ -342,7 +300,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                         // Send the ping message.
                         MonitorChannelMessage aPingMessage = new MonitorChannelMessage(MonitorChannelMessageType.Ping, null);
                         Object aSerializedPingMessage = mySerializer.serialize(aPingMessage, MonitorChannelMessage.class);
-                        myUnderlyingDuplexOutputChannel.sendMessage(aSerializedPingMessage);
+                        myUnderlyingOutputChannel.sendMessage(aSerializedPingMessage);
                     }
                 }
                 catch (Exception err)
@@ -360,25 +318,25 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
             }
 
             // Close the underlying channel.
-            if (myUnderlyingDuplexOutputChannel != null)
+            if (myUnderlyingOutputChannel != null)
             {
                 try
                 {
                     // Close connection in the underlying channel.
-                    myUnderlyingDuplexOutputChannel.closeConnection();
+                    myUnderlyingOutputChannel.closeConnection();
                 }
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
                 }
 
-                myUnderlyingDuplexOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
-                myUnderlyingDuplexOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
-                myUnderlyingDuplexOutputChannel.connectionClosed().unsubscribe(myOnConnectionClosed);
+                myUnderlyingOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
+                myUnderlyingOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
             }
 
             // Notify, the connection is closed.
-            notifyConnectionClosed();
+            DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
+            notifyEvent(myConnectionClosedEventImpl, aMsg, false);
         }
         finally
         {
@@ -386,41 +344,27 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void notifyConnectionClosed()
+    
+    private <T> void notifyEvent(EventImpl<T> handler, T event, boolean isNobodySubscribedWarning)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            Runnable aConnectionClosedInvoker = new Runnable()
+            if (handler != null)
             {
-                @Override
-                public void run()
+                try
                 {
-                    EneterTrace aTrace = EneterTrace.entering();
-                    try
-                    {
-                        if (myConnectionClosedEventImpl.isSubscribed())
-                        {
-                            try
-                            {
-                                DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
-                                myConnectionClosedEventImpl.raise(this, aMsg);
-                            }
-                            catch (Exception err)
-                            {
-                                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        EneterTrace.leaving(aTrace);
-                    }
+                    handler.raise(this, event);
                 }
-            };
-                    
-            // Invoke the event in a different thread.
-            ThreadPool.queueUserWorkItem(aConnectionClosedInvoker);
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+            else if (isNobodySubscribedWarning)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
+            }
         }
         finally
         {
@@ -429,7 +373,8 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
     }
     
     
-    private IDuplexOutputChannel myUnderlyingDuplexOutputChannel;
+    
+    private IDuplexOutputChannel myUnderlyingOutputChannel;
     private Object myConnectionManipulatorLock = new Object();
     private long myPingFrequency;
     private AutoResetEvent myPingFrequencyWaiting = new AutoResetEvent(false);
@@ -464,19 +409,10 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         }
     };
     
-    private EventHandler<DuplexChannelEventArgs> myOnConnectionClosed = new EventHandler<DuplexChannelEventArgs>()
-    {
-        @Override
-        public void onEvent(Object x, DuplexChannelEventArgs y)
-        {
-            onConnectionClosed(x, y);
-        }
-    }; 
-    
     
     private String TracedObject()
     {
-        String aChannelId = (myUnderlyingDuplexOutputChannel != null) ? myUnderlyingDuplexOutputChannel.getChannelId() : "";
+        String aChannelId = (myUnderlyingOutputChannel != null) ? myUnderlyingOutputChannel.getChannelId() : "";
         return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
 }
