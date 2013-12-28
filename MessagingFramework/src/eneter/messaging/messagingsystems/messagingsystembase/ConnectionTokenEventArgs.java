@@ -26,7 +26,7 @@ public class ConnectionTokenEventArgs
         myIsConnectionAllowed = isConnectionAllowed;
     }
     
-    public boolean IsConnectionAllowed()
+    public boolean isConnectionAllowed()
     {
         return myIsConnectionAllowed;
     }

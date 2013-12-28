@@ -8,7 +8,6 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
-import eneter.messaging.dataprocessing.messagequeueing.internal.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;

@@ -8,7 +8,7 @@
 
 package eneter.messaging.messagingsystems.messagingsystembase;
 
-import eneter.messaging.threading.dispatching.IDispatcher;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.Event;
 
 /**
@@ -83,5 +83,5 @@ public interface IDuplexOutputChannel
      * in desired thread. It allows to specify which threading mechanism/model is used to raise asynchronous events.
      * E.g. events are queued and raised by one thread. Or e.g. in Silverlight events can be raised in the Silverlight thread.
      */
-    IDispatcher getDispatcher();
+    IThreadDispatcher getDispatcher();
 }

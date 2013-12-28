@@ -15,7 +15,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.messaging.threading.dispatching.IDispatcher;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.internal.*;
 import eneter.net.system.threading.internal.ThreadPool;
@@ -43,7 +43,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     
     
     public DefaultDuplexOutputChannel(String channelId, String responseReceiverId,
-            IDispatcher dispatcher,
+            IThreadDispatcher dispatcher,
             IOutputConnectorFactory outputConnectorFactory,
             IProtocolFormatter<?> protocolFormatter,
             boolean startReceiverAfterSendOpenRequest) throws Exception
@@ -218,7 +218,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     
     
     @Override
-    public IDispatcher getDispatcher()
+    public IThreadDispatcher getDispatcher()
     {
         return myDispatcher;
     }
@@ -403,7 +403,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
 
     private String myChannelId;
     private String myResponseReceiverId;
-    private IDispatcher myDispatcher;
+    private IThreadDispatcher myDispatcher;
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceived = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<DuplexChannelEventArgs> myConnectionOpened = new EventImpl<DuplexChannelEventArgs>();

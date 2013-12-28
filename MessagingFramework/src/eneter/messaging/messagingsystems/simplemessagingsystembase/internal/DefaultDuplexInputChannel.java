@@ -12,11 +12,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import eneter.messaging.dataprocessing.messagequeueing.internal.IInvoker;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.internal.*;
 import eneter.net.system.linq.internal.EnumerableExt;
@@ -38,21 +38,39 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     }
     
     
-    public DefaultDuplexInputChannel(String channelId,
-            IInvoker workingThreadInvoker,
-            IProtocolFormatter<?> protocolFormatter,
-            IInputConnectorFactory serviceConnectorFactory) throws Exception
+    public DefaultDuplexInputChannel(String channelId,      // address to listen
+            IThreadDispatcher dispatcher,                         // threading model used to notify messages and events
+            IInputConnector inputConnector,                 // listener used for listening to messages
+            IProtocolFormatter<?> protocolFormatter)        // how messages are encoded between channels
+            throws Exception
         {
-            super(channelId, workingThreadInvoker, protocolFormatter, serviceConnectorFactory);
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                if (StringExt.isNullOrEmpty(channelId))
+                {
+                    EneterTrace.error(ErrorHandler.NullOrEmptyChannelId);
+                    throw new IllegalArgumentException(ErrorHandler.NullOrEmptyChannelId);
+                }
+    
+                myChannelId = channelId;
+                myDispatcher = dispatcher;
+                myProtocolFormatter = protocolFormatter;
+                myInputConnector = inputConnector;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
         }
     
     
     @Override
-    public Event<DuplexChannelMessageEventArgs> messageReceived()
+    public Event<ConnectionTokenEventArgs> responseReceiverConnecting()
     {
-        return myMessageReceivedEvent.getApi();
+        return myResponseReceiverConnectingEvent.getApi();
     }
-
+    
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
@@ -63,6 +81,12 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
     {
         return myResponseReceiverDisconnectedEvent.getApi();
+    }
+    
+    @Override
+    public Event<DuplexChannelMessageEventArgs> messageReceived()
+    {
+        return myMessageReceivedEvent.getApi();
     }
 
 
@@ -88,11 +112,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
 
                 try
                 {
-                    // Start the thread model for processing messages.
-                    myWorkingThreadInvoker.start();
-
                     // Start listen to messages.
-                    myServiceConnector.startListening(myHandleMessage);
+                    myInputConnector.startListening(myHandleMessage);
                 }
                 catch (Exception err)
                 {
@@ -131,20 +152,11 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
 
                 try
                 {
-                    myServiceConnector.stopListening();
+                    myInputConnector.stopListening();
                 }
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
-                }
-
-                try
-                {
-                    myWorkingThreadInvoker.stop();
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + "failed to stop ThreadInvoker.", err);
                 }
             }
         }
@@ -161,7 +173,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         {
             synchronized (myListeningManipulatorLock)
             {
-                return myServiceConnector.isListening();
+                return myInputConnector.isListening();
             }
         }
         finally
@@ -190,7 +202,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 TConnectionContext aConnectionContext = myConnectedClients.get(responseReceiverId);
                 if (aConnectionContext == null)
                 {
-                    String aMessage = TracedObject() + ErrorHandler.CloseConnectionFailure;
+                    String aMessage = TracedObject() + ErrorHandler.SendResponseNotConnectedFailure;
                     EneterTrace.error(aMessage);
                     throw new IllegalStateException(aMessage);
                 }
@@ -204,7 +216,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 {
                     EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
 
-                    closeResponseMessageSender(responseReceiverId, true, true);
+                    closeResponseMessageSender(responseReceiverId, true);
 
                     throw err;
                 }
@@ -222,7 +234,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            closeResponseMessageSender(responseReceiverId, true, true);
+            closeResponseMessageSender(responseReceiverId, true);
         }
         finally
         {
@@ -230,9 +242,13 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
 
-        
     @Override
-    protected void disconnectClients()
+    public IThreadDispatcher getDispatcher()
+    {
+        return myDispatcher;
+    }
+
+    private void disconnectClients()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -246,7 +262,16 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                         ((IDisposable)aConnection.getValue().myResponseSender).dispose();
                     }
                     
-                    notify(myResponseReceiverDisconnectedEvent, aConnection.getKey(), aConnection.getValue().mySenderAddress);
+                    final String aResponseReceiverId = aConnection.getKey();
+                    final String aSenderAddreaa = aConnection.getValue().mySenderAddress;
+                    myDispatcher.invoke(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            notifyEvent(myResponseReceiverDisconnectedEvent, aResponseReceiverId, aSenderAddreaa);
+                        }
+                    });
                 }
                 myConnectedClients.clear();
             }
@@ -257,50 +282,16 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    @Override
-    protected boolean handleMessage(final MessageContext messageContext) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            ProtocolMessage aProtocolMessage = null;
-
-            if (messageContext != null && messageContext.getMessage() != null)
-            {
-                aProtocolMessage = getProtocolMessage(messageContext.getMessage());
-            }
-            else
-            {
-                EneterTrace.warning(TracedObject() + "detected the listening was stopped.");
-            }
-
-            // Execute the processing of the message according to desired thread mode.
-            final ProtocolMessage aProtocolMessageTmp = aProtocolMessage;
-            myWorkingThreadInvoker.invoke(new IMethod()
-            {
-                @Override
-                public void invoke() throws Exception
-                {
-                    handleMessage(messageContext, aProtocolMessageTmp);
-                }
-            });
-
-            return aProtocolMessage != null;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    private void handleMessage(final MessageContext messageContext, ProtocolMessage protocolMessage) throws Exception
+    private boolean handleMessage(final MessageContext messageContext)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             if (messageContext == null)
             {
-                // It means the listening thread stopped looping.
+                // Try to correctly stop the whole listening.
+                // Note: Use a different thread because 'StopListening' will try to stop
+                //       this message listening thread and so the deadlock would occur.
                 ThreadPool.queueUserWorkItem(new Runnable()
                 {
                     @Override
@@ -310,54 +301,125 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     }
                 });
             }
-            else if (protocolMessage == null)
+            
+            ProtocolMessage aProtocolMessage = null;
+            
+            // if there are message data available.
+            if (messageContext.getMessage() != null)
             {
-                // Some client got disconnected and the reading of the close message failed.
-                // Try to find which client it was.
-                Entry<String, TConnectionContext> aPair;
-                synchronized (myConnectedClients)
+                aProtocolMessage = getProtocolMessage(messageContext.getMessage());
+            }
+            
+            if (aProtocolMessage == null)
+            {
+                // Try to correctly close the client.
+                ThreadPool.queueUserWorkItem(new Runnable()
                 {
-                    aPair = EnumerableExt.firstOrDefault(myConnectedClients.entrySet(), new IFunction1<Boolean, Entry<String, TConnectionContext>>()
+                    @Override
+                    public void run()
                     {
-                        @Override
-                        public Boolean invoke(Entry<String, TConnectionContext> x) throws Exception
+                        try
                         {
-                            return x.getValue().myResponseSender == messageContext.getResponseSender() && x.getValue().mySenderAddress.equals(messageContext.getSenderAddress());
+                            cleanDisconnectedResponseReceiver(messageContext.getResponseSender(), messageContext.getSenderAddress());
                         }
-                    });
-                }
-                
-                if (aPair != null && !StringExt.isNullOrEmpty(aPair.getKey()))
-                {
-                    closeResponseMessageSender(aPair.getKey(), true, false);
-                }
-                else
-                {
-                    // Decoding the message returned null.
-                    // This can happen if a client closed the connection and the stream was closed.
-                    // e.g. in case of Named Pipes.
-                    
-                    // nothing to do here.
-                }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning("Closing of the client failed.", err);
+                        }
+                    }
+                });
+
+                // Stop listening for this client.
+                return false;
             }
-            else if (protocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
-            {
-                closeResponseMessageSender(protocolMessage.ResponseReceiverId, true, false);
-            }
-            else if (protocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
-            {
-                createResponseMessageSender(messageContext, protocolMessage.ResponseReceiverId);
-            }
-            else if (protocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+
+            if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
             {
                 // If the connection is not open then it will open it.
-                createResponseMessageSender(messageContext, protocolMessage.ResponseReceiverId);
+                if (!createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId))
+                {
+                    // If the connection is not approved stop listening for this client.
+                    return false;
+                }
 
-                notifyMessageReceived(messageContext, protocolMessage);
+                final ProtocolMessage aProtocolMessageTmp = aProtocolMessage;
+                myDispatcher.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyMessageReceived(messageContext, aProtocolMessageTmp);
+                    }
+                });
+            }
+            else if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
+            {
+                // If the connection is not approved.
+                if (!createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId))
+                {
+                    // If the connection is not approved stop listening for this client.
+                    return false;
+                }
+            }
+            else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
+            {
+                final String aResponseReceiverId = aProtocolMessage.ResponseReceiverId;
+                ThreadPool.queueUserWorkItem(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        closeResponseMessageSender(aResponseReceiverId, false);
+                    }
+                });
             }
             else
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
+            }
+
+            return true;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void cleanDisconnectedResponseReceiver(final ISender responseSender, String senderAddress)
+            throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Some client got disconnected without sending the 'close' messages.
+            // So try to identify closed response receiver and clean it.
+            Entry<String, TConnectionContext> aPair;
+            synchronized (myConnectedClients)
+            {
+                // Note: KeyValuePair is a struct so the default value is not null.
+                aPair = EnumerableExt.firstOrDefault(myConnectedClients.entrySet(), new IFunction1<Boolean, Entry<String, TConnectionContext>>()
+                {
+                    @Override
+                    public Boolean invoke(Entry<String, TConnectionContext> x)
+                            throws Exception
+                    {
+                        return x.getValue().myResponseSender == responseSender;
+                    }
+                });
+            }
+    
+            if (!StringExt.isNullOrEmpty(aPair.getKey()))
+            {
+                closeResponseMessageSender(aPair.getKey(), false);
+            }
+            else
+            {
+                // Decoding the message returned null.
+                // This can happen if a client closed the connection and the stream was closed.
+                // e.g. in case of Named Pipes.
+    
+                // nothing to do here.
             }
         }
         finally
@@ -366,11 +428,12 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void createResponseMessageSender(MessageContext messageContext, String responseReceiverId)
+    private boolean createResponseMessageSender(MessageContext messageContext, final String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            boolean aConnectionApprovedFlag = true;
             boolean aNewConnectionFlag = false;
 
             // If the connection is not open yet.
@@ -381,26 +444,51 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
 
                 if (aConnectionContext == null)
                 {
-                    // Get the response sender.
-                    // It comes in the message context or it must be created.
-                    ISender aResponseSender = messageContext.getResponseSender();
-                    if (aResponseSender == null)
+                    if (isMessageSenderApproved(messageContext.getSenderAddress(), responseReceiverId))
                     {
-                        aResponseSender = myServiceConnector.createResponseSender(responseReceiverId);
+                        // Get the response sender.
+                        // It comes in the message context or it must be created.
+                        ISender aResponseSender = messageContext.getResponseSender();
+                        if (aResponseSender == null)
+                        {
+                            aResponseSender = myInputConnector.createResponseSender(responseReceiverId);
+                        }
+    
+                        aConnectionContext = new TConnectionContext(aResponseSender, messageContext.getSenderAddress());
+                        myConnectedClients.put(responseReceiverId, aConnectionContext);
+    
+                        aNewConnectionFlag = true;
                     }
-
-                    aConnectionContext = new TConnectionContext(aResponseSender, messageContext.getSenderAddress());
-                    myConnectedClients.put(responseReceiverId, aConnectionContext);
-
-                    aNewConnectionFlag = true;
+                    else
+                    {
+                        aConnectionApprovedFlag = false;
+                    }
                 }
             }
 
             if (aNewConnectionFlag)
             {
+                final String aSenderAddress = aConnectionContext.mySenderAddress;
+                
                 // Notify the connection was open.
-                notify(myResponseReceiverConnectedEvent, responseReceiverId, aConnectionContext.mySenderAddress);
+                ThreadPool.queueUserWorkItem(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        myDispatcher.invoke(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                notifyEvent(myResponseReceiverConnectedEvent, responseReceiverId, aSenderAddress);
+                            }
+                        });
+                    }
+                });
             }
+            
+            return aConnectionApprovedFlag;
         }
         finally
         {
@@ -408,7 +496,26 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void closeResponseMessageSender(String responseReceiverId, boolean sendCloseMessageFlag)
+    private boolean isMessageSenderApproved(String senderAddress, String responseReceiverId)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ConnectionTokenEventArgs aConnectionToken = new ConnectionTokenEventArgs(responseReceiverId, senderAddress);
+
+            // Note: This event must be notified from the thread listening to messages.
+            //       So that based on the return the thread can decide if the connection stays open or will be closed.
+            notifyEvent(myResponseReceiverConnectingEvent, aConnectionToken, false);
+
+            return aConnectionToken.isConnectionAllowed();
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void closeResponseMessageSender(final String responseReceiverId, boolean sendCloseMessageFlag)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -452,8 +559,17 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             // If a connection was closed.
             if (aConnectionContext != null)
             {
+                final String aSenderAddress = aConnectionContext.mySenderAddress;
+                
                 // Notify the connection was closed.
-                notify(myResponseReceiverDisconnectedEvent, responseReceiverId, aConnectionContext.mySenderAddress);
+                myDispatcher.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyEvent(myResponseReceiverDisconnectedEvent, responseReceiverId, aSenderAddress);
+                    }
+                });
             }
         }
         finally
@@ -487,7 +603,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void notify(EventImpl<ResponseReceiverEventArgs> handler, String responseReceiverId, String senderAddress)
+    private void notifyEvent(EventImpl<ResponseReceiverEventArgs> handler, String responseReceiverId, String senderAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -546,19 +662,30 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     
     private HashMap<String, TConnectionContext> myConnectedClients = new HashMap<String, TConnectionContext>();
     
-    private IInputConnector myServiceConnector;
+    private IInputConnector myInputConnector;
     private IProtocolFormatter<?> myProtocolFormatter;
     private Object myListeningManipulatorLock = new Object();
   
-    protected String myChannelId;
+    private String myChannelId;
+    private IThreadDispatcher myDispatcher;
     
-    private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEvent = new EventImpl<DuplexChannelMessageEventArgs>();
+    
+    private EventImpl<ConnectionTokenEventArgs> myResponseReceiverConnectingEvent = new EventImpl<ConnectionTokenEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEvent = new EventImpl<ResponseReceiverEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEvent = new EventImpl<ResponseReceiverEventArgs>();
+    private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEvent = new EventImpl<DuplexChannelMessageEventArgs>();
     
+    IFunction1<Boolean, MessageContext> myHandleMessage = new IFunction1<Boolean, MessageContext>()
+    {
+        @Override
+        public Boolean invoke(MessageContext x) throws Exception
+        {
+            return handleMessage(x);
+        }
+    };
     
     private String TracedObject()
     {
-        return getClass().getSimpleName()+ " '" + myChannelId + "' ";
+        return getClass().getSimpleName() + " '" + myChannelId + "' ";
     }
 }
