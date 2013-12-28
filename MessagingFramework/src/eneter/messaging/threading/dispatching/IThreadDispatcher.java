@@ -1,6 +1,6 @@
 package eneter.messaging.threading.dispatching;
 
-public interface IDispatcher
+public interface IThreadDispatcher
 {
     void invoke(Runnable workItem);
 }
