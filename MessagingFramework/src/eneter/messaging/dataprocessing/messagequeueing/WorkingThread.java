@@ -8,10 +8,11 @@
  
 package eneter.messaging.dataprocessing.messagequeueing;
 
-import eneter.messaging.dataprocessing.messagequeueing.internal.WorkingThreadInvoker;
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 import eneter.net.system.IMethod1;
-import eneter.net.system.internal.IMethod;
+
 
 /**
  * Implements the thread that has the message queue.
@@ -22,32 +23,6 @@ import eneter.net.system.internal.IMethod;
  */
 public class WorkingThread<_MessageType>
 {
-    /**
-     * Constructs the working thread.
-     */
-    public WorkingThread()
-    {
-        this("");
-    }
-    
-    /**
-     * Constructs the working thread with the specified name.
-     * @param workingThreadName name of the working thread
-     */
-    public WorkingThread(String workingThreadName)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myWorkingThreadName = workingThreadName;
-            myWorker = new WorkingThreadInvoker(workingThreadName);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
     /**
      * Registers the method handling messages from the queue and starts the thread reading messages from the queue.
      * @param messageHandler Callback called from the working thread to process the message
@@ -67,9 +42,6 @@ public class WorkingThread<_MessageType>
                 }
                 
                 myMessageHandler = messageHandler;
-                
-                // Start the single thread with the queue.
-                myWorker.start();
             }
         }
         finally
@@ -89,7 +61,6 @@ public class WorkingThread<_MessageType>
         {
             synchronized (myLock)
             {
-                myWorker.stop();
                 myMessageHandler = null;
             }
         }
@@ -118,12 +89,19 @@ public class WorkingThread<_MessageType>
                     throw new IllegalStateException(aMessage);
                 }
     
-                myWorker.invoke(new IMethod()
+                myWorker.invoke(new Runnable()
                 {
                     @Override
-                    public void invoke() throws Exception
+                    public void run()
                     {
-                        myMessageHandler.invoke(message);
+                        try
+                        {
+                            myMessageHandler.invoke(message);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                        }
                     }
                 });
             }
@@ -134,20 +112,12 @@ public class WorkingThread<_MessageType>
         }
     }
     
-    
-    /// <summary>
-    /// Handler called to process the message from the queue.
-    /// </summary>
+    private SyncDispatcher myWorker = new SyncDispatcher();
     private IMethod1<_MessageType> myMessageHandler;
-
-    private WorkingThreadInvoker myWorker;
-
-    private String myWorkingThreadName = "";
-    
     private Object myLock = new Object();
     
     private String TracedObject()
     {
-        return getClass().getSimpleName() + " '" + myWorkingThreadName + "' ";
+        return getClass().getSimpleName() + " ";
     }
 }
