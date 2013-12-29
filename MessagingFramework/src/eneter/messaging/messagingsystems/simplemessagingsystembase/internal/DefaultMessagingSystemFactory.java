@@ -11,6 +11,7 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.*;
 
 public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
 {
@@ -19,40 +20,12 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myOutputConnectorFactory = new DefaultOutputConnectorFactory(messagingProvider);
+            myInputConnectorFactory = new DefaultInputConnectorFactory(messagingProvider);
             myProtocolFormatter = protocolFromatter;
-            myWorkingThreadInvoker = new CallingThreadInvoker();
 
-            myClientConnectorFactory = new DefaultOutputConnectorFactory(messagingProvider);
-            myServiceConnectorFactory = new DefaultInputConnectorFactory(messagingProvider);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
-    public IOutputChannel createOutputChannel(String channelId)
-            throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return new DefaultOutputChannel(channelId, myProtocolFormatter, myClientConnectorFactory);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return new DefaultInputChannel(channelId, myWorkingThreadInvoker, myProtocolFormatter, myServiceConnectorFactory);
+            myInputChannelThreading = new NoDispatching();
+            myOutputChannelThreading = myInputChannelThreading;
         }
         finally
         {
@@ -67,7 +40,8 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultDuplexOutputChannel(channelId, null, myWorkingThreadInvoker, myProtocolFormatter, myClientConnectorFactory, false);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myOutputConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -82,7 +56,8 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, myWorkingThreadInvoker, myProtocolFormatter, myClientConnectorFactory, false);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myOutputConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -97,7 +72,9 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultDuplexInputChannel(channelId, myWorkingThreadInvoker, myProtocolFormatter, myServiceConnectorFactory);
+            IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
+            IInputConnector anInputConnector = myInputConnectorFactory.createInputConnector(channelId);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, anInputConnector, myProtocolFormatter);
         }
         finally
         {
@@ -105,9 +82,30 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
+    public void setOutputChannelThreading(IThreadDispatcherProvider threadDispatcherProvider)
+    {
+        myOutputChannelThreading = threadDispatcherProvider;
+    }
+    
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        return myOutputChannelThreading;
+    }
+    
+    public void setInputChannelThreading(IThreadDispatcherProvider threadDispatcherProvider)
+    {
+        myInputChannelThreading = threadDispatcherProvider;
+    }
+    
+    public IThreadDispatcherProvider getInputChannelThreading()
+    {
+        return myInputChannelThreading;
+    }
     
     private IProtocolFormatter<?> myProtocolFormatter;
-    private IOutputConnectorFactory myClientConnectorFactory;
-    private IInputConnectorFactory myServiceConnectorFactory;
-    private IInvoker myWorkingThreadInvoker;
+    private IOutputConnectorFactory myOutputConnectorFactory;
+    private IInputConnectorFactory myInputConnectorFactory;
+    
+    private IThreadDispatcherProvider myOutputChannelThreading;
+    private IThreadDispatcherProvider myInputChannelThreading;
 }
