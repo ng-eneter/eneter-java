@@ -10,6 +10,7 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.internal.StringExt;
 
@@ -67,6 +68,12 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
     public String getResponseReceiverId()
     {
         return myResponseReceiverId;
+    }
+    
+    @Override
+    public IThreadDispatcher getDispatcher()
+    {
+        return myOutputchannel.getDispatcher();
     }
 
     @Override
@@ -314,4 +321,6 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
         String aChannelId = (getChannelId() != null) ? getChannelId() : "";
         return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
+
+    
 }
