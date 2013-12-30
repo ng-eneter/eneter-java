@@ -67,7 +67,7 @@ class ThreadMessagingProvider implements IMessagingProvider
                 }
 
                 // Create and register the working thread for the registering input channel.
-                WorkingThread<Object> aWorkingThread = new WorkingThread<Object>(receiverId);
+                WorkingThread<Object> aWorkingThread = new WorkingThread<Object>();
                 aWorkingThread.registerMessageHandler(messageHandler);
                 myRegisteredMessageHandlers.put(receiverId, aWorkingThread);
             }
