@@ -11,6 +11,7 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
+import java.util.concurrent.TimeoutException;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
@@ -20,9 +21,77 @@ import eneter.net.system.*;
 import eneter.net.system.threading.internal.*;
 
 
-class TcpClientConnector implements IOutputConnector
+class TcpOutputConnector implements IOutputConnector
 {
-    public TcpClientConnector(String ipAddressAndPort, IClientSecurityFactory clientSecurityFactory) throws Exception
+    // This is the helper class allowing to send a message using the send timeout.
+    // (because java socket does not have the sending timeout)
+    private class TcpMessageSender implements Runnable
+    {
+        public void send(byte[] messageToSend) throws Exception
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                // Prepare sending.
+                myMessage = messageToSend;
+                mySendException = null;
+                mySendCompletedEvent.reset();
+                
+                // Start sending in another thread.
+                ThreadPool.queueUserWorkItem(this);
+                
+                // Wait until sending is completed.
+                int aSendTimeout = myClientSecurityFactory.getSendTimeout();
+                if (!mySendCompletedEvent.waitOne(aSendTimeout))
+                {
+                    throw new TimeoutException(TracedObject() + "failed to send the message within specified timeout: " + Integer.toString(aSendTimeout) + "ms.");
+                }
+                
+                if (mySendException != null)
+                {
+                    throw mySendException;
+                }
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+
+        @Override
+        public void run()
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                try
+                {
+                    OutputStream aSenderStream = myTcpClient.getOutputStream();
+                    aSenderStream.write(myMessage, 0, myMessage.length);
+                }
+                catch (Exception err)
+                {
+                    mySendException = err;
+                }
+                finally
+                {
+                    mySendCompletedEvent.set();
+                }
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+        private ManualResetEvent mySendCompletedEvent = new ManualResetEvent(false);
+        private byte[] myMessage;
+        private Exception mySendException;
+    }
+    
+    public TcpOutputConnector(String ipAddressAndPort, IClientSecurityFactory clientSecurityFactory)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -183,8 +252,7 @@ class TcpClientConnector implements IOutputConnector
             synchronized (myOpenConnectionLock)
             {
                 byte[] aMessage = (byte[])message;
-                OutputStream aSenderStream = myTcpClient.getOutputStream();
-                aSenderStream.write(aMessage, 0, aMessage.length);
+                myTcpMessageSender.send(aMessage);
             }
         }
         finally
@@ -259,6 +327,8 @@ class TcpClientConnector implements IOutputConnector
     private volatile boolean myStopReceivingRequestedFlag;
     private volatile boolean myIsListeningToResponses;
     private ManualResetEvent myListeningToResponsesStartedEvent = new ManualResetEvent(false);
+    
+    private TcpMessageSender myTcpMessageSender = new TcpMessageSender();
     
     private Runnable myCloseConnectionCallback = new Runnable()
     {

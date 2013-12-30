@@ -8,11 +8,12 @@
 
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
-import eneter.messaging.dataprocessing.messagequeueing.internal.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
+import eneter.messaging.threading.dispatching.*;
+
 
 /**
  * Implements the messaging system delivering messages via TCP.
@@ -23,9 +24,9 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
  */
 public class TcpMessagingSystemFactory implements IMessagingSystemFactory
 {
-    private class TcpServiceConnectorFactory implements IInputConnectorFactory
+    private class TcpInputConnectorFactory implements IInputConnectorFactory
     {
-        public TcpServiceConnectorFactory(IServerSecurityFactory securityFactory)
+        public TcpInputConnectorFactory(IServerSecurityFactory securityFactory)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
@@ -45,7 +46,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new TcpServiceConnector(receiverAddress, mySecurityFactory);
+                return new TcpInputConnector(receiverAddress, mySecurityFactory);
             }
             finally
             {
@@ -56,9 +57,9 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         private IServerSecurityFactory mySecurityFactory;
     }
     
-    private class TcpClientConnectorFactory implements IOutputConnectorFactory
+    private class TcpOutputConnectorFactory implements IOutputConnectorFactory
     {
-        public TcpClientConnectorFactory(IClientSecurityFactory securityFactory)
+        public TcpOutputConnectorFactory(IClientSecurityFactory securityFactory)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
@@ -72,14 +73,14 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
 
         @Override
-        public IOutputConnector createClientConnector(
+        public IOutputConnector createOutputConnector(
                 String serviceConnectorAddress, String clientConnectorAddress)
                 throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new TcpClientConnector(serviceConnectorAddress, mySecurityFactory);
+                return new TcpOutputConnector(serviceConnectorAddress, mySecurityFactory);
             }
             finally
             {
@@ -96,31 +97,24 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
      */
     public TcpMessagingSystemFactory()
     {
-        this(EConcurrencyMode.Synchronous, new EneterProtocolFormatter());
+        this(new EneterProtocolFormatter());
     }
 
-    /**
-     * Constructs the TCP messaging factory.
-     * @param concurrencyMode Specifies the threading mode for receiving messages in input channel and duplex input channel.
-     */
-    public TcpMessagingSystemFactory(EConcurrencyMode concurrencyMode)
-    {
-        this(concurrencyMode, new EneterProtocolFormatter());
-    }
     
     /**
      * Constructs the TCP messaging factory.
      * 
-     * @param concurrencyMode Specifies the threading mode for receiving messages in input channel and duplex input channel.
      * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
      */
-    public TcpMessagingSystemFactory(EConcurrencyMode concurrencyMode, IProtocolFormatter<byte[]> protocolFormatter)
+    public TcpMessagingSystemFactory(IProtocolFormatter<byte[]> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myConcurrencyMode = concurrencyMode;
             myProtocolFormatter = protocolFormatter;
+            
+            myInputChannelThreading = new SyncDispatching();
+            myOutputChannelThreading = myInputChannelThreading;
         }
         finally
         {
@@ -148,9 +142,10 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IInvoker anInvoker = new WorkingThreadInvoker();
-            IOutputConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
-            return new DefaultDuplexOutputChannel(channelId, null, anInvoker, myProtocolFormatter, aClientConnectorFactory, false);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            IOutputConnectorFactory anOutputConnectorFactory = new TcpOutputConnectorFactory(myClientSecurityFactory);
+            
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, anOutputConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -179,9 +174,10 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IInvoker anInvoker = new WorkingThreadInvoker();
-            IOutputConnectorFactory aClientConnectorFactory = new TcpClientConnectorFactory(myClientSecurityFactory);
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, anInvoker, myProtocolFormatter, aClientConnectorFactory, false);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            IOutputConnectorFactory anOutputConnectorFactory = new TcpOutputConnectorFactory(myClientSecurityFactory);
+            
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, anOutputConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -205,18 +201,12 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IInvoker anInvoker = null;
-            if (myConcurrencyMode == EConcurrencyMode.Synchronous)
-            {
-                anInvoker = new WorkingThreadInvoker(channelId);
-            }
-            else
-            {
-                anInvoker = new CallingThreadInvoker();
-            }
+            IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
             
-            IInputConnectorFactory aFactory = new TcpServiceConnectorFactory(myServerSecurityFactory);
-            return new DefaultDuplexInputChannel(channelId, anInvoker, myProtocolFormatter, aFactory);
+            IInputConnectorFactory aFactory = new TcpInputConnectorFactory(myServerSecurityFactory);
+            IInputConnector anInputConnector = aFactory.createInputConnector(channelId);
+            
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, anInputConnector, myProtocolFormatter);
         }
         finally
         {
@@ -258,9 +248,62 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
+    public void setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myInputChannelThreading = inputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
-    private EConcurrencyMode myConcurrencyMode;
+    public IThreadDispatcherProvider getInputChannelThreading()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return myInputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public void setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myOutputChannelThreading = outputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return myOutputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     private IProtocolFormatter<byte[]> myProtocolFormatter;
     private IServerSecurityFactory myServerSecurityFactory = new NoneSecurityServerFactory();
     private IClientSecurityFactory myClientSecurityFactory = new NoneSecurityClientFactory();
+    private IThreadDispatcherProvider myInputChannelThreading;
+    private IThreadDispatcherProvider myOutputChannelThreading;
+    
 }

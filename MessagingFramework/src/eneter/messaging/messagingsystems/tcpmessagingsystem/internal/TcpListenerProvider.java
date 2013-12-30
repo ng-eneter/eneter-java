@@ -284,6 +284,12 @@ public class TcpListenerProvider
         {
             try
             {
+                // Setup timeouts and buffers for the client socket.
+                int aReceiveTimeout = myServerSecurityFactory.getReceiveTimeout();
+                int aSendBufferSize = myServerSecurityFactory.getSendBufferSize();
+                tcpClient.setSoTimeout(aReceiveTimeout);
+                tcpClient.setSendBufferSize(aSendBufferSize);
+                
                 // Call user provided connection handler.
                 myConnectionHandler.invoke(tcpClient);
             }

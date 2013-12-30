@@ -60,7 +60,10 @@ public class SslServerFactory implements IServerSecurityFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            SSLServerSocket aServerSocket = (SSLServerSocket)mySslServerSocketFactory.createServerSocket(socketAddress.getPort(), 1000, socketAddress.getAddress());
+            SSLServerSocket aServerSocket = (SSLServerSocket)mySslServerSocketFactory.createServerSocket();
+            aServerSocket.setReceiveBufferSize(myReceiveBuffer);
+            aServerSocket.bind(socketAddress, 1000);
+            
             aServerSocket.setNeedClientAuth(myIsClientCertificateRequired);
             
             return aServerSocket;
@@ -71,6 +74,67 @@ public class SslServerFactory implements IServerSecurityFactory
         }
     }
 
+    @Override
+    public void setSendTimeout(int sendTimeout)
+    {
+        mySendTimeout = sendTimeout;
+    }
+
+
+    @Override
+    public int getSendTimeout()
+    {
+        return mySendTimeout;
+    }
+
+
+    @Override
+    public void setReceiveTimeout(int receiveTimeout)
+    {
+        myReceiveTimeout = receiveTimeout;
+        
+    }
+
+
+    @Override
+    public int getReceiveTimeout()
+    {
+        return myReceiveTimeout;
+    }
+    
+    
+    @Override
+    public void setSendBufferSize(int size)
+    {
+        mySendBuffer = size;
+    }
+    
+    
+    @Override
+    public int getSendBufferSize()
+    {
+        return mySendBuffer;
+    }
+    
+    
+    @Override
+    public void setReceiveBufferSize(int size)
+    {
+        myReceiveBuffer = size;
+    }
+    
+    
+    @Override
+    public int getReceiveBufferSize()
+    {
+        return myReceiveBuffer;
+    }
+    
     private boolean myIsClientCertificateRequired;
     private SSLServerSocketFactory mySslServerSocketFactory;
+    
+    private int mySendTimeout;
+    private int myReceiveTimeout;
+    private int mySendBuffer;
+    private int myReceiveBuffer;
 }
