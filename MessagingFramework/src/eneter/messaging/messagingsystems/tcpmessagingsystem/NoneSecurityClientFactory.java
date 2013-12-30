@@ -23,7 +23,7 @@ public class NoneSecurityClientFactory implements IClientSecurityFactory
     /**
      * Constructs the factory that creates a normal client socket with default values.
      * The connection timeout is set to 30000 milliseconds.
-     * The sending timeout is set to 30000 milliseconds.
+     * The sending timeout is set to infinite time.
      * The receiving timeout is set to infinite time.
      * The message sending buffer is set to 8192 bytes.
      * The message receiving buffer is set to 8192 bytes.
@@ -31,7 +31,7 @@ public class NoneSecurityClientFactory implements IClientSecurityFactory
     public NoneSecurityClientFactory()
     {
         myConnectionTimeout = 30000;
-        mySendTimeout = 30000;
+        mySendTimeout = 0; // infinite
         myReceiveTimeout = 0; // infinite
         mySendBuffer = 8192;
         myReceiveBuffer = 8192;

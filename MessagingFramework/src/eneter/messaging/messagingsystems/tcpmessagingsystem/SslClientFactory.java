@@ -26,6 +26,8 @@ public class SslClientFactory implements IClientSecurityFactory
      * 
      * The factory will use the default socket factory returned from SSLSocketFactory.getDefault()
      * The connection timeout is set to 30000 milliseconds.
+     * The sending timeout is set to infinite time.
+     * The receiving timeout is set to infinite time.
      * The message sending buffer is set to 8192 bytes.
      * The message receiving buffer is set to 8192 bytes.
      */
@@ -39,7 +41,7 @@ public class SslClientFactory implements IClientSecurityFactory
      * 
      * The factory will internally use given SSLSocketFactory.
      * The connection timeout is set to 30000 milliseconds.
-     * The sending timeout is set to 30000 milliseconds.
+     * The sending timeout is set to infinite time.
      * The receiving timeout is set to infinite time.
      * The message sending buffer is set to 8192 bytes.
      * The message receiving buffer is set to 8192 bytes.
@@ -53,7 +55,7 @@ public class SslClientFactory implements IClientSecurityFactory
         {
             mySocketFactory = socketFactory;
             myConnectionTimeout = 30000;
-            mySendTimeout = 30000;
+            mySendTimeout = 0; // infinite
             myReceiveTimeout = 0; // infinite
             mySendBuffer = 8192;
             myReceiveBuffer = 8192;

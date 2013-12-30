@@ -23,6 +23,10 @@ public class SslServerFactory implements IServerSecurityFactory
 {
     /**
      * Constructs the factory.
+     * The sending timeout is set to infinite time.
+     * The receiving timeout is set to infinite time.
+     * The message sending buffer is set to 8192 bytes.
+     * The message receiving buffer is set to 8192 bytes.
      * 
      * The factory will use SSLServerSocketFactory.getDefault().
      */
@@ -33,6 +37,10 @@ public class SslServerFactory implements IServerSecurityFactory
     
     /**
      * Constructs the factory.
+     * The sending timeout is set to infinite time.
+     * The receiving timeout is set to infinite time.
+     * The message sending buffer is set to 8192 bytes.
+     * The message receiving buffer is set to 8192 bytes.
      * 
      * @param sslServerSocketFactory given SSL server socket factory
      * @param isClientCertificateRequired true if also the client certificate shall be required during the communication
@@ -44,6 +52,11 @@ public class SslServerFactory implements IServerSecurityFactory
         {
             mySslServerSocketFactory = sslServerSocketFactory;
             myIsClientCertificateRequired = isClientCertificateRequired;
+            
+            mySendTimeout = 0; // infinite
+            myReceiveTimeout = 0; // infinite
+            mySendBuffer = 8192;
+            myReceiveBuffer = 8192;
         }
         finally
         {

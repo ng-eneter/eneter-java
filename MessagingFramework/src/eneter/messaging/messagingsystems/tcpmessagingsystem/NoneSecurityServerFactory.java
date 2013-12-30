@@ -21,14 +21,14 @@ public class NoneSecurityServerFactory implements IServerSecurityFactory
 {
     /**
      * Constructs the factory that creates a normal server socket with default values.
-     * The sending timeout is set to 30000 milliseconds.
+     * The sending timeout is set to infinite time.
      * The receiving timeout is set to infinite time.
      * The message sending buffer is set to 8192 bytes.
      * The message receiving buffer is set to 8192 bytes.
      */
     public NoneSecurityServerFactory()
     {
-        mySendTimeout = 30000;
+        mySendTimeout = 0; // infinite
         myReceiveTimeout = 0; // infinite
         mySendBuffer = 8192;
         myReceiveBuffer = 8192;
