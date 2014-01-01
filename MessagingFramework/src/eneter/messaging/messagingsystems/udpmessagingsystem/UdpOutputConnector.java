@@ -16,9 +16,9 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.*;
 
-class UdpClientConnector implements IOutputConnector
+class UdpOutputConnector implements IOutputConnector
 {
-    public UdpClientConnector(String ipAddressAndPort) throws Exception
+    public UdpOutputConnector(String ipAddressAndPort) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

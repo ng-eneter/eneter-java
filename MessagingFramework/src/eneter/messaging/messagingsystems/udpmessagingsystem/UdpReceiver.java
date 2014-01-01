@@ -10,12 +10,12 @@ package eneter.messaging.messagingsystems.udpmessagingsystem;
 
 import java.net.*;
 
-import eneter.messaging.dataprocessing.messagequeueing.internal.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.MessageContext;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
+import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 import eneter.net.system.IFunction1;
-import eneter.net.system.internal.IMethod;
 import eneter.net.system.threading.internal.ManualResetEvent;
 
 class UdpReceiver
@@ -27,7 +27,7 @@ class UdpReceiver
         {
             myServiceEndpoint = serviceEndPoint;
             myIsService = isService;
-            myWorkingThreadInvoker = new WorkingThreadInvoker();
+            myWorkingThreadDispatcher = new SyncDispatcher();
         }
         finally
         {
@@ -58,8 +58,6 @@ class UdpReceiver
                 {
                     myStopListeningRequested = false;
                     myMessageHandler = messageHandler;
-
-                    myWorkingThreadInvoker.start();
 
                     // Create unbound socket.
                     mySocket = new DatagramSocket(null);
@@ -159,8 +157,6 @@ class UdpReceiver
                 myListeningThread = null;
 
                 myMessageHandler = null;
-
-                myWorkingThreadInvoker.stop();
             }
         }
         finally
@@ -204,40 +200,49 @@ class UdpReceiver
                     final InetSocketAddress aSenderEndPoint = (InetSocketAddress)aPacket.getSocketAddress();
                     final byte[] aDatagram = new byte[aPacket.getLength()];
                     System.arraycopy(aPacket.getData(), 0, aDatagram, 0, aDatagram.length);
-                            
-                    myWorkingThreadInvoker.invoke(new IMethod()
+                    
+                    myWorkingThreadDispatcher.invoke(new Runnable()
                     {
                         @Override
-                        public void invoke()
+                        public void run()
                         {
+                            EneterTrace aTrace = EneterTrace.entering();
                             try
                             {
-                                MessageContext aMessageContext;
-
-                                // If this is service then we need to create the sender for response messages.
-                                if (myIsService)
+                                try
                                 {
-                                    // Get the sender IP address.
-                                    String aSenderIp = (aSenderEndPoint != null && aSenderEndPoint.getAddress() != null) ? aSenderEndPoint.getAddress().getHostAddress() : "";
-
-                                    // Create the response sender.
-                                    UdpSender aResponseSender = new UdpSender(mySocket, aSenderEndPoint);
-
-                                    aMessageContext = new MessageContext(aDatagram, aSenderIp, aResponseSender);
+                                    MessageContext aMessageContext;
+    
+                                    // If this is service then we need to create the sender for response messages.
+                                    if (myIsService)
+                                    {
+                                        // Get the sender IP address.
+                                        String aSenderIp = (aSenderEndPoint != null && aSenderEndPoint.getAddress() != null) ? aSenderEndPoint.getAddress().getHostAddress() : "";
+    
+                                        // Create the response sender.
+                                        UdpSender aResponseSender = new UdpSender(mySocket, aSenderEndPoint);
+    
+                                        aMessageContext = new MessageContext(aDatagram, aSenderIp, aResponseSender);
+                                    }
+                                    else
+                                    {
+                                        aMessageContext = new MessageContext(aDatagram, "", null);
+                                    }
+    
+                                    myMessageHandler.invoke(aMessageContext);
                                 }
-                                else
+                                catch (Exception err)
                                 {
-                                    aMessageContext = new MessageContext(aDatagram, "", null);
+                                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                                 }
-
-                                myMessageHandler.invoke(aMessageContext);
                             }
-                            catch (Exception err)
+                            finally
                             {
-                                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                                EneterTrace.leaving(aTrace);
                             }
                         }
                     });
+                            
                 }
             }
             catch (Exception err)
@@ -254,10 +259,10 @@ class UdpReceiver
             {
                 try
                 {
-                    myWorkingThreadInvoker.invoke(new IMethod()
+                    myWorkingThreadDispatcher.invoke(new Runnable()
                     {
                         @Override
-                        public void invoke()
+                        public void run()
                         {
                             try
                             {
@@ -294,7 +299,7 @@ class UdpReceiver
     private Thread myListeningThread;
     private ManualResetEvent myListeningToResponsesStartedEvent = new ManualResetEvent(false);
     private IFunction1<Boolean, MessageContext> myMessageHandler;
-    private IInvoker myWorkingThreadInvoker;
+    private IThreadDispatcher myWorkingThreadDispatcher;
     
     private String TracedObject()
     {

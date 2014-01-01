@@ -8,12 +8,13 @@
 
 package eneter.messaging.messagingsystems.udpmessagingsystem;
 
-import eneter.messaging.dataprocessing.messagequeueing.internal.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
+import eneter.messaging.threading.dispatching.*;
+
 
 /**
  * Implements the messaging system delivering messages via UDP.
@@ -32,7 +33,7 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new UdpClientConnector(serviceConnectorAddress);
+                return new UdpOutputConnector(serviceConnectorAddress);
             }
             finally
             {
@@ -47,7 +48,7 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new UdpServiceConnector(serviceConnectorAddress);
+                return new UdpInputConnector(serviceConnectorAddress);
             }
             finally
             {
@@ -75,6 +76,9 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         {
             myProtocolFormatter = protocolFromatter;
             myConnectorFactory = new UdpConnectorFactory();
+            
+            myInputChannelThreading = new SyncDispatching();
+            myOutputChannelThreading = myInputChannelThreading;
         }
         finally
         {
@@ -92,8 +96,8 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IInvoker anInvoker = new WorkingThreadInvoker();
-            return new DefaultDuplexOutputChannel(channelId, null, anInvoker, myProtocolFormatter, myConnectorFactory, false);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -111,8 +115,8 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IInvoker anInvoker = new WorkingThreadInvoker();
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, anInvoker, myProtocolFormatter, myConnectorFactory, false);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -130,8 +134,9 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IInvoker anInvoker = new WorkingThreadInvoker();
-            return new DefaultDuplexInputChannel(channelId, anInvoker, myProtocolFormatter, myConnectorFactory);
+            IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
+            IInputConnector anInputConnector = myConnectorFactory.createInputConnector(channelId);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, anInputConnector, myProtocolFormatter);
         }
         finally
         {
@@ -140,6 +145,62 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     
+    public void setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myInputChannelThreading = inputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public IThreadDispatcherProvider getInputChannelThreading()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return myInputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public void setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myOutputChannelThreading = outputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return myOutputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    
     private IProtocolFormatter<?> myProtocolFormatter;
     private UdpConnectorFactory myConnectorFactory;
+    
+    private IThreadDispatcherProvider myInputChannelThreading;
+    private IThreadDispatcherProvider myOutputChannelThreading;
 }
