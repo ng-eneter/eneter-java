@@ -14,6 +14,7 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.linq.internal.EnumerableExt;
@@ -70,11 +71,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-
     @Override
-    public Event<DuplexChannelMessageEventArgs> messageReceived()
+    public Event<ConnectionTokenEventArgs> responseReceiverConnecting()
     {
-        return myMessageReceivedEventImpl.getApi();
+        return myResponseReceiverConnectingEventImpl.getApi();
     }
 
     @Override
@@ -88,12 +88,28 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     {
         return myResponseReceiverDisconnectedEventImpl.getApi();
     }
+    
+    @Override
+    public Event<DuplexChannelMessageEventArgs> messageReceived()
+    {
+        return myMessageReceivedEventImpl.getApi();
+    }
 
+    
+    
     @Override
     public String getChannelId()
     {
         return myUnderlyingInputChannel.getChannelId();
     }
+    
+    @Override
+    public IThreadDispatcher getDispatcher()
+    {
+        return myUnderlyingInputChannel.getDispatcher();
+    }
+
+
 
     @Override
     public void startListening() throws Exception
@@ -110,6 +126,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     throw new IllegalStateException(aMessage);
                 }
 
+                myUnderlyingInputChannel.responseReceiverConnecting().subscribe(myOnResponseReceiverConecting);
                 myUnderlyingInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
                 myUnderlyingInputChannel.messageReceived().subscribe(myOnMessageReceived);
 
@@ -119,6 +136,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 }
                 catch (Exception err)
                 {
+                    myUnderlyingInputChannel.responseReceiverConnecting().unsubscribe(myOnResponseReceiverConecting);
                     myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
                     myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
 
@@ -149,6 +167,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
                 }
 
+                myUnderlyingInputChannel.responseReceiverConnecting().unsubscribe(myOnResponseReceiverConecting);
                 myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
                 myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
             }
@@ -218,6 +237,29 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             catch (Exception err)
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void onResponseReceiverConecting(Object sender, ConnectionTokenEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (myResponseReceiverConnectingEventImpl.isSubscribed())
+            {
+                try
+                {
+                    myResponseReceiverConnectingEventImpl.raise(this, e);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
             }
         }
         finally
@@ -363,8 +405,15 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 }
 
                 // Notify that the response receiver was disconected.
-                ResponseReceiverEventArgs e = new ResponseReceiverEventArgs(aResponseReceiver.getResponseReceiverId(), aResponseReceiver.getClientAddress());
-                notifyResponseReceiverDisconnected(e);
+                final ResponseReceiverEventArgs e = new ResponseReceiverEventArgs(aResponseReceiver.getResponseReceiverId(), aResponseReceiver.getClientAddress());
+                myUnderlyingInputChannel.getDispatcher().invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyResponseReceiverDisconnected(e);
+                    }
+                });
             }
 
             // If the timer chall continue.
@@ -482,9 +531,20 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     private HashSet<TResponseReceiverContext> myResponseReceiverContexts = new HashSet<TResponseReceiverContext>();
     
     
+    private EventImpl<ConnectionTokenEventArgs> myResponseReceiverConnectingEventImpl = new EventImpl<ConnectionTokenEventArgs>();
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
+    
+    
+    private EventHandler<ConnectionTokenEventArgs> myOnResponseReceiverConecting = new EventHandler<ConnectionTokenEventArgs>()
+    {
+        @Override
+        public void onEvent(Object x, ConnectionTokenEventArgs y)
+        {
+            onResponseReceiverConecting(x, y);
+        }
+    };
     
     private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
     {

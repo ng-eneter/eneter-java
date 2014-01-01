@@ -14,6 +14,7 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.threading.internal.*;
 
@@ -65,6 +66,12 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
     {
         return myUnderlyingOutputChannel.getResponseReceiverId();
     }
+    
+    @Override
+    public IThreadDispatcher getDispatcher()
+    {
+        return myUnderlyingOutputChannel.getDispatcher();
+    }
 
     @Override
     public void openConnection() throws Exception
@@ -113,8 +120,9 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                         {
                             doPinging();
                         }
-                        catch (Exception e)
+                        catch (Exception err)
                         {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                         }
                     }
                 });
@@ -335,8 +343,22 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
             }
 
             // Notify, the connection is closed.
-            DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
-            notifyEvent(myConnectionClosedEventImpl, aMsg, false);
+            final DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
+            ThreadPool.queueUserWorkItem(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    myUnderlyingOutputChannel.getDispatcher().invoke(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            notifyEvent(myConnectionClosedEventImpl, aMsg, false);
+                        }
+                    });
+                }
+            });
         }
         finally
         {
@@ -415,4 +437,5 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         String aChannelId = (myUnderlyingOutputChannel != null) ? myUnderlyingOutputChannel.getChannelId() : "";
         return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
+
 }
