@@ -13,6 +13,7 @@ import java.util.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.threading.internal.*;
 
@@ -61,6 +62,12 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
     {
         return myUnderlyingOutputChannel.getResponseReceiverId();
     }
+    
+    @Override
+    public IThreadDispatcher getDispatcher()
+    {
+        return myUnderlyingOutputChannel.getDispatcher();
+    }
 
     @Override
     public void openConnection() throws Exception
@@ -97,8 +104,9 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                         {
                             doOpenConnection();
                         }
-                        catch (Exception e)
+                        catch (Exception err)
                         {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                         }
                     }
                 }; 
@@ -127,7 +135,10 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                 
                 try
                 {
-                    mySendingThreadIsStoppedEvent.waitOne(5000);
+                    if (!mySendingThreadIsStoppedEvent.waitOne(5000))
+                    {
+                        EneterTrace.warning(TracedObject() + "failed to stop the message sending thread within 5 seconds.");
+                    }
                 }
                 catch (Exception err)
                 {
@@ -138,7 +149,10 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                 
                 try
                 {
-                    myConnectionOpeningThreadIsStoppedEvent.waitOne(5000);
+                    if (!myConnectionOpeningThreadIsStoppedEvent.waitOne(5000))
+                    {
+                        EneterTrace.warning(TracedObject() + "failed to stop the connection openning thread within 5 seconds.");
+                    }
                 }
                 catch (Exception err)
                 {
@@ -215,8 +229,9 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                             {
                                 doMessageSending();
                             }
-                            catch (Exception e)
+                            catch (Exception err)
                             {
+                                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                             }
                         }
                     }; 
@@ -501,4 +516,6 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         String aChannelId = (myUnderlyingOutputChannel != null) ? myUnderlyingOutputChannel.getChannelId() : "";
         return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
+
+    
 }

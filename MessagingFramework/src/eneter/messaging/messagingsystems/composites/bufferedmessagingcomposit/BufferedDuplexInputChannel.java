@@ -13,6 +13,7 @@ import java.util.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.StringExt;
@@ -37,12 +38,10 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
     }
     
 
-    
-
     @Override
-    public Event<DuplexChannelMessageEventArgs> messageReceived()
+    public Event<ConnectionTokenEventArgs> responseReceiverConnecting()
     {
-        return myMessageReceivedEventImpl.getApi();
+        return myResponseReceiverConnectingEventImpl.getApi();
     }
 
     @Override
@@ -56,11 +55,25 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
     {
         return myResponseReceiverDisconnectedEventImpl.getApi();
     }
+    
+    @Override
+    public Event<DuplexChannelMessageEventArgs> messageReceived()
+    {
+        return myMessageReceivedEventImpl.getApi();
+    }
+    
+    
 
     @Override
     public String getChannelId()
     {
         return myUnderlyingInputChannel.getChannelId();
+    }
+    
+    @Override
+    public IThreadDispatcher getDispatcher()
+    {
+        return myUnderlyingInputChannel.getDispatcher();
     }
     
     @Override
@@ -71,6 +84,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         {
             synchronized (myListeningManipulatorLock)
             {
+                myUnderlyingInputChannel.responseReceiverConnecting().subscribe(myOnResponseReceiverConnecting);
                 myUnderlyingInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
                 myUnderlyingInputChannel.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
                 myUnderlyingInputChannel.messageReceived().subscribe(myOnMessageReceived);
@@ -81,6 +95,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                 }
                 catch (Exception err)
                 {
+                    myUnderlyingInputChannel.responseReceiverConnecting().unsubscribe(myOnResponseReceiverConnecting);
                     myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
                     myUnderlyingInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
                     myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
@@ -129,6 +144,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                     EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
                 }
 
+                myUnderlyingInputChannel.responseReceiverConnecting().unsubscribe(myOnResponseReceiverConnecting);
                 myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
                 myUnderlyingInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
                 myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
@@ -250,6 +266,18 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
+    private void onResponseReceiverConnecting(Object sender, ConnectionTokenEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notifyEvent(myResponseReceiverConnectingEventImpl, e, false);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     private void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e)
     {
@@ -434,8 +462,15 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                     // It is ok.
                 }
 
-                ResponseReceiverEventArgs aMsg = new ResponseReceiverEventArgs(aResponseReceiverContext.getResponseReceiverId(), aResponseReceiverContext.getClientAddress());
-                notifyEvent(myResponseReceiverDisconnectedEventImpl, aMsg, false);
+                final ResponseReceiverEventArgs aMsg = new ResponseReceiverEventArgs(aResponseReceiverContext.getResponseReceiverId(), aResponseReceiverContext.getClientAddress());
+                myUnderlyingInputChannel.getDispatcher().invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyEvent(myResponseReceiverDisconnectedEventImpl, aMsg, false);
+                    }
+                });
             }
 
             // If the timer checking the timeout for response receivers shall continue
@@ -514,9 +549,20 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
     private HashSet<ResponseReceiverContext> myResponseReceivers = new HashSet<ResponseReceiverContext>();
     
     
+    private EventImpl<ConnectionTokenEventArgs> myResponseReceiverConnectingEventImpl = new EventImpl<ConnectionTokenEventArgs>();
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
+    
+    
+    private EventHandler<ConnectionTokenEventArgs> myOnResponseReceiverConnecting = new EventHandler<ConnectionTokenEventArgs>()
+    {
+        @Override
+        public void onEvent(Object x, ConnectionTokenEventArgs y)
+        {
+            onResponseReceiverConnecting(x, y);
+        }
+    };
     
     private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
     {
