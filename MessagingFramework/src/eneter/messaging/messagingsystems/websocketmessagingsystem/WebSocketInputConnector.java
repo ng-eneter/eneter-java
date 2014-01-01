@@ -20,7 +20,7 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFacto
 import eneter.net.system.*;
 import eneter.net.system.internal.IDisposable;
 
-class WebSocketServiceConnector implements IInputConnector
+class WebSocketInputConnector implements IInputConnector
 {
     private class WebSocketResponseSender implements ISender, IDisposable
     {
@@ -84,7 +84,7 @@ class WebSocketServiceConnector implements IInputConnector
 
     
     
-    public WebSocketServiceConnector(String wsUriAddress, IServerSecurityFactory securityFactory) throws Exception
+    public WebSocketInputConnector(String wsUriAddress, IServerSecurityFactory securityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

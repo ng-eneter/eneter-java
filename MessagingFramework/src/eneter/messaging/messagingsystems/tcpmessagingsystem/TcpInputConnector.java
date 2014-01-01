@@ -10,71 +10,18 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.TimeoutException;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.*;
 import eneter.net.system.*;
 import eneter.net.system.internal.IDisposable;
-import eneter.net.system.threading.internal.ManualResetEvent;
-import eneter.net.system.threading.internal.ThreadPool;
 
 
 class TcpInputConnector implements IInputConnector
 {
     private class ResponseSender implements ISender, IDisposable
     {
-        // This is the helper class allowing to send a response message using the send timeout.
-        // (because java socket does not have the sending timeout)
-        private class TcpResponseMessageSender implements Runnable
-        {
-            public void send(byte[] messageToSend) throws Exception
-            {
-                // Prepare sending.
-                myMessage = messageToSend;
-                mySendException = null;
-                mySendCompletedEvent.reset();
-                
-                // Start sending in another thread.
-                ThreadPool.queueUserWorkItem(this);
-                
-                // Wait until sending is completed.
-                if (!mySendCompletedEvent.waitOne(mySendTimeout))
-                {
-                    throw new TimeoutException("ResponseSender failed to send the message within specified timeout: " + Integer.toString(mySendTimeout) + "ms.");
-                }
-                
-                if (mySendException != null)
-                {
-                    throw mySendException;
-                }
-            }
-            
-
-            @Override
-            public void run()
-            {
-                try
-                {
-                    myClientStream.write(myMessage, 0, myMessage.length);
-                }
-                catch (Exception err)
-                {
-                    mySendException = err;
-                }
-                finally
-                {
-                    mySendCompletedEvent.set();
-                }
-            }
-            
-            private ManualResetEvent mySendCompletedEvent = new ManualResetEvent(false);
-            private byte[] myMessage;
-            private Exception mySendException;
-        }
-        
-        
         public ResponseSender(OutputStream clientStream, int sendTimeout)
         {
             EneterTrace aTrace = EneterTrace.entering();
@@ -125,7 +72,7 @@ class TcpInputConnector implements IInputConnector
                 synchronized (mySenderLock)
                 {
                     byte[] aMessage = (byte[])message;
-                    myResponseSender.send(aMessage);
+                    myStreamWriter.write(myClientStream, aMessage, mySendTimeout);
                 }
             }
             finally
@@ -144,7 +91,7 @@ class TcpInputConnector implements IInputConnector
         private OutputStream myClientStream;
         private int mySendTimeout;
         private Object mySenderLock = new Object();
-        private TcpResponseMessageSender myResponseSender = new TcpResponseMessageSender();
+        private OutputStreamTimeoutWriter myStreamWriter = new OutputStreamTimeoutWriter();
     }
 
     

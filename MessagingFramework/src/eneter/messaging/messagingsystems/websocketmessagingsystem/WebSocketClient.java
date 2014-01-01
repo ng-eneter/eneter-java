@@ -16,6 +16,7 @@ import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.OutputStreamTimeoutWriter;
 import eneter.net.system.*;
 import eneter.net.system.internal.Cast;
 import eneter.net.system.internal.Convert;
@@ -233,6 +234,36 @@ public class WebSocketClient
         return aCustomEvent;
     }
     
+    public void setConnectionTimeout(int connectionTimeout)
+    {
+        myClientSecurityFactory.setConnectionTimeout(connectionTimeout);
+    }
+    
+    public int getConnectionTimeout()
+    {
+        return myClientSecurityFactory.getConnectionTimeout();
+    }
+    
+    public void setSendTimeout(int sendTimeout)
+    {
+        myClientSecurityFactory.setSendTimeout(sendTimeout);
+    }
+    
+    public int getSendTimeout()
+    {
+        return myClientSecurityFactory.getSendTimeout();
+    }
+    
+    public void setReceiveTimeout(int receiveTimeout)
+    {
+        myClientSecurityFactory.setReceiveTimeout(receiveTimeout);
+    }
+    
+    public int getReceiveTimeout()
+    {
+        return myClientSecurityFactory.getReceiveTimeout();
+    }
+    
     /**
      * Returns address of websocket server.
      * @return
@@ -344,7 +375,7 @@ public class WebSocketClient
 
                     // Open TCP connection.
                     myTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
-                    myTcpClient.getOutputStream().write(anOpenRequest);
+                    myStreamWriter.write(myTcpClient.getOutputStream(), anOpenRequest, myClientSecurityFactory.getSendTimeout());
                     
                     // Wait for the HTTP response and check if the connection was open.
                     HashMap<String, String> aResponseResult = WebSocketFormatter.decodeOpenConnectionHttpResponse(myTcpClient.getInputStream());
@@ -414,7 +445,7 @@ public class WebSocketClient
                         // Generate the masking key.
                         byte[] aMaskingKey = getMaskingKey();
                         byte[] aCloseFrame = WebSocketFormatter.encodeCloseFrame(aMaskingKey, (short)1000);
-                        myTcpClient.getOutputStream().write(aCloseFrame);
+                        myStreamWriter.write(myTcpClient.getOutputStream(), aCloseFrame, myClientSecurityFactory.getSendTimeout());
                     }
                     catch (Exception err)
                     {
@@ -739,7 +770,7 @@ public class WebSocketClient
                     byte[] aMaskingKey = getMaskingKey();
                     byte[] aFrame = formatter.invoke(aMaskingKey);
 
-                    myTcpClient.getOutputStream().write(aFrame);
+                    myStreamWriter.write(myTcpClient.getOutputStream(), aFrame, myClientSecurityFactory.getSendTimeout());
                 }
                 catch (Exception err)
                 {
@@ -943,8 +974,7 @@ public class WebSocketClient
                     byte[] aMaskingKey = getMaskingKey();
                     byte[] aCloseMessage = WebSocketFormatter.encodeCloseFrame(aMaskingKey, aCloseCode);
 
-
-                    myTcpClient.getOutputStream().write(aCloseMessage);
+                    myStreamWriter.write(myTcpClient.getOutputStream(), aCloseMessage, myClientSecurityFactory.getSendTimeout());
                 }
                 catch (Exception err)
                 {
@@ -1103,6 +1133,8 @@ public class WebSocketClient
     private EMessageInSendProgress myMessageInSendProgress = EMessageInSendProgress.None;
     
     private WorkingThread<WebSocketMessage> myMessageProcessingThread = new WorkingThread<WebSocketMessage>();
+    
+    private OutputStreamTimeoutWriter myStreamWriter = new OutputStreamTimeoutWriter();
     
     private EventImpl<Object> myConnectionOpenedEvent = new EventImpl<Object>();
     private EventImpl<Object> myConnectionClosedEvent = new EventImpl<Object>();

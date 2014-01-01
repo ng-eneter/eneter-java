@@ -16,6 +16,7 @@ import java.util.Map;
 import eneter.messaging.dataprocessing.messagequeueing.MessageQueue;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.OutputStreamTimeoutWriter;
 import eneter.net.system.*;
 import eneter.net.system.internal.Cast;
 import eneter.net.system.threading.internal.ThreadPool;
@@ -69,6 +70,33 @@ class WebSocketClientContext implements IWebSocketClientContext
         return Collections.unmodifiableMap(myHeaderFields);
     }
     
+    @Override
+    public void setSendTimeout(int sendTimeout)
+    {
+        mySendTimeout = sendTimeout;
+    }
+
+
+    @Override
+    public int getSendTimeout()
+    {
+        return mySendTimeout;
+    }
+
+
+    @Override
+    public void setReceiveTimeout(int receiveTimeout) throws Exception
+    {
+        myTcpClient.setSoTimeout(receiveTimeout);
+    }
+
+
+    @Override
+    public int getReceiveTimeout() throws Exception
+    {
+        return myTcpClient.getSoTimeout();
+    }
+    
     public InetSocketAddress getClientEndPoint()
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -115,7 +143,7 @@ class WebSocketClientContext implements IWebSocketClientContext
                     {
                         // Generate the masking key.
                         byte[] aCloseFrame = WebSocketFormatter.encodeCloseFrame(null, (short)1000);
-                        myTcpClient.getOutputStream().write(aCloseFrame);
+                        myStreamWriter.write(myTcpClient.getOutputStream(), aCloseFrame, mySendTimeout);
                     }
                     catch (Exception err)
                     {
@@ -340,7 +368,7 @@ class WebSocketClientContext implements IWebSocketClientContext
                     byte[] aFrame = formatter.invoke(null);
 
                     // Send the message.
-                    myTcpClient.getOutputStream().write(aFrame);
+                    myStreamWriter.write(myTcpClient.getOutputStream(), aFrame, mySendTimeout);
                 }
                 catch (Exception err)
                 {
@@ -488,7 +516,7 @@ class WebSocketClientContext implements IWebSocketClientContext
                 try
                 {
                     byte[] aCloseMessage = WebSocketFormatter.encodeCloseFrame(null, aCloseCode);
-                    myTcpClient.getOutputStream().write(aCloseMessage);
+                    myStreamWriter.write(myTcpClient.getOutputStream(), aCloseMessage, mySendTimeout);
                 }
                 catch (Exception err)
                 {
@@ -559,6 +587,9 @@ class WebSocketClientContext implements IWebSocketClientContext
     
     private EMessageInSendProgress myMessageInSendProgress = EMessageInSendProgress.None;
     private MessageQueue<WebSocketMessage> myReceivedMessages = new MessageQueue<WebSocketMessage>();
+    
+    private int mySendTimeout;
+    private OutputStreamTimeoutWriter myStreamWriter = new OutputStreamTimeoutWriter();
     
     
     private EventImpl<Object> myConnectionClosedEvent = new EventImpl<Object>();

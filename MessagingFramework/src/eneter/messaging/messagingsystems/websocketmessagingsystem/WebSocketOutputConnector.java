@@ -19,9 +19,12 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
 import eneter.net.system.*;
 
-class WebSocketClientConnector implements IOutputConnector
+class WebSocketOutputConnector implements IOutputConnector
 {
-    public WebSocketClientConnector(String serviceConnectorAddress, int pingFrequency, IClientSecurityFactory clientSecurityFactory) throws Exception
+    public WebSocketOutputConnector(String serviceConnectorAddress,
+            int pingFrequency,
+            IClientSecurityFactory clientSecurityFactory)
+                    throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -38,6 +41,7 @@ class WebSocketClientConnector implements IOutputConnector
             }
             
             myClient = new WebSocketClient(aUri, clientSecurityFactory);
+            
             myPingFrequency = pingFrequency;
             myTimer = new Timer("ReliableMessageTimeTracker", true);
         }

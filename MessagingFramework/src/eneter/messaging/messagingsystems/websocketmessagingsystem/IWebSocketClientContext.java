@@ -59,6 +59,32 @@ public interface IWebSocketClientContext
     Map<String, String> getHeaderFields();
     
     /**
+     * Sets the send timeout in miliseconds. Default value is 0 what is infinite time.
+     * @param sendTimeout
+     */
+    void setSendTimeout(int sendTimeout);
+    
+    /**
+     * Gets the send timeout in miliseconds. Default value is 0 what is infinite time.
+     * @return
+     */
+    int getSendTimeout();
+    
+    /**
+     * Sets the receive timeout in miliseconds. Default value is 0 what is infinite time.
+     * @param receiveTimeout
+     * @throws Exception 
+     */
+    void setReceiveTimeout(int receiveTimeout) throws Exception;
+    
+    /**
+     * Gets the receive timeout in miliseconds. Default value is 0 what is infinite time.
+     * @return
+     * @throws Exception 
+     */
+    int getReceiveTimeout() throws Exception;
+    
+    /**
      * Sends message to the client.
      * The message must be type of string or byte[]. If the type is string then the message is sent as the text message via text frame.
      * If the type is byte[] the message is sent as the binary message via binary frame.
