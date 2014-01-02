@@ -274,12 +274,13 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    public void setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    public WebSocketMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myInputChannelThreading = inputChannelThreading;
+            return this;
         }
         finally
         {
@@ -300,12 +301,13 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    public void setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    public WebSocketMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myOutputChannelThreading = outputChannelThreading;
+            return this;
         }
         finally
         {

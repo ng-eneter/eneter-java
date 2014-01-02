@@ -145,12 +145,13 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     
-    public void setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    public UdpMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myInputChannelThreading = inputChannelThreading;
+            return this;
         }
         finally
         {
@@ -171,12 +172,13 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    public void setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    public UdpMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myOutputChannelThreading = outputChannelThreading;
+            return this;
         }
         finally
         {

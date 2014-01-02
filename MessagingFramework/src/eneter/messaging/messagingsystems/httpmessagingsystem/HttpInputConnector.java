@@ -16,6 +16,7 @@ import java.util.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.IDisposable;
@@ -138,7 +139,8 @@ class HttpInputConnector implements IInputConnector
     
 
     
-    public HttpInputConnector(String httpAddress, int responseReceiverInactivityTimeout) throws Exception
+    public HttpInputConnector(String httpAddress, int responseReceiverInactivityTimeout,
+            IServerSecurityFactory serverSecurityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -154,7 +156,7 @@ class HttpInputConnector implements IInputConnector
                 throw err;
             }
             
-            myHttpListenerProvider = new HttpListener(aUri);
+            myHttpListenerProvider = new HttpListener(aUri, serverSecurityFactory);
 
             myResponseReceiverInactivityTimeout = responseReceiverInactivityTimeout;
 

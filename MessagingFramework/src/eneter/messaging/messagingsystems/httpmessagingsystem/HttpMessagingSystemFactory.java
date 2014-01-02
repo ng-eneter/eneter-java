@@ -41,12 +41,13 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
 {
     private class HttpInputConnectorFactory implements IInputConnectorFactory
     {
-        public HttpInputConnectorFactory(int responseReceiverInactivityTimeout)
+        public HttpInputConnectorFactory(int responseReceiverInactivityTimeout, IServerSecurityFactory serverSecurityFactory)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
                 myOutputConnectorInactivityTimeout = responseReceiverInactivityTimeout;
+                myServerSecurityFactory = serverSecurityFactory;
             }
             finally
             {
@@ -61,7 +62,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new HttpInputConnector(inputConnectorAddress, myOutputConnectorInactivityTimeout);
+                return new HttpInputConnector(inputConnectorAddress, myOutputConnectorInactivityTimeout, myServerSecurityFactory);
             }
             finally
             {
@@ -70,6 +71,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         }
 
         private int myOutputConnectorInactivityTimeout;
+        private IServerSecurityFactory myServerSecurityFactory;
     }
     
     private class HttpOutputConnectorFactory implements IOutputConnectorFactory
@@ -166,12 +168,11 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             myPollingFrequency = pollingFrequency;
+            myInactivityTimeout = inactivityTimeout;
             myProtocolFormatter = protocolFormatter;
 
             myInputChannelThreading = new SyncDispatching();
             myOutputChannelThreading = myInputChannelThreading;
-
-            myInputConnectorFactory = new HttpInputConnectorFactory(inactivityTimeout);
         }
         finally
         {
@@ -259,7 +260,9 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
-            IInputConnector anInputConnector = myInputConnectorFactory.createInputConnector(channelId);
+            IServerSecurityFactory aServerSecurityFactory = getServerSecurityFactory(channelId);
+            IInputConnectorFactory anInputConnectorFactory = new HttpInputConnectorFactory(myInactivityTimeout, aServerSecurityFactory);
+            IInputConnector anInputConnector = anInputConnectorFactory.createInputConnector(channelId);
             return new DefaultDuplexInputChannel(channelId, aDispatcher, anInputConnector, myProtocolFormatter);
         }
         finally
@@ -291,12 +294,13 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
 
     
     
-    public void setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    public HttpMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myInputChannelThreading = inputChannelThreading;
+            return this;
         }
         finally
         {
@@ -317,12 +321,13 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    public void setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    public HttpMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myOutputChannelThreading = outputChannelThreading;
+            return this;
         }
         finally
         {
@@ -345,8 +350,8 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         
     
     private int myPollingFrequency;
+    private int myInactivityTimeout;
     private IProtocolFormatter<byte[]> myProtocolFormatter;
-    private IInputConnectorFactory myInputConnectorFactory;
     private IThreadDispatcherProvider myInputChannelThreading;
     private IThreadDispatcherProvider myOutputChannelThreading;
 }

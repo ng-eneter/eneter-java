@@ -248,12 +248,13 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    public void setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    public TcpMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myInputChannelThreading = inputChannelThreading;
+            return this;
         }
         finally
         {
@@ -274,12 +275,13 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    public void setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    public TcpMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myOutputChannelThreading = outputChannelThreading;
+            return this;
         }
         finally
         {
