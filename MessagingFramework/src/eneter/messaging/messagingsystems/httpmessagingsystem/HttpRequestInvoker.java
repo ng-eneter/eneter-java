@@ -14,10 +14,9 @@ import java.net.*;
 import eneter.messaging.dataprocessing.streaming.internal.StreamUtil;
 import eneter.messaging.diagnostic.*;
 
-class HttpClient
+class HttpRequestInvoker
 {
-    public static void sendOnewayRequest(URL url, byte[] content)
-            throws Exception
+    public static byte[] invokeGetRequest(URL url) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -27,13 +26,9 @@ class HttpClient
             HttpURLConnection aConnection = (HttpURLConnection)url.openConnection();
             try
             {
-                aConnection.setDoOutput(true);
-                aConnection.setRequestMethod("POST");
+                aConnection.setDoOutput(false);
+                aConnection.setRequestMethod("GET");
 
-                // Write the message to the stream.
-                OutputStream aSender = aConnection.getOutputStream();
-                aSender.write(content);
-                
                 // Fire the message.
                 // Note: requesting the response code will fire the message.
                 int aResponseCode = aConnection.getResponseCode();
@@ -42,6 +37,9 @@ class HttpClient
                     String aResponseMessage = "HTTP error: " + aResponseCode + " " + aConnection.getResponseMessage();
                     throw new IllegalStateException(aResponseMessage);
                 }
+                
+                InputStream aResponseStream = aConnection.getInputStream();
+                return StreamUtil.readToEnd(aResponseStream);
             }
             finally
             {
@@ -57,8 +55,7 @@ class HttpClient
         }
     }
     
-    
-    public static byte[] sendRequest(URL url, byte[] content)
+    public static byte[] invokePostRequest(URL url, byte[] content)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();

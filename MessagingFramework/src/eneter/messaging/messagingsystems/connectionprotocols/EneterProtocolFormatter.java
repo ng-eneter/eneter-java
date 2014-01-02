@@ -136,29 +136,6 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
     }
 
     @Override
-    public byte[] encodePollRequest(String responseReceiverId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            ByteArrayOutputStream aBuffer = new ByteArrayOutputStream();
-            DataOutputStream aWriter = new DataOutputStream(aBuffer);
-
-            encodeHeader(aWriter);
-
-            aWriter.write(POLL_REQUEST);
-
-            encodeString(aWriter, responseReceiverId);
-
-            return aBuffer.toByteArray();
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
     public ProtocolMessage decodeMessage(InputStream readStream)
     {
         EneterTrace aTrace = EneterTrace.entering();

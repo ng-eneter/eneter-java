@@ -166,7 +166,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    public boolean isListening()
+    public boolean isListening() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -282,7 +282,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private boolean handleMessage(final MessageContext messageContext)
+    private boolean handleMessage(final MessageContext messageContext) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -428,7 +428,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private boolean createResponseMessageSender(MessageContext messageContext, final String responseReceiverId)
+    private boolean createResponseMessageSender(MessageContext messageContext, final String responseReceiverId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

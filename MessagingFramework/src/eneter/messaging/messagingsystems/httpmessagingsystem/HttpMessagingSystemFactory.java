@@ -13,7 +13,16 @@ import java.net.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.DefaultDuplexInputChannel;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.DefaultDuplexOutputChannel;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IInputConnector;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IInputConnectorFactory;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IOutputConnector;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IOutputConnectorFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
+import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
+import eneter.messaging.threading.dispatching.SyncDispatching;
 
 /**
  * Implements the messaging system delivering messages via HTTP.
@@ -30,6 +39,73 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
  */
 public class HttpMessagingSystemFactory implements IMessagingSystemFactory
 {
+    private class HttpInputConnectorFactory implements IInputConnectorFactory
+    {
+        public HttpInputConnectorFactory(int responseReceiverInactivityTimeout)
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                myOutputConnectorInactivityTimeout = responseReceiverInactivityTimeout;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        @Override
+        public IInputConnector createInputConnector(String inputConnectorAddress)
+                throws Exception
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                return new HttpInputConnector(inputConnectorAddress, myOutputConnectorInactivityTimeout);
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        private int myOutputConnectorInactivityTimeout;
+    }
+    
+    private class HttpOutputConnectorFactory implements IOutputConnectorFactory
+    {
+        public HttpOutputConnectorFactory(int pollingFrequency)
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                myPollingFrequency = pollingFrequency;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        @Override
+        public IOutputConnector createOutputConnector(String inputConnectorAddress, String outputConnectorAddress)
+                throws Exception
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                return new HttpOutputConnector(inputConnectorAddress, outputConnectorAddress, myPollingFrequency);
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        private int myPollingFrequency;
+    }
+    
+    
     /**
      * Constructs the factory that will create channels with default settings.
      * 
@@ -90,8 +166,12 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             myPollingFrequency = pollingFrequency;
-            myConnectedDuplexOutputChannelInactivityTimeout = inactivityTimeout;
             myProtocolFormatter = protocolFormatter;
+
+            myInputChannelThreading = new SyncDispatching();
+            myOutputChannelThreading = myInputChannelThreading;
+
+            myInputConnectorFactory = new HttpInputConnectorFactory(inactivityTimeout);
         }
         finally
         {
@@ -99,46 +179,6 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-
-    /**
-     * Creates the output channel sending messages to specified input channel by using HTTP.
-     * 
-     * The output channel can send messages only to the input channel and not to the duplex input channel.
-     */
-    @Override
-    public IOutputChannel createOutputChannel(String channelId)
-            throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return new HttpOutputChannel(channelId, myProtocolFormatter);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    /**
-     * Creates the input channel receiving message from the output channel using HTTP.
-     * 
-     * The input channel can receive messages only from the output channel and not from the duplex output channel.
-     */
-    @Override
-    public IInputChannel createInputChannel(String channelId) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            IServerSecurityFactory aServerSecurityFactory = getServerSecurityFactory(channelId);
-            return new HttpInputChannel(channelId, myProtocolFormatter, aServerSecurityFactory);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
 
     /**
      * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using HTTP.
@@ -160,7 +200,9 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new HttpDuplexOutputChannel(channelId, null, myPollingFrequency, myProtocolFormatter);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            IOutputConnectorFactory aClientConnectorFactory = new HttpOutputConnectorFactory(myPollingFrequency);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aClientConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -189,7 +231,9 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new HttpDuplexOutputChannel(channelId, responseReceiverId, myPollingFrequency, myProtocolFormatter);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            IOutputConnectorFactory aClientConnectorFactory = new HttpOutputConnectorFactory(myPollingFrequency);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aClientConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -214,8 +258,9 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IServerSecurityFactory aServerSecurityFactory = getServerSecurityFactory(channelId);
-            return new HttpDuplexInputChannel(channelId, myConnectedDuplexOutputChannelInactivityTimeout, myProtocolFormatter, aServerSecurityFactory);
+            IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
+            IInputConnector anInputConnector = myInputConnectorFactory.createInputConnector(channelId);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, anInputConnector, myProtocolFormatter);
         }
         finally
         {
@@ -244,7 +289,64 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         } 
     }
 
-    private IProtocolFormatter<byte[]> myProtocolFormatter;
-    private int myConnectedDuplexOutputChannelInactivityTimeout;
+    
+    
+    public void setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myInputChannelThreading = inputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public IThreadDispatcherProvider getInputChannelThreading()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return myInputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public void setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myOutputChannelThreading = outputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return myOutputChannelThreading;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+        
+    
     private int myPollingFrequency;
+    private IProtocolFormatter<byte[]> myProtocolFormatter;
+    private IInputConnectorFactory myInputConnectorFactory;
+    private IThreadDispatcherProvider myInputChannelThreading;
+    private IThreadDispatcherProvider myOutputChannelThreading;
 }

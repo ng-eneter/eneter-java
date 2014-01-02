@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
@@ -97,6 +98,8 @@ class HttpHostListener extends HostListenerBase
             // Create context for the received request message
             URI aRequestUri = new URI(aHandlerUri.getScheme(), null, aHandlerUri.getHost(), getAddress().getPort(), anAbsolutePath, aRegExResult.get("query"), null);
 
+            String anHttpMethod = aRegExResult.get("method");
+            
             // Read the content of the request message.
             byte[] aRequestMessage = null;
             
@@ -121,7 +124,7 @@ class HttpHostListener extends HostListenerBase
 
                 aRequestMessage = aBuffer.toByteArray();
             }
-            else if (aRegExResult.get("method").equals("POST"))
+            else if (anHttpMethod.equals("POST"))
             {
                 // Get size of the message.
                 String aSizeStr = aHeaderFields.get("Content-Length");
@@ -152,7 +155,8 @@ class HttpHostListener extends HostListenerBase
             }
             
             // The message is not in chunks.
-            HttpRequestContext aClientContext = new HttpRequestContext(aRequestUri, aRequestMessage, tcpClient.getOutputStream());
+            InetAddress aRemoteEndPoint = tcpClient.getInetAddress();
+            HttpRequestContext aClientContext = new HttpRequestContext(aRequestUri, anHttpMethod, aRemoteEndPoint, aRequestMessage, tcpClient.getOutputStream());
 
             try
             {

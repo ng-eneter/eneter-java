@@ -86,12 +86,6 @@ public class LocalProtocolFormatter implements IProtocolFormatter<Object>
     }
 
     @Override
-    public Object encodePollRequest(String responseReceiverId) throws Exception
-    {
-        throw new UnsupportedOperationException("LocalProtocolFormatter does not support encoding of PollRequest.");
-    }
-
-    @Override
     public ProtocolMessage decodeMessage(InputStream readStream)
     {
         EneterTrace aTrace = EneterTrace.entering();

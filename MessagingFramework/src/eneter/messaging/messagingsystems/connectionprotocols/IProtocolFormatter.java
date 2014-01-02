@@ -82,15 +82,6 @@ public interface IProtocolFormatter<T>
     void encodeMessage(String responseReceiverId, Object message, OutputStream outputSream) throws Exception;
 
     /**
-     * Encodes message used by some duplex (e.g. HTTP duplex output channel) to send the poll request.
-     * 
-     * @param responseReceiverId id of the client polling messages
-     * @return encoded message
-     * @throws Exception
-     */
-    T encodePollRequest(String responseReceiverId) throws Exception;
-
-    /**
      * Decodes message from the stream.
      * 
      * @param readStream stream to be read
