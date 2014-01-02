@@ -14,6 +14,7 @@ class HttpRequestContext
         try
         {
             myUri = uri;
+            myHttpMethod = httpMethod;
             myRemoteEndPoint = (remoteEndPoint != null) ? remoteEndPoint.toString() : "";
             myResponseStream = responseStream;
             myRequestMessage = requestMessage;

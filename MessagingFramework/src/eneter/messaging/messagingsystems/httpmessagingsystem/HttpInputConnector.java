@@ -20,6 +20,7 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFacto
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.IDisposable;
+import eneter.net.system.internal.StringExt;
 import eneter.net.system.linq.internal.EnumerableExt;
 
 class HttpInputConnector implements IInputConnector
@@ -274,10 +275,10 @@ class HttpInputConnector implements IInputConnector
             if (httpRequestContext.getHttpMethod().equals("GET"))
             {
                 // Get responseReceiverId.
-                String[] aQueryItems = { httpRequestContext.getUri().getQuery() };
-                if (aQueryItems.length > 0)
+                String aQuery = httpRequestContext.getUri().getQuery();
+                if (!StringExt.isNullOrEmpty(aQuery))
                 {
-                    final String aResponseReceiverId = aQueryItems[0].substring(4);
+                    final String aResponseReceiverId = aQuery.substring(3);
 
                     // Find the sender for the response receiver.
                     HttpResponseSender aResponseSender = null;
