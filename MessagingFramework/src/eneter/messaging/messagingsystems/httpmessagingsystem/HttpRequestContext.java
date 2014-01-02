@@ -1,18 +1,20 @@
 package eneter.messaging.messagingsystems.httpmessagingsystem;
 
 import java.io.OutputStream;
-import java.net.URI;
+import java.net.*;
+
 
 import eneter.messaging.diagnostic.EneterTrace;
 
 class HttpRequestContext
 {
-    public HttpRequestContext(URI uri, byte[] requestMessage, OutputStream responseStream)
+    public HttpRequestContext(URI uri, String httpMethod, InetAddress remoteEndPoint, byte[] requestMessage, OutputStream responseStream)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myUri = uri;
+            myRemoteEndPoint = (remoteEndPoint != null) ? remoteEndPoint.toString() : "";
             myResponseStream = responseStream;
             myRequestMessage = requestMessage;
         }
@@ -25,6 +27,16 @@ class HttpRequestContext
     public URI getUri()
     {
         return myUri;
+    }
+    
+    public String getHttpMethod()
+    {
+        return myHttpMethod;
+    }
+    
+    public String getRemoteEndPoint()
+    {
+        return myRemoteEndPoint;
     }
 
     public byte[] getRequestMessage()
@@ -87,6 +99,8 @@ class HttpRequestContext
     
     
     private URI myUri;
+    private String myHttpMethod;
+    private String myRemoteEndPoint;
     private boolean myIsResponded;
     private OutputStream myResponseStream;
     private byte[] myRequestMessage;
