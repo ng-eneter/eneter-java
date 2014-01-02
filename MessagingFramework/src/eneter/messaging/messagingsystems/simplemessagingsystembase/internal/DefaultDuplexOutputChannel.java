@@ -230,9 +230,10 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         {
             ProtocolMessage aProtocolMessage = null;
 
-            Object aMessage = messageContext.getMessage();
-            if (messageContext != null && aMessage != null)
+            if (messageContext != null && messageContext.getMessage() != null)
             {
+                Object aMessage = messageContext.getMessage();
+                
                 if (aMessage instanceof InputStream)
                 {
                     aProtocolMessage = myProtocolFormatter.decodeMessage((InputStream)aMessage);

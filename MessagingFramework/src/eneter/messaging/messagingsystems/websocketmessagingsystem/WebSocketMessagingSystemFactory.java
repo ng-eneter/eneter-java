@@ -144,6 +144,9 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         {
             myPingFrequency = pingFrequency;
             myProtocolFormatter = protocolFormatter;
+            
+            myInputChannelThreading = new SyncDispatching();
+            myOutputChannelThreading = myInputChannelThreading;
         }
         finally
         {

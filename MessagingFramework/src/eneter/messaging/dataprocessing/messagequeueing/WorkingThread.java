@@ -89,6 +89,9 @@ public class WorkingThread<_MessageType>
                     throw new IllegalStateException(aMessage);
                 }
     
+                // Note: If the message handler is unregistered before the message handler is processed from the queue
+                //       then myMessageHandler will be null and the exception will occur. Therefore we need to store it locally.
+                final IMethod1<_MessageType> aMessageHandler = myMessageHandler;
                 myWorker.invoke(new Runnable()
                 {
                     @Override
@@ -96,7 +99,7 @@ public class WorkingThread<_MessageType>
                     {
                         try
                         {
-                            myMessageHandler.invoke(message);
+                            aMessageHandler.invoke(message);
                         }
                         catch (Exception err)
                         {
