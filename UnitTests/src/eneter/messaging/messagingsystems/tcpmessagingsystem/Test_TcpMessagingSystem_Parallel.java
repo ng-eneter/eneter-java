@@ -12,10 +12,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
-import eneter.messaging.messagingsystems.messagingsystembase.ChannelMessageEventArgs;
-import eneter.messaging.messagingsystems.messagingsystembase.EConcurrencyMode;
-import eneter.messaging.messagingsystems.messagingsystembase.IInputChannel;
-import eneter.messaging.messagingsystems.messagingsystembase.IOutputChannel;
+import eneter.messaging.threading.dispatching.NoDispatching;
 import eneter.net.system.EventHandler;
 import eneter.net.system.threading.internal.ManualResetEvent;
 
@@ -29,7 +26,9 @@ public class Test_TcpMessagingSystem_Parallel extends MessagingSystemBaseTester
         Random aRandomPort = new Random();
         int aPort = 7000 + aRandomPort.nextInt(1000);
         
-        myMessagingSystemFactory = new TcpMessagingSystemFactory(EConcurrencyMode.ConcurrentConnections);
+        myMessagingSystemFactory = new TcpMessagingSystemFactory()
+        .setInputChannelThreading(new NoDispatching())
+        .setOutputChannelThreading(new NoDispatching());
         myChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
     }
     
@@ -41,10 +40,4 @@ public class Test_TcpMessagingSystem_Parallel extends MessagingSystemBaseTester
         super.Duplex_03_Send100_10MB();
     }
     
-    @Test(expected = SocketException.class)
-    @Override
-    public void Oneway_06_StopListening() throws Exception
-    {
-        super.Oneway_06_StopListening();
-    }
 }

@@ -62,13 +62,6 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
     {
     }
     
-    @Test(expected = ConnectException.class)
-    @Override
-    public void Oneway_06_StopListening()
-        throws Exception
-    {
-        super.Oneway_06_StopListening();
-    }
     
     @Ignore
     @Test
@@ -184,8 +177,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 @Override
                 public Object call() throws Exception
                 {
-                    // One-way channel on the same TCP as duplex channel.
-                    sendMessageViaOutputChannel(myChannelId2, "Hello2", 1, 100);
+                    sendMessageReceiveResponse(myChannelId2, "Hello2", "Response3", 1, 100);
                     return null;
                 }
             });

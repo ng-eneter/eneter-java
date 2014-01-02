@@ -30,10 +30,4 @@ public class Test_WebSocketMessaging extends MessagingSystemBaseTester
         myChannelId = "ws://127.0.0.1:" + Integer.toString(aPort) + "/";
     }
     
-    @Test(expected = SocketException.class)
-    @Override
-    public void Oneway_06_StopListening() throws Exception
-    {
-        super.Oneway_06_StopListening();
-    }
 }

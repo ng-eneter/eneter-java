@@ -150,67 +150,6 @@ public abstract class MessagingSystemBaseTester
         };
     }
     
-    private static class TOnewayClient
-    {
-        public TOnewayClient(IMessagingSystemFactory messaging, String channelId) throws Exception
-        {
-            OutputChannel = messaging.createOutputChannel(channelId);
-        }
-
-        public IOutputChannel OutputChannel;
-    }
-    
-    private static class TOnewayService
-    {
-       public TOnewayService(IMessagingSystemFactory messaging, String channelId, String expextedMessage,
-                int expextedNumberOfMessages) throws Exception
-            {
-                InputChannel = messaging.createInputChannel(channelId);
-                InputChannel.messageReceived().subscribe(myOnMessageReceived);
-
-                myExpectedMessage = expextedMessage;
-                myExpectedNumberOfMessage = expextedNumberOfMessages;
-
-                MessagesReceivedEvent = new ManualResetEvent(false);
-            }
-        
-        private void onMessageReceived(ChannelMessageEventArgs e)
-        {
-            synchronized (myLock)
-            {
-                ++NumberOfReceivedMessages;
-
-                if (NumberOfReceivedMessages == myExpectedNumberOfMessage)
-                {
-                    MessagesReceivedEvent.set();
-                }
-
-                if (InputChannel.getChannelId().equals(e.getChannelId()) == false ||
-                    myExpectedMessage.equals((String)e.getMessage()) == false)
-                {
-                    ++NumberOfFailedMessages;
-                }
-             }
-        }
-        
-        public IInputChannel InputChannel;
-        public int NumberOfReceivedMessages;
-        public int NumberOfFailedMessages;
-        public ManualResetEvent MessagesReceivedEvent;
-
-        private String myExpectedMessage;
-        private int myExpectedNumberOfMessage;
-        private Object myLock = new Object();
-        
-        private EventHandler<ChannelMessageEventArgs> myOnMessageReceived = new EventHandler<ChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object sender, ChannelMessageEventArgs e)
-            {
-                onMessageReceived(e);
-            }
-        };
-    }
     
     
     public MessagingSystemBaseTester()
@@ -218,55 +157,6 @@ public abstract class MessagingSystemBaseTester
         myChannelId = "Channel1";
     }
     
-    @Test
-    public void Oneway_01_Send1()
-            throws Exception
-    {
-        sendMessageViaOutputChannel(myChannelId, "Message", 1, 1);
-    }
-    
-    @Test
-    public void Oneway_02_Send500()
-            throws Exception
-    {
-        sendMessageViaOutputChannel(myChannelId, "Message", 1, 500);
-    }
-    
-    @Test
-    public void Oneway_03_Send50_10Parallel()
-            throws Exception
-    {
-        sendMessageViaOutputChannel(myChannelId, "Message", 10, 50);
-    }
-    
-    @Test(expected = IllegalStateException.class)
-    public void Oneway_06_StopListening()
-        throws Exception
-    {
-        IOutputChannel anOutputChannel = myMessagingSystemFactory.createOutputChannel(myChannelId);
-        IInputChannel anInputChannel = myMessagingSystemFactory.createInputChannel(myChannelId);
-
-        anInputChannel.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object t1, ChannelMessageEventArgs t2)
-            {
-                // This method should not be never executed.
-                // So we are not interested in received messages.
-            }
-        });
-
-        anInputChannel.startListening();
-
-        Thread.sleep(100);
-
-        anInputChannel.stopListening();
-
-        // Send the message. Since the listening is stopped nothing should be delivered.
-        anOutputChannel.sendMessage("Message");
-
-        Thread.sleep(500);
-    }
     
     @Test
     public void Duplex_01_Send1()
@@ -896,68 +786,6 @@ public abstract class MessagingSystemBaseTester
             aDuplexOutputChannel.closeConnection();
         }
     }
-    
-    
-    protected void sendMessageViaOutputChannel(final String channelId,
-            final String message,
-            final int numberOfClients, final int numberOfTimes)
-            throws Exception
-    {
-        TOnewayClient[] aClients = new TOnewayClient[numberOfClients];
-        for (int i = 0; i < aClients.length; ++i)
-        {
-            aClients[i] = new TOnewayClient(myMessagingSystemFactory, channelId);
-        }
-
-        TOnewayService aService = new TOnewayService(myMessagingSystemFactory, channelId, message, numberOfTimes * numberOfClients);
-
-        try
-        {
-            aService.InputChannel.startListening();
-
-            // Clients send messages in parallel.
-            for (TOnewayClient aClient : aClients)
-            {
-                final TOnewayClient aC = aClient;
-                ThreadPool.queueUserWorkItem(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            //EneterTrace.Info("Client idx = " + aIdx);
-    
-                            for (int j = 0; j < numberOfTimes; ++j)
-                            {
-                                // Send messages.
-                                aC.OutputChannel.sendMessage(message);
-                            }
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.error("Sending of messages failed.", err);
-                        }
-                    }
-                });
-
-                Thread.sleep(2);
-            }
-
-            // Wait until all messages are processed.
-            //assertTrue(aService.MessagesReceivedEvent.waitOne(timeOutForMessageProcessing));
-            aService.MessagesReceivedEvent.waitOne();
-
-            EneterTrace.info("Waiting for processing of messages on '" + channelId + "' completed.");
-        }
-        finally
-        {
-            aService.InputChannel.stopListening();
-        }
-
-        assertEquals(0, aService.NumberOfFailedMessages);
-    }
-    
     
     protected void sendMessageReceiveResponse(final String channelId,
             final String message, final String resonseMessage,

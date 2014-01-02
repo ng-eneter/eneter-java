@@ -43,10 +43,4 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
         super.Duplex_03_Send100_10MB();
     }
     
-    @Test(expected = SocketException.class)
-    @Override
-    public void Oneway_06_StopListening() throws Exception
-    {
-        super.Oneway_06_StopListening();
-    }
 }

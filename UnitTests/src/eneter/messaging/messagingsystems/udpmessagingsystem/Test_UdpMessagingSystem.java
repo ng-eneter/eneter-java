@@ -21,12 +21,6 @@ public class Test_UdpMessagingSystem extends MessagingSystemBaseTester
         myChannelId = "udp://127.0.0.1:" + Integer.toString(aPort) + "/";
     }
     
-    @Ignore
-    @Test
-    @Override
-    public void Oneway_06_StopListening()
-    {
-    }
 
     @Ignore
     @Test

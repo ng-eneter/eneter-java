@@ -2,13 +2,13 @@ package eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit;
 
 import static org.junit.Assert.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 
 import org.junit.Test;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
-import eneter.messaging.messagingsystems.composites.ICompositeDuplexInputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
 import eneter.net.system.threading.internal.AutoResetEvent;
@@ -210,63 +210,6 @@ public abstract class BufferedMessagingBaseTester
 
     }
     
-    @Test
-    public void A03_IndependentStartupOrder_OutputChannel() throws Exception
-    {
-        final IOutputChannel anOutputChannel = MessagingSystem.createOutputChannel(ChannelId);
-        final IInputChannel anInputChannel = MessagingSystem.createInputChannel(ChannelId);
-
-        final AutoResetEvent anAllMessagesProcessedEvent = new AutoResetEvent(false);
-        final ArrayList<String> aReceivedMessages = new ArrayList<String>();
-        anInputChannel.messageReceived().subscribe(new EventHandler<ChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, ChannelMessageEventArgs y)
-            {
-                synchronized (aReceivedMessages)
-                {
-                    aReceivedMessages.add((String)y.getMessage());
-
-                    if (aReceivedMessages.size() == 5)
-                    {
-                        anAllMessagesProcessedEvent.set();
-                    }
-                }
-            }
-        });
-
-        try
-        {
-            anOutputChannel.sendMessage("111");
-            anOutputChannel.sendMessage("112");
-            anOutputChannel.sendMessage("113");
-            anOutputChannel.sendMessage("114");
-            anOutputChannel.sendMessage("115");
-
-            Thread.sleep(300);
-
-            anInputChannel.startListening();
-
-            // Wait until messages are received.
-            //anAllMessagesProcessedEvent.waitOne();
-            assertTrue(anAllMessagesProcessedEvent.waitOne(60000));
-        }
-        finally
-        {
-            anInputChannel.stopListening();
-        }
-
-
-        Collections.sort(aReceivedMessages);
-
-        assertEquals(5, aReceivedMessages.size());
-
-        assertEquals("111", aReceivedMessages.get(0));
-        assertEquals("112", aReceivedMessages.get(1));
-        assertEquals("113", aReceivedMessages.get(2));
-        assertEquals("114", aReceivedMessages.get(3));
-        assertEquals("115", aReceivedMessages.get(4));
-    }
 
     @Test
     public void A04_SendMessagesOffline() throws Exception
@@ -595,7 +538,10 @@ public abstract class BufferedMessagingBaseTester
     {
         final IDuplexOutputChannel aDuplexOutputChannel = MessagingSystem.createDuplexOutputChannel(ChannelId);
         final IDuplexInputChannel aDuplexInputChannel = MessagingSystem.createDuplexInputChannel(ChannelId);
-        final IDuplexInputChannel anUnderlyingDuplexInputChannel = ((ICompositeDuplexInputChannel)aDuplexInputChannel).getUnderlyingDuplexInputChannel();
+
+        Field aMember = aDuplexInputChannel.getClass().getDeclaredField("myUnderlyingInputChannel");
+        aMember.setAccessible(true);
+        final IDuplexInputChannel anUnderlyingDuplexInputChannel = (IDuplexInputChannel)aMember.get(aDuplexInputChannel);
 
 
         final AutoResetEvent anAllMessagesProcessedEvent = new AutoResetEvent(false);

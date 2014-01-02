@@ -3,6 +3,7 @@ package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.Event;
 import eneter.net.system.EventImpl;
 import eneter.net.system.EventHandler;
@@ -12,6 +13,7 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     public Mock_MonitorDuplexInputChannel(IDuplexInputChannel underlyingInputChannel, ISerializer serializer)
     {
         myUnderlyingInputChannel = underlyingInputChannel;
+        myUnderlyingInputChannel.responseReceiverConnecting().subscribe(myOnResponseReceiverConnecting);
         myUnderlyingInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
         myUnderlyingInputChannel.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
         myUnderlyingInputChannel.messageReceived().subscribe(myOnMessageReceived);
@@ -28,6 +30,12 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     }
 
     @Override
+    public Event<ConnectionTokenEventArgs> responseReceiverConnecting()
+    {
+        return myResponseReceiverConnectingEventImpl.getApi();
+    }
+    
+    @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
         return myResponseReceiverConnectedEventImpl.getApi();
@@ -43,6 +51,12 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     public String getChannelId()
     {
         return myUnderlyingInputChannel.getChannelId();
+    }
+    
+    @Override
+    public IThreadDispatcher getDispatcher()
+    {
+        return myUnderlyingInputChannel.getDispatcher();
     }
 
     @Override
@@ -80,6 +94,21 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
             throws Exception
     {
         myUnderlyingInputChannel.disconnectResponseReceiver(responseReceiverId);
+    }
+    
+    private void onResponseReceiverConnecting(Object sender, ConnectionTokenEventArgs e)
+    {
+        if (myResponseReceiverConnectingEventImpl.isSubscribed())
+        {
+            try
+            {
+                myResponseReceiverConnectingEventImpl.raise(this, e);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + "detected an exception from the 'ResponseReceiverConnecting' event handler.", err);
+            }
+        }
     }
     
     private void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e)
@@ -173,10 +202,20 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
     public boolean myResponsePingFlag;
     
     
+    private EventImpl<ConnectionTokenEventArgs> myResponseReceiverConnectingEventImpl = new EventImpl<ConnectionTokenEventArgs>();
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     
+    
+    private EventHandler<ConnectionTokenEventArgs> myOnResponseReceiverConnecting = new EventHandler<ConnectionTokenEventArgs>()
+    {
+        @Override
+        public void onEvent(Object x, ConnectionTokenEventArgs y)
+        {
+            onResponseReceiverConnecting(x, y);
+        }
+    };
     
     private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
     {
@@ -212,4 +251,6 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
         String aChannelId = (myUnderlyingInputChannel != null) ? myUnderlyingInputChannel.getChannelId() : "";
         return "The MOCK monitor duplex input channel '" + aChannelId + "' ";
     }
+
+    
 }
