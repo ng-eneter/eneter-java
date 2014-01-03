@@ -11,6 +11,8 @@ import java.util.concurrent.Future;
 
 import org.junit.*;
 
+import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
@@ -74,6 +76,8 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
     @Test
     public void B01_InactivityTimeout() throws Exception
     {
+        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        
         // Set the pulling frequency time (duplex output channel pulls for responses) higher
         // than inactivity timeout in the duplex input channel.
         // Therefore the timeout should occur before the pulling - this is how the
