@@ -173,11 +173,12 @@ class HttpOutputConnector implements IOutputConnector
 
                 while (!myStopReceivingRequestedFlag)
                 {
-                    // Send poll request to get messages from the service.
-                    byte[] aResponseMessages = HttpRequestInvoker.invokeGetRequest(aPollingUrl);
-
+                    myStopPollingWaitingEvent.waitOne(myPollingFrequencyMiliseconds);
+                    
                     if (!myStopReceivingRequestedFlag)
                     {
+                        // Send poll request to get messages from the service.
+                        byte[] aResponseMessages = HttpRequestInvoker.invokeGetRequest(aPollingUrl);
                         
                         if (aResponseMessages != null && aResponseMessages.length > 0)
                         {
@@ -194,12 +195,6 @@ class HttpOutputConnector implements IOutputConnector
                                     break;
                                 }
                             }
-                            
-                        }
-
-                        if (!myStopReceivingRequestedFlag)
-                        {
-                            myStopPollingWaitingEvent.waitOne(myPollingFrequencyMiliseconds);
                         }
                     }
                 }

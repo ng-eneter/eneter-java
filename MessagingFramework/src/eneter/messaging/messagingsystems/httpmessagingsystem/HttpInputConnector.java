@@ -356,7 +356,9 @@ class HttpInputConnector implements IInputConnector
                     {
                         // If the last polling activity time exceeded the maximum allowed time then
                         // it is considered the connection is closed.
-                        if (aTime - x.LastPollingActivityTime > myResponseReceiverInactivityTimeout)
+                        // Note: it must be >= because the 1st HttpResponseSender is created at the same time as the timer is executed.
+                        //       it caused problems with 'Inactivity_Timeout' unit test.
+                        if (aTime - x.LastPollingActivityTime >= myResponseReceiverInactivityTimeout)
                         {
                             // If the connection was broken unexpectidly then the message handler must be notified.
                             if (!x.IsDisposed)
