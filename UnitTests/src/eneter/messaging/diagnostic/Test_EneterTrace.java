@@ -3,11 +3,14 @@ package eneter.messaging.diagnostic;
 import static org.junit.Assert.*;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
+
+import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 
 public class Test_EneterTrace
 {
@@ -158,6 +161,39 @@ public class Test_EneterTrace
 			EneterTrace.setDetailLevel(EneterTrace.EDetailLevel.Short);
 		}
 	}
+	
+	@Test
+	public void performanceTest() throws Exception
+	{
+	    EDetailLevel aStoredDetailedLevel = EneterTrace.getDetailLevel();
+	    PrintStream aStoredTraceLog = EneterTrace.getTraceLog();
+	    
+	    try
+	    {
+    	    // Without tracing.
+    	    EneterTrace.setDetailLevel(EDetailLevel.None);
+    	    long aStartTime = System.currentTimeMillis();
+    	    calculatePi();
+    	    long aDeltaTime1 = System.currentTimeMillis() - aStartTime;
+    	    
+    	    
+    	    // With traceing.
+    	    EneterTrace.setDetailLevel(EDetailLevel.Debug);
+    	    EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
+    	    
+            aStartTime = System.currentTimeMillis();
+            calculatePi();
+            long aDeltaTime2 = System.currentTimeMillis() - aStartTime;
+            
+            System.out.println("No trace: " + Long.toString(aDeltaTime1));
+            System.out.println("With trace: " + Long.toString(aDeltaTime2));
+	    }
+	    finally
+	    {
+	        EneterTrace.setDetailLevel(aStoredDetailedLevel);
+	        EneterTrace.setTraceLog(aStoredTraceLog);
+	    }
+	}
 
 
 	private void TestMethod1()
@@ -173,5 +209,47 @@ public class Test_EneterTrace
 	private void TestMethod3()
 	{
 		throw new UnsupportedOperationException("1st Inner Exception.");
+	}
+	
+	
+	private void calculatePi()
+	{
+	    EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            double aCalculatedPi = 0.0;
+            for (double i = -1.0; i <= 1.0; i += 0.005)
+            {
+                aCalculatedPi += calculateRange(i, i + 0.005);
+            }
+            
+            System.out.println("PI = " + Double.toString(aCalculatedPi));
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+	}
+	
+	private double calculateRange(double from, double to)
+	{
+	    EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Calculate pi
+            double aResult = 0.0;
+            double aDx = 0.00001;
+            for (double x = from; x < to; x += aDx)
+            {
+                EneterTrace.debug("blblblblblblblblblblblblbbllblbblblblblbl");
+                aResult += 2 * Math.sqrt(1 - x * x) * aDx;
+            }
+            
+            return aResult;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
 	}
 }
