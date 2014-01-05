@@ -11,7 +11,7 @@ package eneter.net.system;
 /**
  * Event handler to process events.
  * The event handler is used by a client to subscribe for some event.
- * Then, when the event event is notified, the method onEvent is called.<br/>
+ * Then, when the event is notified, the method onEvent is called.<br/>
  * <br/>
  * For example see {@link EventImpl}.
  *

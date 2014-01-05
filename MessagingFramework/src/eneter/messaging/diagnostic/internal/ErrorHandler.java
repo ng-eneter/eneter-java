@@ -27,6 +27,8 @@ public final class ErrorHandler
     public static final String CloseConnectionFailure = " failed to send the message that the connection was closed.";
     public static final String SendMessageNotConnectedFailure = " cannot send the message when not connected.";
 
+    public static final String ChannelNotAttached = "failed to send the request message because the output channel is not attached.";
+    
     public static final String SendResponseFailure = " failed to send the response message.";
     public static final String SendResponseNotConnectedFailure = " cannot send the response message when not connected.";
     public static final String SendResponseNotListeningFailure = " cannot send the response message when duplex input channel is not listening.";
