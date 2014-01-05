@@ -11,17 +11,17 @@ public class ConnectionTokenEventArgs
         myIsConnectionAllowed = true;
     }
     
-    public String GetResponseReceiverId()
+    public String getResponseReceiverId()
     {
         return myResponseReceiverId;
     }
 
-    public String GetSenderAddress()
+    public String getSenderAddress()
     {
         return mySenderAddress;
     }
     
-    public void SetConnectionAllowed(boolean isConnectionAllowed)
+    public void setConnectionAllowed(boolean isConnectionAllowed)
     {
         myIsConnectionAllowed = isConnectionAllowed;
     }
