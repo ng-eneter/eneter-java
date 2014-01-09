@@ -17,6 +17,7 @@ import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.internal.IMethod2;
+import eneter.net.system.internal.StringExt;
 import eneter.net.system.threading.internal.ManualResetEvent;
 
 class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase implements IRpcClient<TServiceInterface>
@@ -67,6 +68,28 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
         private Object mySerializedReturnValue;
     }
     
+    private class RemoteMethod
+    {
+        public RemoteMethod(Class<?> returnType, Class<?>[] argTypes)
+        {
+            myReturnType = returnType;
+            myArgTypes = argTypes;
+        }
+
+        public Class[] getArgTypes()
+        {
+            return myArgTypes;
+        }
+        
+        public Class<?> getReturnType()
+        {
+            return myReturnType;
+        }
+        
+        private Class<?>[] myArgTypes;
+        private Class<?> myReturnType;
+    }
+    
     // Provides info about a remote event and maintains subscribers for that event.
     private class RemoteEvent
     {
@@ -105,6 +128,13 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (!clazz.isInterface())
+            {
+                String anErrorMessage = "The generic parameter TServiceInterface is not an interface.";
+                EneterTrace.error(anErrorMessage);
+                throw new IllegalStateException(anErrorMessage);
+            }
+            
             mySerializer = serializer;
             myRpcTimeout = rpcTimeout;
 
@@ -119,32 +149,60 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             //    myRemoteMethodReturnTypes[aMethodInfo.Name] = aReturnType;
             //}
 
-            // Store remote events.
-            for (Method anEventInfo : clazz.getDeclaredMethods())
+            // Store remote methods and remote events.
+            for (Method aMethodInfo : clazz.getDeclaredMethods())
             {
+                // If it is an event.
                 // Event<MyEventArgs> somethingIsDone()
-                // if it is an event.
-                Class<?> aReturnType = anEventInfo.getReturnType();
+                Type aGenericReturnType = aMethodInfo.getGenericReturnType();
+                Class<?> aReturnType = aMethodInfo.getReturnType();
                 if (aReturnType == Event.class)
                 {
                     // Get type of event args. 
-                    Type aGenericType = anEventInfo.getGenericReturnType();
-                    if (aGenericType instanceof ParameterizedType)
+                    if (aGenericReturnType instanceof ParameterizedType)
                     {
-                        ParameterizedType aGenericParameter = (ParameterizedType) aGenericType;
+                        ParameterizedType aGenericParameter = (ParameterizedType) aGenericReturnType;
                         Class<?> aGeneric = (Class<?>) aGenericParameter.getActualTypeArguments()[0];
                         
                         if (aGeneric != EventArgs.class)
                         {
                             RemoteEvent aRemoteEvent = new RemoteEvent(aGeneric);
-                            myRemoteEvents.put(anEventInfo.getName(), aRemoteEvent);
+                            myRemoteEvents.put(aMethodInfo.getName(), aRemoteEvent);
                         }
                         else
                         {
                             RemoteEvent aRemoteEvent = new RemoteEvent(EventArgs.class);
-                            myRemoteEvents.put(anEventInfo.getName(), aRemoteEvent);
+                            myRemoteEvents.put(aMethodInfo.getName(), aRemoteEvent);
                         }
                     }
+                }
+                // If it is a method.
+                else
+                {
+                    // Generic return type is not supported because of generic erasure effect in Java.
+                    if (aGenericReturnType instanceof ParameterizedType)
+                    {
+                        String anErrorMessage = TracedObject() + "does not support methods with generic return type.";
+                        EneterTrace.error(anErrorMessage);
+                        throw new UnsupportedOperationException(anErrorMessage);
+                    }
+                    
+                    
+                    Type[] anArguments = aMethodInfo.getGenericParameterTypes();
+                    
+                    // Generic parameters are not supported because of generic erasure effect in Java.
+                    for (Type aParameter : anArguments)
+                    {
+                        if (aParameter instanceof ParameterizedType)
+                        {
+                            String anErrorMessage = TracedObject() + "does not support methods with generic input parameters.";
+                            EneterTrace.error(anErrorMessage);
+                            throw new UnsupportedOperationException(anErrorMessage);
+                        }
+                    }
+                    
+                    RemoteMethod aRemoteMethod = new RemoteMethod(aReturnType, (Class<?>[])anArguments);
+                    myRemoteMethods.put(aMethodInfo.getName(), aRemoteMethod);
                 }
             }
 
@@ -190,71 +248,180 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
         
     }
     @Override
-    public Object CallRemoteMethod(String methodName, Object[] args)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-    @Override
-    protected void onResponseMessageReceived(Object sender,
-            DuplexChannelMessageEventArgs e)
-    {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    private Object callMethod(String methodName, Object[] parameters)
+    public Object callRemoteMethod(String methodName, Object[] args) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            Object aResult = callMethod(methodName, args);
+            return aResult;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Forward the event.
+            notify(ConnectionClosed, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    protected void onResponseMessageReceived(Object sender, DuplexChannelMessageEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            RpcMessage aMessage = null;
+            try
+            {
+                aMessage = mySerializer.deserialize(e.getMessage(), RpcMessage.class);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.error(TracedObject() + "failed to deserialize incoming message.", err);
+                return;
+            }
+
+            // If it is a response for a call.
+            if (aMessage.Flag == RpcFlags.MethodResponse)
+            {
+                // Try to find if there is a pending request waiting for the response.
+                RemoteCallContext anRpcContext;
+                synchronized (myPendingRemoteCalls)
+                {
+                    anRpcContext = myPendingRemoteCalls.get(aMessage.Id);
+                }
+
+                if (anRpcContext != null)
+                {
+                    if (StringExt.isNullOrEmpty(aMessage.Error))
+                    {
+                        if (aMessage.SerializedData != null && aMessage.SerializedData.length > 0)
+                        {
+                            anRpcContext.setSerializedReturnValue(aMessage.SerializedData[0]);
+                        }
+                        else
+                        {
+                            anRpcContext.setSerializedReturnValue(null);
+                        }
+                    }
+                    else
+                    {
+                        IllegalStateException anException = new IllegalStateException("Detected exception from the service:\n" + aMessage.Error);
+                        anRpcContext.setError(anException);
+                    }
+
+                    // Release the pending request.
+                    anRpcContext.getRpcCompleted().set();
+                }
+            }
+            else if (aMessage.Flag == RpcFlags.RaiseEvent)
+            {
+                if (aMessage.SerializedData != null && aMessage.SerializedData.length > 0)
+                {
+                    final String anOpertationName = aMessage.OperationName;
+                    final Object aSerializedData = aMessage.SerializedData[0];
+                    
+                    // Try to raise an event.
+                    // The event is raised in its own thread so that the receiving thread is not blocked.
+                    myRaiseEventInvoker.invoke(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            raiseEvent(anOpertationName, aSerializedData);
+                        }
+                    });
+                }
+                else
+                {
+                    final String anOpertationName = aMessage.OperationName;
+                    
+                    // Note: this happens if the event is of type EventErgs.
+                    // The event is raised in its own thread so that the receiving thread is not blocked.
+                    myRaiseEventInvoker.invoke(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            raiseEvent(anOpertationName, null);
+                        }
+                    });
+                }
+            }
+            else
+            {
+                EneterTrace.warning(TracedObject() + "detected a message with unknown flag number.");
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+
+    private Object callMethod(String methodName, Object[] parameters) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            RemoteMethod aRemoteMethod = myRemoteMethods.get(methodName);
+            if (aRemoteMethod == null)
+            {
+                String anErrorMessage = TracedObject() + "failed to call remote method '" + methodName + "' because the method is not declared in the service interface on the client side.";
+                EneterTrace.error(anErrorMessage);
+                throw new IllegalStateException(anErrorMessage);
+            }
+            
             // Serialize method parameters.
             Object[] aSerialzedMethodParameters = new Object[parameters.length];
             try
             {
                 for (int i = 0; i < parameters.length; ++i)
                 {
-                    aSerialzedMethodParameters[i] = mySerializer.serialize(parameters[i], parameters[i].getClass());
+                    aSerialzedMethodParameters[i] = mySerializer.serialize(parameters[i], aRemoteMethod.getArgTypes()[i]);
                 }
             }
             catch (Exception err)
             {
-                string anErrorMessage = TracedObject + "failed to serialize method parameters.";
-                EneterTrace.Error(anErrorMessage, err);
-                throw;
+                String anErrorMessage = TracedObject() + "failed to serialize method parameters.";
+                EneterTrace.error(anErrorMessage, err);
+                throw err;
             }
 
             // Create message asking the service to execute the method.
             RpcMessage aRequestMessage = new RpcMessage();
-            aRequestMessage.Id = Interlocked.Increment(ref myCounter);
+            aRequestMessage.Id = myCounter.incrementAndGet();
             aRequestMessage.Flag = RpcFlags.InvokeMethod;
             aRequestMessage.OperationName = methodName;
             aRequestMessage.SerializedData = aSerialzedMethodParameters;
 
-            object aSerializedReturnValue = CallService(aRequestMessage);
-
-            // Get the type of the return value.
-            Type aReturnType;
-            myRemoteMethodReturnTypes.TryGetValue(aRequestMessage.OperationName, out aReturnType);
-            if (aReturnType == null)
-            {
-                string anErrorMessage = TracedObject + "failed to deserialize the received return value. The method '" + aRequestMessage.OperationName + "' was not found.";
-                EneterTrace.Error(anErrorMessage);
-                throw new InvalidOperationException(anErrorMessage);
-            }
+            Object aSerializedReturnValue = callService(aRequestMessage);
 
             // Deserialize the return value.
-            object aDeserializedReturnValue = null;
+            Object aDeserializedReturnValue = null;
             try
             {
-                aDeserializedReturnValue = (aReturnType != typeof(void)) ?
-                    mySerializer.Deserialize(aReturnType, aSerializedReturnValue) :
+                aDeserializedReturnValue = (aRemoteMethod.getReturnType() != Void.class) ?
+                    mySerializer.deserialize(aSerializedReturnValue, aRemoteMethod.getReturnType()) :
                     null;
             }
             catch (Exception err)
             {
-                EneterTrace.Error(TracedObject + "failed to deserialize the return value.", err);
-                throw;
+                EneterTrace.error(TracedObject() + "failed to deserialize the return value.", err);
+                throw err;
             }
 
             return aDeserializedReturnValue;
@@ -264,7 +431,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             EneterTrace.leaving(aTrace);
         }
     }
-    
+
     private void subscribeEvent(String eventName, EventHandler<?> handler)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -515,7 +682,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
     private Object myConnectionManipulatorLock = new Object();
     private int myRpcTimeout;
 
-    private Hashtable<String, Class<?>> myRemoteMethodReturnTypes = new Hashtable<String, Class<?>>();
+    private Hashtable<String, RemoteMethod> myRemoteMethods = new Hashtable<String, RemoteMethod>();
     private Hashtable<String, RemoteEvent> myRemoteEvents = new Hashtable<String, RemoteEvent>();
     
     @Override

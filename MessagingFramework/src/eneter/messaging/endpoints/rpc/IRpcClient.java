@@ -17,5 +17,5 @@ public interface IRpcClient<TServiceInterface> extends IAttachableDuplexOutputCh
     
     void unsubscribeRemoteEvent(String eventName, EventHandler<?> eventHandler);
     
-    Object CallRemoteMethod(String methodName, Object[] args);
+    Object callRemoteMethod(String methodName, Object[] args) throws Exception;
 }
