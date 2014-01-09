@@ -3,6 +3,7 @@ package eneter.messaging.endpoints.rpc;
 import java.lang.reflect.*;
 import java.nio.channels.IllegalSelectorException;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -141,14 +142,6 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             // Dynamically implement and instantiate the given interface as the proxy.
             //Proxy = ProxyProvider.CreateInstance<TServiceInterface>(CallMethod, SubscribeEvent, UnsubscribeEvent);
 
-
-            // Store remote methods.
-            //foreach (MethodInfo aMethodInfo in typeof(TServiceInterface).GetMethods())
-            //{
-            //    Type aReturnType = aMethodInfo.ReturnType;
-            //    myRemoteMethodReturnTypes[aMethodInfo.Name] = aReturnType;
-            //}
-
             // Store remote methods and remote events.
             for (Method aMethodInfo : clazz.getDeclaredMethods())
             {
@@ -218,35 +211,112 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
     @Override
     public Event<DuplexChannelEventArgs> connectionOpened()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return myConnectionOpenedEvent.getApi();
     }
+    
     @Override
     public Event<DuplexChannelEventArgs> connectionClosed()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return myConnectionClosedEvent.getApi();
     }
+    
     @Override
     public TServiceInterface getProxy()
     {
         // TODO Auto-generated method stub
         return null;
     }
+    
     @Override
-    public <TEventArgs> void subscribeRemoteEvent(String eventName,
-            EventHandler<TEventArgs> eventHandler)
+    public void attachDuplexOutputChannel(IDuplexOutputChannel duplexOutputChannel) throws Exception
     {
-        // TODO Auto-generated method stub
-        
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                duplexOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);
+                duplexOutputChannel.connectionClosed().subscribe(myOnConnectionClosed);
+
+                try
+                {
+                    super.attachDuplexOutputChannel(duplexOutputChannel);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + "failed to attach duplex output channel.");
+
+                    try
+                    {
+                        detachDuplexOutputChannel();
+                    }
+                    catch (Exception err2)
+                    {
+                    }
+
+                    throw err;
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
+    
     @Override
-    public void unsubscribeRemoteEvent(String eventName,
-            EventHandler<?> eventHandler)
+    public void detachDuplexOutputChannel()
     {
-        // TODO Auto-generated method stub
-        
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                IDuplexOutputChannel anAttachedDuplexOutputChannel = getAttachedDuplexOutputChannel();
+
+                super.detachDuplexOutputChannel();
+
+                if (anAttachedDuplexOutputChannel != null)
+                {
+                    anAttachedDuplexOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
+                    anAttachedDuplexOutputChannel.connectionClosed().unsubscribe(myOnConnectionClosed);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
+    
+    @Override
+    public <TEventArgs> void subscribeRemoteEvent(String eventName, EventHandler<TEventArgs> eventHandler)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            subscribeEvent(eventName, eventHandler);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public void unsubscribeRemoteEvent(String eventName, EventHandler<?> eventHandler)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            unsubscribeEvent(eventName, eventHandler);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     @Override
     public Object callRemoteMethod(String methodName, Object[] args) throws Exception
     {
@@ -262,13 +332,46 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
         }
     }
     
+    private void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // Recover remote subscriptions at service.
+            for (Entry<String, RemoteEvent> aRemoteEvent : myRemoteEvents.entrySet())
+            {
+                synchronized (aRemoteEvent.getValue().getLock())
+                {
+                    if (aRemoteEvent.getValue().getSubscribers().size() > 0)
+                    {
+                        try
+                        {
+                            subscribeAtService(aRemoteEvent.getKey());
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.error(TracedObject() + "failed to subscribe event '" + aRemoteEvent.getKey() + "' at service.", err);
+                        }
+                    }
+                }
+            }
+
+            // Forward the event.
+            notify(myConnectionOpenedEvent, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             // Forward the event.
-            notify(ConnectionClosed, e);
+            notify(myConnectionClosedEvent, e);
         }
         finally
         {
@@ -677,13 +780,35 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
     
     private ISerializer mySerializer;
     private AtomicInteger myCounter = new AtomicInteger();
-    private Hashtable<Integer, RemoteCallContext> myPendingRemoteCalls = new Hashtable<Integer, RemoteCallContext>();
+    private HashMap<Integer, RemoteCallContext> myPendingRemoteCalls = new HashMap<Integer, RemoteCallContext>();
     private IThreadDispatcher myRaiseEventInvoker;
     private Object myConnectionManipulatorLock = new Object();
     private int myRpcTimeout;
 
-    private Hashtable<String, RemoteMethod> myRemoteMethods = new Hashtable<String, RemoteMethod>();
-    private Hashtable<String, RemoteEvent> myRemoteEvents = new Hashtable<String, RemoteEvent>();
+    private HashMap<String, RemoteMethod> myRemoteMethods = new HashMap<String, RemoteMethod>();
+    private HashMap<String, RemoteEvent> myRemoteEvents = new HashMap<String, RemoteEvent>();
+    
+    
+    private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEvent = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionClosedEvent = new EventImpl<DuplexChannelEventArgs>();
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionOpened = new EventHandler<DuplexChannelEventArgs>()
+    {
+        @Override
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
+        {
+            onConnectionOpened(sender, e);
+        }
+    };
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionClosed = new EventHandler<DuplexChannelEventArgs>()
+    {
+        @Override
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
+        {
+            onConnectionClosed(sender, e);
+        }
+    };
     
     @Override
     protected String TracedObject()
