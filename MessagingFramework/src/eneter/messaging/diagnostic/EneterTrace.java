@@ -396,19 +396,19 @@ public class EneterTrace
     
     private static String getStackTraceString(StackTraceElement[] stackTrace)
     {
-        String aResult = "";
+        StringBuilder aResult = new StringBuilder();
         for (int i = 0; i < stackTrace.length; ++i)
         {
-            aResult += stackTrace[i].toString();
+            aResult.append(stackTrace[i].toString());
             
             // If it is not the last element then add the next line.
             if (i < stackTrace.length - 1)
             {
-                aResult += "\r\n";
+                aResult.append("\r\n");
             }
         }
         
-        return aResult;
+        return aResult.toString();
     }
     
     
