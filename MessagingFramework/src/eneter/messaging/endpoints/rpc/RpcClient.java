@@ -1,7 +1,6 @@
 package eneter.messaging.endpoints.rpc;
 
 import java.lang.reflect.*;
-import java.nio.channels.IllegalSelectorException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeoutException;
@@ -11,13 +10,10 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexOutputChannelBase;
-import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
-import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;
-import eneter.messaging.messagingsystems.messagingsystembase.IDuplexOutputChannel;
+import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 import eneter.net.system.*;
-import eneter.net.system.internal.IMethod2;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.threading.internal.ManualResetEvent;
 
@@ -26,20 +22,14 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
     // Represents the context of an active remote call.
     private class RemoteCallContext
     {
-        public RemoteCallContext(String name)
+        public RemoteCallContext()
         {
             myRpcCompleted = new ManualResetEvent(false);
-            myMethodName = name;
         }
         
         public ManualResetEvent getRpcCompleted()
         {
             return myRpcCompleted;
-        }
-        
-        public String getMethodName()
-        {
-            return myMethodName;
         }
         
         public void setError(Exception error)
@@ -63,7 +53,6 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
         }
         
         private ManualResetEvent myRpcCompleted;
-        private String myMethodName;
         
         private Exception myError;
         private Object mySerializedReturnValue;
@@ -129,12 +118,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (!clazz.isInterface())
-            {
-                String anErrorMessage = "The generic parameter TServiceInterface is not an interface.";
-                EneterTrace.error(anErrorMessage);
-                throw new IllegalStateException(anErrorMessage);
-            }
+            ServiceInterfaceChecker.check(clazz);
             
             mySerializer = serializer;
             myRpcTimeout = rpcTimeout;
@@ -143,7 +127,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             //Proxy = ProxyProvider.CreateInstance<TServiceInterface>(CallMethod, SubscribeEvent, UnsubscribeEvent);
 
             // Store remote methods and remote events.
-            for (Method aMethodInfo : clazz.getDeclaredMethods())
+            // (public methods)
+            for (Method aMethodInfo : clazz.getMethods())
             {
                 // If it is an event.
                 // Event<MyEventArgs> somethingIsDone()
@@ -155,11 +140,11 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
                     if (aGenericReturnType instanceof ParameterizedType)
                     {
                         ParameterizedType aGenericParameter = (ParameterizedType) aGenericReturnType;
-                        Class<?> aGeneric = (Class<?>) aGenericParameter.getActualTypeArguments()[0];
+                        Class<?> anEventArgsType = (Class<?>) aGenericParameter.getActualTypeArguments()[0];
                         
-                        if (aGeneric != EventArgs.class)
+                        if (anEventArgsType != EventArgs.class)
                         {
-                            RemoteEvent aRemoteEvent = new RemoteEvent(aGeneric);
+                            RemoteEvent aRemoteEvent = new RemoteEvent(anEventArgsType);
                             myRemoteEvents.put(aMethodInfo.getName(), aRemoteEvent);
                         }
                         else
@@ -172,27 +157,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
                 // If it is a method.
                 else
                 {
-                    // Generic return type is not supported because of generic erasure effect in Java.
-                    if (aGenericReturnType instanceof ParameterizedType)
-                    {
-                        String anErrorMessage = TracedObject() + "does not support methods with generic return type.";
-                        EneterTrace.error(anErrorMessage);
-                        throw new UnsupportedOperationException(anErrorMessage);
-                    }
-                    
-                    
                     Type[] anArguments = aMethodInfo.getGenericParameterTypes();
-                    
-                    // Generic parameters are not supported because of generic erasure effect in Java.
-                    for (Type aParameter : anArguments)
-                    {
-                        if (aParameter instanceof ParameterizedType)
-                        {
-                            String anErrorMessage = TracedObject() + "does not support methods with generic input parameters.";
-                            EneterTrace.error(anErrorMessage);
-                            throw new UnsupportedOperationException(anErrorMessage);
-                        }
-                    }
                     
                     RemoteMethod aRemoteMethod = new RemoteMethod(aReturnType, (Class<?>[])anArguments);
                     myRemoteMethods.put(aMethodInfo.getName(), aRemoteMethod);
@@ -665,7 +630,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
 
             try
             {
-                RemoteCallContext anRpcSyncContext = new RemoteCallContext(rpcRequest.OperationName);
+                RemoteCallContext anRpcSyncContext = new RemoteCallContext();
                 synchronized (myPendingRemoteCalls)
                 {
                     myPendingRemoteCalls.put(rpcRequest.Id, anRpcSyncContext);

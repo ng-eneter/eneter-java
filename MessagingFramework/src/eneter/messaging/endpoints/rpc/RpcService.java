@@ -1,8 +1,7 @@
 package eneter.messaging.endpoints.rpc;
 
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.*;
-import java.util.Map.Entry;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
@@ -20,28 +19,32 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
     // Maintains events and subscribed clients.
     private class EventContext
     {
-        public EventContext(TServiceInterface service, String eventName, Event<Object> event,  EventHandler<Object> handler)
+        public EventContext(TServiceInterface service, Method event, EventHandler handler)
         {
             myService = service;
-            myEventName = eventName;
             myEvent = event;
             myHandler = handler;
+            
             mySubscribedClients = new HashSet<String>();
         }
 
-        public void subscribe()
+        public void subscribe() throws Exception
         {
-            myEvent.subscribe(myHandler);
+            Object anEventObject = myEvent.invoke(myService);
+            Event anEvent = (Event) anEventObject;
+            anEvent.subscribe(myHandler);
         }
 
-        public void unsubscribe()
+        public void unsubscribe() throws Exception
         {
-            myEvent.unsubscribe(myHandler);
+            Object anEventObject = myEvent.invoke(myService);
+            Event anEvent = (Event) anEventObject;
+            anEvent.unsubscribe(myHandler);
         }
 
         public String getEventName()
         {
-            return myEventName;
+            return myEvent.getName();
         }
         
         public HashSet<String> getSubscribedClients()
@@ -49,12 +52,11 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
             return mySubscribedClients;
         }
         
-        private Event<Object> myEvent;
-        private String myEventName;
-        private HashSet<String> mySubscribedClients;
-
         private TServiceInterface myService;
-        private EventHandler<Object> myHandler;
+        private Method myEvent;
+        private EventHandler myHandler;
+        
+        private HashSet<String> mySubscribedClients;
     }
     
     // Maintains info about a service method.
@@ -81,6 +83,30 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
     }
     
     
+    public RpcService(TServiceInterface service, ISerializer serializer, Class<TServiceInterface> clazz)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ServiceInterfaceChecker.check(clazz);
+            
+            myService = service;
+            myServiceClazz = clazz;
+            mySerializer = serializer;
+
+            for (Method aMethod : myServiceClazz.getMethods())
+            {
+                ServiceMethod aServiceMethod = new ServiceMethod(aMethod);
+                myServiceMethods.put(aMethod.getName(), aServiceMethod);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
@@ -95,107 +121,140 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
 
     
     @Override
-    public void attachDuplexInputChannel(IDuplexInputChannel duplexInputChannel)
+    public void attachDuplexInputChannel(IDuplexInputChannel duplexInputChannel) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             // Find events in the service interface and subscribe to them.
-            EventInfo[] anEvents = typeof(TServiceInterface).GetEvents();
-            foreach (EventInfo anEventInfo in anEvents)
+            for (Method anEventInfo : myServiceClazz.getDeclaredMethods())
             {
-                Type anEventArgsType = anEventInfo.EventHandlerType.IsGenericType ?
-                    anEventInfo.EventHandlerType.GetGenericArguments()[0] :
-                    typeof(EventArgs);
-
-                // This handler will be subscribed to events from the service.
-                // Note: for each loop create a new local variable so that the context is preserved for the Action<,> event handler.
-                //       if anEventInfo is used then the reference would be changed.
-                EventInfo aTmpEventInfo = anEventInfo;
-                Action<object, EventArgs> anEventHandler = (sender, e) =>
+                // If it is an event.
+                // Event<MyEventArgs> somethingIsDone()
+                Type aGenericReturnType = anEventInfo.getGenericReturnType();
+                Class<?> aReturnType = anEventInfo.getReturnType();
+                if (aReturnType == Event.class)
+                {
+                    // Get type of event args. 
+                    if (aGenericReturnType instanceof ParameterizedType)
                     {
-                        using (EneterTrace.Entering())
+                        ParameterizedType aGenericParameter = (ParameterizedType) aGenericReturnType;
+                        final Class<?> anEventArgsType = (Class<?>) aGenericParameter.getActualTypeArguments()[0];
+                        
+                        // This handler will be subscribed to events from the service.
+                        // Note: for each loop create a new local variable so that the context is preserved for the Action<,> event handler.
+                        //       if anEventInfo is used then the reference would be changed.
+                        final Method aTmpEventInfo = anEventInfo;
+                        EventHandler<Object> anEventHandler = new EventHandler<Object>()
                         {
-                            string[] aSubscribedClients = null;
-                            lock (myServiceEvents)
+                            @Override
+                            public void onEvent(Object sender, Object e)
                             {
-                                EventContext anEventContextTmp = myServiceEvents.FirstOrDefault(x => x.EventInfo.Name == aTmpEventInfo.Name);
-                                if (anEventContextTmp != null)
-                                {
-                                    aSubscribedClients = anEventContextTmp.SubscribedClients.ToArray();
-                                }
-                            }
-
-                            // If some client is subscribed.
-                            if (aSubscribedClients != null && aSubscribedClients.Length > 0)
-                            {
-                                object aSerializedEvent = null;
+                                EneterTrace aTrace = EneterTrace.entering();
                                 try
                                 {
-                                    // Serialize the event and send it to subscribed clients.
-                                    RpcMessage anEventMessage = new RpcMessage()
+                                    String[] aSubscribedClients = null;
+                                    synchronized (myServiceEvents)
                                     {
-                                        Id = 0, // dummy - because we do not need to track it.
-                                        Flag = RpcFlags.RaiseEvent,
-                                        OperationName = aTmpEventInfo.Name,
-                                        SerializedData = (anEventArgsType == typeof(EventArgs)) ?
-                                            null : // EventArgs is a known type without parameters - we do not need to serialize it.
-                                            new object[] { mySerializer.Serialize(anEventArgsType, e) }
-                                    };
-                                    aSerializedEvent = mySerializer.Serialize<RpcMessage>(anEventMessage);
+                                        EventContext anEventContextTmp = EnumerableExt.firstOrDefault(myServiceEvents, new IFunction1<Boolean, EventContext>()
+                                        {
+                                            @Override
+                                            public Boolean invoke(EventContext x) throws Exception
+                                            {
+                                                return x.getEventName().equals(aTmpEventInfo.getName());
+                                            }
+                                        }); 
+                                                
+                                        if (anEventContextTmp != null)
+                                        {
+                                            aSubscribedClients = anEventContextTmp.getSubscribedClients().toArray(
+                                                    new String[anEventContextTmp.getSubscribedClients().size()]);
+                                        }
+                                    }
+    
+                                    // If some client is subscribed.
+                                    if (aSubscribedClients != null && aSubscribedClients.length > 0)
+                                    {
+                                        Object aSerializedEvent = null;
+                                        try
+                                        {
+                                            // Serialize the event and send it to subscribed clients.
+                                            RpcMessage anEventMessage = new RpcMessage();
+                                            anEventMessage.Id = 0; // dummy - because we do not need to track it.
+                                            anEventMessage.Flag = RpcFlags.RaiseEvent;
+                                            anEventMessage.OperationName = aTmpEventInfo.getName();
+                                            anEventMessage.SerializedData = (anEventArgsType == EventArgs.class) ?
+                                                    null : // EventArgs is a known type without parameters - we do not need to serialize it.
+                                                    new Object[] { mySerializer.serialize(e, (Class)anEventArgsType) };
+    
+                                            aSerializedEvent = mySerializer.serialize(anEventMessage, RpcMessage.class);
+                                        }
+                                        catch (Exception err)
+                                        {
+                                            EneterTrace.error(TracedObject() + "failed to serialize the event '" + aTmpEventInfo.getName() + "'.", err);
+    
+                                            // Note: this exception will be thrown to the delegate that raised the event.
+                                            throw err;
+                                        }
+    
+                                        // Iterate via subscribed clients and send them the event.
+                                        for (String aClient : aSubscribedClients)
+                                        {
+                                            try
+                                            {
+                                                getAttachedDuplexInputChannel().sendResponseMessage(aClient, aSerializedEvent);
+                                            }
+                                            catch (Exception err)
+                                            {
+                                                EneterTrace.error(TracedObject() + "failed to send event to the client.", err);
+    
+                                                // Suppose the client is disconnected so unsubscribe it from all events.
+                                                unsubscribeClientFromEvents(aClient);
+                                            }
+                                        }
+                                    }
                                 }
                                 catch (Exception err)
                                 {
-                                    EneterTrace.Error(TracedObject + "failed to serialize the event '" + aTmpEventInfo.Name + "'.", err);
-
-                                    // Note: this exception will be thrown to the delegate that raised the event.
-                                    throw;
+                                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
                                 }
-
-                                // Iterate via subscribed clients and send them the event.
-                                foreach (string aClient in aSubscribedClients)
+                                finally
                                 {
-                                    try
-                                    {
-                                        AttachedDuplexInputChannel.SendResponseMessage(aClient, aSerializedEvent);
-                                    }
-                                    catch (Exception err)
-                                    {
-                                        EneterTrace.Error(TracedObject + "failed to send event to the client.", err);
-
-                                        // Suppose the client is disconnected so unsubscribe it from all events.
-                                        UnsubscribeClientFromEvents(aClient);
-                                    }
+                                    EneterTrace.leaving(aTrace);
                                 }
                             }
+                        };
+                        
+                        EventContext anEventContext = null;
+                        try
+                        {
+                            anEventContext = new EventContext(myService, aTmpEventInfo, anEventHandler);
+                            anEventContext.subscribe();
                         }
-                    };
+                        catch (Exception err)
+                        {
+                            String anErrorMessage = TracedObject() + "failed to attach the output channel because it failed to create EventContext.";
+                            EneterTrace.error(anErrorMessage, err);
+                            throw err;
+                        }
 
-                EventContext anEventContext = null;
-                try
-                {
-                    anEventContext = new EventContext(myService, anEventInfo, Delegate.CreateDelegate(anEventInfo.EventHandlerType, anEventHandler.Target, anEventHandler.Method));
-                    anEventContext.Subscribe();
-                }
-                catch (Exception err)
-                {
-                    string anErrorMessage = TracedObject + "failed to attach the output channel because it failed to create EventContext.";
-                    EneterTrace.Error(anErrorMessage, err);
-                    throw;
-                }
-
-                lock (myServiceEvents)
-                {
-                    if (!myServiceEvents.Add(anEventContext))
-                    {
-                        string anErrorMessage = TracedObject + "failed to attach the output channel because it failed to create the event '" + anEventInfo.Name + "' because the event already exists.";
-                        EneterTrace.Error(anErrorMessage);
-                        throw new InvalidOperationException(anErrorMessage);
+                        synchronized (myServiceEvents)
+                        {
+                            if (!myServiceEvents.add(anEventContext))
+                            {
+                                String anErrorMessage = TracedObject() + "failed to attach the output channel because it failed to create the event '" + anEventInfo.getName() + "' because the event already exists.";
+                                EneterTrace.error(anErrorMessage);
+                                throw new IllegalStateException(anErrorMessage);
+                            }
+                        }
+                        
                     }
                 }
+
+                
             }
 
-            base.AttachDuplexInputChannel(duplexInputChannel);
+            super.attachDuplexInputChannel(duplexInputChannel);
         }
         finally
         {
@@ -474,6 +533,8 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
         StringBuilder aResult = new StringBuilder();
 
         aResult.append(err.toString());
+        aResult.append(": ");
+        aResult.append(err.getMessage());
         aResult.append("\r\n");
         
         StackTraceElement[] aStackTrace = err.getStackTrace();
@@ -492,6 +553,7 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
     }
     
     
+    private Class<TServiceInterface> myServiceClazz;
     private TServiceInterface myService;
     private ISerializer mySerializer;
     private HashSet<EventContext> myServiceEvents = new HashSet<EventContext>();
