@@ -17,7 +17,8 @@ import eneter.net.system.*;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.threading.internal.ManualResetEvent;
 
-class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase implements IRpcClient<TServiceInterface>
+class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
+                implements IRpcClient<TServiceInterface>, InvocationHandler
 {
     // Represents the context of an active remote call.
     private class RemoteCallContext
@@ -81,15 +82,16 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
     }
     
     // Provides info about a remote event and maintains subscribers for that event.
-    private class RemoteEvent
+    private class RemoteEvent implements Event<Object>
     {
-        public RemoteEvent(Class<?> eventArgsType)
+        public RemoteEvent(String eventName, Class<?> eventArgsType)
         {
+            myEventName = eventName;
             myEventArgsType = eventArgsType;
             mySubscribers = new ArrayList<EventHandler<?>>();
             myLock = new Object();
         }
-
+        
         public Class<?> getEventArgsType()
         {
             return myEventArgsType;
@@ -105,13 +107,66 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             return myLock;
         }
         
+        @Override
+        public void subscribe(EventHandler<Object> eventHandler)
+        {
+            synchronized (myLock)
+            {
+                mySubscribers.add(eventHandler);
+                
+                // If it is the first subscriber then try to subscribe at service.
+                if (mySubscribers.size() == 1)
+                {
+                    if (isDuplexOutputChannelAttached() && getAttachedDuplexOutputChannel().isConnected())
+                    {
+                        try
+                        {
+                            subscribeAtService(myEventName);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + "failed to subscribe at service. Eventhandler is subscribed just locally in the proxy.", err);
+                        }
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void unsubscribe(EventHandler<Object> eventHandler)
+        {
+            synchronized (myLock)
+            {
+                mySubscribers.remove(eventHandler);
+                
+                // If it was the last subscriber then unsubscribe at the service.
+                // Note: unsubscribing from the service prevents sending of notifications across the network
+                //       if nobody is subscribed.
+                if (mySubscribers.isEmpty())
+                {
+                    // Create message asking the service to unsubscribe from the event.
+                    RpcMessage aRequestMessage = new RpcMessage();
+                    aRequestMessage.Id = myCounter.incrementAndGet();
+                    aRequestMessage.Flag = RpcFlags.UnsubscribeEvent;
+                    aRequestMessage.OperationName = myEventName;
+
+                    try
+                    {
+                        callService(aRequestMessage);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + "failed to unsubscribe from the service.", err);
+                    }
+                }
+            }
+        }
+        
+        private String myEventName;
         private Class<?> myEventArgsType;
         private ArrayList<EventHandler<?>> mySubscribers;
         private Object myLock;
     }
-    
-    
-    
     
     public RpcClient(ISerializer serializer, int rpcTimeout, Class<TServiceInterface> clazz)
     {
@@ -124,7 +179,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             myRpcTimeout = rpcTimeout;
 
             // Dynamically implement and instantiate the given interface as the proxy.
-            //Proxy = ProxyProvider.CreateInstance<TServiceInterface>(CallMethod, SubscribeEvent, UnsubscribeEvent);
+            myProxy = ProxyProvider.createInstance(this, clazz);
 
             // Store remote methods and remote events.
             // (public methods)
@@ -144,12 +199,12 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
                         
                         if (anEventArgsType != EventArgs.class)
                         {
-                            RemoteEvent aRemoteEvent = new RemoteEvent(anEventArgsType);
+                            RemoteEvent aRemoteEvent = new RemoteEvent(aMethodInfo.getName(), anEventArgsType);
                             myRemoteEvents.put(aMethodInfo.getName(), aRemoteEvent);
                         }
                         else
                         {
-                            RemoteEvent aRemoteEvent = new RemoteEvent(EventArgs.class);
+                            RemoteEvent aRemoteEvent = new RemoteEvent(aMethodInfo.getName(), EventArgs.class);
                             myRemoteEvents.put(aMethodInfo.getName(), aRemoteEvent);
                         }
                     }
@@ -188,10 +243,61 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
     @Override
     public TServiceInterface getProxy()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return myProxy;
     }
     
+    // Implements invocation handler for dynamic proxy.
+    // The handler is called when a service interface method is called.
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args)
+            throws Throwable
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            // If it is an event.
+            // e.g. Event<MyEventArgs> somethingIsDone()
+            Type aGenericReturnType = method.getGenericReturnType();
+            Class<?> aReturnType = method.getReturnType();
+            if (aReturnType == Event.class)
+            {
+                // The event args is always generic. 
+                if (aGenericReturnType instanceof ParameterizedType)
+                {
+                    RemoteEvent aRemoteEvent = myRemoteEvents.get(method.getName());
+                    if (aRemoteEvent == null)
+                    {
+                        String anErrorMessage = TracedObject() + "did not find the event '" + method.getName() + "'.";
+                        EneterTrace.error(anErrorMessage);
+                        throw new IllegalStateException(anErrorMessage);
+                    }
+                    
+                    // Returns Event<Object> interface allowing to subscribe or unsubscribe from the event.
+                    return aRemoteEvent;
+                }
+                else
+                {
+                    // This path should not occur.
+                    
+                    String anErrorMessage = TracedObject() + "did not find the event '" + method.getName() + "'.";
+                    EneterTrace.error(anErrorMessage);
+                    throw new IllegalStateException(anErrorMessage);
+                }
+            }
+            // If it is a method.
+            else
+            {
+                Object aResult = callRemoteMethod(method.getName(), args);
+                return aResult;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+   
     @Override
     public void attachDuplexOutputChannel(IDuplexOutputChannel duplexOutputChannel) throws Exception
     {
@@ -455,10 +561,11 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             }
             
             // Serialize method parameters.
-            Object[] aSerialzedMethodParameters = new Object[parameters.length];
+            int aLength = (parameters != null) ? parameters.length : 0;
+            Object[] aSerialzedMethodParameters = new Object[aLength];
             try
             {
-                for (int i = 0; i < parameters.length; ++i)
+                for (int i = 0; i < aLength; ++i)
                 {
                     aSerialzedMethodParameters[i] = mySerializer.serialize(parameters[i], (Class<Object>)aRemoteMethod.getArgTypes()[i]);
                 }
@@ -501,6 +608,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void subscribeEvent(String eventName, EventHandler<?> handler)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -515,27 +623,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
                 throw new IllegalStateException(anErrorMessage);
             }
 
-            synchronized (aRemoteEvent.getLock())
-            {
-                // Store the subscriber.
-                aRemoteEvent.getSubscribers().add(handler);
-
-                // If it is the first subscriber then try to subscribe at service.
-                if (aRemoteEvent.getSubscribers().size() == 1)
-                {
-                    if (isDuplexOutputChannelAttached() && getAttachedDuplexOutputChannel().isConnected())
-                    {
-                        try
-                        {
-                            subscribeAtService(eventName);
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + "failed to subscribe at service. Eventhandler is subscribed just locally in the proxy.", err);
-                        }
-                    }
-                }
-            }
+            aRemoteEvent.subscribe((EventHandler<Object>) handler);
         }
         finally
         {
@@ -543,6 +631,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
         }
     }
     
+    @SuppressWarnings("unchecked")
     private void unsubscribeEvent(String eventName, EventHandler<?> handler)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -555,33 +644,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
                 EneterTrace.warning(TracedObject() + "failed to unsubscribe. The event '" + eventName + "' does not exist."); 
                 return;
             }
-
-            synchronized (aServiceEvent.getLock())
-            {
-                // Remove the subscriber from the list.
-                aServiceEvent.getSubscribers().remove(handler);
-
-                // If it was the last subscriber then unsubscribe at the service.
-                // Note: unsubscribing from the service prevents sending of notifications across the network
-                //       if nobody is subscribed.
-                if (aServiceEvent.getSubscribers().isEmpty())
-                {
-                    // Create message asking the service to unsubscribe from the event.
-                    RpcMessage aRequestMessage = new RpcMessage();
-                    aRequestMessage.Id = myCounter.incrementAndGet();
-                    aRequestMessage.Flag = RpcFlags.UnsubscribeEvent;
-                    aRequestMessage.OperationName = eventName;
-
-                    try
-                    {
-                        callService(aRequestMessage);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + "failed to unsubscribe from the service.", err);
-                    }
-                }
-            }
+            
+            aServiceEvent.unsubscribe((EventHandler<Object>) handler);
         }
         finally
         {
@@ -751,6 +815,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
     private IThreadDispatcher myRaiseEventInvoker;
     private Object myConnectionManipulatorLock = new Object();
     private int myRpcTimeout;
+    
+    private TServiceInterface myProxy;
 
     private HashMap<String, RemoteMethod> myRemoteMethods = new HashMap<String, RemoteMethod>();
     private HashMap<String, RemoteEvent> myRemoteEvents = new HashMap<String, RemoteEvent>();

@@ -1,6 +1,7 @@
 package eneter.messaging.endpoints.rpc;
 
 import java.lang.reflect.*;
+import java.util.HashSet;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.*;
@@ -26,9 +27,19 @@ class ServiceInterfaceChecker
             throw new IllegalStateException(anErrorMessage);
         }
         
+        HashSet<String> aUsedNames = new HashSet<String>();
+        
         // Check declared methods and arguments of all public methods.
         for (Method aMethodInfo : clazz.getMethods())
         {
+            // Overloading is not allowed.
+            if (aUsedNames.contains(aMethodInfo.getName()))
+            {
+                String anErrorMessage = "The interface already contains method or event with the name '" + aMethodInfo.getName() + "'.";
+                EneterTrace.error(anErrorMessage);
+                throw new IllegalStateException(anErrorMessage);
+            }
+            
             // If it is an event.
             // Event<MyEventArgs> somethingIsDone()
             Type aGenericReturnType = aMethodInfo.getGenericReturnType();
