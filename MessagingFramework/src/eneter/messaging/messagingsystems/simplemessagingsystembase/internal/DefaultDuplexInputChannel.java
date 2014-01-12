@@ -397,7 +397,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             Entry<String, TConnectionContext> aPair;
             synchronized (myConnectedClients)
             {
-                // Note: KeyValuePair is a struct so the default value is not null.
                 aPair = EnumerableExt.firstOrDefault(myConnectedClients.entrySet(), new IFunction1<Boolean, Entry<String, TConnectionContext>>()
                 {
                     @Override
@@ -409,7 +408,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 });
             }
     
-            if (!StringExt.isNullOrEmpty(aPair.getKey()))
+            if (aPair != null && !StringExt.isNullOrEmpty(aPair.getKey()))
             {
                 closeResponseMessageSender(aPair.getKey(), false);
             }
