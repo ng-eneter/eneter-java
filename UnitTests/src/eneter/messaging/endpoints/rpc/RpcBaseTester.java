@@ -152,31 +152,51 @@ public abstract class RpcBaseTester
             anRpcService.attachDuplexInputChannel(myMessaging.createDuplexInputChannel(myChannelId));
             anRpcClient.attachDuplexOutputChannel(myMessaging.createDuplexOutputChannel(myChannelId));
 
-            final AutoResetEvent anEventReceived = new AutoResetEvent(false);
-            EventHandler<EventArgs> anEventHandler = new EventHandler<EventArgs>()
+            final AutoResetEvent aCloseReceived = new AutoResetEvent(false);
+            EventHandler<EventArgs> aCloseHandler = new EventHandler<EventArgs>()
             {
                 @Override
                 public void onEvent(Object sender, EventArgs e)
                 {
-                    anEventReceived.set();
+                    aCloseReceived.set();
+                }
+            };
+            
+            final AutoResetEvent anOpenReceived = new AutoResetEvent(false);
+            final String[] aReceivedOpenData = { null };  
+            EventHandler<String> anOpenHandler = new EventHandler<String>()
+            {
+                @Override
+                public void onEvent(Object sender, String e)
+                {
+                    aReceivedOpenData[0] = e;
+                    anOpenReceived.set();
                 }
             };
 
             // Subscribe.
-            anRpcClient.subscribeRemoteEvent("Close", anEventHandler);
+            anRpcClient.subscribeRemoteEvent("Close", aCloseHandler);
+            anRpcClient.subscribeRemoteEvent("Open", anOpenHandler);
 
             // Raise the event in the service.
             aService.RaiseClose();
+            aService.raiseOpen("Hello");
 
-            anEventReceived.waitOne();
+            aCloseReceived.waitOne();
+            anOpenReceived.waitOne();
 
             // Unsubscribe.
-            anRpcClient.unsubscribeRemoteEvent("Close", anEventHandler);
+            anRpcClient.unsubscribeRemoteEvent("Close", aCloseHandler);
+            anRpcClient.unsubscribeRemoteEvent("Open", anOpenHandler);
+            
+            assertEquals("Hello", aReceivedOpenData[0]);
 
             // Try to raise again.
             aService.RaiseClose();
+            aService.raiseOpen("Hello2");
 
-            assertFalse(anEventReceived.waitOne(1000));
+            assertFalse(aCloseReceived.waitOne(1000));
+            assertFalse(aCloseReceived.waitOne(1000));
         }
         finally
         {
