@@ -19,7 +19,7 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
     // Maintains events and subscribed clients.
     private class EventContext
     {
-        public EventContext(TServiceInterface service, Method event, EventHandler handler)
+        public EventContext(TServiceInterface service, Method event, EventHandler<Object> handler)
         {
             myService = service;
             myEvent = event;
@@ -28,17 +28,25 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
             mySubscribedClients = new HashSet<String>();
         }
 
+        // Subscribes anonymous event handler in the service.
+        // When an event occurs the anonymous event handler forwards the event to subscribed remote clients.
         public void subscribe() throws Exception
         {
             Object anEventObject = myEvent.invoke(myService);
-            Event anEvent = (Event) anEventObject;
+            
+            @SuppressWarnings("unchecked")
+            Event<Object> anEvent = (Event<Object>) anEventObject;
+            
             anEvent.subscribe(myHandler);
         }
 
         public void unsubscribe() throws Exception
         {
             Object anEventObject = myEvent.invoke(myService);
-            Event anEvent = (Event) anEventObject;
+            
+            @SuppressWarnings("unchecked")
+            Event<Object> anEvent = (Event<Object>) anEventObject;
+            
             anEvent.unsubscribe(myHandler);
         }
 
@@ -54,7 +62,7 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
         
         private TServiceInterface myService;
         private Method myEvent;
-        private EventHandler myHandler;
+        private EventHandler<Object> myHandler;
         
         private HashSet<String> mySubscribedClients;
     }
@@ -147,6 +155,9 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
                         final Method aTmpEventInfo = anEventInfo;
                         EventHandler<Object> anEventHandler = new EventHandler<Object>()
                         {
+                            // Note: parameter e is the event of type anEventArgsType.
+                            //       Therefore we can suppress checking of generic type warning.  
+                            @SuppressWarnings("unchecked")
                             @Override
                             public void onEvent(Object sender, Object e)
                             {
@@ -185,7 +196,7 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
                                             anEventMessage.OperationName = aTmpEventInfo.getName();
                                             anEventMessage.SerializedData = (anEventArgsType == EventArgs.class) ?
                                                     null : // EventArgs is a known type without parameters - we do not need to serialize it.
-                                                    new Object[] { mySerializer.serialize(e, (Class)anEventArgsType) };
+                                                    new Object[] { mySerializer.serialize(e, (Class<Object>)anEventArgsType) };
     
                                             aSerializedEvent = mySerializer.serialize(anEventMessage, RpcMessage.class);
                                         }
@@ -415,8 +426,11 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
                                 try
                                 {
                                     // Serialize the result.
+                                    @SuppressWarnings("unchecked")
                                     Object aSerializedReturnValue = (aServiceMethod.getMethod().getReturnType() != Void.class) ?
-                                        mySerializer.serialize(aResult, (Class)aServiceMethod.getMethod().getReturnType()) :
+                                        // Note: aResult is of type aServiceMethod.getMethod().getReturnType().
+                                        //       Therefore the generic type checking warning can be supressed.
+                                        mySerializer.serialize(aResult, (Class<Object>)aServiceMethod.getMethod().getReturnType()) :
                                         null;
                                     
                                     aResponseMessage.SerializedData = new Object[] { aSerializedReturnValue };

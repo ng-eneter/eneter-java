@@ -66,7 +66,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             myArgTypes = argTypes;
         }
 
-        public Class[] getArgTypes()
+        public Class<?>[] getArgTypes()
         {
             return myArgTypes;
         }
@@ -440,6 +440,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
     }
     
 
+    @SuppressWarnings("unchecked")
     private Object callMethod(String methodName, Object[] parameters) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -459,7 +460,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             {
                 for (int i = 0; i < parameters.length; ++i)
                 {
-                    aSerialzedMethodParameters[i] = mySerializer.serialize(parameters[i], aRemoteMethod.getArgTypes()[i]);
+                    aSerialzedMethodParameters[i] = mySerializer.serialize(parameters[i], (Class<Object>)aRemoteMethod.getArgTypes()[i]);
                 }
             }
             catch (Exception err)
@@ -672,6 +673,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
         }
     }
     
+    @SuppressWarnings("unchecked")
     private void raiseEvent(String name, Object serializedEventArgs)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -701,11 +703,11 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase imp
             // Notify all subscribers.
             synchronized (aRemoteEvent.getLock())
             {
-                for (EventHandler aSubscriber : aRemoteEvent.getSubscribers())
+                for (EventHandler<?> aSubscriber : aRemoteEvent.getSubscribers())
                 {
                     try
                     {
-                        aSubscriber.onEvent(this, anEventArgs);
+                        ((EventHandler<Object>)aSubscriber).onEvent(this, anEventArgs);
                     }
                     catch (Exception err)
                     {
