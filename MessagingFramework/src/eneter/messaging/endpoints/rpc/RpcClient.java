@@ -361,7 +361,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
     }
     
     @Override
-    public <TEventArgs> void subscribeRemoteEvent(String eventName, EventHandler<TEventArgs> eventHandler)
+    public void subscribeRemoteEvent(String eventName, EventHandler<?> eventHandler) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -375,7 +375,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
     }
     
     @Override
-    public void unsubscribeRemoteEvent(String eventName, EventHandler<?> eventHandler)
+    public void unsubscribeRemoteEvent(String eventName, EventHandler<?> eventHandler) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -610,6 +610,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
 
     @SuppressWarnings("unchecked")
     private void subscribeEvent(String eventName, EventHandler<?> handler)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -633,6 +634,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
     
     @SuppressWarnings("unchecked")
     private void unsubscribeEvent(String eventName, EventHandler<?> handler)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
