@@ -22,7 +22,15 @@ import eneter.net.system.*;
  */
 public interface IRpcService<TServiceInterface> extends IAttachableDuplexInputChannel
 {
+    /**
+     * The event is invoked when the connection is opened.
+     * @return
+     */
     Event<ResponseReceiverEventArgs> responseReceiverConnected();
     
+    /**
+     * The event is invoked when the connection is closed.
+     * @return
+     */
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
 }

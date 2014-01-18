@@ -3,6 +3,58 @@ package eneter.messaging.endpoints.rpc;
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 
+
+
+/**
+ * Creates RPC clients and services of the given type.
+ * 
+ * The provided service type must be an interface with following parameters:
+ * <ul>
+ * <li>Interface is not generic.</li>
+ * <li>Methods, arguments and return values are not generic.</li>
+ * <li>Methods are not overloaded. It means there are no two methods with the same name but different input parameters.</li>
+ * <li>Events like in C# language are supported too - se the example below.</li>
+ * </ul>
+ * 
+ * Example showing how to declare interfaces for C# - Java communication.
+ * <pre>
+ * {@code
+ * // C# interface 
+ * public interface IMyInterface
+ * {
+ *    // Event without arguments.
+ *    event EventHandler SomethingHappened;
+ *    
+ *    // Event with arguments.
+ *    event EventHandler<MyArgs> SomethingElseHappened;
+ *    
+ *    // Simple method.
+ *    void Hello();
+ *    
+ *    // Method with arguments.
+ *    int Calculate(int a, int b);
+ * }
+ * .
+ * // Java equivalent
+ * // Note: methods names must be exactly same as in C#.
+ * public interface IMyInterface
+ * {
+ *    // Event without arguments.
+ *    Event<EventArgs> SomethingHappened();
+ *    
+ *    // Event with arguments.
+ *    Event<MyArgs> SomethingElseHappened();
+ *    
+ *    // Simple method.
+ *    void Hello();
+ *    
+ *    // Method with arguments.
+ *    int Calculate(int a, int b);
+ * }
+ * }
+ * </pre>
+ *
+ */
 public class RpcFactory implements IRpcFactory
 {
     public RpcFactory()

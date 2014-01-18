@@ -10,6 +10,7 @@ class ProxyProvider
         ClassLoader aClassLoader = clazz.getClassLoader();
         Class<?>[] anImplementedInterfaces = { clazz };
         
+        // Create dynamic proxy for the given interface.
         @SuppressWarnings("unchecked")
         TServiceInterface aProxyInstance = (TServiceInterface) Proxy.newProxyInstance(aClassLoader, anImplementedInterfaces, invocationHandler);
         
