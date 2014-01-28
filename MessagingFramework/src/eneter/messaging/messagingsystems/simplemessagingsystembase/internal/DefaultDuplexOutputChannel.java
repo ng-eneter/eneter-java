@@ -425,6 +425,4 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     {
         return getClass().getSimpleName() + " '" + myChannelId + "' ";
     }
-
-    
 }
