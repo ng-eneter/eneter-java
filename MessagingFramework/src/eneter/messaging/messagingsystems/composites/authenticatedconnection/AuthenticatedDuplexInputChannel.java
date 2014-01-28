@@ -273,6 +273,10 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
                                 EneterTrace.error(anErrorMessage, err);
                             }
                         }
+                        else
+                        {
+                            // the client will be disconnected.
+                        }
                     }
                     catch (Exception err)
                     {
