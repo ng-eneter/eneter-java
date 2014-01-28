@@ -66,12 +66,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     
     
     @Override
-    public Event<ConnectionTokenEventArgs> responseReceiverConnecting()
-    {
-        return myResponseReceiverConnectingEvent.getApi();
-    }
-    
-    @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
         return myResponseReceiverConnectedEvent.getApi();
@@ -336,11 +330,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
             {
                 // If the connection is not open then it will open it.
-                if (!createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId))
-                {
-                    // If the connection is not approved stop listening for this client.
-                    return false;
-                }
+                createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId);
 
                 final ProtocolMessage aProtocolMessageTmp = aProtocolMessage;
                 myDispatcher.invoke(new Runnable()
@@ -355,11 +345,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             else if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
             {
                 // If the connection is not approved.
-                if (!createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId))
-                {
-                    // If the connection is not approved stop listening for this client.
-                    return false;
-                }
+                createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId);
             }
             else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
             {
@@ -427,12 +413,11 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private boolean createResponseMessageSender(MessageContext messageContext, final String responseReceiverId) throws Exception
+    private void createResponseMessageSender(MessageContext messageContext, final String responseReceiverId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            boolean aConnectionApprovedFlag = true;
             boolean aNewConnectionFlag = false;
 
             // If the connection is not open yet.
@@ -443,25 +428,19 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
 
                 if (aConnectionContext == null)
                 {
-                    if (isMessageSenderApproved(messageContext.getSenderAddress(), responseReceiverId))
+                    // Get the response sender.
+                    // It comes in the message context or it must be created.
+                    ISender aResponseSender = messageContext.getResponseSender();
+                    if (aResponseSender == null)
                     {
-                        // Get the response sender.
-                        // It comes in the message context or it must be created.
-                        ISender aResponseSender = messageContext.getResponseSender();
-                        if (aResponseSender == null)
-                        {
-                            aResponseSender = myInputConnector.createResponseSender(responseReceiverId);
-                        }
-    
-                        aConnectionContext = new TConnectionContext(aResponseSender, messageContext.getSenderAddress());
-                        myConnectedClients.put(responseReceiverId, aConnectionContext);
-    
-                        aNewConnectionFlag = true;
+                        aResponseSender = myInputConnector.createResponseSender(responseReceiverId);
                     }
-                    else
-                    {
-                        aConnectionApprovedFlag = false;
-                    }
+
+                    aConnectionContext = new TConnectionContext(aResponseSender, messageContext.getSenderAddress());
+                    myConnectedClients.put(responseReceiverId, aConnectionContext);
+
+                    // Connection was created.
+                    aNewConnectionFlag = true;
                 }
             }
 
@@ -486,8 +465,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     }
                 });
             }
-            
-            return aConnectionApprovedFlag;
         }
         finally
         {
@@ -495,25 +472,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private boolean isMessageSenderApproved(String senderAddress, String responseReceiverId)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            ConnectionTokenEventArgs aConnectionToken = new ConnectionTokenEventArgs(responseReceiverId, senderAddress);
 
-            // Note: This event must be notified from the thread listening to messages.
-            //       So that based on the return the thread can decide if the connection stays open or will be closed.
-            notifyEvent(myResponseReceiverConnectingEvent, aConnectionToken, false);
-
-            return aConnectionToken.isConnectionAllowed();
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
     private void closeResponseMessageSender(final String responseReceiverId, boolean sendCloseMessageFlag)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -669,7 +628,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     private IThreadDispatcher myDispatcher;
     
     
-    private EventImpl<ConnectionTokenEventArgs> myResponseReceiverConnectingEvent = new EventImpl<ConnectionTokenEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEvent = new EventImpl<ResponseReceiverEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEvent = new EventImpl<ResponseReceiverEventArgs>();
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEvent = new EventImpl<DuplexChannelMessageEventArgs>();

@@ -71,11 +71,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    @Override
-    public Event<ConnectionTokenEventArgs> responseReceiverConnecting()
-    {
-        return myResponseReceiverConnectingEventImpl.getApi();
-    }
 
     @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
@@ -126,7 +121,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     throw new IllegalStateException(aMessage);
                 }
 
-                myUnderlyingInputChannel.responseReceiverConnecting().subscribe(myOnResponseReceiverConecting);
                 myUnderlyingInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
                 myUnderlyingInputChannel.messageReceived().subscribe(myOnMessageReceived);
 
@@ -136,7 +130,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 }
                 catch (Exception err)
                 {
-                    myUnderlyingInputChannel.responseReceiverConnecting().unsubscribe(myOnResponseReceiverConecting);
                     myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
                     myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
 
@@ -167,7 +160,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
                 }
 
-                myUnderlyingInputChannel.responseReceiverConnecting().unsubscribe(myOnResponseReceiverConecting);
                 myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
                 myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
             }
@@ -245,29 +237,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void onResponseReceiverConecting(Object sender, ConnectionTokenEventArgs e)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            if (myResponseReceiverConnectingEventImpl.isSubscribed())
-            {
-                try
-                {
-                    myResponseReceiverConnectingEventImpl.raise(this, e);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
     private void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -531,20 +500,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     private HashSet<TResponseReceiverContext> myResponseReceiverContexts = new HashSet<TResponseReceiverContext>();
     
     
-    private EventImpl<ConnectionTokenEventArgs> myResponseReceiverConnectingEventImpl = new EventImpl<ConnectionTokenEventArgs>();
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     
-    
-    private EventHandler<ConnectionTokenEventArgs> myOnResponseReceiverConecting = new EventHandler<ConnectionTokenEventArgs>()
-    {
-        @Override
-        public void onEvent(Object x, ConnectionTokenEventArgs y)
-        {
-            onResponseReceiverConecting(x, y);
-        }
-    };
     
     private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
     {

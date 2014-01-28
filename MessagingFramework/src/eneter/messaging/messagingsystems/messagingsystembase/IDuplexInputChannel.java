@@ -18,15 +18,6 @@ import eneter.net.system.Event;
 public interface IDuplexInputChannel
 {
     /**
-     * The event is invoked before a duplex output channel opens the connection.
-     * 
-     * The event allows to grant or deny the connection.
-     * E.g. if the IsConnectionAllowed is set to false the connection will not be open.<br/>
-     * This event does not use the dispatcher. Therefore the event can be raised in whatever thread.
-     */
-    Event<ConnectionTokenEventArgs> responseReceiverConnecting();
-
-    /**
      * The event is invoked when a duplex output channel opened the connection.
      */
     Event<ResponseReceiverEventArgs> responseReceiverConnected();

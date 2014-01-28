@@ -28,12 +28,6 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
     
 
     @Override
-    public Event<ConnectionTokenEventArgs> responseReceiverConnecting()
-    {
-        return null;
-    }
-
-    @Override
     public Event<ResponseReceiverEventArgs> responseReceiverConnected()
     {
         return myResponseReceiverConnectedEventImpl.getApi();
