@@ -255,7 +255,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                 String anAcknowledgeMessage = Cast.as(e.getMessage(), String.class);
 
                 // If the acknowledge message is wrong then disconnect.
-                if (StringExt.isNullOrEmpty(anAcknowledgeMessage) || anAcknowledgeMessage.equals("OK"))
+                if (StringExt.isNullOrEmpty(anAcknowledgeMessage) || !anAcknowledgeMessage.equals("OK"))
                 {
                     String anErrorMessage = TracedObject() + "detected incorrect acknowledge message. The connection will be closed.";
                     EneterTrace.error(anErrorMessage);

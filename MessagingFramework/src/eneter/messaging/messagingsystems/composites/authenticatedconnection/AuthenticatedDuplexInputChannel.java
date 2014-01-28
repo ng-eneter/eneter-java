@@ -53,7 +53,7 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
 
     
     public AuthenticatedDuplexInputChannel(IDuplexInputChannel underlyingInputChannel,
-            IGetHanshakeMessage getHandshakeMessageCallback,
+            IGetHandshakeMessage getHandshakeMessageCallback,
             IAuthenticate verifyHandshakeResponseMessageCallback)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -256,7 +256,7 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
                     // The handshake message will be sent.
                     try
                     {
-                        aConnection.HandshakeMessage = myGetHandshakeMessageCallback.getHanshakeMessage(e.getChannelId(), e.getResponseReceiverId(), e.getMessage());
+                        aConnection.HandshakeMessage = myGetHandshakeMessageCallback.getHandshakeMessage(e.getChannelId(), e.getResponseReceiverId(), e.getMessage());
 
                         // If the login was accepted.
                         if (aConnection.HandshakeMessage != null)
@@ -350,7 +350,7 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
     
     private HashMap<String, TNotYetAuthenticatedConnection> myNotYetAuthenticatedConnections = new HashMap<String, TNotYetAuthenticatedConnection>();
     private HashSet<String> myAuthenticatedConnections = new HashSet<String>();
-    private IGetHanshakeMessage myGetHandshakeMessageCallback;
+    private IGetHandshakeMessage myGetHandshakeMessageCallback;
     private IAuthenticate myAuthenticateCallback;
     
     

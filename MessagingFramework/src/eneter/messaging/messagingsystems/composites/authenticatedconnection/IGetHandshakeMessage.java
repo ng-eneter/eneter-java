@@ -8,7 +8,7 @@
 
 package eneter.messaging.messagingsystems.composites.authenticatedconnection;
 
-public interface IGetHanshakeMessage
+public interface IGetHandshakeMessage
 {
-    Object getHanshakeMessage(String channelId, String responseReceiverId, Object loginMessage);
+    Object getHandshakeMessage(String channelId, String responseReceiverId, Object loginMessage);
 }
