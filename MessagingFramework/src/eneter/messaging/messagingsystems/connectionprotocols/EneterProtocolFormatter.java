@@ -201,10 +201,6 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
                 {
                     aProtocolMessage = decodeRequest(EProtocolMessageType.CloseConnectionRequest, aReader, anEndianEncodingId, aStringEncodingId);
                 }
-                else if (aMessageType == POLL_REQUEST)
-                {
-                    aProtocolMessage = decodeRequest(EProtocolMessageType.PollRequest, aReader, anEndianEncodingId, aStringEncodingId);
-                }
                 else if (aMessageType == REQUEST_MESSAGE)
                 {
                     aProtocolMessage = decodeMessage(aReader, anEndianEncodingId, aStringEncodingId);

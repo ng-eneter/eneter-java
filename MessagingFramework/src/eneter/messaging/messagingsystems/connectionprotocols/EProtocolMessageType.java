@@ -30,11 +30,6 @@ public enum EProtocolMessageType
     CloseConnectionRequest,
     
     /**
-     * Poll request message.
-     */
-    PollRequest,
-    
-    /**
      * Message or reaponse message.
      */
     MessageReceived
