@@ -22,16 +22,16 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
     
     public AuthenticatedMessagingFactory(IMessagingSystemFactory underlyingMessagingSystem,
             IGetHandshakeMessage getHandshakeMessageCallback,
-            IAuthenticate verifyHandshakeResponseMessageCallback)
+            IAuthenticate authenticateCallback)
     {
-        this(underlyingMessagingSystem, null, null, getHandshakeMessageCallback, verifyHandshakeResponseMessageCallback);
+        this(underlyingMessagingSystem, null, null, getHandshakeMessageCallback, authenticateCallback);
     }
     
     public AuthenticatedMessagingFactory(IMessagingSystemFactory underlyingMessagingSystem,
             IGetLoginMessage getLoginMessageCallback,
             IGetHandshakeResponseMessage getHandshakeResponseMessageCallback,
             IGetHandshakeMessage getHandshakeMessageCallback,
-            IAuthenticate verifyHandshakeResponseMessageCallback)
+            IAuthenticate authenticateCallback)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -42,7 +42,7 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
             myGetLoginMessageCallback = getLoginMessageCallback;
             myGetHandShakeMessageCallback = getHandshakeMessageCallback;
             myGetHandshakeResponseMessageCallback = getHandshakeResponseMessageCallback;
-            myAuthenticateCallback = verifyHandshakeResponseMessageCallback;
+            myAuthenticateCallback = authenticateCallback;
         }
         finally
         {

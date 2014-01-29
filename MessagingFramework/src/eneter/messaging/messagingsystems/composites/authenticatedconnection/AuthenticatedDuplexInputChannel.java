@@ -256,6 +256,7 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
                     // The handshake message will be sent.
                     try
                     {
+                        aConnection.LoginMessage = e.getMessage();
                         aConnection.HandshakeMessage = myGetHandshakeMessageCallback.getHandshakeMessage(e.getChannelId(), e.getResponseReceiverId(), e.getMessage());
 
                         // If the login was accepted.
