@@ -107,7 +107,6 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             mySignerPrivateKey = signerPrivateKey;
             myVerifySignerCertificate = (verifySignerCertificate == null) ? myVerifySignerCertificate : verifySignerCertificate;
             myUnderlyingSerializer = underlyingSerializer;
-            myEncoderDecoder = new EncoderDecoder(underlyingSerializer);
         }
         finally
         {
@@ -132,10 +131,12 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             
             byte[][] aSignedData = new byte[3][];
             
-            // Encode message to the byte sequence.
-            ByteArrayOutputStream aSerializedData = new ByteArrayOutputStream();
-            myEncoderDecoder.serialize(aSerializedData, dataToSerialize, clazz);
-            aSignedData[0] = aSerializedData.toByteArray();
+            ByteArrayOutputStream aSerializedDataStream = new ByteArrayOutputStream();
+            
+            // Serialize incoming data using underlying serializer.
+            Object aSerializedData = myUnderlyingSerializer.serialize(dataToSerialize, clazz);
+            myEncoderDecoder.encode(aSerializedDataStream, aSerializedData);
+            aSignedData[0] = aSerializedDataStream.toByteArray();
             
             // Sign the message.
             Signature aSigner = Signature.getInstance("SHA1withRSA");
@@ -189,8 +190,10 @@ public class RsaDigitalSignatureSerializer implements ISerializer
             }
             
             // Decode the byte sequence.
-            ByteArrayInputStream aDeserializedData = new ByteArrayInputStream(aSignedData[0]);
-            return myEncoderDecoder.deserialize(aDeserializedData, clazz);
+            ByteArrayInputStream aDeserializedDataStream = new ByteArrayInputStream(aSignedData[0]);
+            Object aDecodedData = myEncoderDecoder.decode(aDeserializedDataStream);
+            T aDeserializedData = myUnderlyingSerializer.deserialize(aDecodedData, clazz);
+            return aDeserializedData;
         }
         finally
         {
@@ -200,7 +203,7 @@ public class RsaDigitalSignatureSerializer implements ISerializer
 
     
     private ISerializer myUnderlyingSerializer;
-    private EncoderDecoder myEncoderDecoder;
+    private EncoderDecoder myEncoderDecoder = new EncoderDecoder();
     private X509Certificate mySignerPublicCertificate;
     private RSAPrivateKey mySignerPrivateKey;
     

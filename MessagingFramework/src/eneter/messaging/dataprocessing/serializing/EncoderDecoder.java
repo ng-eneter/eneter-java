@@ -22,32 +22,16 @@ import eneter.messaging.diagnostic.EneterTrace;
  */
 class EncoderDecoder
 {
-    public EncoderDecoder(ISerializer underlyingSerializer)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myUnderlyingSerializer = underlyingSerializer;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    public <T> void serialize(OutputStream writer, T dataToSerialize, Class<T> clazz)
+    public void encode(OutputStream writer, Object serializedData)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Use underlying serializer to serialize data.
-            Object aSerializedData = myUnderlyingSerializer.serialize(dataToSerialize, clazz);
-            
             // Encrypt serialized data.
-            if (aSerializedData instanceof String)
+            if (serializedData instanceof String)
             {
-                String aSerializedStr = (String)aSerializedData;
+                String aSerializedStr = (String)serializedData;
                 
                 // Note: UTF-16 Big Endian is native Java encoding.
                 Charset aCharset = Charset.forName("UTF-16BE");
@@ -60,14 +44,14 @@ class EncoderDecoder
                 // Encode data.
                 writer.write(aDataToEncode);
             }
-            else if (aSerializedData instanceof byte[] ||
-                     aSerializedData instanceof Byte[])
+            else if (serializedData instanceof byte[] ||
+                     serializedData instanceof Byte[])
             {
                 // Write info, that encoded data is array of bytes.
                 writer.write(BYTES_ID);
                 
                 // Encode data.
-                writer.write((byte[])aSerializedData);
+                writer.write((byte[])serializedData);
             }
             else
             {
@@ -83,7 +67,7 @@ class EncoderDecoder
     }
     
     
-    public <T> T deserialize(InputStream reader, Class<T> clazz)
+    public Object decode(InputStream reader)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -141,8 +125,7 @@ class EncoderDecoder
                 throw new IllegalStateException(anErrorMessage);
             }
             
-            // Use underlying serializer to deserialize data.
-            return myUnderlyingSerializer.deserialize(aDecodedData, clazz);
+            return aDecodedData;
         }
         finally
         {
@@ -151,8 +134,6 @@ class EncoderDecoder
     }
     
     
-    
-    private ISerializer myUnderlyingSerializer;
     
     private final byte STRING_UTF8_ID = 10;
     private final byte STRING_UTF16_LE_ID = 20;

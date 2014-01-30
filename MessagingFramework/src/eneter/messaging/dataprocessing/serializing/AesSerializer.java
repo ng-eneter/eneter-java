@@ -93,7 +93,7 @@ public class AesSerializer implements ISerializer
             myKey = new SecretKeySpec(aKeyGenerator.getBytes(128 / 8), "AES");
             myInitializeVector = new IvParameterSpec(aKeyGenerator.getBytes(16));
             
-            myEncoderDecoder = new EncoderDecoder(underlyingSerializer);
+            myUnderlyingSerializer = underlyingSerializer;
         }
         finally
         {
@@ -108,7 +108,7 @@ public class AesSerializer implements ISerializer
         {
             myKey = key;
             myInitializeVector = iv;
-            myEncoderDecoder = new EncoderDecoder(underlyingSerializer);
+            myUnderlyingSerializer = underlyingSerializer;
         }
         finally
         {
@@ -132,7 +132,8 @@ public class AesSerializer implements ISerializer
             CipherOutputStream anEncryptor = new CipherOutputStream(anEncryptedData, aCipher);
 
             // Serialize and encrypt the data.
-            myEncoderDecoder.serialize(anEncryptor, dataToSerialize, clazz);
+            Object aSerializedData = myUnderlyingSerializer.serialize(dataToSerialize, clazz);
+            myEncoderDecoder.encode(anEncryptor, aSerializedData);
 
             anEncryptor.close();
             return anEncryptedData.toByteArray();
@@ -161,7 +162,9 @@ public class AesSerializer implements ISerializer
             CipherInputStream aDecryptor = new CipherInputStream(anEncryptedDataStream, aCipher);
 
             // Deserialize the encrypted data.
-            return myEncoderDecoder.deserialize(aDecryptor, clazz);
+            Object aDecodedData = myEncoderDecoder.decode(aDecryptor);
+            T aDeserializedData = myUnderlyingSerializer.deserialize(aDecodedData, clazz);
+            return aDeserializedData;
         }
         finally
         {
@@ -170,7 +173,8 @@ public class AesSerializer implements ISerializer
     }
     
 
-    private EncoderDecoder myEncoderDecoder;
+    private ISerializer myUnderlyingSerializer;
+    private EncoderDecoder myEncoderDecoder = new EncoderDecoder();
     
     private Key myKey;
     private IvParameterSpec myInitializeVector;

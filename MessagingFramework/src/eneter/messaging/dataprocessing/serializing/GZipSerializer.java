@@ -61,7 +61,7 @@ public class GZipSerializer implements ISerializer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myEncoderDecoder = new EncoderDecoder(underlyingSerializer);
+            myUnderlyingSerializer = underlyingSerializer;
         }
         finally
         {
@@ -82,7 +82,9 @@ public class GZipSerializer implements ISerializer
             ByteArrayOutputStream aCompressedData = new ByteArrayOutputStream();
             GZIPOutputStream aGzipOutputStream = new GZIPOutputStream(aCompressedData);
             
-            myEncoderDecoder.serialize(aGzipOutputStream, dataToSerialize, clazz);
+            // Use underlying serializer to serialize data.
+            Object aSerializedData = myUnderlyingSerializer.serialize(dataToSerialize, clazz);
+            myEncoderDecoder.encode(aGzipOutputStream, aSerializedData);
             
             aGzipOutputStream.finish();
             return aCompressedData.toByteArray();
@@ -111,7 +113,9 @@ public class GZipSerializer implements ISerializer
             // Create the GZipStream to decompress data.
             GZIPInputStream aGzipStream = new GZIPInputStream(aCompressedStream);
 
-            return myEncoderDecoder.deserialize(aGzipStream, clazz);
+            Object aDecodedData = myEncoderDecoder.decode(aGzipStream);
+            T aDeserializedData = myUnderlyingSerializer.deserialize(aDecodedData, clazz);
+            return aDeserializedData;
         }
         finally
         {
@@ -120,5 +124,6 @@ public class GZipSerializer implements ISerializer
     }
 
     
-    private EncoderDecoder myEncoderDecoder;
+    private ISerializer myUnderlyingSerializer;
+    private EncoderDecoder myEncoderDecoder = new EncoderDecoder();
 }
