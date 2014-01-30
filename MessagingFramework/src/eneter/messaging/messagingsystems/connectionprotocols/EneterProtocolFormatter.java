@@ -492,7 +492,6 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
     // Type of low level message - used for the low level communication between channels.
     private final byte OPEN_CONNECTION_REQUEST = 10;
     private final byte CLOSE_CONNECTION_REQUEST = 20;
-    private final byte POLL_REQUEST = 30;
     private final byte REQUEST_MESSAGE = 40;
     
     private static final ProtocolMessage myNonProtocolMessage = new ProtocolMessage(EProtocolMessageType.Unknown, "", null);
