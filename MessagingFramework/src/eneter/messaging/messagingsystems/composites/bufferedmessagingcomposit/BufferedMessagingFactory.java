@@ -9,6 +9,7 @@
 package eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
@@ -149,6 +150,12 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    @Override
+    public IProtocolFormatter<?> getProtocolFormatter()
+    {
+        return myUnderlyingMessaging.getProtocolFormatter();
+    }
+    
     private IMessagingSystemFactory myUnderlyingMessaging;
     private long myMaxOfflineTime;
 }

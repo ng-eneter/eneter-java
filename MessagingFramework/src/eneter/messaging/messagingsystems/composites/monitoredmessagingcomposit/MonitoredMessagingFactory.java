@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
@@ -153,6 +154,11 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    @Override
+    public IProtocolFormatter<?> getProtocolFormatter()
+    {
+        return myUnderlyingMessaging.getProtocolFormatter();
+    }
     
     private IMessagingSystemFactory myUnderlyingMessaging;
     private long myPingFrequency;

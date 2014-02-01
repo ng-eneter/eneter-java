@@ -155,6 +155,11 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    @Override
+    public IProtocolFormatter<?> getProtocolFormatter()
+    {
+        return myProtocolFormatter;
+    }
     
     private IThreadDispatcher myDispatcher;
     private MessageBusConnectorFactory myConnectorFactory;

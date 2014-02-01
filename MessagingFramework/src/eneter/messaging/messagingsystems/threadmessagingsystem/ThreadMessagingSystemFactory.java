@@ -136,6 +136,11 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
+    @Override
+    public IProtocolFormatter<?> getProtocolFormatter()
+    {
+        return myDefaultMessagingFactory.getProtocolFormatter();
+    }
     
     private DefaultMessagingSystemFactory myDefaultMessagingFactory;
 }

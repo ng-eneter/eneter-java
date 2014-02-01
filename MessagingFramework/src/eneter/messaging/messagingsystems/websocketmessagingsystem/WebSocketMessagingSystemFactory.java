@@ -242,6 +242,11 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
+    @Override
+    public IProtocolFormatter<?> getProtocolFormatter()
+    {
+        return myProtocolFormatter;
+    }
     
     /**
      * Sets the factory that will be used for creation of secured server socket.

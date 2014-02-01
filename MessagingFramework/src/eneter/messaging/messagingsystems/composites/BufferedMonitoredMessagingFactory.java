@@ -12,6 +12,7 @@ import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit.BufferedMessagingFactory;
 import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.MonitoredMessagingFactory;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
@@ -184,6 +185,11 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
         }
     }
 
+    @Override
+    public IProtocolFormatter<?> getProtocolFormatter()
+    {
+        return myBufferedMessaging.getProtocolFormatter();
+    }
     
     private IMessagingSystemFactory myBufferedMessaging;
 }

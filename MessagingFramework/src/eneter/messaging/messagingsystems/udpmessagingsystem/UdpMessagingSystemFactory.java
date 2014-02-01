@@ -144,6 +144,11 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
+    @Override
+    public IProtocolFormatter<?> getProtocolFormatter()
+    {
+        return myProtocolFormatter;
+    }
     
     public UdpMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {

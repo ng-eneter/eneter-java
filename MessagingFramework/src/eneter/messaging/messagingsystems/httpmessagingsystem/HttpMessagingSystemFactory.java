@@ -271,6 +271,12 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
+    @Override
+    public IProtocolFormatter<?> getProtocolFormatter()
+    {
+        return myProtocolFormatter;
+    }
+    
     private IServerSecurityFactory getServerSecurityFactory(String channelId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
