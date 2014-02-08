@@ -5,6 +5,7 @@ import java.security.*;
 import java.security.cert.*;
 import java.security.interfaces.RSAPrivateKey;
 
+import eneter.messaging.dataprocessing.streaming.internal.EncoderDecoder;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.IFunction1;
 

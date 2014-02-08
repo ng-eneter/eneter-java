@@ -6,7 +6,7 @@
  * 
  */
 
-package eneter.messaging.dataprocessing.serializing;
+package eneter.messaging.dataprocessing.streaming.internal;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -15,12 +15,12 @@ import java.nio.charset.Charset;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Internal class using an underlying serializer to serialize/deserialize data.
+ * Internal class for encoding/decoding serialized data.
  * It stores informarmation about used encoding (UTF8 or UTF16) and Little Endian and Big Endian number encoding.
  * It helps to ensure compatibility between various platforms.
  *
  */
-class EncoderDecoder
+public class EncoderDecoder
 {
     public void encode(OutputStream writer, Object serializedData)
             throws Exception

@@ -16,6 +16,7 @@ import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import eneter.messaging.dataprocessing.streaming.internal.EncoderDecoder;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.security.cryptography.internal.Rfc2898DeriveBytes;
 
