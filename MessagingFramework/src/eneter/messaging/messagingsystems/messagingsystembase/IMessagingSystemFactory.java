@@ -8,8 +8,6 @@
 
 package eneter.messaging.messagingsystems.messagingsystembase;
 
-import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
-
 /**
  * The interface declares the factory that creates input and output channels.
  * This factory interface is supposed to be implemented by particular messaging systems so that
@@ -58,6 +56,4 @@ public interface IMessagingSystemFactory
      * @return duplex input channel
      */
     IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception;
-    
-    IProtocolFormatter<?> getProtocolFormatter();
 }

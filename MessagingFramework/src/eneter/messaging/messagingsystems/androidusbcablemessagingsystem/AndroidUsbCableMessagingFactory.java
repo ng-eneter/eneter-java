@@ -237,11 +237,6 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
         throw new UnsupportedOperationException("Duplex input channel is not supported for Android USB cable messaging.");
     }
 
-    @Override
-    public IProtocolFormatter<?> getProtocolFormatter()
-    {
-        return myProtocolFormatter;
-    }
     
     private int myAdbHostPort;
     private IProtocolFormatter<byte[]> myProtocolFormatter;

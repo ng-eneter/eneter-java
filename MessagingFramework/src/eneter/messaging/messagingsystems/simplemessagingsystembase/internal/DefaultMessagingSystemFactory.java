@@ -81,12 +81,6 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace.leaving(aTrace);
         }
     }
-    
-    @Override
-    public IProtocolFormatter<?> getProtocolFormatter()
-    {
-        return myProtocolFormatter;
-    }
 
     public void setOutputChannelThreading(IThreadDispatcherProvider threadDispatcherProvider)
     {

@@ -109,12 +109,6 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
         }
     }
     
-    @Override
-    public IProtocolFormatter<?> getProtocolFormatter()
-    {
-        return myDefaultMessagingFactory.getProtocolFormatter();
-    }
-    
     
     private DefaultMessagingSystemFactory myDefaultMessagingFactory;
 }

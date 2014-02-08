@@ -135,11 +135,6 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
-    @Override
-    public IProtocolFormatter<?> getProtocolFormatter()
-    {
-        return mySimpleMessagingFactory.getProtocolFormatter();
-    }
     
     private DefaultMessagingSystemFactory mySimpleMessagingFactory;
 }

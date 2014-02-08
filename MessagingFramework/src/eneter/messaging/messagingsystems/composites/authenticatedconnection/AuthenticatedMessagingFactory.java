@@ -9,7 +9,6 @@
 package eneter.messaging.messagingsystems.composites.authenticatedconnection;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
@@ -141,11 +140,6 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
         }
     }
 
-    @Override
-    public IProtocolFormatter<?> getProtocolFormatter()
-    {
-        return myUnderlyingMessaging.getProtocolFormatter();
-    }
     
     public AuthenticatedMessagingFactory setAuthenticationTimeout(long authenticationTimeout)
     {
