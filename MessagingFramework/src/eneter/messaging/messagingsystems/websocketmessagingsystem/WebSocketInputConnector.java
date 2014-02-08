@@ -202,11 +202,6 @@ class WebSocketInputConnector implements IInputConnector
                         {
                             isConnectionOpen = false;
                         }
-
-                        if (!client.isConnected())
-                        {
-                            isConnectionOpen = false;
-                        }
                     }
                     else
                     {
