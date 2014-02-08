@@ -9,7 +9,6 @@ package eneter.messaging.messagingsystems.composites.messagebus;
 
 import java.util.*;
 
-import eneter.messaging.dataprocessing.streaming.internal.EncoderDecoder;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
@@ -538,7 +537,6 @@ class MessageBus implements IMessageBus
     private TConnector myServiceConnector;
     private TConnector myClientConnector;
     private IProtocolFormatter<?> myProtocolFormatter;
-    private EncoderDecoder myEncoderDecoder = new EncoderDecoder();
     
     
     private EventHandler<ResponseReceiverEventArgs> myOnServiceConnected = new EventHandler<ResponseReceiverEventArgs>()

@@ -57,6 +57,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 myDispatcher = dispatcher;
                 myProtocolFormatter = protocolFormatter;
                 myInputConnector = inputConnector;
+                
+                myIsIncludeResponseReceiverIdToResponses = false;
             }
             finally
             {
@@ -83,7 +85,11 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         return myMessageReceivedEvent.getApi();
     }
 
-
+    public void includeResponseReceiverIdToResponses(boolean flag)
+    {
+        myIsIncludeResponseReceiverIdToResponses = flag;
+    }
+    
     public String getChannelId()
     {
         return myChannelId;
@@ -626,6 +632,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
   
     private String myChannelId;
     private IThreadDispatcher myDispatcher;
+    
+    private boolean myIsIncludeResponseReceiverIdToResponses;
     
     
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEvent = new EventImpl<ResponseReceiverEventArgs>();
