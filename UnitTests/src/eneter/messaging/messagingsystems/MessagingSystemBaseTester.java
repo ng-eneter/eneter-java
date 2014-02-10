@@ -41,7 +41,7 @@ public abstract class MessagingSystemBaseTester
             {
                 ++NumberOfReceivedResponses;
 
-                //EneterTrace.Info("Received Responses: " + NumberOfReceivedResponses);
+                //EneterTrace.info("Received Responses: " + NumberOfReceivedResponses);
 
                 if (myExpectedResponseMessage.equals((String)e.getMessage()) == false)
                 {
@@ -102,7 +102,7 @@ public abstract class MessagingSystemBaseTester
             {
                 ++NumberOfReceivedMessages;
 
-                //EneterTrace.Info("Received Messages: " + NumberOfReceivedMessages);
+                //EneterTrace.info("Received Messages: " + NumberOfReceivedMessages);
 
                 if (NumberOfReceivedMessages == myExpectedNumberOfMessages)
                 {
@@ -382,6 +382,7 @@ public abstract class MessagingSystemBaseTester
             anInputChannel.startListening();
 
             // Client opens the connection.
+            EneterTrace.debug("Open1");
             anOutputChannel.openConnection();
             assertTrue(anOutputChannel.isConnected());
 
@@ -396,6 +397,7 @@ public abstract class MessagingSystemBaseTester
 
 
             // Client closes the connection.
+            EneterTrace.debug("Close1");
             anOutputChannel.closeConnection();
             assertFalse(anOutputChannel.isConnected());
 
@@ -406,8 +408,12 @@ public abstract class MessagingSystemBaseTester
             aResponseReceiverDisconnectedEvent.waitOne();
             assertEquals(anOutputChannel.getResponseReceiverId(), aDisconnectedReceiver[0]);
 
+            // Messaging system e.g. MessageBus can be more complex and needs some time to really close the connection.
+            // Therefore give some time. Investigate how to improve it.
+            Thread.sleep(500);
 
             // Client opens the connection.
+            EneterTrace.debug("Open2");
             anOutputChannel.openConnection();
             assertTrue(anOutputChannel.isConnected());
 
