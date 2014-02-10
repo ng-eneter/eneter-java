@@ -210,7 +210,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 try
                 {
                     // Send the response message.
-                    SenderUtil.sendMessage(aConnectionContext.myResponseSender, "", message, myProtocolFormatter);
+                    String aResponseReceiverId = myIsIncludeResponseReceiverIdToResponses ? responseReceiverId : "";
+                    SenderUtil.sendMessage(aConnectionContext.myResponseSender, aResponseReceiverId, message, myProtocolFormatter);
                 }
                 catch (Exception err)
                 {
@@ -501,7 +502,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                         try
                         {
                             // Try to send close connection message.
-                            SenderUtil.sendCloseConnection(aConnectionContext.myResponseSender, "", myProtocolFormatter);
+                            String aResponseReceiverId = myIsIncludeResponseReceiverIdToResponses ? responseReceiverId : "";
+                            SenderUtil.sendCloseConnection(aConnectionContext.myResponseSender, aResponseReceiverId, myProtocolFormatter);
                         }
                         catch (Exception err)
                         {
