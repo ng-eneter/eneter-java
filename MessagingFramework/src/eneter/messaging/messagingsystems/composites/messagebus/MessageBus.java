@@ -125,6 +125,21 @@ class MessageBus implements IMessageBus
         }
     }
     
+    @Override
+    public Event<MessageBusServiceEventArgs> serviceConnected()
+    {
+        return myServiceConnectedEvent.getApi();
+    }
+
+
+    @Override
+    public Event<MessageBusServiceEventArgs> serviceDisconnected()
+    {
+        return myServiceConnectedEvent.getApi();
+    }
+
+
+    
 
     @Override
     public void attachDuplexInputChannels(IDuplexInputChannel serviceInputChannel, IDuplexInputChannel clientInputChannel)
@@ -163,6 +178,40 @@ class MessageBus implements IMessageBus
         }
     }
 
+    @Override
+    public String[] getConnectedServices()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized(myConnectionsLock)
+            {
+                String[] aServices = new String[myConnectedServices.size()];
+                myConnectedServices.toArray(aServices);
+                return aServices;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+
+    @Override
+    public void disconnectService(String serviceAddress)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            unregisterService(serviceAddress);
+            closeConnection(myServiceConnector, serviceAddress);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     // Connection with the client was closed.
     private void onClientDisconnected(Object sender, ResponseReceiverEventArgs e)
@@ -368,6 +417,19 @@ class MessageBus implements IMessageBus
         try
         {
             registerService(e.getResponseReceiverId());
+            
+            if (myServiceConnectedEvent.isSubscribed())
+            {
+                MessageBusServiceEventArgs anEvent = new MessageBusServiceEventArgs(e.getResponseReceiverId());
+                try
+                {
+                    myServiceConnectedEvent.raise(this, anEvent);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
         }
         finally
         {
@@ -382,6 +444,19 @@ class MessageBus implements IMessageBus
         try
         {
             unregisterService(e.getResponseReceiverId());
+            
+            if (myServiceDisconnectedEvent.isSubscribed())
+            {
+                MessageBusServiceEventArgs anEvent = new MessageBusServiceEventArgs(e.getResponseReceiverId());
+                try
+                {
+                    myServiceDisconnectedEvent.raise(this, anEvent);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
         }
         finally
         {
@@ -581,10 +656,12 @@ class MessageBus implements IMessageBus
         }
     };
     
+
+    private EventImpl<MessageBusServiceEventArgs> myServiceConnectedEvent = new EventImpl<MessageBusServiceEventArgs>();
+    private EventImpl<MessageBusServiceEventArgs> myServiceDisconnectedEvent = new EventImpl<MessageBusServiceEventArgs>();
     
     private String TracedObject()
     {
         return getClass().getSimpleName() + " ";
     }
-
 }
