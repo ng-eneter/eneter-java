@@ -135,7 +135,7 @@ class MessageBus implements IMessageBus
     @Override
     public Event<MessageBusServiceEventArgs> serviceDisconnected()
     {
-        return myServiceConnectedEvent.getApi();
+        return myServiceDisconnectedEvent.getApi();
     }
 
 
