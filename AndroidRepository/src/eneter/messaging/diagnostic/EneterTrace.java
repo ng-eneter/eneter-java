@@ -276,27 +276,28 @@ public class EneterTrace
      *  @param value
      *  
      * If the namespace matches with the regular expression, the message will be traced.
-     * If the filter is set to null, then the filter is not used and all messages will be traced.
-     * <example>
+     * If the filter is set to null, then the filter is not used and all messages will be traced.<br/>
+     * <br/>
      * The following example shows how to set the filter to trace a certain namespace.
-     * <code>
+     * <pre>
+     * {@code
      * // Set the debug detailed level.
      * EneterTrace.DetailLevel = EneterTrace.EDetailLevel.Debug;
-     * 
+     *
      * // Examples:
      * // Traces all name spaces starting with 'My.NameSpace'.
      * EneterTrace.NameSpaceFilter = Pattern.compile("^My\.NameSpace");
-     * 
+     *
      * // Traces exactly the name space 'My.NameSpace'.
      * EneterTrace.NameSpaceFilter = Pattern.compile("^My\.NameSpace$");
-     * 
+     *
      * // Traces name spaces starting with 'Calc.Methods' or 'App.Utilities'.
      * EneterTrace.NameSpaceFilter = Pattern.compile("^Calc\.Methods|^App\.Utilities");
-     * 
+     *
      * // Traces all name spaces except namespaces starting with 'Eneter'.
      * EneterTrace.NameSpaceFilter = Pattern.compile("^(?!\bEneter\b)");
-     * </code>
-     * </example>
+     * }
+     * </pre>
      */
     public static void setNameSpaceFilter(Pattern value)
     {
@@ -337,19 +338,19 @@ public class EneterTrace
     
     private static String getStackTraceString(StackTraceElement[] stackTrace)
     {
-        String aResult = "";
+        StringBuilder aResult = new StringBuilder();
         for (int i = 0; i < stackTrace.length; ++i)
         {
-            aResult += stackTrace[i].toString();
+            aResult.append(stackTrace[i].toString());
             
             // If it is not the last element then add the next line.
             if (i < stackTrace.length - 1)
             {
-                aResult += "\r\n";
+                aResult.append("\r\n");
             }
         }
         
-        return aResult;
+        return aResult.toString();
     }
     
     
