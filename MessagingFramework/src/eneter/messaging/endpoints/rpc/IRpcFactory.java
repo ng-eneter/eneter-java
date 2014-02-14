@@ -8,8 +8,6 @@
 
 package eneter.messaging.endpoints.rpc;
 
-import eneter.net.system.Event;
-import eneter.net.system.EventArgs;
 
 /**
  * Declares factory which can create RPC clients and services. 
