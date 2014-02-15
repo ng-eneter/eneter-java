@@ -15,17 +15,12 @@ import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.M
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
- * Extends the communication by the buffered messaging and the network connection monitoring.
+ * Combines buffered messaging and the connection monitoring.
  * 
- * This is the composite messaging system that consist of:
- * <ol>
- * <li>Buffered Messaging  --> buffering messages if disconnected (while automatically trying to reconnect)</li>
- * <li>Monitored Messaging --> constantly monitoring the connection</li>
- * <li>Messaging System    --> responsible for sending and receiving messages</li>
- * </ol>
- * The buffer stores messages if the connection is not open. The connection monitor constantly checks if the connection
- * is established. See also BufferedMessagingFactory and MonitoredMessagingFactory.
- *
+ * Monitored messaging constantly monitors the connection. If the monitoring detects the connection is interrupted
+ * sent messages are stored in the buffer. Then when the connection is recovered the messages stored in the buffer
+ * are sent.
+ * 
  */
 public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactory
 {

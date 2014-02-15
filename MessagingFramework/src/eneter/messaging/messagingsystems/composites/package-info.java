@@ -9,45 +9,32 @@
 
 
 /**
- * Functionality extending the default behavior of messaging systems.
+ * Functionality extending behavior of messaging systems.
+ * 
+ * E.g. extending behavior by connection monitoring, buffering, authentication or communication via the message bus.
  *
- *
- * E.g.: Buffering of sent messages, or network connection monitoring.<br/>
- * The composite is a messaging system derived from
- * IMessagingSystemFactory and implements the extending functionality.
- * It means, e.g. if you wish to buffer sent messages during the disconnection,
- * you can create the buffered messaging system.
+ * The composite implements IMessagingSystemFactory so it looks like any other messaging but it provides
+ * some additional behavior which is then applied on the underlying messaging.
+ * Multiple composite messaging systems can be applied in a "chain". 
+ * E.g. if you want to have TCP communication with monitored connection and authentication you can
+ * compose it like in the following example. 
+ * 
+ * 
  * <pre>
- * Creating of the buffered messaging using the TCP as the underlying messaging system.
-
  * // Create TCP messaging system.
  * IMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
- * 
- * // Create the buffered messaging using TCP as the underlying messaging.
- * IMessagingSystemFactory aBufferedMessaging = new BufferedMessagingFactory(anUnderlyingMessaging);
-
- * </pre>
- * Creating buffered messaging that internally uses monitored messaging constantly monitoring the connection.
- * <pre>
- * Creating the TCP based messaging system constantly checking the network connection and providing the buffer
- * for sent messages in case of the disconnection.
-
- * // Create TCP messaging system.
- * IMessagingSystemFactory aTcpMessaging = new TcpMessagingSystemFactory();
- * 
- * // Create the composite providing the network connection monitor.
+ * <br/>
+ * // Create monitored messaging which takes TCP as underlying messaging.
  * IMessagingSystemFactory aMonitoredMessaging = new MonitoredMessagingFactory(aTcpMessaging);
- * 
- * // Create the composite providing the buffer used for the sent messages in case of the disconnection.
- * IMessagingSystemFactory aBufferedMonitoredMessaging = new BufferedMessagingFactory(aMonitoredMessaging);
- * 
- * 
- * ...
- * 
- * // Create the duplex output channel, that monitores the network connection and buffers sent messages if disconnected.
- * IDuplexOutputChannel aDuplexOutputChannel = aBufferedMonitoredMessaging.createDuplexOutputChannel("tcp://127.0.0.1:6080/");
- * 
+ * <br/>
+ * // Create messaging with authenticated connection.
+ * // It takes monitored messaging as the underlying messaging.
+ * IMessagingSystemFactory aMessaging = new AuthenticatedMessagingFactory(aMonitoredMessaging, ...);
+ * <br/>
+ * // Creating channels.
+ * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8095/");
+ * IDuplexInputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8095/");
  * </pre>
- *
+ * 
  */
 package eneter.messaging.messagingsystems.composites;
