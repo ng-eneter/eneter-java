@@ -13,9 +13,8 @@ import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEve
 import eneter.net.system.Event;
 
 /**
- * The interface declares the strongly typed reliable message receiver.
- * The receiver is able to receive messages of the specified type and send back response messages of the specified type.
- * In addition it provides events notifying whether the respone message was delivered.
+ * Declares the reliable message receiver that can send messages of specified type and sends back response messages of specified type.
+ * Reliable means it provides events notifying whether the response message was delivered or not.
  * The reliable typed message receiver can be used only with the reliable typed message sender.
  *
  * @param <_ResponseType> type of the response message
@@ -54,11 +53,11 @@ public interface IReliableTypedMessageReceiver<_ResponseType, _RequestType> exte
     Event<ReliableMessageIdEventArgs> responseMessageNotDelivered();
 
     /**
-     * Sends the typed response message.
+     * Sends the response message of specified type.
      * 
      * @param responseReceiverId identifies the response receiver
-     * @param responseMessage respone message
-     * @return id od the sent response message
+     * @param responseMessage response message
+     * @return id of the sent response message
      * 
      * @throws Exception
      */

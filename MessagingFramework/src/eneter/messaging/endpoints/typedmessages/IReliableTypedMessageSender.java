@@ -13,9 +13,8 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.Event;
 
 /**
- * The interface declares the strongly typed reliable message sender.
- * The reliable sender can send typed messages and receive typed response messages.
- * In addition it provides events notifying whether the message was delivered.
+ * Declares reliable message sender which can send messages of specified type and receive response messages of specified type.
+ * Reliable means it provides events notifying whether the message was delivered.
  * The reliable typed message sender can be used only with the reliable typed message receiver.
  *
  * @param <_ResponseType> type of the response message
@@ -54,7 +53,7 @@ public interface IReliableTypedMessageSender<_ResponseType, _RequestType> extend
     Event<ReliableMessageIdEventArgs> messageNotDelivered();
     
     /**
-     * Sends the message to the reliable typed message receiver.
+     * Sends the message of specified type.
      * 
      * @param message message to be sent
      * @return id of the message. The id can be then used to check if the message was received.

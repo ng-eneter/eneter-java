@@ -9,7 +9,7 @@
 package eneter.messaging.endpoints.typedmessages;
 
 /**
- * The interface declares the factory to create reliable typed message sender and receiver.
+ * Declares the factory to create reliable sender and receiver.
  *
  */
 public interface IReliableTypedMessagesFactory

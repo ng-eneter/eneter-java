@@ -13,12 +13,10 @@ import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEve
 import eneter.net.system.Event;
 
 /**
- * The interface declares the strongly typed duplex message receiver.
- * The receiver is able to receive messages of the specified type and send back response messages of specified type.
- * @author Ondrej Uzovic & Martin Valach
+ * Declares receiver that receive messages of specified type and sends responses of specified type.
  *
- * @param <_ResponseType> The type of sending response messages.
- * @param <_RequestType> The type of receiving messages.
+ * @param <_ResponseType> sends response messages of this type.
+ * @param <_RequestType> receives messages of this type.
  */
 public interface IDuplexTypedMessageReceiver<_ResponseType, _RequestType> extends IAttachableDuplexInputChannel
 {

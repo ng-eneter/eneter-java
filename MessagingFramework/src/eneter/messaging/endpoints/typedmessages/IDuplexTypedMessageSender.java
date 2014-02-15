@@ -13,12 +13,10 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.Event;
 
 /**
- * The interface declares the strongly typed duplex message sender.
- * The duplex sender is able to send messages of the specified type and receive responses of the specified type.
- * @author Ondrej Uzovic & Martin Valach
+ * Declares message sender that sends messages of specified type and receives responses of specified type. 
  *
- * @param <_ResponseType> The type of receiving response messages.
- * @param <_RequestType> The type of sending messages.
+ * @param <_ResponseType> receives response messages of this type.
+ * @param <_RequestType> sends messages of this type.
  */
 public interface IDuplexTypedMessageSender<_ResponseType, _RequestType> extends IAttachableDuplexOutputChannel
 {
@@ -41,7 +39,7 @@ public interface IDuplexTypedMessageSender<_ResponseType, _RequestType> extends 
     Event<TypedResponseReceivedEventArgs<_ResponseType>> responseReceived();
     
     /**
-     * Sends the strongly typed message.
+     * Sends message of specified type.
      * @param message
      * @throws Exception 
      */

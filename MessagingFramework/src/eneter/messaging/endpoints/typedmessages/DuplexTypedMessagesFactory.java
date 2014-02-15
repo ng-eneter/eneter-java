@@ -13,7 +13,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 
 /**
- * Implements the factory to create duplex strongly typed message sender and receiver.
+ * Implements the factory to create typed message senders and receivers.
  * 
  * <br/>
  * The following example shows how to send a typed message via TCP.<br/>
@@ -188,9 +188,6 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
         }
     }
     
-    /**
-     * Creates duplex typed message sender.
-     */
     @Override
     public <_ResponseType, _RequestType> IDuplexTypedMessageSender<_ResponseType, _RequestType> createDuplexTypedMessageSender(Class<_ResponseType> responseMessageClazz, Class<_RequestType> requestMessageClazz)
     {
