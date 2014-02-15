@@ -13,9 +13,11 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.*;
 
 /**
- * Declares client using remote procedure calls.
+ * Declares client which can use Remote Procedure Calls (RPC) to communication with the service.
+ * 
+ * RpcClient acts as a proxy providing the communication functionality allowing a client to call methods exposed by the service.
  *
- * @param <TServiceInterface> Service interface.
+ * @param <TServiceInterface> Interface exposed by the service.
  */
 public interface IRpcClient<TServiceInterface> extends IAttachableDuplexOutputChannel
 {
@@ -32,41 +34,36 @@ public interface IRpcClient<TServiceInterface> extends IAttachableDuplexOutputCh
     Event<DuplexChannelEventArgs> connectionClosed();
     
     /**
-     * Returns the proxy for the service.
+     * Returns service proxy instance.
      * 
-     * The returned instance provides the proxy for the service interface.
-     * Calling of a method from the proxy will result to the communication with the service.
-     * @return
+     * @return service proxy implementing the service interface.
      */
     TServiceInterface getProxy();
     
     /**
      * Subscribes to an event from the service.
      * 
-     * Use this method if subscribing via the proxy is not suitable.
-     * If the method does not exist in the service interface the exception is thrown.
+     * You can use this method for subscribing if you do not want to use the service proxy.
      * 
      * @param eventName event name.
-     * @param eventHandler event handler.
+     * @param eventHandler event handler that will handle events.
      */
     void subscribeRemoteEvent(String eventName, EventHandler<?> eventHandler) throws Exception;
     
     /**
      * Unsubscribes from the event in the service.
      * 
-     * Use this method if unsubscribing via the proxy is not suitable.
-     * If the method does not exist in the service interface the exception is thrown.
+     * You can use this method for unsubscribing if you do not want to use the service proxy.
      * 
      * @param eventName event name.
-     * @param eventHandler event handler tha shall be unsubscribed.
+     * @param eventHandler event handler that shall be unsubscribed.
      */
     void unsubscribeRemoteEvent(String eventName, EventHandler<?> eventHandler) throws Exception;
     
     /**
-     * Calls the method in the service.
+     * Calls a method in the service.
      * 
-     * Use this method if unsubscribing via the proxy is not suitable.
-     * If the method does not exist in the service interface the exception is thrown.
+     * You can use this method if you do not want to use the service proxy.
      * 
      * @param methodName name of the method that shall be called.
      * @param args method arguments.

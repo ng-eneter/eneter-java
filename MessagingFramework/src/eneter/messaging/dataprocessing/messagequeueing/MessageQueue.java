@@ -15,10 +15,11 @@ import eneter.net.system.internal.IFunction;
 
 
 /**
- * Implements the message queue.
+ * Queue for messages of type object.
+ * 
  * One or more threads can put messages into the queue and other threads
  * can remove them.
- * If the queue is empty, then the thread reading the messages is blocked until the message
+ * If the queue is empty the thread reading messages is blocked until a message
  * is put to the queue or the thread is unblocked.
  *
  * @param <_MessageType> Type of the message.

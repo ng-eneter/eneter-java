@@ -10,8 +10,7 @@ package eneter.messaging.endpoints.rpc;
 
 
 /**
- * Declares factory which can create RPC clients and services. 
- * 
+ * Declares factory class which creates services and clients that can communicate using RPC (Remote Procedure Calls).
  *
  */
 public interface IRpcFactory
@@ -19,20 +18,17 @@ public interface IRpcFactory
     /**
      * Creates RPC client for the given interface.
      * 
-     * 
-     * 
-     * 
-     * @param clazz Type of the service interface.
-     * @return
+     * @param clazz service interface type.
+     * @return RpcClient instance
      */
     <TServiceInterface> IRpcClient<TServiceInterface> createClient(Class<TServiceInterface> clazz);
     
     /**
      * Creates RPC service for the given interface.
-     * @param service
-     * @param clazz
-     * @return
+     * 
+     * @param service instance implementing the given service interface.
+     * @param clazz service interface type.
+     * @return RpcService instance.
      */
     <TServiceInterface> IRpcService<TServiceInterface> createService(TServiceInterface service, Class<TServiceInterface> clazz);
- 
-}
+ }
