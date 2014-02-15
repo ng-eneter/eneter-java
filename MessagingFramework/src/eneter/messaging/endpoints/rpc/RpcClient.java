@@ -297,69 +297,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
         }
     }
     
-   
-    @Override
-    public void attachDuplexOutputChannel(IDuplexOutputChannel duplexOutputChannel) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            synchronized (myConnectionManipulatorLock)
-            {
-                duplexOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);
-                duplexOutputChannel.connectionClosed().subscribe(myOnConnectionClosed);
 
-                try
-                {
-                    super.attachDuplexOutputChannel(duplexOutputChannel);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.error(TracedObject() + "failed to attach duplex output channel.");
-
-                    try
-                    {
-                        detachDuplexOutputChannel();
-                    }
-                    catch (Exception err2)
-                    {
-                    }
-
-                    throw err;
-                }
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    @Override
-    public void detachDuplexOutputChannel()
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            synchronized (myConnectionManipulatorLock)
-            {
-                IDuplexOutputChannel anAttachedDuplexOutputChannel = getAttachedDuplexOutputChannel();
-
-                super.detachDuplexOutputChannel();
-
-                if (anAttachedDuplexOutputChannel != null)
-                {
-                    anAttachedDuplexOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
-                    anAttachedDuplexOutputChannel.connectionClosed().unsubscribe(myOnConnectionClosed);
-                }
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
     @Override
     public void subscribeRemoteEvent(String eventName, EventHandler<?> eventHandler) throws Exception
     {
@@ -403,7 +341,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
         }
     }
     
-    private void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
+    @Override
+    protected void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -436,7 +375,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
         }
     }
     
-    private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
+    @Override
+    protected void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -815,7 +755,6 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
     private AtomicInteger myCounter = new AtomicInteger();
     private HashMap<Integer, RemoteCallContext> myPendingRemoteCalls = new HashMap<Integer, RemoteCallContext>();
     private IThreadDispatcher myRaiseEventInvoker;
-    private Object myConnectionManipulatorLock = new Object();
     private int myRpcTimeout;
     
     private TServiceInterface myProxy;
@@ -827,23 +766,6 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
     private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEvent = new EventImpl<DuplexChannelEventArgs>();
     private EventImpl<DuplexChannelEventArgs> myConnectionClosedEvent = new EventImpl<DuplexChannelEventArgs>();
     
-    private EventHandler<DuplexChannelEventArgs> myOnConnectionOpened = new EventHandler<DuplexChannelEventArgs>()
-    {
-        @Override
-        public void onEvent(Object sender, DuplexChannelEventArgs e)
-        {
-            onConnectionOpened(sender, e);
-        }
-    };
-    
-    private EventHandler<DuplexChannelEventArgs> myOnConnectionClosed = new EventHandler<DuplexChannelEventArgs>()
-    {
-        @Override
-        public void onEvent(Object sender, DuplexChannelEventArgs e)
-        {
-            onConnectionClosed(sender, e);
-        }
-    };
     
     @Override
     protected String TracedObject()

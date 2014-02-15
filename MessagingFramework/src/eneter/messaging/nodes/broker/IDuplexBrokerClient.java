@@ -9,6 +9,7 @@
 package eneter.messaging.nodes.broker;
 
 import eneter.messaging.infrastructure.attachable.IAttachableDuplexOutputChannel;
+import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.net.system.*;
 
 /**
@@ -19,6 +20,18 @@ import eneter.net.system.*;
  */
 public interface IDuplexBrokerClient extends IAttachableDuplexOutputChannel
 {
+    /**
+     * Event raised when the connection with the service was open.
+     * @return
+     */
+    Event<DuplexChannelEventArgs> connectionOpened();
+    
+    /**
+     * Event raised when the connection with the service was closed.
+     * @return
+     */
+    Event<DuplexChannelEventArgs> connectionClosed();
+    
     /**
      * The event is invoked when the observed message is received from the broker.
      * @return

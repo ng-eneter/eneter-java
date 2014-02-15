@@ -13,34 +13,33 @@ import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEve
 import eneter.net.system.Event;
 
 /**
- * The interface declares the reliable string message receiver.
- * The reliable string message receiver can receiver string messages and response string messages.
+ * Declares the duplex message receiver which can receive text messages and send back text response messages.
  *
  */
 public interface IDuplexStringMessageReceiver extends IAttachableDuplexInputChannel
 {
     /**
-     * The event is invoked when the message was received.
+     * The event is raised when a text message is received.
      * @return
      */
     Event<StringRequestReceivedEventArgs> requestReceived();
     
     /**
-     * The event is invoked when a duplex string message sender opened the connection.
+     * The event is raised when a duplex string message sender opened the connection.
      * @return
      */
     Event<ResponseReceiverEventArgs> responseReceiverConnected();
     
     /**
-     * The event is invoked when a duplex string message sender closed the connection.
+     * The event is raised when a duplex string message sender closed the connection.
      * @return
      */
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
     
     /**
-     * Sends the response message back to the duplex string message sender.
-     * @param responseReceiverId identifies the duplex string message sender that will receive the response
-     * @param responseMessage response message
+     * Sends the response message back to the string message sender.
+     * @param responseReceiverId identifies the string message sender that shall receive the response
+     * @param responseMessage response text message
      * @throws Exception 
      */
     void sendResponseMessage(String responseReceiverId, String responseMessage) throws Exception;

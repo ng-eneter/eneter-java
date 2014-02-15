@@ -10,25 +10,37 @@
 package eneter.messaging.endpoints.stringmessages;
 
 import eneter.messaging.infrastructure.attachable.IAttachableDuplexOutputChannel;
+import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.net.system.Event;
 
 /**
- * The interface declares the duplex string message sender.
- * The duplex sender is able to send text messages and receive text responses.
+ * Declares the duplex message sender which can send text messages and receive text responses.
  *
  */
 public interface IDuplexStringMessageSender extends IAttachableDuplexOutputChannel
 {
     /**
-     * The event is invoked when a response message from duplex string message receiver was received.
+     * The event is raised when the connection with receiver is opened.
+     * @return
+     */
+    Event<DuplexChannelEventArgs> connectionOpened();
+    
+    /**
+     * The event is raised when the connection with receiver is closed.
+     * @return
+     */
+    Event<DuplexChannelEventArgs> connectionClosed();
+    
+    /**
+     * The event is raised when a response message is received.
      * @return
      */
     Event<StringResponseReceivedEventArgs> responseReceived();
 
     /**
-     * Sends the message via the attached duplex output channel.
-     * @param message
-     * @throws Exception 
+     * Sends the text message to the response receiver.
+     * @param message text message.
+     * @throws Exception
      */
     void sendMessage(String message) throws Exception;
 }

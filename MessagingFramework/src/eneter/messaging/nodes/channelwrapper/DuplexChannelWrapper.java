@@ -12,7 +12,9 @@ import java.util.*;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexOutputChannelBase;
+import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.IDuplexInputChannel;
 import eneter.net.system.*;
@@ -46,6 +48,18 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         
         private IDuplexInputChannel myDuplexInputChannel;
         private String myResponseReceiverId;
+    }
+    
+    @Override
+    public Event<DuplexChannelEventArgs> connectionOpened()
+    {
+        return myConnectionOpenedEventImpl.getApi();
+    }
+
+    @Override
+    public Event<DuplexChannelEventArgs> connectionClosed()
+    {
+        return myConnectionClosedEventImpl.getApi();
     }
     
     public DuplexChannelWrapper(ISerializer serializer)
@@ -111,7 +125,7 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
                 for (TDuplexInputChannel anInputChannel : myDuplexInputChannels.values())
                 {
                     anInputChannel.getDuplexInputChannel().stopListening();
-                    anInputChannel.getDuplexInputChannel().messageReceived().unsubscribe(myOnMessageReceivedEventHandler);
+                    anInputChannel.getDuplexInputChannel().messageReceived().unsubscribe(myOnMessageReceived);
                 }
 
                 myDuplexInputChannels.clear();
@@ -135,7 +149,7 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
                 if (anInputChannel != null)
                 {
                     anInputChannel.getDuplexInputChannel().stopListening();
-                    anInputChannel.getDuplexInputChannel().messageReceived().unsubscribe(myOnMessageReceivedEventHandler);
+                    anInputChannel.getDuplexInputChannel().messageReceived().unsubscribe(myOnMessageReceived);
                 }
 
                 myDuplexInputChannels.remove(channelId);
@@ -268,6 +282,33 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         }
     }
     
+    @Override
+    protected void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notify(myConnectionOpenedEventImpl, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    @Override
+    protected void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notify(myConnectionClosedEventImpl, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     private void attach(IDuplexInputChannel duplexInputChannel)
     {
@@ -299,7 +340,7 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
 
                 myDuplexInputChannels.put(duplexInputChannel.getChannelId(), new TDuplexInputChannel(duplexInputChannel));
 
-                duplexInputChannel.messageReceived().subscribe(myOnMessageReceivedEventHandler);
+                duplexInputChannel.messageReceived().subscribe(myOnMessageReceived);
             }
         }
         finally
@@ -308,13 +349,36 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         }
     }
     
-    
+    private void notify(EventImpl<DuplexChannelEventArgs> handler, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (handler != null)
+            {
+                try
+                {
+                    handler.raise(this, e);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     private Hashtable<String, TDuplexInputChannel> myDuplexInputChannels = new Hashtable<String, TDuplexInputChannel>();
     private ISerializer mySerializer;
     
+    private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
     
-    private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceivedEventHandler = new EventHandler<DuplexChannelMessageEventArgs>()
+    private EventHandler<DuplexChannelMessageEventArgs> myOnMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
@@ -330,5 +394,4 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         String aDuplexOutputChannelId = (getAttachedDuplexOutputChannel() != null) ? getAttachedDuplexOutputChannel().getChannelId() : "";
         return getClass().getSimpleName() + " '" + aDuplexOutputChannelId + "' "; 
     }
-
 }

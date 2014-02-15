@@ -9,6 +9,8 @@
 package eneter.messaging.nodes.channelwrapper;
 
 import eneter.messaging.infrastructure.attachable.*;
+import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
+import eneter.net.system.Event;
 
 /**
  * Declares the duplex channel wrapper.
@@ -25,5 +27,15 @@ import eneter.messaging.infrastructure.attachable.*;
 public interface IDuplexChannelWrapper extends IAttachableMultipleDuplexInputChannels,
                                                IAttachableDuplexOutputChannel
 {
-
+    /**
+     * Event raised when the connection with the service was open.
+     * @return
+     */
+    Event<DuplexChannelEventArgs> connectionOpened();
+    
+    /**
+     * Event raised when the connection with the service was closed.
+     * @return
+     */
+    Event<DuplexChannelEventArgs> connectionClosed();
 }

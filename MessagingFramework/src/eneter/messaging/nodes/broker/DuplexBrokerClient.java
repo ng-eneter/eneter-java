@@ -34,11 +34,23 @@ class DuplexBrokerClient extends AttachableDuplexOutputChannelBase implements ID
         }
     }
     
+    @Override
+    public Event<DuplexChannelEventArgs> connectionOpened()
+    {
+        return myConnectionOpenedEventImpl.getApi();
+    }
+
+
+    @Override
+    public Event<DuplexChannelEventArgs> connectionClosed()
+    {
+        return myConnectionClosedEventImpl.getApi();
+    }
     
     @Override
     public Event<BrokerMessageReceivedEventArgs> brokerMessageReceived()
     {
-        return myBrokerMessageReceivedEvent.getApi();
+        return myBrokerMessageReceivedEventImpl.getApi();
     }
     
     
@@ -246,7 +258,7 @@ class DuplexBrokerClient extends AttachableDuplexOutputChannelBase implements ID
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (!myBrokerMessageReceivedEvent.isSubscribed())
+            if (!myBrokerMessageReceivedEventImpl.isSubscribed())
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
                 return;
@@ -266,12 +278,40 @@ class DuplexBrokerClient extends AttachableDuplexOutputChannelBase implements ID
 
             try
             {
-                myBrokerMessageReceivedEvent.raise(this, anEvent);
+                myBrokerMessageReceivedEventImpl.raise(this, anEvent);
             }
             catch (Exception err)
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
             }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    protected void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notify(myConnectionOpenedEventImpl, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    @Override
+    protected void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notify(myConnectionClosedEventImpl, e);
         }
         finally
         {
@@ -323,8 +363,33 @@ class DuplexBrokerClient extends AttachableDuplexOutputChannelBase implements ID
         }
     }
     
+    private void notify(EventImpl<DuplexChannelEventArgs> handler, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (handler != null)
+            {
+                try
+                {
+                    handler.raise(this, e);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
-    private EventImpl<BrokerMessageReceivedEventArgs> myBrokerMessageReceivedEvent = new EventImpl<BrokerMessageReceivedEventArgs>();
+    
+    private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<BrokerMessageReceivedEventArgs> myBrokerMessageReceivedEventImpl = new EventImpl<BrokerMessageReceivedEventArgs>();
     
     private ISerializer mySerializer;    
     private String myDuplexOutputChannelId = "";

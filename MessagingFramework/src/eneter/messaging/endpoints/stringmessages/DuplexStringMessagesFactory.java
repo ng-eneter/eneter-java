@@ -57,10 +57,6 @@ import eneter.messaging.diagnostic.EneterTrace;
  */
 public class DuplexStringMessagesFactory implements IDuplexStringMessagesFactory
 {
-
-    /**
-     * Creates the duplex string message sender.
-     */
     @Override
     public IDuplexStringMessageSender createDuplexStringMessageSender()
     {
@@ -75,9 +71,6 @@ public class DuplexStringMessagesFactory implements IDuplexStringMessagesFactory
         }
     }
 
-    /**
-     * Creates the duplex string message receiver.
-     */
     @Override
     public IDuplexStringMessageReceiver createDuplexStringMessageReceiver()
     {

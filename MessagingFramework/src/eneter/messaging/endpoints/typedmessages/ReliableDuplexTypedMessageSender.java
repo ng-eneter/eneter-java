@@ -14,12 +14,25 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.endpoints.typedmessages.internal.ReliableMessage;
+import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.IDuplexOutputChannel;
 import eneter.net.system.*;
 
 
 class ReliableDuplexTypedMessageSender<_ResponseType, _RequestType> implements IReliableTypedMessageSender<_ResponseType, _RequestType>
 {
+    @Override
+    public Event<DuplexChannelEventArgs> connectionOpened()
+    {
+        return myConnectionOpenedEventImpl.getApi();
+    }
+
+    @Override
+    public Event<DuplexChannelEventArgs> connectionClosed()
+    {
+        return myConnectionClosedEventImpl.getApi();
+    }
+    
     @Override
     public Event<TypedResponseReceivedEventArgs<_ResponseType>> responseReceived()
     {
@@ -52,6 +65,8 @@ class ReliableDuplexTypedMessageSender<_ResponseType, _RequestType> implements I
 
             IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory(serializer);
             mySender = aSenderFactory.createDuplexTypedMessageSender(ReliableMessage.class, ReliableMessage.class);
+            mySender.connectionOpened().subscribe(myOnConnectionOpened);
+            mySender.connectionClosed().subscribe(myOnConnectionClosed);
             mySender.responseReceived().subscribe(myResponseReceivedEventHandler);
             
             myResponseMessageClazz = responseMessageClazz;
@@ -252,6 +267,55 @@ class ReliableDuplexTypedMessageSender<_ResponseType, _RequestType> implements I
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    private void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notify(myConnectionOpenedEventImpl, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notify(myConnectionClosedEventImpl, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void notify(EventImpl<DuplexChannelEventArgs> handler, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (handler != null)
+            {
+                try
+                {
+                    handler.raise(this, e);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     private void onTrackingTimeout(Object sender, ReliableMessageIdEventArgs e)
     {
@@ -296,12 +360,32 @@ class ReliableDuplexTypedMessageSender<_ResponseType, _RequestType> implements I
     private IDuplexTypedMessageSender<ReliableMessage, ReliableMessage> mySender;
     private ReliableMessageTimeTracker myTimeTracker;
     
+    private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
     private EventImpl<TypedResponseReceivedEventArgs<_ResponseType>> myResponseReceivedEvent = new EventImpl<TypedResponseReceivedEventArgs<_ResponseType>>();
     private EventImpl<ReliableMessageIdEventArgs> myMessageDeliveredEvent = new EventImpl<ReliableMessageIdEventArgs>();
     private EventImpl<ReliableMessageIdEventArgs> myMessageNotDeliveredEvent = new EventImpl<ReliableMessageIdEventArgs>();
     
     private Class<_RequestType> myRequestMessageClazz;
     private Class<_ResponseType> myResponseMessageClazz;
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionOpened = new EventHandler<DuplexChannelEventArgs>()
+    {
+        @Override
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
+        {
+            onConnectionOpened(sender, e);
+        }
+    };
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionClosed = new EventHandler<DuplexChannelEventArgs>()
+    {
+        @Override
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
+        {
+            onConnectionClosed(sender, e);
+        }
+    };
     
     private EventHandler<ReliableMessageIdEventArgs> myTrackingTimeoutEventHandler = new EventHandler<ReliableMessageIdEventArgs>()
     {

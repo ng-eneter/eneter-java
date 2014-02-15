@@ -9,6 +9,7 @@
 package eneter.messaging.endpoints.typedmessages;
 
 import eneter.messaging.infrastructure.attachable.IAttachableDuplexOutputChannel;
+import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.net.system.Event;
 
 /**
@@ -22,6 +23,18 @@ import eneter.net.system.Event;
  */
 public interface IReliableTypedMessageSender<_ResponseType, _RequestType> extends IAttachableDuplexOutputChannel
 {
+    /**
+     * The event is raised when the connection with receiver is opened.
+     * @return
+     */
+    Event<DuplexChannelEventArgs> connectionOpened();
+    
+    /**
+     * The event is raised when the connection with receiver is closed.
+     * @return
+     */
+    Event<DuplexChannelEventArgs> connectionClosed();
+    
     /**
      * The event is invoked when the response message is received.
      * @return

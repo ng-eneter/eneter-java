@@ -8,7 +8,7 @@
 
 
 /**
- * Functionality to send and receive simple text messages.
+ * Sending and receiving simple text messages.
  * 
  * For more details see example:
  * <ul>

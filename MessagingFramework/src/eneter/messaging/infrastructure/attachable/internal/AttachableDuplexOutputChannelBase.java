@@ -77,7 +77,9 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
                     finally
                     {
                         // Detach the event handler.
-                        myAttachedDuplexOutputChannel.responseMessageReceived().unsubscribe(myResponseMessageHandler);
+                        myAttachedDuplexOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpenedEvent);
+                        myAttachedDuplexOutputChannel.connectionClosed().unsubscribe(myOnConnectionClosedEvent);
+                        myAttachedDuplexOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceivedEvent);
                         myAttachedDuplexOutputChannel = null;
                     }
                 }
@@ -134,7 +136,9 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
                 }
 
                 myAttachedDuplexOutputChannel = duplexOutputChannel;
-                myAttachedDuplexOutputChannel.responseMessageReceived().subscribe(myResponseMessageHandler);
+                myAttachedDuplexOutputChannel.connectionOpened().subscribe(myOnConnectionOpenedEvent);
+                myAttachedDuplexOutputChannel.connectionClosed().subscribe(myOnConnectionClosedEvent);
+                myAttachedDuplexOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceivedEvent);
             }
         }
         finally
@@ -144,6 +148,8 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
     }
 
 
+    protected abstract void onConnectionOpened(Object sender, DuplexChannelEventArgs e);
+    protected abstract void onConnectionClosed(Object sender, DuplexChannelEventArgs e);
     protected abstract void onResponseMessageReceived(Object sender, DuplexChannelMessageEventArgs e);
 
 
@@ -156,7 +162,26 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
     
     private IDuplexOutputChannel myAttachedDuplexOutputChannel;
     
-    private EventHandler<DuplexChannelMessageEventArgs> myResponseMessageHandler = new EventHandler<DuplexChannelMessageEventArgs>()
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionOpenedEvent = new EventHandler<DuplexChannelEventArgs>()
+    {
+        @Override
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
+        {
+            onConnectionOpened(sender, e);
+        }
+    };
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionClosedEvent = new EventHandler<DuplexChannelEventArgs>()
+    {
+        @Override
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
+        {
+            onConnectionClosed(sender, e);
+        }
+    };
+    
+    private EventHandler<DuplexChannelMessageEventArgs> myOnResponseMessageReceivedEvent = new EventHandler<DuplexChannelMessageEventArgs>()
     {
         @Override
         public void onEvent(Object sender, DuplexChannelMessageEventArgs e)

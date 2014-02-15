@@ -12,12 +12,27 @@ import java.util.ArrayList;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.net.system.Event;
 import eneter.net.system.EventHandler;
+import eneter.net.system.EventImpl;
 import eneter.net.system.threading.internal.ManualResetEvent;
 
 class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMessageSender<TResponse, TRequest>
 {
+    @Override
+    public Event<DuplexChannelEventArgs> connectionOpened()
+    {
+        return myConnectionOpenedEventImpl.getApi();
+    }
+
+    @Override
+    public Event<DuplexChannelEventArgs> connectionClosed()
+    {
+        return myConnectionClosedEventImpl.getApi();
+    }
+    
     public SyncTypedMessageSender(int responseReceiveTimeout, ISerializer serializer,
             Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz)
     {
@@ -28,6 +43,8 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
 
             IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory(serializer);
             mySender = aSenderFactory.createDuplexTypedMessageSender(responseMessageClazz, requestMessageClazz);
+            mySender.getAttachedDuplexOutputChannel().connectionClosed().subscribe(myOnConnectionOpened);
+            mySender.getAttachedDuplexOutputChannel().connectionClosed().subscribe(myOnConnectionClosed);
             
             myResponseMessageClazz = responseMessageClazz;
             myRequestMessageClazz = requestMessageClazz;
@@ -48,7 +65,6 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
             synchronized (myAttachDetachLock)
             {
                 mySender.attachDuplexOutputChannel(duplexOutputChannel);
-                mySender.getAttachedDuplexOutputChannel().connectionClosed().subscribe(myConnectionClosedEventHandler);
             }
         }
         finally
@@ -65,21 +81,10 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         {
             synchronized (myAttachDetachLock)
             {
-                try
-                {
-                    IDuplexOutputChannel anAttachedChannel = mySender.getAttachedDuplexOutputChannel();
-                    if (anAttachedChannel != null)
-                    {
-                        anAttachedChannel.connectionClosed().unsubscribe(myConnectionClosedEventHandler);
-                    }
-
-                    mySender.detachDuplexOutputChannel();
-                }
-                finally
-                {
-                    // Stop waiting for the response.
-                    myResponseAvailableEvent.set();
-                }
+                // Stop waiting for the response.
+                myResponseAvailableEvent.set();
+                
+                mySender.detachDuplexOutputChannel();
             }
         }
         finally
@@ -179,6 +184,19 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         }
     }
     
+    private void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notify(myConnectionOpenedEventImpl, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -186,6 +204,31 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         {
             // The connection was interrupted therefore we must unblock the waiting request.
             myResponseAvailableEvent.set();
+            
+            notify(myConnectionClosedEventImpl, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void notify(EventImpl<DuplexChannelEventArgs> handler, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (handler != null)
+            {
+                try
+                {
+                    handler.raise(this, e);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
         }
         finally
         {
@@ -205,7 +248,20 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
     private Class<TRequest> myRequestMessageClazz;
     private Class<TResponse> myResponseMessageClazz;
     
-    private EventHandler<DuplexChannelEventArgs> myConnectionClosedEventHandler = new EventHandler<DuplexChannelEventArgs>()
+    private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionOpened = new EventHandler<DuplexChannelEventArgs>()
+    {
+        @Override
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
+        {
+            onConnectionOpened(sender, e);
+        }
+    };
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionClosed = new EventHandler<DuplexChannelEventArgs>()
     {
         @Override
         public void onEvent(Object sender, DuplexChannelEventArgs e)

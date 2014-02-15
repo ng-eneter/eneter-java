@@ -12,6 +12,7 @@ import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexOutputChannelBase;
+import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;
 import eneter.net.system.*;
 
@@ -34,6 +35,19 @@ class DuplexTypedMessageSender<_ResponseType, _RequestType> extends AttachableDu
     }
     
 
+    @Override
+    public Event<DuplexChannelEventArgs> connectionOpened()
+    {
+        return myConnectionOpenedEventImpl.getApi();
+    }
+
+
+    @Override
+    public Event<DuplexChannelEventArgs> connectionClosed()
+    {
+        return myConnectionClosedEventImpl.getApi();
+    }
+    
     @Override
     public Event<TypedResponseReceivedEventArgs<_ResponseType>> responseReceived()
     {
@@ -109,8 +123,61 @@ class DuplexTypedMessageSender<_ResponseType, _RequestType> extends AttachableDu
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    @Override
+    protected void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notify(myConnectionOpenedEventImpl, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    @Override
+    protected void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            notify(myConnectionClosedEventImpl, e);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void notify(EventImpl<DuplexChannelEventArgs> handler, DuplexChannelEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (handler != null)
+            {
+                try
+                {
+                    handler.raise(this, e);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     
+    private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
     private EventImpl<TypedResponseReceivedEventArgs<_ResponseType>> myResponseReceivedEventImpl = new EventImpl<TypedResponseReceivedEventArgs<_ResponseType>>();
     
     
@@ -127,5 +194,4 @@ class DuplexTypedMessageSender<_ResponseType, _RequestType> extends AttachableDu
         String aDuplexOutputChannelId = (getAttachedDuplexOutputChannel() != null) ? getAttachedDuplexOutputChannel().getChannelId() : "";
         return getClass().getSimpleName() + "<" + aResponseMessageTypeName + ", " + aRequestMessageTypeName + "> atached to the duplex output channel '" + aDuplexOutputChannelId + "' ";
     }
-
 }
