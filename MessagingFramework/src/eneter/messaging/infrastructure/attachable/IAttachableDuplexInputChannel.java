@@ -11,10 +11,10 @@ package eneter.messaging.infrastructure.attachable;
 import eneter.messaging.messagingsystems.messagingsystembase.IDuplexInputChannel;
 
 /**
- * The interface declares methods to attach/detach one {@link IDuplexInputChannel}.
+ * Declares methods to attach/detach one {@link IDuplexInputChannel}.
  * 
- * The duplex input channel is used in the request-response communication by a listener
- * to receive request messages and send back response messages.
+ * Communication components implementing this interface can attach the duplex input channel and
+ * receive messages and sends response messages.
  * 
  *
  */
@@ -24,7 +24,6 @@ public interface IAttachableDuplexInputChannel
 	 * Attaches the duplex input channel and starts listening to messages.
 	 * 
 	 * @param duplexInputChannel
-	 * 
 	 * @see IDuplexInputChannel
 	 */
 	void attachDuplexInputChannel(IDuplexInputChannel duplexInputChannel) throws Exception;
@@ -45,7 +44,7 @@ public interface IAttachableDuplexInputChannel
 	
 
 	/**
-	 * Retutns attached duplex input channel.
+	 * Returns attached duplex input channel.
 	 * 
 	 * @return
 	 * 
