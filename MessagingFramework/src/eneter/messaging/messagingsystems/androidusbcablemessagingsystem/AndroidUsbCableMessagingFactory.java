@@ -14,8 +14,8 @@ import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
- * Provides communication between a desktop application and an Android application via the USB cable.
- *
+ * Factory creating duplex output channels for the communication with Android device via the USB cable.
+ * 
  *
  * When Android device is connected to the computer via the USB cable the process adb (Android Debug Bridge) is started
  * on the computer and adbd (Android Debug Bridge Daemon) is started on the Android device.
