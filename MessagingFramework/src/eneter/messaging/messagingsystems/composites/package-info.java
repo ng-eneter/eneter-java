@@ -11,7 +11,7 @@
 /**
  * Functionality extending behavior of messaging systems.
  * 
- * E.g. extending behavior by connection monitoring, buffering, authentication or communication via the message bus.
+ * E.g. it is possible to extend the communication by connection monitoring, buffering, authentication or communication via the message bus.
  *
  * The composite implements IMessagingSystemFactory so it looks like any other messaging but it provides
  * some additional behavior which is then applied on the underlying messaging.
