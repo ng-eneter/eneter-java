@@ -245,9 +245,10 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
             {
                 // If the connection is properly established via handshaking.
                 notifyEvent(myResponseMessageReceivedEventImpl, e, true);
-
                 return;
             }
+            
+            boolean aCloseConnectionFlag = false;
             
             if (myIsHandshakeResponseSent)
             {
@@ -260,16 +261,17 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                     String anErrorMessage = TracedObject() + "detected incorrect acknowledge message. The connection will be closed.";
                     EneterTrace.error(anErrorMessage);
 
-                    myUnderlyingOutputChannel.closeConnection();
-                    return;
+                    aCloseConnectionFlag = true;
                 }
-
-                myIsConnectionAcknowledged = true;
-                myConnectionAcknowledged.set();
-
-                // Notify the connection is open.
-                DuplexChannelEventArgs anEventArgs = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), e.getSenderAddress());
-                notifyEvent(myConnectionOpenedEventImpl, anEventArgs, false);
+                else
+                {
+                    myIsConnectionAcknowledged = true;
+                    myConnectionAcknowledged.set();
+    
+                    // Notify the connection is open.
+                    DuplexChannelEventArgs anEventArgs = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), e.getSenderAddress());
+                    notifyEvent(myConnectionOpenedEventImpl, anEventArgs, false);
+                }
             }
             else
                 // This is the handshake message.
@@ -279,33 +281,39 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                 try
                 {
                     aHandshakeResponseMessage = myGetHandshakeResponseMessageCallback.getHandshakeResponseMessage(e.getChannelId(), e.getResponseReceiverId(), e.getMessage());
+                    aCloseConnectionFlag = (aHandshakeResponseMessage == null);
                 }
                 catch (Exception err)
                 {
                     String anErrorMessage = TracedObject() + "failed to get the handshake response message. The connection will be closed.";
                     EneterTrace.error(anErrorMessage, err);
-
-                    myUnderlyingOutputChannel.closeConnection();
-                    return;
+                    aCloseConnectionFlag = true;
                 }
 
                 // Send back the response for the handshake.
-                try
+                if (!aCloseConnectionFlag)
                 {
-                    // Note: keep setting this flag before sending. Otherwise synchronous messaging will not work!
-                    myIsHandshakeResponseSent = true;
-                    myUnderlyingOutputChannel.sendMessage(aHandshakeResponseMessage);
+                    try
+                    {
+                        // Note: keep setting this flag before sending. Otherwise synchronous messaging will not work!
+                        myIsHandshakeResponseSent = true;
+                        myUnderlyingOutputChannel.sendMessage(aHandshakeResponseMessage);
+                    }
+                    catch (Exception err)
+                    {
+                        myIsHandshakeResponseSent = false;
+    
+                        String anErrorMessage = TracedObject() + "failed to send the handshake response message. The connection will be closed.";
+                        EneterTrace.error(anErrorMessage, err);
+    
+                        aCloseConnectionFlag = true;
+                    }
                 }
-                catch (Exception err)
-                {
-                    myIsHandshakeResponseSent = false;
-
-                    String anErrorMessage = TracedObject() + "failed to send the handshake response message. The connection will be closed.";
-                    EneterTrace.error(anErrorMessage, err);
-
-                    myUnderlyingOutputChannel.closeConnection();
-                    return;
-                }
+            }
+            
+            if (aCloseConnectionFlag)
+            {
+                myUnderlyingOutputChannel.closeConnection();
             }
         }
         finally
