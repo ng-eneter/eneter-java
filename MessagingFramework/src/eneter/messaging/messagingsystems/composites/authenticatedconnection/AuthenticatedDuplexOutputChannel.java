@@ -132,6 +132,13 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                         EneterTrace.error(anErrorMessage);
                         throw new TimeoutException(anErrorMessage);
                     }
+                    
+                    if (!isConnected())
+                    {
+                        String anErrorMessage = TracedObject() + ErrorHandler.OpenConnectionFailure;
+                        EneterTrace.error(anErrorMessage);
+                        throw new IllegalStateException(anErrorMessage);
+                    }
                 }
                 catch (Exception err)
                 {
@@ -213,17 +220,16 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
             // If the connection was authenticated then notify that it was closed.
             boolean aCloseNotifyFlag = myIsConnectionAcknowledged;
 
+            // If there is waiting for connection open release it.
+            myConnectionAcknowledged.set();
             synchronized (myConnectionManipulatorLock)
             {
-                // If there is waiting for connection open release it.
-                myConnectionAcknowledged.set();
                 myIsHandshakeResponseSent = false;
                 myIsConnectionAcknowledged = false;
             }
 
             if (aCloseNotifyFlag)
             {
-
                 notifyEvent(myConnectionClosedEventImpl, e, false);
             }
         }
