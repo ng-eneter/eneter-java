@@ -7,9 +7,11 @@
  */
 
 /**
+ * Connection authentication.
  * 
- */
-/**
+ * Provides extension to authenticate the connection.
+ * If the authentication passes the connection is established.
+ * If the authentication fails the connection is closed.
  * 
  *
  */
