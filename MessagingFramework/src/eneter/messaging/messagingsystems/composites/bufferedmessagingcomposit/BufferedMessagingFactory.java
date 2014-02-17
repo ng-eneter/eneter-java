@@ -12,7 +12,8 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
- * Extends the messaging system to work temporarily offline while the connection is not available.
+ * Extension allowing to work offline until the connection is available.
+ * 
  * 
  * The buffered messaging is intended to overcome relatively short time intervals when the connection is not available.
  * It means, the buffered messaging is able to hide the connection is not available and work offline while
@@ -23,20 +24,10 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  * If the connection is not used (messages do not flow) the buffered messaging
  * waits the specified maxOfflineTime and then disconnects the client.
  *  
- * Typical scenarios for buffered messaging:
- * <br/><br/>
- * <b>Short disconnections</b><br/>
- * The network connection is unstable and can be anytime interrupted. In case of the disconnection, sent messages are stored
- * in the buffer while the connection tries to be reopen. If the connection is established again,
- * the messages are sent from the buffer.<br/>
- * <br/>
- * <b>Independent startup order</b><br/>
- * The communicating applications starts in undefined order and initiates the communication. 
- * The buffered messaging stores messages in the buffer while receiving application is started and ready to receive
- * messages.<br/> 
+ * <br/> 
  * <br/>
  * <b>Note:</b><br/>
- * The buffered messaging does not require, that both communicating parts create channels with buffered messaging factory.
+ * The buffered messaging does not require that both communicating parts create channels with buffered messaging factory.
  * It means, e.g. the duplex output channel created with buffered messaging with underlying TCP, can send messages
  * directly to the duplex input channel created with just TCP messaging factory.
  *
