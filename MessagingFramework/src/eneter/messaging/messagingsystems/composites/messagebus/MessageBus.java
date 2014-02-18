@@ -126,14 +126,14 @@ class MessageBus implements IMessageBus
     }
     
     @Override
-    public Event<MessageBusServiceEventArgs> serviceConnected()
+    public Event<MessageBusServiceEventArgs> serviceRegistered()
     {
         return myServiceConnectedEvent.getApi();
     }
 
 
     @Override
-    public Event<MessageBusServiceEventArgs> serviceDisconnected()
+    public Event<MessageBusServiceEventArgs> serviceUnregistered()
     {
         return myServiceDisconnectedEvent.getApi();
     }
@@ -170,6 +170,13 @@ class MessageBus implements IMessageBus
             {
                 myClientConnector.detachDuplexInputChannel();
                 myServiceConnector.detachDuplexInputChannel();
+                
+                // Note: make sure 'lock (myAttachDetachLock)' is never used from 'lock (myConnectionsLock)'.
+                synchronized (myConnectionsLock)
+                {
+                    myConnectedClients.clear();
+                    myConnectedServices.clear();
+                }
             }
         }
         finally

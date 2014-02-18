@@ -10,14 +10,26 @@ package eneter.messaging.messagingsystems.composites.messagebus;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 
-
+/**
+ * Implements the factory for creating the message bus.
+ *
+ */
 public class MessageBusFactory implements IMessageBusFactory
 {
+    /**
+     * Constructs the factory with default parameters.
+     * 
+     * Default EneterProtocolFormatter is used.
+     */
     public MessageBusFactory()
     {
         this(new EneterProtocolFormatter());
     }
 
+    /**
+     * Construct the factory.
+     * @param protocolFormatter protocol formatter used for the communication between channels.
+     */
     public MessageBusFactory(IProtocolFormatter<?> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();

@@ -13,7 +13,12 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.threading.dispatching.*;
 
-
+/**
+ * Messaging system allowing services to register in the message bus and clients to connect
+ * a service registered in the message bus.
+ * 
+ *
+ */
 public class MessageBusMessagingFactory implements IMessagingSystemFactory
 {
     private class MessageBusConnectorFactory implements IOutputConnectorFactory, IInputConnectorFactory
@@ -74,12 +79,27 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         private IMessagingSystemFactory myMessageBusMessaging;
     }
     
-    
+   
+    /**
+     * Constructs the factory.
+     * 
+     * @param serviceConnctingAddress message bus address for registered services.
+     * @param clientConnectingAddress message bus address for clients that want to connect a registered service.
+     * @param underlyingMessaging messaging system used by the message bus.
+     */
     public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory underlyingMessaging)
     {
         this(serviceConnctingAddress, clientConnectingAddress, underlyingMessaging, new EneterProtocolFormatter());
     }
     
+    /**
+     * Constructs the factory.
+     * 
+     * @param serviceConnctingAddress message bus address for registered services.
+     * @param clientConnectingAddress message bus address for clients that want to connect a registered service.
+     * @param underlyingMessaging messaging system used by the message bus.
+     * @param protocolFormatter protocol formatter used for the communication between channels.
+     */
     public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory underlyingMessaging, IProtocolFormatter<?> protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
