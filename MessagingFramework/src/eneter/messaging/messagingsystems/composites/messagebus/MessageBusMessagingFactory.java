@@ -15,9 +15,126 @@ import eneter.messaging.threading.dispatching.*;
 
 /**
  * Messaging system allowing services to register in the message bus and clients to connect
- * a service registered in the message bus.
+ * a service registered in the message bus.<br/>
+ * <br/>
+ * The following example shows how to communicate via the message bus.<br/>
+ * <br/>
+ * Implementing the message bus service that will mediate the client-service communication: 
+ * <pre>
+ * public class Program
+ * {
+ *     public static void main(String[] args) throws Exception
+ *     {
+ *         // Message Bus will use TCP for the communication.
+ *         IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+ *  <br/>
+ *         // Input channel to listen to services.
+ *         IDuplexInputChannel aServiceInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8045/");
+ *  <br/>
+ *         // Input channel to listen to clients.
+ *         IDuplexInputChannel aClientInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8046/");
+ *  <br/>
+ *         // Create the message bus.
+ *         IMessageBus aMessageBus = new MessageBusFactory().createMessageBus();
+ *  <br/>
+ *         // Attach channels to the message bus and start listening.
+ *         aMessageBus.attachDuplexInputChannels(aServiceInputChannel, aClientInputChannel);
+ *  <br/>
+ *         System.out.println("Message bus service is running. Press ENTER to stop.");
+ *         new BufferedReader(new InputStreamReader(System.in)).readLine();
+ *  <br/>
+ *         // Detach channels and stop listening.
+ *         aMessageBus.detachDuplexInputChannels();
+ *     }
+ * }
+ * </pre>
+ * <br/>
+ * Implementing the service which is exposed via the message bus:
+ * <pre>
+ * public interface IEcho
+ * {
+ *     String hello(String text);
+ * }<br/>
+ * <br/>
+ * ....
+ * <br/>
+ * // Simple echo service.
+ * class EchoService implements IEcho
+ * {
+ *     {@literal @}Override
+ *     public String hello(String text)
+ *     {
+ *         return text;
+ *     }
+ *  <br/>
+ * }<br/>
+ * <br/>
+ * ....
+ * <br/>
+ * public class Program
+ * {
+ *     public static void main(String[] args) throws Exception
+ *     {
+ *         // The service will communicate via Message Bus which is listening via TCP.
+ *         IMessagingSystemFactory aMessageBusUnderlyingMessaging = new TcpMessagingSystemFactory();
+ *         // note: only TCP/IP address which is exposed for services is needed.
+ *         IMessagingSystemFactory aMessaging = new MessageBusMessagingFactory("tcp://127.0.0.1:8045/", null, aMessageBusUnderlyingMessaging);
+ *  <br/>
+ *         // Create input channel listening via the message bus.
+ *         // Note: this is address of the service inside the message bus.
+ *         IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("Eneter.Echo");
+ *  <br/>
+ *         // Instantiate class implementing the service.
+ *         IEcho anEcho = new EchoService();
+ *  <br/>
+ *         // Create the RPC service.
+ *         IRpcService&lt;IEcho&gt; anEchoService = new RpcFactory().createService(anEcho, IEcho.class);
+ *  <br/>
+ *         // Attach input channel to the service and start listening via the message bus.
+ *         anEchoService.attachDuplexInputChannel(anInputChannel);
+ *  <br/>
+ *         System.out.println("Echo service is running. Press ENTER to stop.");
+ *         new BufferedReader(new InputStreamReader(System.in)).readLine();
+ *  <br/>
+ *         // Detach the input channel and stop listening.
+ *         anEchoService.detachDuplexInputChannel();
+ *     }
+ * }
+ * </pre>
+ * <br/>
+ * Implementing the client using the service which is exposed via the message bus:
+ * <pre>
+ * public class Program
+ * {
+ *     public static void main(String[] args) throws Exception
+ *     {
+ *         // The client will communicate via Message Bus which is listening via TCP.
+ *         IMessagingSystemFactory aMessageBusUnderlyingMessaging = new TcpMessagingSystemFactory();
+ *         // note: only TCP/IP address which is exposed for clients is needed. 
+ *         IMessagingSystemFactory aMessaging = new MessageBusMessagingFactory(null, "tcp://127.0.0.1:8046/", aMessageBusUnderlyingMessaging);
+ *  <br/>
+ *         // Create output channel that will connect the service via the message bus..
+ *         // Note: this is address of the service inside the message bus.
+ *         IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("Eneter.Echo");
+ *  <br/>
+ *         // Create the RPC client for the Echo Service.
+ *         IRpcClient&lt;IEcho&gt; aClient = new RpcFactory().createClient(IEcho.class);
+ *  <br/>
+ *         // Attach the output channel and be able to communicate with the service via the message bus.
+ *         aClient.attachDuplexOutputChannel(anOutputChannel);
+ *  <br/>
+ *         // Get the service proxy and call the echo method.
+ *         IEcho aProxy = aClient.getProxy();
+ *         String aResponse = aProxy.hello("hello");
+ *  <br/>
+ *         System.out.println("Echo service returned: " + aResponse);
+ *  <br/>
+ *         // Detach the output channel.
+ *         aClient.detachDuplexOutputChannel();
+ *     }
+ * }
+ * </pre>
  * 
- *
  */
 public class MessageBusMessagingFactory implements IMessagingSystemFactory
 {
