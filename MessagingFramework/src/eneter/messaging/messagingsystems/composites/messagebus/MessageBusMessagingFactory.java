@@ -14,12 +14,11 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.threading.dispatching.*;
 
 /**
- * Messaging system allowing services to register in the message bus and clients to connect
- * a service registered in the message bus.<br/>
- * <br/>
+ * Messaging system allowing the communication via the message bus.
+ * 
  * The following example shows how to communicate via the message bus.<br/>
  * <br/>
- * Implementing the message bus service that will mediate the client-service communication: 
+ * Implementation of the message bus service that will mediate the client-service communication: 
  * <pre>
  * public class Program
  * {
@@ -49,7 +48,7 @@ import eneter.messaging.threading.dispatching.*;
  * }
  * </pre>
  * <br/>
- * Implementing the service which is exposed via the message bus:
+ * Implementation of the service which is exposed via the message bus:
  * <pre>
  * public interface IEcho
  * {
@@ -102,7 +101,7 @@ import eneter.messaging.threading.dispatching.*;
  * }
  * </pre>
  * <br/>
- * Implementing the client using the service which is exposed via the message bus:
+ * Implementation of the client using the service which is exposed via the message bus:
  * <pre>
  * public class Program
  * {

@@ -11,7 +11,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.IDuplexInputChannel
 import eneter.net.system.Event;
 
 /**
- * Declares message bus component.
+ * Declares the message bus component.
  * 
  * The message bus is the component that exposes multiple services.
  * When a service wants to expose its functionality via the message bus it connects the message bus and registers there.
@@ -61,7 +61,7 @@ public interface IMessageBus
 
     /**
      * Disconnect and unregisters the specified service.
-     * @param serviceAddress
+     * @param serviceAddress id of the service that shall be unregistered
      */
     void disconnectService(String serviceAddress);
 }
