@@ -72,7 +72,7 @@ class HttpListener
      * @return true if listening.
      * @throws Exception
      */
-    public boolean isListening() throws Exception
+    public boolean isListening()
     {
         return myListenerImpl.isListening();
     }

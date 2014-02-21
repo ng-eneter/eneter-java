@@ -135,7 +135,7 @@ public abstract class HostListenerBase
         }
     }
     
-    public boolean existListener(final URI address) throws Exception
+    public boolean existListener(final URI address)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -145,13 +145,18 @@ public abstract class HostListenerBase
                 boolean isAny = EnumerableExt.any(myHandlers, new IFunction1<Boolean, Entry<URI, IMethod1<Object>>>()
                     {
                         @Override
-                        public Boolean invoke(Entry<URI, IMethod1<Object>> x) throws Exception
+                        public Boolean invoke(Entry<URI, IMethod1<Object>> x)
                         {
                             return x.getKey().getPath().equals(address.getPath());
                         }
                     });
                 return isAny;
             }
+        }
+        catch (Exception err)
+        {
+            EneterTrace.error("Failed to check if the listener exists.", err);
+            return false;
         }
         finally
         {

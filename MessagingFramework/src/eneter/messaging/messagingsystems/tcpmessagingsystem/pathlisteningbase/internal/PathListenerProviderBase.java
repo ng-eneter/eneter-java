@@ -100,7 +100,7 @@ public abstract class PathListenerProviderBase
         }
     }
     
-    public boolean isListening() throws Exception
+    public boolean isListening()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

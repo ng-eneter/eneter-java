@@ -124,7 +124,7 @@ class HostListenerController
         }
     }
     
-    public static boolean isListening(URI uri) throws Exception
+    public static boolean isListening(URI uri)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -154,7 +154,6 @@ class HostListenerController
     }
     
     private static HostListenerBase findHostListener(URI uri)
-            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -164,13 +163,18 @@ class HostListenerController
             HostListenerBase aHostListener = EnumerableExt.firstOrDefault(myListeners, new IFunction1<Boolean, HostListenerBase>()
             {
                 @Override
-                public Boolean invoke(HostListenerBase x) throws Exception
+                public Boolean invoke(HostListenerBase x)
                 {
                     return x.getAddress().equals(anAddress);
                 }
             });
                     
             return aHostListener;
+        }
+        catch (Exception err)
+        {
+            EneterTrace.error(TracedObject + "failed to compare addresses when searching for the host listener.", err);
+            return null;
         }
         finally
         {

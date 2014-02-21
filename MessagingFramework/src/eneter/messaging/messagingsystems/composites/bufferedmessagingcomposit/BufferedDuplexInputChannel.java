@@ -148,7 +148,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
     }
 
     @Override
-    public boolean isListening() throws Exception
+    public boolean isListening()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

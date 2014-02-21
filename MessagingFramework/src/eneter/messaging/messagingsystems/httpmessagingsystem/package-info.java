@@ -7,6 +7,6 @@
  */
 
 /**
- * The messaging system transferring messages via HTTP.
+ * Sending messages via HTTP.
  */
 package eneter.messaging.messagingsystems.httpmessagingsystem;

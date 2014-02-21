@@ -166,7 +166,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    public boolean isListening() throws Exception
+    public boolean isListening()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

@@ -28,7 +28,7 @@ public interface IDuplexInputChannel
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
 
     /**
-     * The event is invoked when a message was received.
+     * The event is invoked when a message is received.
      */
     Event<DuplexChannelMessageEventArgs> messageReceived();
     
@@ -40,7 +40,7 @@ public interface IDuplexInputChannel
 
     /**
      * Starts listening to messages.
-     * @throws Exception The implementation should catch and trace all problems and then rethrow them.
+     * @throws Exception
      */
     void startListening() throws Exception;
 
@@ -52,7 +52,7 @@ public interface IDuplexInputChannel
     /**
      * Returns true if the duplex input channel is listening.
      */
-    boolean isListening() throws Exception;
+    boolean isListening();
 
     /**
      * Sends the response message back to the connected IDuplexOutputChannel.
@@ -71,9 +71,10 @@ public interface IDuplexInputChannel
     
     /**
      * Returns dispatcher that defines the threading model for raising events.
-     * Dispatcher is responsible for raising ConnectionOpened, ConnectionClosed and ResponseMessageReceived events
-     * in desired thread. It allows to specify which threading mechanism/model is used to raise asynchronous events.
-     * E.g. events are queued and raised by one thread. Or e.g. in Silverlight events can be raised in the Silverlight thread.
+     * 
+     * Dispatcher is responsible for raising ResponseReceiverConnected, ResponseReceiverDisconnected and MessageReceived events
+     * according to desired thread model.
+     * E.g. events are queued and raised by one particular thread.
      */
     IThreadDispatcher getDispatcher();
 }

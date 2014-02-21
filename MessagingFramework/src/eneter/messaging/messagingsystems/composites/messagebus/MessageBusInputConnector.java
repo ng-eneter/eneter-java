@@ -121,7 +121,7 @@ class MessageBusInputConnector implements IInputConnector
     }
 
     @Override
-    public boolean isListening() throws Exception
+    public boolean isListening()
     {
         return myMessageBusOutputChannel.isConnected();
     }

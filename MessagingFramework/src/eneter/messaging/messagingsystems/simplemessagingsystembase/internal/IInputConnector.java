@@ -14,7 +14,7 @@ public interface IInputConnector
 {
     void startListening(IFunction1<Boolean, MessageContext> messageHandler) throws Exception;
     void stopListening();
-    boolean isListening() throws Exception;
+    boolean isListening();
 
     ISender createResponseSender(String responseReceiverAddress) throws Exception;
 }

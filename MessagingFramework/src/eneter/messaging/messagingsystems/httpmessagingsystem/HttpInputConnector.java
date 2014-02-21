@@ -208,7 +208,7 @@ class HttpInputConnector implements IInputConnector
     }
 
     @Override
-    public boolean isListening() throws Exception
+    public boolean isListening()
     {
         return myHttpListenerProvider.isListening();
     }

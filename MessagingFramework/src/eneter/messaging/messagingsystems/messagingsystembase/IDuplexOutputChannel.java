@@ -13,27 +13,22 @@ import eneter.net.system.Event;
 
 /**
  * Declares the duplex output channel that can send messages to the duplex input channel and receive response messages.
- * Notice, the duplex output channel works only with duplex input channel and not with input channel.
  * 
  */
 public interface IDuplexOutputChannel
 {
     /**
      * The event is invoked when a response message was received.
-     * Notice, this event is invoked in a different thread. The exception is only the Synchronous messaging that
-     * invokes this event in the thread calling the method SendResponseMessage.
      */
     Event<DuplexChannelMessageEventArgs> responseMessageReceived();
     
     /**
      * The event is invoked when the connection with the duplex input channel was opened.
-     * Notice, the event is invoked in a thread from the thread pool.
      */
     Event<DuplexChannelEventArgs> connectionOpened();
 
     /**
      * The event is invoked when the connection with the duplex input channel was closed.
-     * Notice, the event is invoked in a thread from the thread pool.
      */
     Event<DuplexChannelEventArgs> connectionClosed();
     
@@ -56,7 +51,7 @@ public interface IDuplexOutputChannel
     String getResponseReceiverId();
     
     /**
-     * Sends the message to the address represented by ChannelId.
+     * Sends the message to the duplex input channel.
      * @throws Exception The implementation should catch and trace all problems and then rethrow them.
      */
     void sendMessage(Object message) throws Exception;
@@ -79,9 +74,10 @@ public interface IDuplexOutputChannel
     
     /**
      * Returns dispatcher that defines the threading model for raising events.
+     * 
      * Dispatcher is responsible for raising ConnectionOpened, ConnectionClosed and ResponseMessageReceived events
-     * in desired thread. It allows to specify which threading mechanism/model is used to raise asynchronous events.
-     * E.g. events are queued and raised by one thread. Or e.g. in Silverlight events can be raised in the Silverlight thread.
+     * according to desired thread model.
+     * E.g. events are queued and raised by one particular thread.
      */
     IThreadDispatcher getDispatcher();
 }

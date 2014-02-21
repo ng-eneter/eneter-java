@@ -22,9 +22,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  * in the buffer and sends them when the connection is established.<br/>
  * Buffered messaging also checks if the between duplex output channel and duplex input channel is active.
  * If the connection is not used (messages do not flow) the buffered messaging
- * waits the specified maxOfflineTime and then disconnects the client.
- *  
- * <br/> 
+ * waits the specified maxOfflineTime and then disconnects the client.<br/> 
  * <br/>
  * <b>Note:</b><br/>
  * The buffered messaging does not require that both communicating parts create channels with buffered messaging factory.
