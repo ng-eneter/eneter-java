@@ -13,42 +13,44 @@ import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEve
 import eneter.net.system.Event;
 
 /**
+ * Reliable typed message receiver (it confirms whether the message was received).
+ * 
  * Declares the reliable message receiver that can send messages of specified type and sends back response messages of specified type.
  * Reliable means it provides events notifying whether the response message was delivered or not.
  * The reliable typed message receiver can be used only with the reliable typed message sender.
  *
- * @param <_ResponseType> type of the response message
- * @param <_RequestType> type of the message
+ * @param <TResponse> type of the response message
+ * @param <TRequest> type of the message
  */
-public interface IReliableTypedMessageReceiver<_ResponseType, _RequestType> extends IAttachableDuplexInputChannel
+public interface IReliableTypedMessageReceiver<TResponse, TRequest> extends IAttachableDuplexInputChannel
 {
     /**
      * The event is invoked when the message is received.
-     * @return
+     * @return event that can be subscribed
      */
-    Event<TypedRequestReceivedEventArgs<_RequestType>> messageReceived();
+    Event<TypedRequestReceivedEventArgs<TRequest>> messageReceived();
 
     /**
      * The event is invoked when the reliable typed message sender opened connection.
-     * @return
+     * @return event that can be subscribed
      */
     Event<ResponseReceiverEventArgs> responseReceiverConnected();
 
     /**
      * The event is invoked when the reliable typed message sender was disconnected.
-     * @return
+     * @return event that can be subscribed
      */
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
 
     /**
      * The event is invoked when the response message was delivered.
-     * @return
+     * @return event that can be subscribed
      */
     Event<ReliableMessageIdEventArgs> responseMessageDelivered();
 
     /**
      * The event is invoked when the response message was not delivered within specified time.
-     * @return
+     * @return event that can be subscribed
      */
     Event<ReliableMessageIdEventArgs> responseMessageNotDelivered();
 
@@ -61,5 +63,5 @@ public interface IReliableTypedMessageReceiver<_ResponseType, _RequestType> exte
      * 
      * @throws Exception
      */
-    String sendResponseMessage(String responseReceiverId, _ResponseType responseMessage) throws Exception;
+    String sendResponseMessage(String responseReceiverId, TResponse responseMessage) throws Exception;
 }

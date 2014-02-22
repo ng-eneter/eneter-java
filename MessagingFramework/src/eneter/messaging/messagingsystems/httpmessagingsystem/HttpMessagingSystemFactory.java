@@ -293,59 +293,44 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     
-    
+    /**
+     * Sets threading mode for input channels.
+     * @param inputChannelThreading threading model
+     * @return
+     */
     public HttpMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myInputChannelThreading = inputChannelThreading;
-            return this;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myInputChannelThreading = inputChannelThreading;
+        return this;
     }
     
+    /**
+     * Gets threading mode used for input channels.
+     * @return
+     */
     public IThreadDispatcherProvider getInputChannelThreading()
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myInputChannelThreading;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        return myInputChannelThreading;
     }
     
+    /**
+     * Sets threading mode for output channels.
+     * @param outputChannelThreading
+     * @return
+     */
     public HttpMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myOutputChannelThreading = outputChannelThreading;
-            return this;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myOutputChannelThreading = outputChannelThreading;
+        return this;
     }
     
+    /**
+     * Gets threading mode used for output channels.
+     * @return
+     */
     public IThreadDispatcherProvider getOutputChannelThreading()
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myOutputChannelThreading;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        return myOutputChannelThreading;
     }
         
     

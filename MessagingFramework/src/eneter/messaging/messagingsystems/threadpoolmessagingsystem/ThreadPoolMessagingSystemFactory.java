@@ -13,25 +13,22 @@ import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolForma
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 
 
 /**
- * Implements the messaging system delivering messages with using thread pool.
- * The messages are put to the queue of thread pool. The receiving input channel is then called
- * in the context of the assigned thread from the pool. Therefore the input channel can process more messages at once
- * and also can notify the subscriber from more different threads at the same time. <br/>
- * <b>Therefore do not forget to be careful and avoid race conditioning.</b>
+ * Messaging system delivering messages asynchronously (when a message is received a separate thread is invoked to process it).
+ * 
+ * The incoming messages are processed by multiple threads from the pool. When a message is received the thread
+ * from the pool is taken and the message is notified.
+ * Therefore messages come asynchronously in various threads.
  * 
  */
 public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
 {
     /**
-     * Implements the messaging system delivering messages with using the thread pool.
+     * Constructs the factory.
      * 
-     * The messages are put to the queue of .Net thread pool. The receiving input channel is then called
-     * in the context of the assigned thread from the pool. Therefore the input channel can process more messages at once
-     * and also can notify the subscriber from more different threads at the same time. <br/>
-     * <b>Therefore do not forget to be careful and avoid race conditioning.</b>
      */
     public ThreadPoolMessagingSystemFactory()
     {
@@ -39,14 +36,10 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     }
     
     /**
-     * Implements the messaging system delivering messages with using the thread pool.
+     * Constructs the factory.
      * 
-     * The messages are put to the queue of thread pool. The receiving input channel is then called
-     * in the context of the assigned thread from the pool. Therefore the input channel can process more messages at once
-     * and also can notify the subscriber from more different threads at the same time. <br/>
-     * <b>Therefore do not forget to be careful and avoid race conditioning.</b>
      * 
-     * @param protocolFormatter low-level message formatter used for the communication between channels.
+     * @param protocolFormatter formatting of low-level messages between output and input channels.
      */
     public ThreadPoolMessagingSystemFactory(IProtocolFormatter<?> protocolFormatter)
     {
@@ -61,17 +54,6 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using the thread pool.
-     * The duplex output channel is intended for the bidirectional communication.
-     * Therefore, it can send messages to the duplex input channel and receive response messages.
-     * <br/><br/>
-     * The duplex input channel distinguishes duplex output channels according to the response receiver id.
-     * This method generates the unique response receiver id automatically.
-     * <br/><br/>
-     * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
-     * @throws Exception 
-     */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId) throws Exception
     {
@@ -86,18 +68,6 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
-    /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using the thread pool.
-     * The duplex output channel is intended for the bidirectional communication.
-     * Therefore, it can send messages to the duplex input channel and receive response messages.
-     * <br/><br/>
-     * The duplex input channel distinguishes duplex output channels according to the response receiver id.
-     * This method allows to specified a desired response receiver id. Please notice, the response receiver
-     * id is supposed to be unique.
-     * <br/><br/>
-     * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
-     * @throws Exception 
-     */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
             String responseReceiverId) throws Exception
@@ -113,14 +83,6 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
-    /**
-     * Creates the duplex input channel receiving messages from the duplex output channel and sending back response messages by using the thread pool.
-     * The duplex input channel is intended for the bidirectional communication.
-     * It can receive messages from the duplex output channel and send back response messages.
-     * <br/><br/>
-     * The duplex input channel can communicate only with the duplex output channel and not with the output channel.
-     * @throws Exception 
-     */
     @Override
     public IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception
     {
@@ -135,6 +97,45 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Sets threading mode for input channels.
+     * @param inputChannelThreading threading model
+     * @return
+     */
+    public ThreadPoolMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    {
+        mySimpleMessagingFactory.setInputChannelThreading(inputChannelThreading);
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for input channels.
+     * @return
+     */
+    public IThreadDispatcherProvider getInputChannelThreading()
+    {
+        return mySimpleMessagingFactory.getInputChannelThreading();
+    }
+    
+    /**
+     * Sets threading mode for output channels.
+     * @param outputChannelThreading
+     * @return
+     */
+    public ThreadPoolMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    {
+        mySimpleMessagingFactory.setOutputChannelThreading(outputChannelThreading);
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for output channels.
+     * @return
+     */
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        return mySimpleMessagingFactory.getOutputChannelThreading();
+    }
     
     private DefaultMessagingSystemFactory mySimpleMessagingFactory;
 }

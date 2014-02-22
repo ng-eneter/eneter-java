@@ -17,7 +17,7 @@ import eneter.messaging.threading.dispatching.*;
 
 
 /**
- * Implements the messaging system delivering messages via UDP.
+ * Messaging system delivering messages via UDP.
  * It creates the communication channels using UDP for sending and receiving messages.
  * The channel id must be a valid UDP URI address. E.g.: udp://127.0.0.1:6080/. <br/>
  *
@@ -145,58 +145,44 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     
+    /**
+     * Sets threading mode for input channels.
+     * @param inputChannelThreading threading model
+     * @return
+     */
     public UdpMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myInputChannelThreading = inputChannelThreading;
-            return this;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myInputChannelThreading = inputChannelThreading;
+        return this;
     }
     
+    /**
+     * Gets threading mode used for input channels.
+     * @return
+     */
     public IThreadDispatcherProvider getInputChannelThreading()
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myInputChannelThreading;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        return myInputChannelThreading;
     }
     
+    /**
+     * Sets threading mode for output channels.
+     * @param outputChannelThreading
+     * @return
+     */
     public UdpMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myOutputChannelThreading = outputChannelThreading;
-            return this;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myOutputChannelThreading = outputChannelThreading;
+        return this;
     }
     
+    /**
+     * Gets threading mode used for output channels.
+     * @return
+     */
     public IThreadDispatcherProvider getOutputChannelThreading()
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myOutputChannelThreading;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        return myOutputChannelThreading;
     }
     
     

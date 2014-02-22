@@ -7,6 +7,6 @@
  */
 
 /**
- * The messaging system transferring messages via UDP.
+ * Communication via UDP.
  */
 package eneter.messaging.messagingsystems.udpmessagingsystem;

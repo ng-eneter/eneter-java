@@ -16,9 +16,9 @@ import eneter.messaging.threading.dispatching.*;
 
 
 /**
- * Implements the messaging system delivering messages via TCP.
+ * Creates output and input channels which use TCP.
  * 
- * It creates the communication channels using TCP for sending and receiving messages.
+ * It creates the communication channels which use TCP for sending and receiving messages.
  * The channel id must be a valid URI address. E.g.: tcp://127.0.0.1:6080/.
  *
  */
@@ -215,91 +215,81 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     }
     
     /**
-     * Sets the factory that will be used for creation of secured server socket.
+     * Sets the factory that will be used for creation of server sockets.
      * @param serverSecurityFactory
      */
-    public void setServerSecurity(IServerSecurityFactory serverSecurityFactory)
+    public TcpMessagingSystemFactory setServerSecurity(IServerSecurityFactory serverSecurityFactory)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myServerSecurityFactory = serverSecurityFactory;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myServerSecurityFactory = (serverSecurityFactory != null) ? serverSecurityFactory : new NoneSecurityServerFactory();
+        return this;
+    }
+    
+    /**
+     * Gets the factory that is used for creation of server sockets.
+     * @return
+     */
+    public IServerSecurityFactory getServerSecurity()
+    {
+        return myServerSecurityFactory;
     }
     
     /**
      * Sets the factory that will be used for creation of secured client socket.
      * @param clientSecurityFactory
      */
-    public void setClientSecurity(IClientSecurityFactory clientSecurityFactory)
+    public TcpMessagingSystemFactory setClientSecurity(IClientSecurityFactory clientSecurityFactory)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myClientSecurityFactory = clientSecurityFactory;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myClientSecurityFactory = (clientSecurityFactory != null) ? clientSecurityFactory : new NoneSecurityClientFactory();
+        return this;
     }
     
+    /**
+     * Gets the factory that is used for creation of client sockets.
+     * @return
+     */
+    public IClientSecurityFactory getClientSecurity()
+    {
+        return myClientSecurityFactory;
+    }
+    
+    /**
+     * Sets threading mode for input channels.
+     * @param inputChannelThreading threading model
+     * @return
+     */
     public TcpMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myInputChannelThreading = inputChannelThreading;
-            return this;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myInputChannelThreading = inputChannelThreading;
+        return this;
     }
     
+    /**
+     * Gets threading mode used for input channels.
+     * @return
+     */
     public IThreadDispatcherProvider getInputChannelThreading()
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myInputChannelThreading;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        return myInputChannelThreading;
     }
     
+    /**
+     * Sets threading mode for output channels.
+     * @param outputChannelThreading
+     * @return
+     */
     public TcpMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myOutputChannelThreading = outputChannelThreading;
-            return this;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        myOutputChannelThreading = outputChannelThreading;
+        return this;
     }
     
+    /**
+     * Gets threading mode used for output channels.
+     * @return
+     */
     public IThreadDispatcherProvider getOutputChannelThreading()
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return myOutputChannelThreading;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        return myOutputChannelThreading;
     }
     
     private IProtocolFormatter<byte[]> myProtocolFormatter;

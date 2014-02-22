@@ -9,13 +9,14 @@
 package eneter.messaging.dataprocessing.serializing;
 
 /**
- * The interface declares the API for serialization and deserialization.
+ * Declares the serializer.
  *
  */
 public interface ISerializer
 {
     /**
-     * Serializes data to Object.
+     * Serializes data.
+     * 
      * @param dataToSerialize Data to be serialized.
      * @param clazz represents the serialized type.
      * @return Object representing the serialized data.
@@ -25,7 +26,8 @@ public interface ISerializer
     <T> Object serialize(T dataToSerialize, Class<T> clazz) throws Exception;
     
     /**
-     * Deserializes data into the specified type.
+     * Deserializes data.
+     * 
      * @param serializedData Data to be deserialized.
      * @return Deserialized object.
      * @throws Exception If the deserialization fails.

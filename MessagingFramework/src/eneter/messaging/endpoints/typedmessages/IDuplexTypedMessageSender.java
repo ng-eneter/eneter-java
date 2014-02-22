@@ -13,12 +13,12 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.Event;
 
 /**
- * Declares message sender that sends messages of specified type and receives responses of specified type. 
+ * Sender of typed messages.
  *
- * @param <_ResponseType> receives response messages of this type.
- * @param <_RequestType> sends messages of this type.
+ * @param <TResponse> receives response messages of this type.
+ * @param <TRequest> sends messages of this type.
  */
-public interface IDuplexTypedMessageSender<_ResponseType, _RequestType> extends IAttachableDuplexOutputChannel
+public interface IDuplexTypedMessageSender<TResponse, TRequest> extends IAttachableDuplexOutputChannel
 {
     /**
      * The event is raised when the connection with receiver is opened.
@@ -36,12 +36,12 @@ public interface IDuplexTypedMessageSender<_ResponseType, _RequestType> extends 
      * The event is invoked when a response message was received.
      * @return
      */
-    Event<TypedResponseReceivedEventArgs<_ResponseType>> responseReceived();
+    Event<TypedResponseReceivedEventArgs<TResponse>> responseReceived();
     
     /**
      * Sends message of specified type.
      * @param message
      * @throws Exception 
      */
-    void sendRequestMessage(_RequestType message) throws Exception;
+    void sendRequestMessage(TRequest message) throws Exception;
 }

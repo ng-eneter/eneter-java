@@ -7,7 +7,7 @@
 
 
 /**
- * Communication via the message bus.
+ * Extension providing communication via the message bus. (Exposing multiple services from one place.)
  * 
  * The message bus is the component that can be used to expose multiple services from one place.
  * When a service wants to expose its functionality via the message bus it connects the message bus and registers there.

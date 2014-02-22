@@ -16,9 +16,11 @@ import eneter.net.system.Event;
 
 
 /**
+ * Synchronized sender of typed messages (it waits until the response is received).
+ * 
  * Declares message sender that sends request messages of specified type and receive response messages of specified type.
  * Synchronous means it when the message is sent it waits until the response message is received.
- * If the waiting for the response message exceeds the specified timeout the {@link TimeoutException} is thrown.
+ * If the waiting for the response message exceeds the specified timeout the TimeoutException is thrown.
  *
  * @param <TResponse> Response message type.
  * @param <TRequest> Request message type.

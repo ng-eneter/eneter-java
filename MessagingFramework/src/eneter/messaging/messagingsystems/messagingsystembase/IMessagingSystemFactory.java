@@ -9,9 +9,11 @@
 package eneter.messaging.messagingsystems.messagingsystembase;
 
 /**
- * Declares factory for creating communicating channels.
- * This factory interface is supposed to be implemented by particular messaging systems so that
- * a custom implementation for particular transportation mechanisms can be provided (E.g. for TCP, Web Sockets, Thread Messaging, ...)
+ * Messaging factory to create output and input channels.
+ * 
+ * This factory interface is supposed to be implemented by all messaging systems.
+ * Particular messaging systems are then supposed to provide correct implementations for output and input channels
+ * using their transportation mechanisms. E.g. for TCP, Websockets, ... . 
  * 
  */
 public interface IMessagingSystemFactory

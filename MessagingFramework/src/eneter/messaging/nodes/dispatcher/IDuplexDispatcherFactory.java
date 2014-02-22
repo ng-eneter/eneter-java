@@ -9,15 +9,15 @@
 package eneter.messaging.nodes.dispatcher;
 
 /**
- * Declares the factory to create the bidirectional dispatcher.
+ * Creates the dispatcher.
  * 
- * The bidirectional dispatcher sends messages to all duplex output channels and also can route back response messages.
+ * The dispatcher sends messages to all duplex output channels and also can route back response messages.
  */
 public interface IDuplexDispatcherFactory
 {
     /**
-     * Creates the duplex dispatcher.
-     * @return
+     * Creates the dispatcher.
+     * @return duplex dispatcher
      */
     IDuplexDispatcher createDuplexDispatcher();
 }

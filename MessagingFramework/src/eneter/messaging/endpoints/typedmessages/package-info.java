@@ -8,6 +8,7 @@
 
 /**
  * Sending and receiving messages as typed data.
+ * 
  * E.g. you may want that the request message is type of YourRequest and the response message
  * is type of YourResponse.<br/>
  * <br/>

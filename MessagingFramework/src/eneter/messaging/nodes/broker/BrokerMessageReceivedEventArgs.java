@@ -9,7 +9,7 @@
 package eneter.messaging.nodes.broker;
 
 /**
- * The event arguments of the received message from the broker.
+ * Event arguments of the received message from the broker.
  *
  */
 public final class BrokerMessageReceivedEventArgs

@@ -13,75 +13,12 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 
 /**
- * Implements the factory to create typed message senders and receivers.
- * 
+ * Factory to create typed message senders and receivers.
  * <br/>
- * The following example shows how to send a typed message via TCP.<br/>
- * <pre>
- * {@code
- * // Message to be sent and received.
- * public class Item
- * {
- *      public String name;
- *      public int amount;
- * }
- *
- * class MySender
- * {
- *      // Typed message sender sending 'Item' and as a response receiving 'String'.
- *      private IDuplexTypedMessageSender<String, Item> mySender;
- *
- *      public void openConnection() throws Exception
- *      {
- *          // Create message sender sending 'Item' and receiving 'String'.
- *          // Note: XmlStringSerializer is used by default.
- *          IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory();
- *          mySender = aSenderFactory.createDuplexTypedMessageSender(String.class, Item.class);
- *
- *          // Subscribe to receive response messages.
- *          mySender.responseReceived().subscribe(myOnResponseHandler);
- *
- *          // Create TCP messaging.
- *          IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
- *          IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8033/");
- *
- *          // Attach output channel and be able to send messages and receive responses.
- *          mySender.attachDuplexOutputChannel(anOutputChannel);
- *      }
- *
- *      public void closeConnection()
- *      {
- *          // Detach output channel and stop listening to response messages.
- *          mySender.detachDuplexOutputChannel();
- *      }
- *
- *      public void sendMessage(Item message) throws Exception
- *      {
- *          mySender.sendMessage(message);
- *      }
- *
- *      private void onResponseReceived(Object sender, TypedResponseReceivedEventArgs<String> e)
- *      {
- *          // Get the response message.
- *          String aReceivedResponse = e.getResponseMessage();
- *          ...
- *      }
- *
- *
- *      // Response message handler
- *      EventHandler<TypedResponseReceivedEventArgs<String>> myOnResponseHandler = new EventHandler<TypedResponseReceivedEventArgs<String>>()
- *      {
- *          public void invoke(Object x, TypedRequestReceivedEventArgs<String> y)
- *              throws Exception
- *          {
- *              onResponseReceived(x, y);
- *          }
- *      }
- * }
- * }
- * </pre>
+ * The following example shows how to send a receive messages:
  * <br/>
- * The following example shows how to receive messages of specified type.<br/>
+ * <br/>
+ * Implementation of receiver:
  * <pre>
  * {@code
  * class MyReceiver
@@ -139,12 +76,125 @@ import eneter.messaging.diagnostic.EneterTrace;
  * }
  * }
  * </pre>
+ * <br/>
+ * Implementation of sender:
+ * <pre>
+ * {@code
+ * // Message to be sent and received.
+ * public class Item
+ * {
+ *      public String name;
+ *      public int amount;
+ * }
  *
+ * class MySender
+ * {
+ *      // Typed message sender sending 'Item' and as a response receiving 'String'.
+ *      private IDuplexTypedMessageSender<String, Item> mySender;
+ *
+ *      public void openConnection() throws Exception
+ *      {
+ *          // Create message sender sending 'Item' and receiving 'String'.
+ *          // Note: XmlStringSerializer is used by default.
+ *          IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory();
+ *          mySender = aSenderFactory.createDuplexTypedMessageSender(String.class, Item.class);
+ *          
+ *          // Subscribe to receive response messages.
+ *          mySender.responseReceived().subscribe(myOnResponseHandler);
+ *
+ *          // Create TCP messaging.
+ *          IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+ *          IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8033/");
+ *
+ *          // Attach output channel and be able to send messages and receive responses.
+ *          mySender.attachDuplexOutputChannel(anOutputChannel);
+ *      }
+ *
+ *      public void closeConnection()
+ *      {
+ *          // Detach output channel and stop listening to response messages.
+ *          mySender.detachDuplexOutputChannel();
+ *      }
+ *
+ *      public void sendMessage(Item message) throws Exception
+ *      {
+ *          mySender.sendMessage(message);
+ *      }
+ *
+ *      private void onResponseReceived(Object sender, TypedResponseReceivedEventArgs<String> e)
+ *      {
+ *          // Get the response message.
+ *          String aReceivedResponse = e.getResponseMessage();
+ *          ...
+ *      }
+ *
+ *
+ *      // Response message handler
+ *      EventHandler<TypedResponseReceivedEventArgs<String>> myOnResponseHandler = new EventHandler<TypedResponseReceivedEventArgs<String>>()
+ *      {
+ *          public void invoke(Object x, TypedRequestReceivedEventArgs<String> y)
+ *              throws Exception
+ *          {
+ *              onResponseReceived(x, y);
+ *          }
+ *      }
+ * }
+ * }
+ * </pre>
+ * Implementation of synchronous sender (after sending it waits for the response):
+ * <pre>
+ * {@code
+ * // Message to be sent and received.
+ * public class Item
+ * {
+ *      public String name;
+ *      public int amount;
+ * }
+ *
+ * class MySender
+ * {
+ *      // Typed message sender sending 'Item' and as a response receiving 'String'.
+ *      private ISyncDuplexTypedMessageSender<String, Item> mySender;
+ *
+ *      public void openConnection() throws Exception
+ *      {
+ *          // Create message sender sending 'Item' and receiving 'String'.
+ *          // Note: XmlStringSerializer is used by default.
+ *          IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory();
+ *          mySender = aSenderFactory.createSyncDuplexTypedMessageSender(String.class, Item.class);
+ *
+ *          // Create TCP messaging.
+ *          IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+ *          IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8033/");
+ *
+ *          // Attach output channel and be able to send messages and receive responses.
+ *          mySender.attachDuplexOutputChannel(anOutputChannel);
+ *      }
+ *
+ *      public void closeConnection()
+ *      {
+ *          // Detach output channel and stop listening to response messages.
+ *          mySender.detachDuplexOutputChannel();
+ *      }
+ *
+ *      // Sends message and waits for the response.
+ *      public String sendMessage(Item message) throws Exception
+ *      {
+ *          String aResponse = mySender.sendMessage(message);
+ *          return aResponse;
+ *      }
+ * }
+ * }
+ * </pre>
  */
 public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
 {
     /**
-     * Constructs the factory.
+     * Constructs the factory with XmlStringSerializer.
+     * 
+     * The factory will create senders and receivers with the default XmlStringSerializer
+     * and the factory will create ISyncDuplexTypedMessageSender that waits infinite
+     * time for the response message from the service.
      */
     public DuplexTypedMessagesFactory()
     {
@@ -152,16 +202,13 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
     }
 
     /**
-     * Constructs the factory with specified timeout for synchronous messaging.
-     * @param syncResponseReceiveTimeout maximum waiting time when synchronous message sender is used. 
-     */
-    public DuplexTypedMessagesFactory(int syncResponseReceiveTimeout)
-    {
-        this(syncResponseReceiveTimeout, new XmlStringSerializer());
-    }
-    
-    /**
-     * Constructs the factory with specified serializer that will be used to serialize/deserialize messages.
+     * Constructs the factory with specified serializer.
+     * 
+     * The factory will create senders and receivers with the specified serializer
+     * and the factory will create ISyncDuplexTypedMessageSender that can wait infinite
+     * time for the response message from the service.<br/>
+     * <br/>
+     * For possible serializers you can refer to {@link eneter.messaging.dataprocessing.serializing}
      * @param serializer serializer that will be used to serialize/deserialize messages.
      */
     public DuplexTypedMessagesFactory(ISerializer serializer)
@@ -170,7 +217,23 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
     }
     
     /**
-     * Constructs the factory with specified parameters.
+     * Constructs the factory with specified timeout for {@link ISyncDuplexTypedMessageSender}.
+     * 
+     * The factory will create senders and receivers using the default XmlStringSerializer
+     * and the factory will create ISyncDuplexTypedMessageSender with specified timeout
+     * indicating how long it can wait for a response message from the service.
+     * 
+     * @param syncResponseReceiveTimeout maximum waiting time when synchronous message sender is used. 
+     */
+    public DuplexTypedMessagesFactory(int syncResponseReceiveTimeout)
+    {
+        this(syncResponseReceiveTimeout, new XmlStringSerializer());
+    }
+    
+    
+    
+    /**
+     * Constructs the factory with specified timeout for synchronous message sender and specified serializer.
      * @param syncResponseReceiveTimeout maximum waiting time when synchronous message sender is used.
      * @param serializer serializer that will be used to serialize/deserialize messages.
      */
@@ -189,12 +252,12 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
     }
     
     @Override
-    public <_ResponseType, _RequestType> IDuplexTypedMessageSender<_ResponseType, _RequestType> createDuplexTypedMessageSender(Class<_ResponseType> responseMessageClazz, Class<_RequestType> requestMessageClazz)
+    public <TResponse, TRequest> IDuplexTypedMessageSender<TResponse, TRequest> createDuplexTypedMessageSender(Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DuplexTypedMessageSender<_ResponseType, _RequestType>(mySerializer, responseMessageClazz, requestMessageClazz);
+            return new DuplexTypedMessageSender<TResponse, TRequest>(mySerializer, responseMessageClazz, requestMessageClazz);
         }
         finally
         {
@@ -203,12 +266,12 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
     }
     
     @Override
-    public <_ResponseType, _RequestType> ISyncDuplexTypedMessageSender<_ResponseType, _RequestType> createSyncDuplexTypedMessageSender(Class<_ResponseType> responseMessageClazz, Class<_RequestType> requestMessageClazz)
+    public <TResponse, TRequest> ISyncDuplexTypedMessageSender<TResponse, TRequest> createSyncDuplexTypedMessageSender(Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            SyncTypedMessageSender<_ResponseType, _RequestType> aSender = new SyncTypedMessageSender<_ResponseType, _RequestType>(mySyncResponseReceiveTimeout, mySerializer, responseMessageClazz, requestMessageClazz);
+            SyncTypedMessageSender<TResponse, TRequest> aSender = new SyncTypedMessageSender<TResponse, TRequest>(mySyncResponseReceiveTimeout, mySerializer, responseMessageClazz, requestMessageClazz);
             return aSender;
         }
         finally
@@ -217,16 +280,13 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
         }
     }
 
-    /**
-     * Creates duplex typed message receiver.
-     */
     @Override
-    public <_ResponseType, _RequestType> IDuplexTypedMessageReceiver<_ResponseType, _RequestType> createDuplexTypedMessageReceiver(Class<_ResponseType> responseMessageClazz, Class<_RequestType> requestMessageClazz)
+    public <TResponse, TRequest> IDuplexTypedMessageReceiver<TResponse, TRequest> createDuplexTypedMessageReceiver(Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DuplexTypedMessageReceiver<_ResponseType, _RequestType>(mySerializer, responseMessageClazz, requestMessageClazz);
+            return new DuplexTypedMessageReceiver<TResponse, TRequest>(mySerializer, responseMessageClazz, requestMessageClazz);
         }
         finally
         {

@@ -12,7 +12,7 @@ import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.Event;
 
 /**
- * Declares the duplex input channel that can receive messages from the duplex output channel and send back response messages.
+ * Duplex input channel that can receive messages from the duplex output channel and send response messages.
  * 
  */
 public interface IDuplexInputChannel

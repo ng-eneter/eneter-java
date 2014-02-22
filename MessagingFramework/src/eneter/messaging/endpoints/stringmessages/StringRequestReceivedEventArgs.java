@@ -9,13 +9,13 @@
 package eneter.messaging.endpoints.stringmessages;
 
 /**
- * Declares the event type when the request message is received.
+ * Event type for text request message is received.
  *
  */
 public final class StringRequestReceivedEventArgs
 {
     /**
-     * Constructs the event from thr parameters.
+     * Constructs the event.
      * @param requestMessage
      * @param responseReceiverId
      */

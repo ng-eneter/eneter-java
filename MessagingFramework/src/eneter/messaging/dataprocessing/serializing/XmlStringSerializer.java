@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Implements the serialization/deserialization to/from xml string.<br/>
- * <br/>
+ * Serializes data to XML which is compatible with .NET.
+ * 
  * This is the default serializer used by the framework. The serializer is compatible
  * with XmlStringSerializer from Eneter Messaging Framework for .NET.
  * Therefore, you can use it for the communication between Java and .NET applications.

@@ -13,7 +13,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEve
 import eneter.net.system.*;
 
 /**
- * Declares service which can receive requests via RPC (Remote Procedure Call).
+ * Service which exposes the interface for Remote Procedure Call (note: it also works with .NET).
  * 
  * RpcService acts as a stub which provides the communication functionality for an instance implementing the given service interface.
  *
@@ -55,7 +55,7 @@ import eneter.net.system.*;
  * The following example shows how to declare interface that can be used for Java/C# communication.
  * <pre>
  * {@code
- * // C# interface 
+ * // C# interface
  * public interface IMyInterface
  * {
  *    // Event without arguments.
@@ -72,7 +72,8 @@ import eneter.net.system.*;
  * }
  * .
  * // Java equivalent
- * // Note: methods names must be exactly same as in C#.
+ * // Note: Names of methods and events must be same. So e.g. if the interface is declared in .NET with
+ * //       then you may need to start method names with Capital.
  * public interface IMyInterface
  * {
  *    // Event without arguments.

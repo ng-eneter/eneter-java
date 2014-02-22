@@ -11,9 +11,9 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 import java.net.*;
 
 /**
- * Declares the factory responsible for creating the security server socket.
+ * Creates server socket.
  * 
- *
+ * The factory is used by TcpMessagingSystem to create the server socket.
  */
 public interface IServerSecurityFactory
 {
@@ -52,7 +52,7 @@ public interface IServerSecurityFactory
     
     /**
      * Sets the size of sending buffer in bytes.
-     * @param size size of the buffer in bytes. (use 8192 by default)
+     * @param bufferSize size of the buffer in bytes. (use 8192 by default)
      */
     void setSendBufferSize(int bufferSize);
     
@@ -64,7 +64,7 @@ public interface IServerSecurityFactory
     
     /**
      * Sets the size of receiving buffer in bytes.
-     * @param size size of the buffer in bytes. (use 8192 by default)
+     * @param bufferSize size of the buffer in bytes. (use 8192 by default)
      */
     void setReceiveBufferSize(int bufferSize);
     

@@ -13,16 +13,23 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
 
 /**
- * Implements the factory for creating channel wrapper and unwrapper.
+ * Factory for creating channel wrapper and unwrapper.
  *
  */
 public class ChannelWrapperFactory implements IChannelWrapperFactory
 {
+    /**
+     * Constructs the factory.
+     */
     public ChannelWrapperFactory()
     {
         this(new XmlStringSerializer());
     }
 
+    /**
+     * Constructs the factory.
+     * @param serializer serializer used for wrapping channels with data messages.
+     */
     public ChannelWrapperFactory(ISerializer serializer)
     {
         EneterTrace aTrace = EneterTrace.entering();

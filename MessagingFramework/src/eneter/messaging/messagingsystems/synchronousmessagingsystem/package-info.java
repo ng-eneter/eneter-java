@@ -7,7 +7,7 @@
  */
 
 /**
- * The messaging system transferring messages synchronously in the context of the caller thread.
+ * Synchronous communication within one process (like a synchronous local call).
  * 
  * This messaging system transfers messages synchronously in the context of the calling thread.
  * Therefore the calling thread is blocked until the message is delivered and processed.

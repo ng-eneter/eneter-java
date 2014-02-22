@@ -7,6 +7,6 @@
  */
 
 /**
- * The messaging system transferring messages via TCP.
+ * Communication via TCP.
  */
 package eneter.messaging.messagingsystems.tcpmessagingsystem;

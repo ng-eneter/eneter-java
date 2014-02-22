@@ -8,14 +8,14 @@
 package eneter.messaging.messagingsystems.composites.messagebus;
 
 /**
- * Declares factory creating the message bus.
+ * Creates the message bus.
  *
  */
 public interface IMessageBusFactory
 {
     /**
      * Instantiates the message bus.
-     * @return
+     * @return message bus
      */
     IMessageBus createMessageBus();
 }

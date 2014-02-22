@@ -13,7 +13,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.*;
 
 /**
- * Declares client which can use Remote Procedure Calls (RPC) to communication with the service.
+ * Client which can use Remote Procedure Calls (note: it also works with .NET).
  * 
  * RpcClient acts as a proxy providing the communication functionality allowing a client to call methods exposed by the service.
  *
@@ -22,13 +22,13 @@ import eneter.net.system.*;
 public interface IRpcClient<TServiceInterface> extends IAttachableDuplexOutputChannel
 {
     /**
-     * Event raised when the connection with the service was open.
+     * Event raised when the connection with the service is open.
      * @return
      */
     Event<DuplexChannelEventArgs> connectionOpened();
     
     /**
-     * Event raised when the connection with the service was closed.
+     * Event raised when the connection with the service is closed.
      * @return
      */
     Event<DuplexChannelEventArgs> connectionClosed();

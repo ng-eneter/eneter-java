@@ -7,6 +7,6 @@
  */
 
 /**
- * The messaging system transferring messages via websockets.
+ * Communication via Websockets.
  */
 package eneter.messaging.messagingsystems.websocketmessagingsystem;

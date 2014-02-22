@@ -7,6 +7,6 @@
  */
 
 /**
- * Functionality to serialize and deserialize messages or data.
+ * Message serializers.
  */
 package eneter.messaging.dataprocessing.serializing;

@@ -13,7 +13,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.Event;
 
 /**
- * Declares the duplex channel unwrapper.
+ * Duplex channel unwrapper.
  * The duplex channel wrapper is listening to more duplex input channels. When it receives some message,
  * it wraps the message and sends it via the only duplex output channel.
  * On the other side the message is received by duplex channel unwrapper. The unwrapper unwraps the message

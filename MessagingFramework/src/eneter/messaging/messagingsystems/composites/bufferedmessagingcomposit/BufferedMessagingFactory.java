@@ -14,7 +14,6 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
 /**
  * Extension allowing to work offline until the connection is available.
  * 
- * 
  * The buffered messaging is intended to overcome relatively short time intervals when the connection is not available.
  * It means, the buffered messaging is able to hide the connection is not available and work offline while
  * trying to reconnect.<br/>
@@ -27,7 +26,36 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  * <b>Note:</b><br/>
  * The buffered messaging does not require that both communicating parts create channels with buffered messaging factory.
  * It means, e.g. the duplex output channel created with buffered messaging with underlying TCP, can send messages
- * directly to the duplex input channel created with just TCP messaging factory.
+ * directly to the duplex input channel created with just TCP messaging factory.<br/>
+ * <br/>
+ * The following example shows how to use buffered messaging e.g. if the connection can get temporarily lost:
+ * <pre>
+ * // Create TCP messaging.
+ * IMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
+ * <br/>
+ * // Create buffered messaging that internally uses TCP.
+ * IMessagingSystemFactory aMessaging = new BufferedMessagingSystemFactory(anUnderlyingMessaging);
+ * <br/>
+ * // Create the duplex output channel.
+ * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8045/");
+ * <br/>
+ * // Create message sender to send simple string messages.
+ * IDuplexStringMessagesFactory aSenderFactory = new DuplexStringMessagesFactory();
+ * IDuplexStringMessageSender aSender = aSenderFactory.CreateDuplexStringMessageSender();
+ * <br/>
+ * // Subscribe to receive responses.
+ * aSender.responseReceived().subscribe(myOnResponseReceived);
+ * <br/>
+ * // Attach output channel an be able to send messages and receive responses.
+ * aSender.attachDuplexOutputChannel(anOutputChannel);
+ * <br/>
+ * ...
+ * <br/>
+ * // Send a message.
+ * // If the connection is broken the message will be stored in the buffer.
+ * // Note: The buffered messaging will try to reconnect automatically.
+ * aSender.SendMessage("Hello.");
+ * </pre>
  *
  */
 public class BufferedMessagingFactory implements IMessagingSystemFactory

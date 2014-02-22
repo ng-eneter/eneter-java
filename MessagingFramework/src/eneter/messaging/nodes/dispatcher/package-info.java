@@ -7,7 +7,7 @@
  */
 
 /**
- * Functionality for the component forwarding messages to all attached receivers.
+ * Multiplying and forwarding of received messages. 
  * 
  * Receives messages and forwards them to all attached receivers.
  * The message is then processed by more services in parallel.

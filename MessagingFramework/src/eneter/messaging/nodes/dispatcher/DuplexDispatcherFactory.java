@@ -12,7 +12,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
- * Implements the factory to create the bidirectional dispatcher.
+ * Implements factory to create the dispatcher.
  *
  */
 public class DuplexDispatcherFactory implements IDuplexDispatcherFactory

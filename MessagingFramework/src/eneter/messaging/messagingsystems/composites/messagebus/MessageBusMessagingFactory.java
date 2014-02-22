@@ -14,7 +14,13 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.threading.dispatching.*;
 
 /**
- * Messaging system allowing the communication via the message bus.
+ * Extension providing the communication via the message bus.
+ * 
+ * This messaging wraps the communication with the message bus.
+ * The duplex input channel created by this messaging will automatically connect the message bus and register the service
+ * when the startListening() is called.<br/>
+ * The duplex output channel created by this messaging will automatically connect the message bus and ask for the service
+ * when the openConnection() is called.
  * 
  * The following example shows how to communicate via the message bus.<br/>
  * <br/>

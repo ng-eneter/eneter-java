@@ -13,16 +13,16 @@ import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.connectionprotocols.internal.LocalProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 
 /**
- * The factory class implements the messaging system delivering messages synchronously in the caller thread.
+ * Messaging system delivering messages synchronously (like a synchronous local call).
  * It creates output and input channels using the caller thread to deliver messages.
  * <br/><br/>
  * Different instances of SynchronousMessagingSystemFactory are independent and so they
  * are different messaging systems. Therefore if you want to send/receive a message through this messaging system
  * then output and input channels must be created with the same instance of SynchronousMessagingSystemFactory.
  * 
- * @author Ondrej Uzovic & Martin Valach
  *
  */
 public class SynchronousMessagingSystemFactory implements IMessagingSystemFactory
@@ -108,6 +108,47 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    /**
+     * Sets threading mode for input channels.
+     * @param inputChannelThreading threading model
+     * @return
+     */
+    public SynchronousMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    {
+        myDefaultMessagingFactory.setInputChannelThreading(inputChannelThreading);
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for input channels.
+     * @return
+     */
+    public IThreadDispatcherProvider getInputChannelThreading()
+    {
+        return myDefaultMessagingFactory.getInputChannelThreading();
+    }
+    
+    /**
+     * Sets threading mode for output channels.
+     * @param outputChannelThreading
+     * @return
+     */
+    public SynchronousMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    {
+        myDefaultMessagingFactory.setOutputChannelThreading(outputChannelThreading);
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for output channels.
+     * @return
+     */
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        return myDefaultMessagingFactory.getOutputChannelThreading();
+    }
+    
     
     
     private DefaultMessagingSystemFactory myDefaultMessagingFactory;

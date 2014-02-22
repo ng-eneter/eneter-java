@@ -11,13 +11,13 @@ package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 import java.io.Serializable;
 
 /**
- * The message used by the monitor duplex output channel or
- * monitor duplex input channel for the communication.
+ * The message internally used to monitor the connection and also to transfer message data.
  */
 public class MonitorChannelMessage implements Serializable
 {
     /**
-     * Constructs the message. This constructor is used by the Xml serializer for the deserialization.
+     * Constructs the message.
+     * This constructor is used by the Xml serializer for the deserialization.
      */
     public MonitorChannelMessage()
     {

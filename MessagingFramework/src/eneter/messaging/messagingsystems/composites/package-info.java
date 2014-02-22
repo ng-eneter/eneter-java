@@ -9,9 +9,9 @@
 
 
 /**
- * Functionality extending behavior of messaging systems.
+ * Extensions for messaging systems.
  * 
- * E.g. it is possible to extend the communication by connection monitoring, buffering, authentication or communication via the message bus.
+ * E.g. it is possible to extend the communication by additional features like: connection monitoring, buffering, authentication or communication via the message bus.
  *
  * The composite implements IMessagingSystemFactory so it looks like any other messaging but it provides
  * some additional behavior which is then applied on the underlying messaging.
@@ -31,7 +31,7 @@
  * // It takes monitored messaging as the underlying messaging.
  * IMessagingSystemFactory aMessaging = new AuthenticatedMessagingFactory(aMonitoredMessaging, ...);
  * <br/>
- * // Creating channels.
+ * // Then creating channels.
  * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8095/");
  * IDuplexInputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8095/");
  * </pre>

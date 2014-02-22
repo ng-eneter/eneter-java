@@ -7,7 +7,8 @@
  */
 
 /**
- * Functionality for publish-subscribe scenarios. Clients can subscribe for notification messages.
+ * Publish-subscribe scenarios (clients can subscribe for notification messages).
+ * 
  * 
  * The broker is intended for publish-subscribe scenarios. Clients can use the broker to subscribe for messages
  * or for sending of notification messages.<br/>

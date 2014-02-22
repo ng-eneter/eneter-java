@@ -7,7 +7,7 @@
  */
 
 /**
- * Functionality to distribute the workload across a farm of receivers.
+ * Distributing the workload across a farm of receivers.
  *
  * The load balancer maintains a list of receivers processing a certain request.
  * When the balancer receives the request, it chooses which receiver shall process it,

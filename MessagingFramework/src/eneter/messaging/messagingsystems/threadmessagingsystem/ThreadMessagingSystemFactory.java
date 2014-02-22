@@ -13,10 +13,11 @@ import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.connectionprotocols.internal.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 
 
 /**
- * Implements the messaging system delivering messages to the particular working thread.
+ * Messaging system delivering messages to the particular working thread.
  * Each input channel is represented by its own working thread removing messages from the queue and processing them
  * one by one.
  * <br/><br/>
@@ -136,6 +137,45 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Sets threading mode for input channels.
+     * @param inputChannelThreading threading model
+     * @return
+     */
+    public ThreadMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    {
+        myDefaultMessagingFactory.setInputChannelThreading(inputChannelThreading);
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for input channels.
+     * @return
+     */
+    public IThreadDispatcherProvider getInputChannelThreading()
+    {
+        return myDefaultMessagingFactory.getInputChannelThreading();
+    }
+    
+    /**
+     * Sets threading mode for output channels.
+     * @param outputChannelThreading
+     * @return
+     */
+    public ThreadMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    {
+        myDefaultMessagingFactory.setOutputChannelThreading(outputChannelThreading);
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for output channels.
+     * @return
+     */
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        return myDefaultMessagingFactory.getOutputChannelThreading();
+    }
     
     private DefaultMessagingSystemFactory myDefaultMessagingFactory;
 }

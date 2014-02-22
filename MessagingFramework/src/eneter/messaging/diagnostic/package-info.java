@@ -8,6 +8,6 @@
 
 
 /**
- * Functionality for tracing and debugging purposes.
+ * Tracing.
  */
 package eneter.messaging.diagnostic;

@@ -12,10 +12,9 @@ import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Implements the factory to create reliable typed message sender and receiver.
+ * Factory to create reliable typed message senders and receivers.
  *
- * The reliable messaging means that the sender of a message is notified whether
- * the message was delivered or not.<br/>
+ * The reliable messaging means that the sender is notified whether the message was delivered or not.<br/>
  * <br/>
  * Example of a simple service using the reliable messaging for the communication.
  * (The service calculates two numbers and sends back responses.)
@@ -286,12 +285,12 @@ public class ReliableTypedMessagesFactory implements IReliableTypedMessagesFacto
      * Creates the reliable message sender.
      */
     @Override
-    public <_ResponseType, _RequestType> IReliableTypedMessageSender<_ResponseType, _RequestType> createReliableDuplexTypedMessageSender(Class<_ResponseType> responseMessageClazz, Class<_RequestType> requestMessageClazz)
+    public <TResponse, TRequest> IReliableTypedMessageSender<TResponse, TRequest> createReliableDuplexTypedMessageSender(Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new ReliableDuplexTypedMessageSender<_ResponseType, _RequestType>(myAcknowledgeTimeout, mySerializer, responseMessageClazz, requestMessageClazz);
+            return new ReliableDuplexTypedMessageSender<TResponse, TRequest>(myAcknowledgeTimeout, mySerializer, responseMessageClazz, requestMessageClazz);
         }
         finally
         {
@@ -303,12 +302,12 @@ public class ReliableTypedMessagesFactory implements IReliableTypedMessagesFacto
      * Creates the reliable message receiver.
      */
     @Override
-    public <_ResponseType, _RequestType> IReliableTypedMessageReceiver<_ResponseType, _RequestType> createReliableDuplexTypedMessageReceiver(Class<_ResponseType> responseMessageClazz, Class<_RequestType> requestMessageClazz)
+    public <TResponse, TRequest> IReliableTypedMessageReceiver<TResponse, TRequest> createReliableDuplexTypedMessageReceiver(Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new ReliableDuplexTypedMessageReceiver<_ResponseType, _RequestType>(myAcknowledgeTimeout, mySerializer, responseMessageClazz, requestMessageClazz);
+            return new ReliableDuplexTypedMessageReceiver<TResponse, TRequest>(myAcknowledgeTimeout, mySerializer, responseMessageClazz, requestMessageClazz);
         }
         finally
         {

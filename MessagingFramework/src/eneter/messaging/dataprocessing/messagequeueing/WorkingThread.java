@@ -15,19 +15,19 @@ import eneter.net.system.IMethod1;
 
 
 /**
- * Implements the thread that has the message queue.
- * If a message is put to the queue, the thread removes it from the queue and calls a user defined
- * method to handle it.
+ * Thread with the message queue.
+ * If a message is put to the queue, the thread removes it from the queue and calls a call-back
+ * method to process it.
  *
- * @param <_MessageType> type of the message processed by the thread
+ * @param <TMessage> type of the message processed by the thread
  */
-public class WorkingThread<_MessageType>
+public class WorkingThread<TMessage>
 {
     /**
      * Registers the method handling messages from the queue and starts the thread reading messages from the queue.
      * @param messageHandler Callback called from the working thread to process the message
      */
-    public void registerMessageHandler(IMethod1<_MessageType> messageHandler)
+    public void registerMessageHandler(IMethod1<TMessage> messageHandler)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -75,7 +75,7 @@ public class WorkingThread<_MessageType>
      * @param message message
      * @throws Exception 
      */
-    public void enqueueMessage(final _MessageType message) throws Exception
+    public void enqueueMessage(final TMessage message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -91,7 +91,7 @@ public class WorkingThread<_MessageType>
     
                 // Note: If the message handler is unregistered before the message handler is processed from the queue
                 //       then myMessageHandler will be null and the exception will occur. Therefore we need to store it locally.
-                final IMethod1<_MessageType> aMessageHandler = myMessageHandler;
+                final IMethod1<TMessage> aMessageHandler = myMessageHandler;
                 myWorker.invoke(new Runnable()
                 {
                     @Override
@@ -116,7 +116,7 @@ public class WorkingThread<_MessageType>
     }
     
     private SyncDispatcher myWorker = new SyncDispatcher();
-    private IMethod1<_MessageType> myMessageHandler;
+    private IMethod1<TMessage> myMessageHandler;
     private Object myLock = new Object();
     
     private String TracedObject()

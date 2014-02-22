@@ -11,12 +11,12 @@ package eneter.messaging.nodes.dispatcher;
 import eneter.messaging.infrastructure.attachable.IAttachableMultipleDuplexInputChannels;
 
 /**
- * Declares the duplex dispatcher.
+ * Dispatcher.
  * 
  * The duplex dispatcher has attached more duplex input channels and uses more duplex output channels.<br/>
  * When it receives some message via the duplex input channel it forwards the message to all duplex output channels.<br/>
  * The duplex dispatcher allows the bidirectional communication. It means, receivers to whom the message was forwarded can
- * sand back response messages. Therefore, the sender can get response messages from all receivers.
+ * send back response messages. Therefore, the sender can get response messages from all receivers.
  *
  */
 public interface IDuplexDispatcher extends IAttachableMultipleDuplexInputChannels

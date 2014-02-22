@@ -9,11 +9,11 @@
 package eneter.messaging.endpoints.typedmessages;
 
 /**
- * The event when the typed message is received.
+ * Event argument used when the typed message is received.
  *
- * @param <_RequestMessageType> type of the request message
+ * @param <TRequestMessage> type of the request message
  */
-public final class TypedRequestReceivedEventArgs<_RequestMessageType>
+public final class TypedRequestReceivedEventArgs<TRequestMessage>
 {
     /**
      * Constructs the event.
@@ -21,7 +21,7 @@ public final class TypedRequestReceivedEventArgs<_RequestMessageType>
      * @param senderAddress address of the message sender. It is null if not applicable for the messaging system.
      * @param requestMessage message
      */
-    public TypedRequestReceivedEventArgs(String responseReceiverId, String senderAddress, _RequestMessageType requestMessage)
+    public TypedRequestReceivedEventArgs(String responseReceiverId, String senderAddress, TRequestMessage requestMessage)
     {
         myRequestMessage = requestMessage;
         myResponseReceiverId = responseReceiverId;
@@ -47,7 +47,7 @@ public final class TypedRequestReceivedEventArgs<_RequestMessageType>
      * Returns the received message.
      * @return
      */
-    public _RequestMessageType getRequestMessage()
+    public TRequestMessage getRequestMessage()
     {
         return myRequestMessage;
     }
@@ -80,7 +80,7 @@ public final class TypedRequestReceivedEventArgs<_RequestMessageType>
         return myReceivingError;
     }
     
-    private _RequestMessageType myRequestMessage;
+    private TRequestMessage myRequestMessage;
     private String myResponseReceiverId;
     private String mySenderAddress;
     private Exception myReceivingError;

@@ -13,7 +13,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.*;
 
 /**
- * Declares the broker client.
+ * Broker client to publish and subscribe messages in the broker.
  * The broker client allows to publish events via the broker, so that broker will forward them to all subscribers.<br/>
  * BrokerClient also allows to subscribe for events of interest.
  *

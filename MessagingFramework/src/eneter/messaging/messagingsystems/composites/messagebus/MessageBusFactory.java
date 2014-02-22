@@ -11,7 +11,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 
 /**
- * Implements the factory for creating the message bus.
+ * Implements factory for creating the message bus.
  *
  */
 public class MessageBusFactory implements IMessageBusFactory

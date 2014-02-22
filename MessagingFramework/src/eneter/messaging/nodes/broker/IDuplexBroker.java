@@ -12,7 +12,7 @@ import eneter.messaging.infrastructure.attachable.IAttachableDuplexInputChannel;
 import eneter.net.system.Event;
 
 /**
- * The interface declares the broker.
+ * Broker component (for publish-subscribe scenarios).
  * The broker receives messages and forwards them to subscribed clients.
  *
  */

@@ -10,7 +10,7 @@
 package eneter.messaging.endpoints.stringmessages;
 
 /**
- * The event is invoked when a string response message is received.
+ * Event type for text response message is received.
  *
  */
 public final class StringResponseReceivedEventArgs

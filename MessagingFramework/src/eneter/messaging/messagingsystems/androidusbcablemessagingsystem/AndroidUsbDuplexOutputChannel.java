@@ -9,7 +9,6 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.internal.StringExt;
@@ -35,7 +34,9 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
     }
     
     
-    public AndroidUsbDuplexOutputChannel(int port, String responseReceiverId, int adbHostPort, IProtocolFormatter<byte[]> protocolFormatter) throws Exception
+    public AndroidUsbDuplexOutputChannel(int port, String responseReceiverId, int adbHostPort,
+            IProtocolFormatter<byte[]> protocolFormatter,
+            IMessagingSystemFactory underlyingTcpMessaging) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -44,9 +45,8 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
             myResponseReceiverId = (StringExt.isNullOrEmpty(responseReceiverId)) ? port + "_" + UUID.randomUUID().toString() : responseReceiverId;
             myAdbHostPort = adbHostPort;
 
-            IMessagingSystemFactory aTcpMessaging = new TcpMessagingSystemFactory();
             String anIpAddressAndPort = "tcp://127.0.0.1:" + myChannelId + "/";
-            myOutputchannel = aTcpMessaging.createDuplexOutputChannel(anIpAddressAndPort, myResponseReceiverId);
+            myOutputchannel = underlyingTcpMessaging.createDuplexOutputChannel(anIpAddressAndPort, myResponseReceiverId);
             myOutputchannel.connectionOpened().subscribe(myOnConnectionOpenedHandler);
             myOutputchannel.connectionClosed().subscribe(myOnConnectionClosedHandler);
             myOutputchannel.responseMessageReceived().subscribe(myOnResponseMessageReceivedHandler);

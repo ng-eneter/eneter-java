@@ -9,7 +9,7 @@
 package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 
 /**
- * Type of the message sent by the monitor duplex output channel or monitor duplex input channel.
+ * Type of the message (if it is ping or a data message).
  */
 public enum MonitorChannelMessageType
 {

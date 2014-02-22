@@ -13,42 +13,44 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.Event;
 
 /**
+ * Reliable typed message sender (it confirms whether the message was received).
+ * 
  * Declares reliable message sender which can send messages of specified type and receive response messages of specified type.
  * Reliable means it provides events notifying whether the message was delivered.
  * The reliable typed message sender can be used only with the reliable typed message receiver.
  *
- * @param <_ResponseType> type of the response message
- * @param <_RequestType> type of the message
+ * @param <TResponse> type of the response message
+ * @param <TRequest> type of the message
  */
-public interface IReliableTypedMessageSender<_ResponseType, _RequestType> extends IAttachableDuplexOutputChannel
+public interface IReliableTypedMessageSender<TResponse, TRequest> extends IAttachableDuplexOutputChannel
 {
     /**
      * The event is raised when the connection with receiver is opened.
-     * @return
+     * @return event that can be subscribed
      */
     Event<DuplexChannelEventArgs> connectionOpened();
     
     /**
      * The event is raised when the connection with receiver is closed.
-     * @return
+     * @return event that can be subscribed
      */
     Event<DuplexChannelEventArgs> connectionClosed();
     
     /**
      * The event is invoked when the response message is received.
-     * @return
+     * @return event that can be subscribed
      */
-    Event<TypedResponseReceivedEventArgs<_ResponseType>> responseReceived();
+    Event<TypedResponseReceivedEventArgs<TResponse>> responseReceived();
     
     /**
      * The event is invoked when the message was delivered.
-     * @return
+     * @return event that can be subscribed
      */
     Event<ReliableMessageIdEventArgs> messageDelivered();
     
     /**
      * The event is invoked if the event is not delivered within a specified time.
-     * @return
+     * @return event that can be subscribed
      */
     Event<ReliableMessageIdEventArgs> messageNotDelivered();
     
@@ -60,5 +62,5 @@ public interface IReliableTypedMessageSender<_ResponseType, _RequestType> extend
      * 
      * @throws Exception
      */
-    String sendRequestMessage(_RequestType message) throws Exception;
+    String sendRequestMessage(TRequest message) throws Exception;
 }

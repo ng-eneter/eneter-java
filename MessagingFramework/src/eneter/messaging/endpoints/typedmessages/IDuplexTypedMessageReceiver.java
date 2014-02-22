@@ -13,18 +13,18 @@ import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEve
 import eneter.net.system.Event;
 
 /**
- * Declares receiver that receive messages of specified type and sends responses of specified type.
+ * Receiver of typed messages.
  *
- * @param <_ResponseType> sends response messages of this type.
- * @param <_RequestType> receives messages of this type.
+ * @param <TResponse> sends response messages of this type.
+ * @param <TRequest> receives messages of this type.
  */
-public interface IDuplexTypedMessageReceiver<_ResponseType, _RequestType> extends IAttachableDuplexInputChannel
+public interface IDuplexTypedMessageReceiver<TResponse, TRequest> extends IAttachableDuplexInputChannel
 {
     /**
      * The event is invoked when the message from a duplex typed message sender was received.
      * @return
      */
-    Event<TypedRequestReceivedEventArgs<_RequestType>> messageReceived();
+    Event<TypedRequestReceivedEventArgs<TRequest>> messageReceived();
     
     /**
      * The event is invoked when a duplex typed message sender opened the connection via its duplex output channel.
@@ -44,5 +44,5 @@ public interface IDuplexTypedMessageReceiver<_ResponseType, _RequestType> extend
      * @param responseMessage response message
      * @throws Exception 
      */
-    void sendResponseMessage(String responseReceiverId, _ResponseType responseMessage) throws Exception;
+    void sendResponseMessage(String responseReceiverId, TResponse responseMessage) throws Exception;
 }

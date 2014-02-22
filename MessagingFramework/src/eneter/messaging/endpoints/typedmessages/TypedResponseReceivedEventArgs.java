@@ -9,17 +9,17 @@
 package eneter.messaging.endpoints.typedmessages;
 
 /**
- * The event when a typed response message is received.
+ * Event argument used when a typed response message is received.
  *
- * @param <_ResponseMessageType> message type
+ * @param <TResponseMessage> message type
  */
-public final class TypedResponseReceivedEventArgs<_ResponseMessageType>
+public final class TypedResponseReceivedEventArgs<TResponseMessage>
 {
     /**
      * Constructs the event.
      * @param responseMessage response message
      */
-    public TypedResponseReceivedEventArgs(_ResponseMessageType responseMessage)
+    public TypedResponseReceivedEventArgs(TResponseMessage responseMessage)
     {
         myResponseMessage = responseMessage;
         myReceivingError = null;
@@ -39,7 +39,7 @@ public final class TypedResponseReceivedEventArgs<_ResponseMessageType>
      * Returns the message.
      * @return
      */
-    public _ResponseMessageType getResponseMessage()
+    public TResponseMessage getResponseMessage()
     {
         return myResponseMessage;
     }
@@ -53,6 +53,6 @@ public final class TypedResponseReceivedEventArgs<_ResponseMessageType>
         return myReceivingError;
     }
     
-    private _ResponseMessageType myResponseMessage;
+    private TResponseMessage myResponseMessage;
     private Exception myReceivingError;
 }

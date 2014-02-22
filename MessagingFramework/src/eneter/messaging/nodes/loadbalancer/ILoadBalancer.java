@@ -13,7 +13,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEve
 import eneter.net.system.Event;
 
 /**
- * Declares the load balancer.
+ * Load balancer.
  *
  *
  * The load balancer maintains a list of receivers processing a certain request.

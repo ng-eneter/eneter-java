@@ -17,10 +17,48 @@ import java.util.regex.Pattern;
 
 
 /**
- * Implements the functionality for tracing messages.
- * The EneterTrace allows to trace error messages, warning message, info messages and debug messages.
- * It also allows to trace entering and leaving from a method and measures the time spent in the method.
- * In order to trace entering - leaving and debug messages, you must set the detail level to 'Debug'.
+ * Super duper trace.
+ * 
+ * Example showing how to enable tracing of communication errors and warnings to a file:
+ * <pre>
+ * EneterTrace.setDetailLevel(EneterTrace.EDetailLevel.Short);
+ * EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
+ * </pre>
+ * 
+ * Example showing how to enable tracing of detailed communication sequence to a file:
+ * <pre>
+ * EneterTrace.setDetailLevel(EneterTrace.EDetailLevel.Debug);
+ * EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
+ * </pre>
+ * 
+ * Example showing how you can trace entering/leaving methods:
+ * <pre>
+ *  class MyClass
+ *  {
+ *      ...
+ *      <br/>
+ *      void doSomething()
+ *      {
+ *          EneterTrace aTrace = EneterTrace.entering();
+ *          try
+ *          {
+ *              ...
+ *          }
+ *          finally
+ *          {
+ *              EneterTrace.leaving(aTrace);
+ *          }
+ *      }
+ *  }
+ *  </pre>
+ *  <br/>
+ *  Output:
+ *  <pre>
+ *  {@code
+ *  23:58:54.585 ~  1 --> some.namespace.MyClass.doSomething 
+ *  23:58:54.585 ~  1 <-- some.namespace.MyClass.doSomething [0:0:0 0ms 5.0us]
+ *  }
+ *  </pre>
  *
  */
 public class EneterTrace
@@ -32,14 +70,20 @@ public class EneterTrace
      */
     public enum EDetailLevel
     {
-        // Messages are not traced.
+        /**
+         *  Messages are not traced.
+         */
         None,
 
-        // Info, Warning and Error messages.<br/>
-        // The debug messages and entering - leaving messages are not traced.
+        /** 
+         * Info, Warning and Error messages.
+         * The debug messages and entering - leaving messages are not traced.
+         */
         Short,
 
-        // All messages are traced.
+        /**
+         *  All messages are traced.
+         */
         Debug
     }
     
@@ -49,38 +93,8 @@ public class EneterTrace
      * 
      *  The entering information for the method calling this constructor is put to the trace
      *  and the measuring of the time starts.
-     *  In order to trace entering-leaving, the detail level must be set to 'Debug'.<br/>
-     *  <br/>
-     *  The following example shows how to trace entering and leaving from a method.
-     *  <pre>
-     *  {@code
-     *  class MyClass
-     *  {
-     *  	...
-     *  	
-     *  	void doSomething()
-     *  	{
-     *  		EneterTrace aTrace = EneterTrace.entering();
-     *  		try
-     *  		{
-     *  			...
-     *  		}
-     *  		finally
-     *  		{
-     *  			EneterTrace.leaving(aTrace);
-     *  		}
-     *  	}
-     *  }
-     *  }
-     *  </pre>
-     *  <br/>
-     *  Output:
-     *  <pre>
-     *  {@code
-     *  23:58:54.585 ~  1 --> some.namespace.MyClass.doSomething 
-     *  23:58:54.585 ~  1 <-- some.namespace.MyClass.doSomething [0:0:0 0ms 5.0us]
-     *  }
-     *  </pre>
+     *  In order to trace entering-leaving, the detail level must be set to 'Debug'.
+     *  
      */
     public static EneterTrace entering()
     {
@@ -126,7 +140,7 @@ public class EneterTrace
     
     
     /**
-     * Traces the information message and details
+     * Traces the information message and details.
      * 
      * @param message info message
      * @param details additional details

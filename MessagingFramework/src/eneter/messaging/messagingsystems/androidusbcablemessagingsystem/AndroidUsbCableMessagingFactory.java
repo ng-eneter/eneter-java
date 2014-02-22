@@ -12,6 +12,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
 
 /**
  * Factory creating duplex output channels for the communication with Android device via the USB cable.
@@ -177,6 +178,7 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
         try
         {
             myAdbHostPort = adbHostPort;
+            myUnderlyingTcpMessaging = new TcpMessagingSystemFactory(protocolFormatter);
             myProtocolFormatter = protocolFormatter;
         }
         finally
@@ -197,7 +199,7 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new AndroidUsbDuplexOutputChannel(Integer.parseInt(channelId), null, myAdbHostPort, myProtocolFormatter);
+            return new AndroidUsbDuplexOutputChannel(Integer.parseInt(channelId), null, myAdbHostPort, myProtocolFormatter, myUnderlyingTcpMessaging);
         }
         finally
         {
@@ -218,7 +220,7 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new AndroidUsbDuplexOutputChannel(Integer.parseInt(channelId), responseReceiverId, myAdbHostPort, myProtocolFormatter);
+            return new AndroidUsbDuplexOutputChannel(Integer.parseInt(channelId), responseReceiverId, myAdbHostPort, myProtocolFormatter, myUnderlyingTcpMessaging);
         }
         finally
         {
@@ -236,8 +238,19 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     {
         throw new UnsupportedOperationException("Duplex input channel is not supported for Android USB cable messaging.");
     }
+    
+    /**
+     * Returns underlying TCP messaging.
+     * It allows to set parameters like timeouts and threading mode.
+     * @return
+     */
+    public IMessagingSystemFactory getUnderlyingTcpMessaging()
+    {
+        return myUnderlyingTcpMessaging;
+    }
 
     
     private int myAdbHostPort;
+    private TcpMessagingSystemFactory myUnderlyingTcpMessaging;
     private IProtocolFormatter<byte[]> myProtocolFormatter;
 }

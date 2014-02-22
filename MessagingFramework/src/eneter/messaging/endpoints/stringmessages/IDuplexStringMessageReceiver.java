@@ -13,7 +13,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEve
 import eneter.net.system.Event;
 
 /**
- * Declares the duplex message receiver which can receive text messages and send back text response messages.
+ * Receiver of text messages.
  *
  */
 public interface IDuplexStringMessageReceiver extends IAttachableDuplexInputChannel

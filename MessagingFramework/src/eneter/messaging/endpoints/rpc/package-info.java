@@ -8,8 +8,12 @@
 
 
 /**
- * Communication using remote procedure calls.
+ * Remote Procedure Calls (RPC).
  * 
- * Foe more details see example in {@link eneter.messaging.endpoints.rpc.RpcFactory}
+ * For more details see example:
+ * <ul>
+ * <li>Simple calculator service - {@link eneter.messaging.endpoints.rpc.RpcFactory}</li>
+ * </ul>
+ * 
  */
 package eneter.messaging.endpoints.rpc;

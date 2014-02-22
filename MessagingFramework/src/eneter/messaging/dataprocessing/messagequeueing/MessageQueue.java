@@ -15,23 +15,23 @@ import eneter.net.system.internal.IFunction;
 
 
 /**
- * Queue for messages of type object.
+ * Memory message queue.
  * 
  * One or more threads can put messages into the queue and other threads
  * can remove them.
  * If the queue is empty the thread reading messages is blocked until a message
  * is put to the queue or the thread is unblocked.
  *
- * @param <_MessageType> Type of the message.
+ * @param <TMessage> Type of the message.
  */
-public class MessageQueue<_MessageType>
+public class MessageQueue<TMessage>
 {
 
     /**
      * Puts message to the queue.
      * @param message message that shall be enqueued
      */
-    public void enqueueMessage(_MessageType message)
+    public void enqueueMessage(TMessage message)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -58,15 +58,15 @@ public class MessageQueue<_MessageType>
      * @return message, it returns null if the waiting thread was unblocked but there is no message in the queue.
      * @throws Exception
      */
-    public _MessageType dequeueMessage() throws Exception
+    public TMessage dequeueMessage() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return waitForQueueCall(new IFunction<_MessageType>()
+            return waitForQueueCall(new IFunction<TMessage>()
             {
                 @Override
-                public _MessageType invoke() throws Exception
+                public TMessage invoke() throws Exception
                 {
                     return myMessageQueue.poll();
                 }
@@ -85,15 +85,15 @@ public class MessageQueue<_MessageType>
      * @return message, it returns null if the waiting thread was unblocked but there is no message in the queue.
      * @throws Exception
      */
-    public _MessageType peekMessage() throws Exception
+    public TMessage peekMessage() throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return waitForQueueCall(new IFunction<_MessageType>()
+            return waitForQueueCall(new IFunction<TMessage>()
             {
                 @Override
-                public _MessageType invoke() throws Exception
+                public TMessage invoke() throws Exception
                 {
                     return myMessageQueue.peek();
                 }
@@ -177,7 +177,7 @@ public class MessageQueue<_MessageType>
         }
     }
     
-    private _MessageType waitForQueueCall(IFunction<_MessageType> func) throws Exception
+    private TMessage waitForQueueCall(IFunction<TMessage> func) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -206,6 +206,6 @@ public class MessageQueue<_MessageType>
     }
     
  
-    private ArrayDeque<_MessageType> myMessageQueue = new ArrayDeque<_MessageType>();
+    private ArrayDeque<TMessage> myMessageQueue = new ArrayDeque<TMessage>();
     private volatile boolean myIsBlockingMode = true;
 }

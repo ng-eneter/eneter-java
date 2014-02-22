@@ -12,7 +12,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
 
 /**
- * Factory that creates the load balancer based on Round-Robin algorithm.
+ * Implements factory to create the load balancer based on Round-Robin algorithm.
  *
  *
  * The Round-Robin balancer distributes the incoming requests equally to all maintained receivers.

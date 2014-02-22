@@ -7,7 +7,7 @@
  */
 
 /**
- * Functionality for sending/receiving more message types via one channel.
+ * Reducing communication via multiple channels into one channel.
  * 
  * The channel wrapper and unwrapper are components allowing to send/receive more messages via one channel.
  * The user code then does not need to implement if ... then code recognizing particular messages.

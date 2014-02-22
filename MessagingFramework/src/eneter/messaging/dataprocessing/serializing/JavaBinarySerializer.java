@@ -14,7 +14,8 @@ import eneter.messaging.diagnostic.EneterTrace;
 
 
 /**
- * Implements the serialization/deserialization to/from sequence of bytes.
+ * Serializes data into Java specific byte sequence.
+ * 
  * The serializer internaly uses ObjectOutputStream.
  * The class for the serialization must be derived from Serializable.<br/>
  * <br/>

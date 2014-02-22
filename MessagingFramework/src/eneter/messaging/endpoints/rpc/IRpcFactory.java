@@ -10,7 +10,7 @@ package eneter.messaging.endpoints.rpc;
 
 
 /**
- * Declares factory class which creates services and clients that can communicate using RPC (Remote Procedure Calls).
+ * Creates services and clients that can communicate using Remote Procedure Calls.
  *
  */
 public interface IRpcFactory

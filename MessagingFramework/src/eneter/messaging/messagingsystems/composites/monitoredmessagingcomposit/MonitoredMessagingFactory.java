@@ -13,7 +13,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
- * Provides the messaging system which monitors the connection in the underlying messaging system.
+ * Extension providing the connection monitoring.
  *
  *
  * When the connection is monitored, the duplex output channel periodically sends 'ping' messages

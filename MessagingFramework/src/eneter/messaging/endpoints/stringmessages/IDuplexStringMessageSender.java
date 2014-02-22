@@ -14,7 +14,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.Event;
 
 /**
- * Declares the duplex message sender which can send text messages and receive text responses.
+ * Sender of text messages.
  *
  */
 public interface IDuplexStringMessageSender extends IAttachableDuplexOutputChannel
