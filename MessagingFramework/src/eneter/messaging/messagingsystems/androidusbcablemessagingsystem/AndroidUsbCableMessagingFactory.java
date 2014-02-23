@@ -12,7 +12,10 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.NoneSecurityClientFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
+import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 
 /**
  * Factory creating duplex output channels for the communication with Android device via the USB cable.
@@ -239,16 +242,36 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
         throw new UnsupportedOperationException("Duplex input channel is not supported for Android USB cable messaging.");
     }
     
+    
+
     /**
-     * Returns underlying TCP messaging.
-     * It allows to set parameters like timeouts and threading mode.
+     * Gets the socket factory allowing so to set the communication timeouts.
      * @return
      */
-    public IMessagingSystemFactory getUnderlyingTcpMessaging()
+    public IClientSecurityFactory getClientSecurity()
     {
-        return myUnderlyingTcpMessaging;
+        return myUnderlyingTcpMessaging.getClientSecurity();
     }
-
+    
+    /**
+     * Sets threading mode for output channels.
+     * @param outputChannelThreading
+     * @return
+     */
+    public AndroidUsbCableMessagingFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    {
+        myUnderlyingTcpMessaging.setOutputChannelThreading(outputChannelThreading);
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for output channels.
+     * @return
+     */
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        return myUnderlyingTcpMessaging.getOutputChannelThreading();
+    }
     
     private int myAdbHostPort;
     private TcpMessagingSystemFactory myUnderlyingTcpMessaging;
