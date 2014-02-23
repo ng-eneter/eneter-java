@@ -43,7 +43,9 @@ public interface IMessageBus
      * clients. <br/>
      * <br/>
      * To connect the message bus services must use 'Message Bus Duplex Input Channel' and clients must use
-     * 'Message Bus Duplex Output Channel'. 
+     * 'Message Bus Duplex Output Channel'.<br/>
+     * <br/>
+     * IMPORTANT: Both duplex input channels must use the same protocol formatter!
      * 
      * @param serviceInputChannel input channel used by services to register in the message bus.
      * @param clientInputChannel input channel used by clients to connect a service via the message bus.

@@ -28,7 +28,7 @@ public class MessageBusFactory implements IMessageBusFactory
 
     /**
      * Construct the factory.
-     * @param protocolFormatter protocol formatter used for the communication between channels.
+     * @param protocolFormatter This protocol formatter must be exactly same as is used by both channels that will be attached to the message bus.
      */
     public MessageBusFactory(IProtocolFormatter<?> protocolFormatter)
     {
