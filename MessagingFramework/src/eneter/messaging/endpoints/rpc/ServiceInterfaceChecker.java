@@ -33,12 +33,15 @@ class ServiceInterfaceChecker
         for (Method aMethodInfo : clazz.getMethods())
         {
             // Overloading is not allowed.
-            if (aUsedNames.contains(aMethodInfo.getName()))
+            String aMethodName = aMethodInfo.getName();
+            if (aUsedNames.contains(aMethodName))
             {
                 String anErrorMessage = "The interface already contains method or event with the name '" + aMethodInfo.getName() + "'.";
                 EneterTrace.error(anErrorMessage);
                 throw new IllegalStateException(anErrorMessage);
             }
+            
+            aUsedNames.add(aMethodName);
             
             // If it is an event.
             // Event<MyEventArgs> somethingIsDone()
