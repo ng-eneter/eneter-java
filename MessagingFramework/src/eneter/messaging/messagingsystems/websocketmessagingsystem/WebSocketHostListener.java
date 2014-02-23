@@ -64,6 +64,14 @@ class WebSocketHostListener extends HostListenerBase
                 
                 // Get the path to identify the end-point.
                 String anIncomingPath = aRegExResult.get("path");
+                if (StringExt.isNullOrEmpty(anIncomingPath))
+                {
+                    EneterTrace.warning(TracedObject() + "failed to process Websocket request because the path is null or empty string.");
+                    byte[] aCloseConnectionResponse = WebSocketFormatter.encodeCloseFrame(null, (short)404);
+                    tcpClient.getOutputStream().write(aCloseConnectionResponse);
+
+                    return;
+                }
 
                 // if the incoming path is the whole uri then extract the absolute path.
                 String anAbsolutePath;

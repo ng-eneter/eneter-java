@@ -25,6 +25,7 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFacto
 import eneter.messaging.messagingsystems.tcpmessagingsystem.pathlisteningbase.internal.*;
 import eneter.net.system.IFunction1;
 import eneter.net.system.IMethod1;
+import eneter.net.system.internal.StringExt;
 import eneter.net.system.linq.internal.EnumerableExt;
 
 class HttpHostListener extends HostListenerBase
@@ -49,6 +50,14 @@ class HttpHostListener extends HostListenerBase
                     aHeaderFields);
             
             String anIncomingPath = aRegExResult.get("path");
+            if (StringExt.isNullOrEmpty(anIncomingPath))
+            {
+                EneterTrace.warning(TracedObject() + "failed to process HTTP request because the path is null or empty string.");
+                byte[] aCloseConnectionResponse = HttpFormatter.encodeError(404);
+                tcpClient.getOutputStream().write(aCloseConnectionResponse, 0, aCloseConnectionResponse.length);
+
+                return;
+            }
             
             // if the incoming path is the whole uri then extract the absolute path.
             String anAbsolutePath;
