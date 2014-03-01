@@ -2,12 +2,15 @@ package eneter.messaging.nodes.broker;
 
 import static org.junit.Assert.*;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Random;
 
 import org.junit.Test;
 
 import eneter.messaging.dataprocessing.serializing.JavaBinarySerializer;
+import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousMessagingSystemFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
@@ -377,6 +380,9 @@ public class Test_Broker
     @Test
     public void Notify_50000_TCP() throws Exception
     {
+        //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
+        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        
         Random aRandomPort = new Random();
         int aPort = 7000 + aRandomPort.nextInt(1000);
         
@@ -392,7 +398,7 @@ public class Test_Broker
 
         IDuplexBroker aBroker = aBrokerFactory.createBroker();
         aBroker.attachDuplexInputChannel(aBrokerInputChannel);
-
+        
         IDuplexBrokerClient aClient1 = aBrokerFactory.createBrokerClient();
         final int[] aCount = { 0 };
         final AutoResetEvent aCompletedEvent = new AutoResetEvent(false);
@@ -403,6 +409,7 @@ public class Test_Broker
             public void onEvent(Object sender, BrokerMessageReceivedEventArgs e)
             {
                 ++aCount[0];
+                //EneterTrace.info(Integer.toString(aCount[0]));
                 if (aCount[0] == 50000)
                 {
                     aCompletedEvent.set();
@@ -418,6 +425,8 @@ public class Test_Broker
         {
             aClient1.subscribe("TypeA");
 
+            long aStartTime = System.currentTimeMillis();
+            
             for (int i = 0; i < 50000; ++i)
             {
                 // Notify the message.
@@ -426,6 +435,9 @@ public class Test_Broker
 
             aCompletedEvent.waitOne();
 
+            long anElapsedTime = System.currentTimeMillis() - aStartTime;
+            System.out.println("Elapsed time = " + Long.toString(anElapsedTime));
+            
             // Client 2 should not get the notification.
             assertEquals(50000, aCount[0]);
         }
