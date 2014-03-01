@@ -1,7 +1,16 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2014 Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.endpoints.rpc;
 
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.threading.dispatching.*;
 
 
 
@@ -161,6 +170,8 @@ public class RpcFactory implements IRpcFactory
 
             // Default timeout is set to infinite by default.
             myRpcTimeout = 0;
+            
+            myRpcClientThreading = new SyncDispatching();
         }
         finally
         {
@@ -174,7 +185,7 @@ public class RpcFactory implements IRpcFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new RpcClient<TServiceInterface>(mySerializer, 1000, clazz);
+            return new RpcClient<TServiceInterface>(mySerializer, myRpcTimeout, myRpcClientThreading.getDispatcher(), clazz);
         }
         finally
         {
@@ -217,6 +228,33 @@ public class RpcFactory implements IRpcFactory
     }
     
     /**
+     * Gets threading mechanism used for invoking events (if RPC interface has some) and ConnectionOpened and ConnectionClosed events.
+     * @return thread dispatcher provider which returns thread dispatcher that is used to rout events.
+     */
+    public IThreadDispatcherProvider getRpcClientThreading()
+    {
+        return myRpcClientThreading;
+    }
+    
+    /**
+     * Sets threading mechanism used for invoking events (if RPC interface has some) and ConnectionOpened and ConnectionClosed events.
+     * 
+     * Default setting is that events are routed one by one via a working thread.<br/>
+     * It is recomended not to set the same threading mode for the attached output channel because a deadlock can occur when
+     * a remote procedure is called (e.g. if a return value from a remote method is routed to the same thread as is currently waiting for that return value the deadlock occurs).<br/>
+     * <br/>
+     * Note: The threading mode for the RPC service is defined by the threading mode of attached duplex input channel.
+     * 
+     * @param threading threading mode that shall be used for routing events.
+     * @return
+     */
+    public RpcFactory setRpcClientThreading(IThreadDispatcherProvider threading)
+    {
+        myRpcClientThreading = threading;
+        return this;
+    }
+    
+    /**
      * Gets timeout which specifies until when a call to a remote method must return.
      * Default value is 0 what is the infinite time.
      * @return
@@ -239,5 +277,6 @@ public class RpcFactory implements IRpcFactory
     }
     
     private ISerializer mySerializer;
+    private IThreadDispatcherProvider myRpcClientThreading;
     private int myRpcTimeout;
 }
