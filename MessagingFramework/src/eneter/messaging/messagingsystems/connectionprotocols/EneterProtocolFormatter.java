@@ -261,25 +261,25 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
     
     private void encodeHeader(DataOutputStream writer) throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
+        //EneterTrace aTrace = EneterTrace.entering();
+        //try
+        //{
             // Header indicating the Eneter protocol with used Endian encoding.
             // Note: .NET uses Little Endian and UTF8
             byte[] aHeader = {'E', 'N', 'E', 'T', 'E', 'R', BIG_ENDIAN, UTF16};
             writer.write(aHeader);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        //}
+        //finally
+        //{
+            //EneterTrace.leaving(aTrace);
+        //}
     }
     
     private void encodeMessage(DataOutputStream writer, Object message) throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
+        //EneterTrace aTrace = EneterTrace.entering();
+        //try
+        //{
             if (message instanceof String)
             {
                 writer.write(STRING);
@@ -299,54 +299,54 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
                 EneterTrace.error(anErrorMessage);
                 throw new IllegalStateException(anErrorMessage);
             }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        //}
+        //finally
+        //{
+        //    EneterTrace.leaving(aTrace);
+        //}
     }
     
     
     private ProtocolMessage decodeRequest(EProtocolMessageType messageType, DataInputStream reader, int anEndianEncodingId, int aStringEncodingId)
             throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
+        //EneterTrace aTrace = EneterTrace.entering();
+        //try
+        //{
             String aResponseReceiverId = getResponseReceiverId(reader, anEndianEncodingId, aStringEncodingId);
 
             ProtocolMessage aProtocolMessage = new ProtocolMessage(messageType, aResponseReceiverId, null);
             return aProtocolMessage;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        //}
+        //finally
+        //{
+        //    EneterTrace.leaving(aTrace);
+        //}
     }
     
     private ProtocolMessage decodeMessage(DataInputStream reader, int anEndianEncodingId, int aStringEncodingId)
             throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
+        //EneterTrace aTrace = EneterTrace.entering();
+        //try
+        //{
             String aResponseReceiverId = getResponseReceiverId(reader, anEndianEncodingId, aStringEncodingId);
             Object aMessage = getMessage(reader, anEndianEncodingId, aStringEncodingId);
 
             ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.MessageReceived, aResponseReceiverId, aMessage);
             return aProtocolMessage;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        //}
+        //finally
+        //{
+            //EneterTrace.leaving(aTrace);
+        //}
     }
     
     private String getResponseReceiverId(DataInputStream reader, int anEndianEncodingId, int aStringEncodingId) throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
+        //EneterTrace aTrace = EneterTrace.entering();
+        //try
+        //{
             int aSize = readInt(reader, anEndianEncodingId);
 
             byte[] aBytes = new byte[aSize];
@@ -355,18 +355,18 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             String aResponseReceiverId = decodeString(aBytes, anEndianEncodingId, aStringEncodingId);
 
             return aResponseReceiverId;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        //}
+        //finally
+        //{
+        //    EneterTrace.leaving(aTrace);
+        //}
     }
     
     private Object getMessage(DataInputStream reader, int anEndianEncodingId, int aStringEncodingId) throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
+        //EneterTrace aTrace = EneterTrace.entering();
+        //try
+        //{
             int aSerializationType = reader.read();
             
             int aSize = readInt(reader, anEndianEncodingId);
@@ -388,18 +388,18 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             String anErrorMessage = "Received message is not serialized into byte[] or string.";
             EneterTrace.error(anErrorMessage);
             throw new IllegalStateException(anErrorMessage);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        //}
+        //finally
+        //{
+        //    EneterTrace.leaving(aTrace);
+        //}
     }
     
     private int readInt(DataInputStream reader, int anEndianEncodingId) throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
+        //EneterTrace aTrace = EneterTrace.entering();
+        //try
+        //{
             int anInt = reader.readInt();
             
             // Convert to big endian, if incoming data is in little endian.
@@ -410,18 +410,18 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             }
             
             return anInt;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        //}
+        //finally
+        //{
+        //    EneterTrace.leaving(aTrace);
+        //}
     }
     
     private void encodeString(DataOutputStream writer, String s) throws Exception
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
+        //EneterTrace aTrace = EneterTrace.entering();
+        //try
+        //{
             Charset aCharset = Charset.forName("UTF-16BE");
             ByteBuffer aByteBuffer = aCharset.encode(s);
             
@@ -430,19 +430,19 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
             
             // Write data.
             writer.write(aByteBuffer.array(), 0, aByteBuffer.limit());
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        //}
+        //finally
+        //{
+        //    EneterTrace.leaving(aTrace);
+        //}
     }
     
     private String decodeString(byte[] encodedString, int anEndianEncodingId, int aStringEncodingId)
             throws UnsupportedEncodingException
     {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
+        //EneterTrace aTrace = EneterTrace.entering();
+        //try
+        //{
             String aCharset;
             
             if (aStringEncodingId == UTF16 && anEndianEncodingId == BIG_ENDIAN)
@@ -466,11 +466,11 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
                
             String aResult = new String(encodedString, aCharset);
             return aResult;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
+        //}
+        //finally
+        //{
+        //    EneterTrace.leaving(aTrace);
+        //}
     }
     
     
