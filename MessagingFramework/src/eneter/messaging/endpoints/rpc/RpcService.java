@@ -390,6 +390,8 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
             // If it is a remote call of a method/function.
             if (aRequestMessage.Flag == RpcFlags.InvokeMethod)
             {
+                EneterTrace.debug("RPC RECEIVED");
+                
                 // Get the method from the service that shall be invoked.
                 ServiceMethod aServiceMethod = myServiceMethods.get(aRequestMessage.OperationName);
                 if (aServiceMethod != null)
@@ -485,18 +487,17 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
                     {
                         if (aRequestMessage.Flag == RpcFlags.SubscribeEvent)
                         {
+                            EneterTrace.debug("SUBSCRIBE REMOTE EVENT RECEIVED");
+                            
                             // Note: Events are added to the HashSet.
                             //       Therefore it is ensured each client is subscribed only once.
                             anEventContext.getSubscribedClients().add(e.getResponseReceiverId());
                         }
-                        else if (aRequestMessage.Flag == RpcFlags.UnsubscribeEvent)
-                        {
-                            anEventContext.getSubscribedClients().remove(e.getResponseReceiverId());
-                        }
                         else
                         {
-                            aResponseMessage.Error = TracedObject() + "could not recognize if to subscribe or unsubscribe the event '" + aRequestMessage.OperationName + "'.";
-                            EneterTrace.error(aResponseMessage.Error);
+                            EneterTrace.debug("UNSUBSCRIBE REMOTE EVENT RECEIVED");
+                            
+                            anEventContext.getSubscribedClients().remove(e.getResponseReceiverId());
                         }
                     }
                 }
@@ -506,6 +507,11 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
                     aResponseMessage.Error = TracedObject() + "Event '" + aRequestMessage.OperationName + "' does not exist in the service.";
                     EneterTrace.error(aResponseMessage.Error);
                 }
+            }
+            else
+            {
+                aResponseMessage.Error = TracedObject() + "could not recognize the incoming request. If it is RPC, Subscribing or Unsubscribfing.";
+                EneterTrace.error(aResponseMessage.Error);
             }
             
 
