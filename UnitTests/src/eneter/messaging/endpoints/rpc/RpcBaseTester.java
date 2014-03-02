@@ -2,17 +2,20 @@ package eneter.messaging.endpoints.rpc;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.*;
 import org.junit.experimental.categories.Categories.ExcludeCategory;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
+import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
 import eneter.net.system.*;
 import eneter.net.system.internal.Cast;
 import eneter.net.system.threading.internal.AutoResetEvent;
+import eneter.net.system.threading.internal.ThreadPool;
 
 
 public abstract class RpcBaseTester
@@ -82,7 +85,7 @@ public abstract class RpcBaseTester
             }
         }
 
-        public void RaiseClose() throws Exception
+        public void raiseClose() throws Exception
         {
             if (myCloseEvent.isSubscribed())
             {
@@ -303,7 +306,7 @@ public abstract class RpcBaseTester
             aServiceProxy.Close().subscribe(anEventHandler);
 
             // Raise the event in the service.
-            aService.RaiseClose();
+            aService.raiseClose();
 
             anEventReceived.waitOne();
 
@@ -311,7 +314,7 @@ public abstract class RpcBaseTester
             aServiceProxy.Close().unsubscribe(anEventHandler);
 
             // Try to raise again.
-            aService.RaiseClose();
+            aService.raiseClose();
 
             assertFalse(anEventReceived.waitOne(1000));
         }
@@ -356,7 +359,7 @@ public abstract class RpcBaseTester
             anRpcClient.subscribeRemoteEvent("Close", aCloseHandler);
 
             // Raise the event in the service.
-            aService.RaiseClose();
+            aService.raiseClose();
 
             aCloseReceived.waitOne();
 
@@ -364,7 +367,7 @@ public abstract class RpcBaseTester
             anRpcClient.unsubscribeRemoteEvent("Close", aCloseHandler);
             
             // Try to raise again.
-            aService.RaiseClose();
+            aService.raiseClose();
 
             assertFalse(aCloseReceived.waitOne(1000));
         }
@@ -478,7 +481,7 @@ public abstract class RpcBaseTester
             assertEquals("Hello", aReceivedOpenData[0]);
 
             // Try to raise again.
-            aService.RaiseClose();
+            aService.raiseClose();
             aService.raiseOpen("Hello2");
 
             assertFalse(anOpenReceived.waitOne(1000));
@@ -540,7 +543,7 @@ public abstract class RpcBaseTester
             aClientConnected.waitOne();
 
             // Raise the event in the service.
-            aService.RaiseClose();
+            aService.raiseClose();
 
             anEventReceived.waitOne();
 
@@ -548,7 +551,7 @@ public abstract class RpcBaseTester
             aServiceProxy.Close().unsubscribe(anEventHandler);
 
             // Try to raise again.
-            aService.RaiseClose();
+            aService.raiseClose();
 
             assertFalse(anEventReceived.waitOne(1000));
         }
@@ -604,7 +607,7 @@ public abstract class RpcBaseTester
             // Raise the event in the service.
             for (int i = 0; i < 10000; ++i)
             {
-                aService.RaiseClose();
+                aService.raiseClose();
             }
 
             anEventReceived.waitOne();
@@ -616,7 +619,7 @@ public abstract class RpcBaseTester
             aServiceProxy.Close().unsubscribe(anEventHandler);
 
             // Try to raise again.
-            aService.RaiseClose();
+            aService.raiseClose();
         }
         finally
         {
@@ -668,7 +671,7 @@ public abstract class RpcBaseTester
             // Raise the event in the service.
             for (int i = 0; i < 10000; ++i)
             {
-                aService.RaiseClose();
+                aService.raiseClose();
             }
 
             aCloseReceived.waitOne();
@@ -679,7 +682,7 @@ public abstract class RpcBaseTester
             anRpcClient.unsubscribeRemoteEvent("Close", aCloseHandler);
             
             // Try to raise again.
-            aService.RaiseClose();
+            aService.raiseClose();
 
             assertFalse(aCloseReceived.waitOne(1000));
         }
@@ -745,6 +748,198 @@ public abstract class RpcBaseTester
                 anRpcService.detachDuplexInputChannel();
             }
         }
+    }
+    
+    public void multipleClients_RemoteCall_10() throws Exception
+    {
+        //EneterTrace.DetailLevel = EneterTrace.EDetailLevel.Debug;
+        //EneterTrace.StartProfiler();
+
+        RpcFactory anRpcFactory = new RpcFactory(mySerializer).setRpcTimeout(30);
+        IRpcService<IHello> anRpcService = anRpcFactory.createService(new HelloService(), IHello.class);
+
+        final ArrayList<IRpcClient<IHello>> aClients = new ArrayList<IRpcClient<IHello>>();
+        for (int i = 0; i < 10; ++i )
+        {
+            aClients.add(anRpcFactory.createClient(IHello.class));
+        }
+
+        try
+        {
+            anRpcService.attachDuplexInputChannel(myMessaging.createDuplexInputChannel(myChannelId));
+
+            // Clients open connection.
+            for(IRpcClient<IHello> aClient : aClients)
+            {
+                aClient.attachDuplexOutputChannel(myMessaging.createDuplexOutputChannel(myChannelId));
+            }
+
+            // Clients communicate with the service in parallel.
+            final AutoResetEvent aDone = new AutoResetEvent(false);
+            final int[] aCounter = { 0 };
+            for (final IRpcClient<IHello> aClient : aClients)
+            {
+                ThreadPool.queueUserWorkItem(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            aClient.getProxy().Sum(10, 20);
+                            ++aCounter[0];
+                            if (aCounter[0] == aClients.size())
+                            {
+                                aDone.set();
+                            }
+                            Thread.sleep(1);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.error("Detected Exception.", err);
+                            aDone.set();
+                        }
+                    }
+                });
+            }
+
+            aDone.waitOne();
+
+            //EneterTrace.StopProfiler();
+
+            assertEquals(aClients.size(), aCounter[0]);
+        }
+        finally
+        {
+            for (IRpcClient<IHello> aClient : aClients)
+            {
+                aClient.detachDuplexOutputChannel();
+            }
+
+            if (anRpcService.isDuplexInputChannelAttached())
+            {
+                anRpcService.detachDuplexInputChannel();
+            }
+        }
+    }
+    
+    @Test
+    public void multipleClients_RemoteEvent_10() throws Exception
+    {
+        //EneterTrace.DetailLevel = EneterTrace.EDetailLevel.Debug;
+        //EneterTrace.StartProfiler();
+
+        HelloService aService = new HelloService();
+        RpcFactory anRpcFactory = new RpcFactory(mySerializer);
+        IRpcService<IHello> anRpcService = anRpcFactory.createService(aService, IHello.class);
+
+        final ArrayList<IRpcClient<IHello>> aClients = new ArrayList<IRpcClient<IHello>>();
+        for (int i = 0; i < 10; ++i)
+        {
+            aClients.add(anRpcFactory.createClient(IHello.class));
+        }
+
+        try
+        {
+            anRpcService.attachDuplexInputChannel(myMessaging.createDuplexInputChannel(myChannelId));
+
+            // Clients open connection.
+            for (IRpcClient<IHello> aClient : aClients)
+            {
+                aClient.attachDuplexOutputChannel(myMessaging.createDuplexOutputChannel(myChannelId));
+            }
+
+            // Subscribe to remote event from the service.
+            final AutoResetEvent anOpenReceived = new AutoResetEvent(false);
+            final AutoResetEvent aCloseReceived = new AutoResetEvent(false);
+            final AutoResetEvent anAllCleintsSubscribed = new AutoResetEvent(false);
+            final int[] anOpenCounter = { 0 };
+            final int[] aCloseCounter = { 0 };
+            final int[] aSubscribedClientCounter = { 0 };
+            for (IRpcClient<IHello> aClient : aClients)
+            {
+                final IRpcClient<IHello> aClientTmp = aClient;
+                ThreadPool.queueUserWorkItem(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        aClientTmp.getProxy().Open().subscribe(new EventHandler<String>()
+                        {
+                            @Override
+                            public void onEvent(Object sender, String e)
+                            {
+                                ++anOpenCounter[0];
+                                if (anOpenCounter[0] == aClients.size())
+                                {
+                                    anOpenReceived.set();
+                                }
+                            }
+                        });
+                        
+                        aClientTmp.getProxy().Close().subscribe(new EventHandler<EventArgs>()
+                        {
+                            @Override
+                            public void onEvent(Object sender, EventArgs e)
+                            {
+                                ++aCloseCounter[0];
+                                if (aCloseCounter[0] == aClients.size())
+                                {
+                                    aCloseReceived.set();
+                                }
+                            }
+                        });
+
+                        ++aSubscribedClientCounter[0];
+                        if (aSubscribedClientCounter[0] == aClients.size())
+                        {
+                            anAllCleintsSubscribed.set();
+                        }
+    
+                        try
+                        {
+                            Thread.sleep(1);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.error("Thread.sleep() failed.");
+                        }
+                    }
+                });
+            }
+
+            // Wait until all clients are subscribed.
+            anAllCleintsSubscribed.waitOne();
+
+            // Servicde raises two different events.
+            String anOpenArgs = "Hello";
+            aService.raiseOpen(anOpenArgs);
+            aService.raiseClose();
+
+
+            anOpenReceived.waitOne();
+            aCloseReceived.waitOne();
+
+        }
+        finally
+        {
+            for (IRpcClient<IHello> aClient : aClients)
+            {
+                aClient.detachDuplexOutputChannel();
+            }
+
+            if (anRpcService.isDuplexInputChannelAttached())
+            {
+                anRpcService.detachDuplexInputChannel();
+            }
+        }
+    }
+    
+    @Test(expected = IllegalStateException.class)
+    public void noInterfaceTypeProvided()
+    {
+        RpcFactory anRpcFactory = new RpcFactory();
+        anRpcFactory.createClient(String.class);
     }
     
     
