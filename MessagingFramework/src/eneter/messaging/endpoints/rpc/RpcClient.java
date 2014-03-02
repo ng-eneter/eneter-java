@@ -97,22 +97,12 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             myEventName = eventName;
             myEventArgsType = eventArgsType;
             mySubscribers = new ArrayList<EventHandler<?>>();
-            myLock = new Object();
+            mySubscribeUnsubscribeLock = new Object();
         }
         
         public Class<?> getEventArgsType()
         {
             return myEventArgsType;
-        }
-        
-        public ArrayList<EventHandler<?>> getSubscribers()
-        {
-            return mySubscribers;
-        }
-        
-        public Object getLock()
-        {
-            return myLock;
         }
         
         @Override
@@ -121,23 +111,39 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (myLock)
+                synchronized (mySubscribeUnsubscribeLock)
                 {
                     mySubscribers.add(eventHandler);
                     
                     // If it is the first subscriber then try to subscribe at service.
                     if (mySubscribers.size() == 1)
                     {
-                        if (isDuplexOutputChannelAttached() && getAttachedDuplexOutputChannel().isConnected())
+                        subscribeEventAtService();
+                    }
+                }
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+        public void subscribeEventAtService()
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                synchronized (mySubscribeUnsubscribeLock)
+                {
+                    if (isDuplexOutputChannelAttached() && getAttachedDuplexOutputChannel().isConnected())
+                    {
+                        try
                         {
-                            try
-                            {
-                                subscribeAtService(myEventName);
-                            }
-                            catch (Exception err)
-                            {
-                                EneterTrace.warning(TracedObject() + "failed to subscribe at service. Eventhandler is subscribed just locally in the proxy.", err);
-                            }
+                            subscribeAtService(myEventName);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + "failed to subscribe '" + myEventName + "' at service. Eventhandler stays subscribed just locally in the proxy.", err);
                         }
                     }
                 }
@@ -154,7 +160,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (myLock)
+                synchronized (mySubscribeUnsubscribeLock)
                 {
                     mySubscribers.remove(eventHandler);
                     
@@ -186,10 +192,37 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             }
         }
         
+        @SuppressWarnings("unchecked")
+        public void notifySubscribers(Object sender, Object eventArgs)
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                synchronized (mySubscribeUnsubscribeLock)
+                {
+                    for (EventHandler<?> aSubscriber : mySubscribers)
+                    {
+                        try
+                        {
+                            ((EventHandler<Object>)aSubscriber).onEvent(sender, eventArgs);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
         private String myEventName;
         private Class<?> myEventArgsType;
         private ArrayList<EventHandler<?>> mySubscribers;
-        private Object myLock;
+        private Object mySubscribeUnsubscribeLock;
     }
     
     public RpcClient(ISerializer serializer, int rpcTimeout, IThreadDispatcher threadDispatcher, Class<TServiceInterface> clazz)
@@ -371,41 +404,28 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Recover remote subscriptions at service.
-            for (Entry<String, RemoteEvent> aRemoteEvent : myRemoteEvents.entrySet())
-            {
-                EneterTrace.info("1.0");
-                synchronized (aRemoteEvent.getValue().getLock())
-                {
-                    EneterTrace.info("1.1");
-                    if (aRemoteEvent.getValue().getSubscribers().size() > 0)
-                    {
-                        try
-                        {
-                            EneterTrace.info("1.2");
-                            subscribeAtService(aRemoteEvent.getKey());
-                            EneterTrace.info("1.3");
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.error(TracedObject() + "failed to subscribe event '" + aRemoteEvent.getKey() + "' at service.", err);
-                        }
-                    }
-                    EneterTrace.info("2");
-                }
-                EneterTrace.info("3");
-            }
-            
-            EneterTrace.info("4");
-
-            myThreadDispatcher.invoke(new Runnable()
+            // Note: Following subscribing cannot block the thread processing events from duplex output channel
+            //       because a deadlock can occur. Because if the lock would stop this thread other messages could not be processed.
+            ThreadPool.queueUserWorkItem(new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    EneterTrace.info("5");
-                    // Forward the event.
-                    notifyEvent(myConnectionOpenedEvent, e);
+                    // Recover remote subscriptions at service.
+                    for (Entry<String, RemoteEvent> aRemoteEvent : myRemoteEvents.entrySet())
+                    {
+                        aRemoteEvent.getValue().subscribeEventAtService();
+                    }
+                    
+                    myThreadDispatcher.invoke(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            // Forward the event.
+                            notifyEvent(myConnectionOpenedEvent, e);
+                        }
+                    });
                 }
             });
         }
@@ -457,6 +477,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             // If it is a response for a call.
             if (aMessage.Flag == RpcFlags.MethodResponse)
             {
+                EneterTrace.debug("RETURN FROM RPC RECEIVED");
+                
                 // Try to find if there is a pending request waiting for the response.
                 RemoteCallContext anRpcContext;
                 synchronized (myPendingRemoteCalls)
@@ -489,6 +511,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             }
             else if (aMessage.Flag == RpcFlags.RaiseEvent)
             {
+                EneterTrace.debug("EVENT FROM SERVICE RECEIVED");
+                
                 if (aMessage.SerializedData != null && aMessage.SerializedData.length > 0)
                 {
                     final String anOpertationName = aMessage.OperationName;
@@ -745,7 +769,6 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
         }
     }
     
-    @SuppressWarnings("unchecked")
     private void raiseEvent(String name, Object serializedEventArgs)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -773,20 +796,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             }
 
             // Notify all subscribers.
-            synchronized (aRemoteEvent.getLock())
-            {
-                for (EventHandler<?> aSubscriber : aRemoteEvent.getSubscribers())
-                {
-                    try
-                    {
-                        ((EventHandler<Object>)aSubscriber).onEvent(this, anEventArgs);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                    }
-                }
-            }
+            aRemoteEvent.notifySubscribers(this, anEventArgs);
         }
         finally
         {
