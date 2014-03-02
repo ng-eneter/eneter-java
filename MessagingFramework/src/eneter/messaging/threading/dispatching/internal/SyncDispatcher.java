@@ -1,3 +1,11 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author: Ondrej Uzovic
+ * 
+ * Copyright © 2012 Ondrej Uzovic
+ * 
+ */
+
 package eneter.messaging.threading.dispatching.internal;
 
 import java.util.concurrent.ExecutorService;
@@ -5,7 +13,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 
 public class SyncDispatcher implements IThreadDispatcher
