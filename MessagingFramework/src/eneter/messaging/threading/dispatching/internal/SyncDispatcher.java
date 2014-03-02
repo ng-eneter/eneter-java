@@ -4,6 +4,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 
 public class SyncDispatcher implements IThreadDispatcher
@@ -11,12 +13,16 @@ public class SyncDispatcher implements IThreadDispatcher
     @Override
     public void invoke(Runnable workItem)
     {
+        if (myDispatchingInfo != null)
+        {
+            EneterTrace.debug(myDispatchingInfo);
+        }
         myWorkingThread.execute(workItem);
     }
 
     
     // Ensures sequential processing of work-items by one thread.
-    private static ExecutorService myWorkingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
+    private ExecutorService myWorkingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
     {
         @Override
         public Thread newThread(Runnable r)
@@ -25,7 +31,15 @@ public class SyncDispatcher implements IThreadDispatcher
             
             // Thread shall not block the application to shutdown.
             aNewThread.setDaemon(true);
+            
+            // Store thread id for diagnostic purposes.
+            myDispatchingInfo = "==> " + Long.toString(aNewThread.getId());
+            
+            EneterTrace.debug(myDispatchingInfo);
+            
             return aNewThread;
         }
     });
+    
+    private String myDispatchingInfo;
 }
