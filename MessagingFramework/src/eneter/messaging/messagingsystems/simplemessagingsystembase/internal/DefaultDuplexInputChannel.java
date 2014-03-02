@@ -336,6 +336,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
 
             if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
             {
+                EneterTrace.debug("REQUEST MESSAGE RECEIVED");
+                
                 // If the connection is not open then it will open it.
                 createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId);
 
@@ -351,11 +353,15 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             }
             else if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
             {
+                EneterTrace.debug("CLIENT CONNECTION RECEIVED");
+                
                 // If the connection is not approved.
                 createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId);
             }
             else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
             {
+                EneterTrace.debug("CLIEN DISCONNECTION RECEIVED");
+                
                 final String aResponseReceiverId = aProtocolMessage.ResponseReceiverId;
                 ThreadPool.queueUserWorkItem(new Runnable()
                 {
@@ -575,7 +581,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         try
         {
             ResponseReceiverEventArgs aResponseReceiverEvent = new ResponseReceiverEventArgs(responseReceiverId, senderAddress);
-            notifyEvent(handler, aResponseReceiverEvent, false);
+            notifyEventGeneric(handler, aResponseReceiverEvent, false);
         }
         finally
         {
@@ -589,7 +595,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         try
         {
             DuplexChannelMessageEventArgs aMsg =new DuplexChannelMessageEventArgs(getChannelId(), protocolMessage.Message, protocolMessage.ResponseReceiverId, messageContext.getSenderAddress());
-            notifyEvent(myMessageReceivedEvent, aMsg, true);
+            notifyEventGeneric(myMessageReceivedEvent, aMsg, true);
         }
         finally
         {
@@ -598,7 +604,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     }
     
     
-    private <T> void notifyEvent(EventImpl<T> handler, T event, boolean isNobodySubscribedWarning)
+    private <T> void notifyEventGeneric(EventImpl<T> handler, T event, boolean isNobodySubscribedWarning)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

@@ -250,6 +250,8 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
 
             if (aProtocolMessage == null || aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
             {
+                EneterTrace.debug("CLIENT DISCONNECTED RECEIVED");
+                
                 ThreadPool.queueUserWorkItem(new Runnable()
                 {
                     @Override
@@ -261,6 +263,8 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
             }
             else if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
             {
+                EneterTrace.debug("RESPONSE MESSAGE RECEIVED");
+                
                 final Object aMessageData = aProtocolMessage.Message;
                 myDispatcher.invoke(new Runnable()
                 {
