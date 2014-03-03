@@ -87,8 +87,6 @@ class UdpOutputConnector implements IOutputConnector
                     myResponseReceiver = null;
                 }
 
-                myServiceEndpoint = null;
-
                 if (myClientSocket != null)
                 {
                     myClientSocket.close();
