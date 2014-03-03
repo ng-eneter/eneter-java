@@ -40,7 +40,7 @@ public class SyncDispatcher implements IThreadDispatcher
             aNewThread.setDaemon(true);
             
             // Store thread id for diagnostic purposes.
-            myDispatchingInfo = "==> " + Long.toString(aNewThread.getId());
+            myDispatchingInfo = "To ~" + Long.toString(aNewThread.getId());
             
             EneterTrace.debug(myDispatchingInfo);
             
