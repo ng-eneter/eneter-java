@@ -48,13 +48,16 @@ class HostListenerController
                 synchronized (myListeners)
                 {
                     // Get listener for the address specified in the given uri.
-                    HostListenerBase aHostListener = findHostListener(address);
+                    HostListenerBase aHostListener = getHostListener(address);
                     if (aHostListener == null)
                     {
                         // Listener does not exist yet, so create new one.
                         InetSocketAddress anAddress = new InetSocketAddress(address.getHost(), address.getPort());
                         aHostListener = hostListenerFactory.CreateHostListener(anAddress, serverSecurityFactory);
 
+                        // Register the path listener.
+                        aHostListener.registerListener(address, connectionHandler);
+                        
                         myListeners.add(aHostListener);
                     }
                     else
@@ -68,10 +71,10 @@ class HostListenerController
                             EneterTrace.error(anErrorMessage);
                             throw new IllegalStateException(anErrorMessage);
                         }
+                        
+                        // Register the path listener.
+                        aHostListener.registerListener(address, connectionHandler);
                     }
-
-                    // Register the path listener.
-                    aHostListener.registerListener(address, connectionHandler);
                 }
             }
             catch (Exception err)
@@ -96,7 +99,7 @@ class HostListenerController
                 synchronized (myListeners)
                 {
                     // Get host listener.
-                    HostListenerBase aHostListener = findHostListener(uri);
+                    HostListenerBase aHostListener = getHostListener(uri);
                     if (aHostListener == null)
                     {
                         return;
@@ -132,7 +135,7 @@ class HostListenerController
             synchronized (myListeners)
             {
                 // Get host listener.
-                HostListenerBase aHostListener = findHostListener(uri);
+                HostListenerBase aHostListener = getHostListener(uri);
                 if (aHostListener == null)
                 {
                     return false;
@@ -153,7 +156,7 @@ class HostListenerController
         }
     }
     
-    private static HostListenerBase findHostListener(URI uri)
+    private static HostListenerBase getHostListener(URI uri)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
