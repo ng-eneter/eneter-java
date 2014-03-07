@@ -381,7 +381,9 @@ public class Test_Broker
     public void Notify_50000_TCP() throws Exception
     {
         //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
-        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        EneterTrace.setDetailLevel(EDetailLevel.Short);
+        
+        final int aMessageCount = 50000;
         
         Random aRandomPort = new Random();
         int aPort = 7000 + aRandomPort.nextInt(1000);
@@ -408,9 +410,12 @@ public class Test_Broker
             @Override
             public void onEvent(Object sender, BrokerMessageReceivedEventArgs e)
             {
-                ++aCount[0];
-                //EneterTrace.info(Integer.toString(aCount[0]));
-                if (aCount[0] == 50000)
+                int k = ++aCount[0];
+                if (k % 10000 == 0)
+                {
+                    EneterTrace.info(Integer.toString(k / 10000));
+                }
+                if (aCount[0] == aMessageCount)
                 {
                     aCompletedEvent.set();
                 }
@@ -427,7 +432,7 @@ public class Test_Broker
 
             long aStartTime = System.currentTimeMillis();
             
-            for (int i = 0; i < 50000; ++i)
+            for (int i = 0; i < aMessageCount; ++i)
             {
                 // Notify the message.
                 aClient2.sendMessage("TypeA", "Message A");
@@ -439,7 +444,7 @@ public class Test_Broker
             System.out.println("Elapsed time = " + Long.toString(anElapsedTime));
             
             // Client 2 should not get the notification.
-            assertEquals(50000, aCount[0]);
+            assertEquals(aMessageCount, aCount[0]);
         }
         finally
         {
