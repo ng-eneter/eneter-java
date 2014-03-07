@@ -8,7 +8,10 @@
 
 package eneter.messaging.diagnostic;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -433,7 +436,7 @@ public class EneterTrace
         final long aThreadId = Thread.currentThread().getId();
         
         
-        // anonymous instance as a variable
+        // Composes trace message and writes it to the buffer.
         Runnable aDoWrite = new Runnable()
         {
             @Override
@@ -442,27 +445,32 @@ public class EneterTrace
                 StackTraceElement aCaller = aStackTraceElements[callStackIdx];
                 String aMethodName = aCaller.getClassName() + "." + aCaller.getMethodName();        
                 
-                synchronized(myTraceLogLock)
+                
+                
+                // Check if the message matches with the filter.
+                // Note: If the filter is not set or string matches.
+                if (myNameSpaceFilter == null || myNameSpaceFilter.matcher(aMethodName).matches())
                 {
-                    // Check if the message matches with the filter.
-                    // Note: If the filter is not set or string matches.
-                    if (myNameSpaceFilter == null || myNameSpaceFilter.matcher(aMethodName).matches())
+                    synchronized (myTraceBufferLock)
                     {
-                        String aMessage = String.format("%1$tH:%1$tM:%1$tS.%1$tL ~%2$3d %3$s %4$s %5$s",
-                                aDate,
-                                aThreadId,
-                                prefix, aMethodName, message);
+                        boolean aStartTimerFlag = myTraceBuffer.length() == 0;
                         
-                        // If a trace log is set, then use it.
-                        if (myTraceLog != null)
+                        myTraceBuffer
+                        .append(myDateFormatter.format(aDate))
+                        .append(" ~")
+                        .append(aThreadId)
+                        .append(" ")
+                        .append(prefix)
+                        .append(" ")
+                        .append(aMethodName)
+                        .append(" ")
+                        .append(message)
+                        .append("\r\n");
+
+                        if (aStartTimerFlag)
                         {
-                            myTraceLog.println(aMessage);
-                            myTraceLog.flush();
-                        }
-                        else
-                        {
-                            // Otherwise write to the default output stream
-                            System.out.println(aMessage);
+                            // The buffer will be flushed to the trace in 50 ms. 
+                            myTraceBufferFlushTimer.schedule(getTimerTask(), 50);
                         }
                     }
                 }
@@ -472,6 +480,76 @@ public class EneterTrace
         myWritingThread.execute(aDoWrite);
     }
     
+    
+    // Invoked by timer.
+    private static void onFlushTraceBufferTick()
+    {
+        String aBufferedTraceMessages;
+
+        synchronized (myTraceBufferLock)
+        {
+            aBufferedTraceMessages = myTraceBuffer.toString();
+            
+            if (myTraceBuffer.capacity() <= myTraceBufferCapacity)
+            {
+                myTraceBuffer.setLength(0);
+            }
+            else
+            {
+                // The allocated capacity is too big. So instantiate the new buffer and the old one can be garbage collected.
+                myTraceBuffer = new StringBuilder();
+            }
+        }
+
+        // Flush buffered messages to the trace.
+        writeToTrace(aBufferedTraceMessages);
+    }
+    
+    /*
+     * Helper method to get the new instance of the timer task.
+     * The problem is, the timer does not allow to reschedule the same instance of the TimerTask
+     * and the exception is thrown.
+     */
+    private static TimerTask getTimerTask()
+    {
+        TimerTask aTimerTask = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                onFlushTraceBufferTick();
+            }
+        };
+        
+        return aTimerTask;
+    }
+
+    
+    private static void writeToTrace(String message)
+    {
+        try
+        {
+            synchronized (myTraceLogLock)
+            {
+                // If a trace log is set, then use it.
+                if (myTraceLog != null)
+                {
+                    myTraceLog.print(message);
+                    myTraceLog.flush();
+                }
+                else
+                {
+                    // Otherwise write to the default output stream
+                    System.out.print(message);
+                }
+            }
+        }
+        catch (Exception err)
+        {
+            String anExceptionDetails = getDetailsFromException(err);
+            System.out.println("EneterTrace failed to write to the trace." + anExceptionDetails);
+        }
+    }
     
     /**
      * Private helper constructor.
@@ -504,14 +582,15 @@ public class EneterTrace
                 long aMiliseconds = anElapsedTime / 1000000;
                 anElapsedTime -= aMiliseconds * 1000000;
                 
-                double aMicroseconds = anElapsedTime / 1000.0;
+                // Microseconds rounded to one digit place.
+                double aMicroseconds = Math.round(anElapsedTime / 100.0) / 10.0;
 
-                writeMessage("<--", String.format("[%d:%d:%d %dms %.1fus]",
-                    aHours,
-                    aMinutes,
-                    aSeconds,
-                    aMiliseconds,
-                    aMicroseconds), 4);
+                StringBuilder aMessage = new StringBuilder()
+                .append("[").append(aHours).append(":").append(aMinutes).append(":").append(aSeconds).append(" ")
+                .append(aMiliseconds).append("ms ")
+                .append(aMicroseconds).append("us]");
+                
+                writeMessage("<--", aMessage.toString(), 4);
             }
         }
         catch(Exception exception)
@@ -526,12 +605,16 @@ public class EneterTrace
     
     // Trace Info, Warning and Error by default.
     private static EDetailLevel myDetailLevel = EDetailLevel.Short;
-
     private static Object myTraceLogLock = new Object();
-    
     private static PrintStream myTraceLog;
-    
     private static Pattern myNameSpaceFilter;
+    
+    private static SimpleDateFormat myDateFormatter = new SimpleDateFormat("HH:mm:ss.SSS");
+    
+    private static Object myTraceBufferLock = new Object();
+    private static int myTraceBufferCapacity = 16384;
+    private static StringBuilder myTraceBuffer = new StringBuilder(myTraceBufferCapacity);
+    private static Timer myTraceBufferFlushTimer = new Timer("TraceBufferFlushTimer", false);
     
     // Ensures sequential writing of messages. 
     private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
