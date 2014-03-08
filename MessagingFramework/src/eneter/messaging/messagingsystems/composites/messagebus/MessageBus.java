@@ -226,6 +226,7 @@ class MessageBus implements IMessageBus
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            EneterTrace.debug("CLIENT DISCONNECTION RECEIVED");
             unregisterClient(e.getResponseReceiverId());
         }
         finally
@@ -244,11 +245,16 @@ class MessageBus implements IMessageBus
             // wants to connect. Client is supposed to send this message immediatelly after OpenConnection().
             if (e.getMessage() instanceof String)
             {
+                EneterTrace.debug("CLIENT CONNECTION RECEIVED");
+                
                 String aServiceId = (String)e.getMessage();
                 registerClient(e.getResponseReceiverId(), aServiceId);
             }
             else
             {
+                EneterTrace.debug("MESSAGE FOR SERVICE RECEIVED");
+
+                
                 ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(e.getMessage());
                 if (aProtocolMessage != null && aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
                 {
@@ -423,6 +429,8 @@ class MessageBus implements IMessageBus
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            EneterTrace.debug("SERVICE CONNECTION RECEIVED");
+            
             registerService(e.getResponseReceiverId());
             
             if (myServiceConnectedEvent.isSubscribed())
@@ -450,6 +458,9 @@ class MessageBus implements IMessageBus
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            EneterTrace.debug("SERVICE DISCONNECTION RECEIVED");
+
+            
             unregisterService(e.getResponseReceiverId());
             
             if (myServiceDisconnectedEvent.isSubscribed())
@@ -484,6 +495,7 @@ class MessageBus implements IMessageBus
                     // A service sends a response message to a client.
                     if (aProtocolMessage.MessageType != EProtocolMessageType.Unknown)
                     {
+                        EneterTrace.debug("MESSAGE FOR CLIENT RECEIVED");
                         forwardMessageToClient(aProtocolMessage.ResponseReceiverId, e.getMessage());
                     }
                     else

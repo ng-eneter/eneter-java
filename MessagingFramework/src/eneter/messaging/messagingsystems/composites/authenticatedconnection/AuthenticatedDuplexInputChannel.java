@@ -218,6 +218,8 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
                 // The response for the handshake will be verified.
                 if (aConnection.HandshakeMessage != null)
                 {
+                    EneterTrace.debug("HANDSHAKE RESPONSE RECEIVED");
+                    
                     try
                     {
                         if (myAuthenticateCallback.authenticate(e.getChannelId(), e.getResponseReceiverId(), aConnection.LoginMessage, aConnection.HandshakeMessage, e.getMessage()))
@@ -252,6 +254,8 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
                 }
                 else
                 {
+                    EneterTrace.debug("LOGIN RECEIVED");
+
                     // If the connection is in the state that it is not logged in then this must be the login message.
                     // The handshake message will be sent.
                     try

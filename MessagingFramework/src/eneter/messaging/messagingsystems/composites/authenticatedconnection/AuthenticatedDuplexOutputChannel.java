@@ -258,6 +258,8 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
             
             if (myIsHandshakeResponseSent)
             {
+                EneterTrace.debug("CONNECTION ACKNOWLEDGE RECEIVED");
+                
                 // If the handshake was sent then this message must be acknowledgement.
                 String anAcknowledgeMessage = Cast.as(e.getMessage(), String.class);
 
@@ -282,6 +284,8 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
             else
                 // This is the handshake message.
             {
+                EneterTrace.debug("HANDSHAKE RECEIVED");
+
                 // Get the response for the handshake message.
                 Object aHandshakeResponseMessage = null;
                 try
