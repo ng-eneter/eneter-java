@@ -43,8 +43,8 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
 
             IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory(serializer);
             mySender = aSenderFactory.createDuplexTypedMessageSender(responseMessageClazz, requestMessageClazz);
-            mySender.getAttachedDuplexOutputChannel().connectionClosed().subscribe(myOnConnectionOpened);
-            mySender.getAttachedDuplexOutputChannel().connectionClosed().subscribe(myOnConnectionClosed);
+            mySender.connectionClosed().subscribe(myOnConnectionOpened);
+            mySender.connectionClosed().subscribe(myOnConnectionClosed);
             
             myResponseMessageClazz = responseMessageClazz;
             myRequestMessageClazz = requestMessageClazz;
