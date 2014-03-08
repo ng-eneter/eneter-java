@@ -14,9 +14,8 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.net.system.Event;
-import eneter.net.system.EventHandler;
-import eneter.net.system.EventImpl;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
+import eneter.net.system.*;
 import eneter.net.system.threading.internal.ManualResetEvent;
 
 class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMessageSender<TResponse, TRequest>
@@ -34,7 +33,8 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
     }
     
     public SyncTypedMessageSender(int responseReceiveTimeout, ISerializer serializer,
-            Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz)
+            Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz,
+            IThreadDispatcher threadDispatcher)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -48,6 +48,8 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
             
             myResponseMessageClazz = responseMessageClazz;
             myRequestMessageClazz = requestMessageClazz;
+            
+            myThreadDispatcher = threadDispatcher;
         }
         finally
         {
@@ -184,12 +186,19 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         }
     }
     
-    private void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
+    private void onConnectionOpened(Object sender, final DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            notify(myConnectionOpenedEventImpl, e);
+            myThreadDispatcher.invoke(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    notifyEvent(myConnectionOpenedEventImpl, e);
+                }
+            });
         }
         finally
         {
@@ -197,7 +206,7 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         }
     }
     
-    private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
+    private void onConnectionClosed(Object sender, final DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -205,7 +214,14 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
             // The connection was interrupted therefore we must unblock the waiting request.
             myResponseAvailableEvent.set();
             
-            notify(myConnectionClosedEventImpl, e);
+            myThreadDispatcher.invoke(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    notifyEvent(myConnectionClosedEventImpl, e);
+                }
+            });
         }
         finally
         {
@@ -213,7 +229,7 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         }
     }
     
-    private void notify(EventImpl<DuplexChannelEventArgs> handler, DuplexChannelEventArgs e)
+    private void notifyEvent(EventImpl<DuplexChannelEventArgs> handler, DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -244,6 +260,8 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
 
     private int myResponseReceiveTimeout;
     private IDuplexTypedMessageSender<TResponse, TRequest> mySender;
+    
+    private IThreadDispatcher myThreadDispatcher;
     
     private Class<TRequest> myRequestMessageClazz;
     private Class<TResponse> myResponseMessageClazz;
