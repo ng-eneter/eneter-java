@@ -7,8 +7,10 @@ import org.junit.*;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.SyncDispatching;
 import eneter.net.system.EventHandler;
 import eneter.net.system.threading.internal.AutoResetEvent;
+import eneter.net.system.threading.internal.ManualResetEvent;
 import eneter.net.system.threading.internal.ThreadPool;
 
 public abstract class SyncTypedMessagesBaseTester
@@ -159,6 +161,90 @@ public abstract class SyncTypedMessagesBaseTester
 
             // This call should throw exception.
             aSender.sendRequestMessage(100);
+        }
+        finally
+        {
+            aSender.detachDuplexOutputChannel();
+            aReceiver.detachDuplexInputChannel();
+        }
+    }
+    
+    @Test
+    public void threadDispatching() throws Exception
+    {
+        final IDuplexTypedMessageReceiver<String, Integer> aReceiver = DuplexTypedMessagesFactory.createDuplexTypedMessageReceiver(String.class, Integer.class);
+        aReceiver.messageReceived().subscribe(new EventHandler<TypedRequestReceivedEventArgs<Integer>>()
+        {
+            @Override
+            public void onEvent(Object x, TypedRequestReceivedEventArgs<Integer> y)
+            {
+                int aResult = y.getRequestMessage() * 10;
+                try
+                {
+                    aReceiver.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(aResult));
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error("Sending of response message failed.", err);
+                }
+            }
+        });
+
+        // Set windows working thread dispatcher.
+        SyncDispatching aSyncDispatcher = new SyncDispatching(true);
+        
+        final ManualResetEvent aThreadIdStored = new ManualResetEvent(false);
+        final long[] aWorkingThreadIs = { 0 };
+        aSyncDispatcher.getDispatcher().invoke(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                aWorkingThreadIs[0] = Thread.currentThread().getId();
+                aThreadIdStored.set();
+            }
+        });
+        aThreadIdStored.waitOne();
+        
+        ((DuplexTypedMessagesFactory)DuplexTypedMessagesFactory).setSyncDuplexTypedSenderThreadMode(aSyncDispatcher);
+
+        ISyncDuplexTypedMessageSender<String, Integer> aSender = DuplexTypedMessagesFactory.createSyncDuplexTypedMessageSender(String.class, Integer.class);
+
+        final long[] aOpenConnectionThreadId = { 0 };
+        aSender.connectionOpened().subscribe(new EventHandler<DuplexChannelEventArgs>()
+        {
+            @Override
+            public void onEvent(Object sender, DuplexChannelEventArgs e)
+            {
+                aOpenConnectionThreadId[0] = Thread.currentThread().getId();
+            }
+        });
+        
+        final ManualResetEvent aConnectionClosedEvent = new ManualResetEvent(false);
+        final long[] aCloseConnectionThreadId = { 0 };
+        aSender.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
+        {
+            @Override
+            public void onEvent(Object sender, DuplexChannelEventArgs e)
+            {
+                aCloseConnectionThreadId[0] = Thread.currentThread().getId();
+                aConnectionClosedEvent.set();
+            }
+        });
+        
+        try
+        {
+            aReceiver.attachDuplexInputChannel(InputChannel);
+            aSender.attachDuplexOutputChannel(OutputChannel);
+
+            String aResult = aSender.sendRequestMessage(100);
+
+            aReceiver.getAttachedDuplexInputChannel().disconnectResponseReceiver(aSender.getAttachedDuplexOutputChannel().getResponseReceiverId());
+            aConnectionClosedEvent.waitOne();
+
+            assertEquals("1000", aResult);
+            assertEquals(aWorkingThreadIs[0], aOpenConnectionThreadId[0]);
+            assertEquals(aWorkingThreadIs[0], aCloseConnectionThreadId[0]);
         }
         finally
         {
