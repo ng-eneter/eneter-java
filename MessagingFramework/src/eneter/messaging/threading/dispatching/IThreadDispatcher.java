@@ -9,14 +9,14 @@
 package eneter.messaging.threading.dispatching;
 
 /**
- * Threading mode used by messaging systems to raise events and deliver messages.
+ * Invokes a method according to specified thread mode.
  *
  */
 public interface IThreadDispatcher
 {
     /**
-     * Invokes the callback method in desired thread.
-     * @param workItem callback method that shall be invoked
+     * Invokes method in desired thread.
+     * @param workItem method to be invoked
      */
     void invoke(Runnable workItem);
 }

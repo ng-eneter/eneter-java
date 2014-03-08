@@ -12,7 +12,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 
 /**
- * Dispatcher that queues callback methods and invokes them one by one from one thread.
+ * Invokes one by one from from the queue.
  *
  */
 public class SyncDispatching implements IThreadDispatcherProvider
@@ -41,7 +41,7 @@ public class SyncDispatching implements IThreadDispatcherProvider
     }
 
     /**
-     * Returns dispatcher that queues callback methods and processes them one by one from one threads.
+     * Returns dispatcher that queues callback methods and processes them one by one.
      * 
      * If SyncDispatching was created with isDispatcherShared true then it always returns the same instance
      * of the thread dispatcher. Otherwise it always creates the new one. 

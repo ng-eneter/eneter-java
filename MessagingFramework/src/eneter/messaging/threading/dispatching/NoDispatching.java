@@ -11,7 +11,7 @@ package eneter.messaging.threading.dispatching;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Dispatcher that invokes the callback methods as is - without marshaling them into a particular thread. 
+ * Invokes directly without routing.
  *
  */
 public class NoDispatching implements IThreadDispatcherProvider
@@ -26,7 +26,7 @@ public class NoDispatching implements IThreadDispatcherProvider
     }
 
     /**
-     * Returns dispatcher that invokes the callback method immediately without marshaling into a thread.
+     * Returns dispatcher which invokes directly without routing into a thread.
      */
     @Override
     public IThreadDispatcher getDispatcher()

@@ -12,7 +12,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.net.system.threading.internal.ThreadPool;
 
 /**
- * Dispatcher that invokes callback methods asynchronously in a thread from the thread-pool.
+ * Invokes asynchronously by routing to a thread from the thread-pool (each method can be executed in a separate thread).
  *
  */
 public class AsyncDispatching implements IThreadDispatcherProvider
@@ -27,7 +27,7 @@ public class AsyncDispatching implements IThreadDispatcherProvider
     }
 
     /**
-     * Returns dispatcher that invokes the callback method asynchronously in a thread from the thread-pool.
+     * Returns dispatcher which invokes asynchronously in a thread from the thread-pool.
      */
     @Override
     public IThreadDispatcher getDispatcher()
