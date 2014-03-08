@@ -18,7 +18,7 @@ import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 public class SyncDispatching implements IThreadDispatcherProvider
 {
     /**
-     * Constructs the dispatcher provider which getDispatcher() always creates the new dispatcher.
+     * Constructs dispatching where each getDispatcher() will return new instance of the dispatcher.
      */
     public SyncDispatching()
     {
@@ -27,8 +27,10 @@ public class SyncDispatching implements IThreadDispatcherProvider
     
     /**
      * Constructs the dispatcher provider.
-     * @param isDispatcherShared if true then it always returns the same instance of the dispatcher. It means the dispatcher.
-     *    If false the then getDispatcher() always creates the new instance. 
+     * @param isDispatcherShared true - getDispatcher() will return always the same instance of the dispatcher. It means all dispatchers returned from
+     * getDispatcher() will sync incoming methods using the same queue. <br/>
+     * false - getDispatcher() will return always the new instance of the dispatcher. It means each dispatcher returned from
+     * getDispatcher() will use its own synchronization queue.
      */
     public SyncDispatching(boolean isDispatcherShared)
     {
@@ -40,6 +42,9 @@ public class SyncDispatching implements IThreadDispatcherProvider
 
     /**
      * Returns dispatcher that queues callback methods and processes them one by one from one threads.
+     * 
+     * If SyncDispatching was created with isDispatcherShared true then it always returns the same instance
+     * of the thread dispatcher. Otherwise it always creates the new one. 
      */
     @Override
     public IThreadDispatcher getDispatcher()
