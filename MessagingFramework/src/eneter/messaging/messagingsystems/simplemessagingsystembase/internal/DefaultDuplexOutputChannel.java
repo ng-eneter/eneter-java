@@ -166,7 +166,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            clearConnection(true);
+            cleanAfterConnection(true);
         }
         finally
         {
@@ -257,9 +257,12 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                     @Override
                     public void run()
                     {
-                        clearConnection(false);
+                        cleanAfterConnection(false);
                     }
                 });
+                
+                // The connection is closed so stop listening to messages.
+                return false;
             }
             else if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
             {
@@ -288,7 +291,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void clearConnection(boolean sendCloseMessageFlag)
+    private void cleanAfterConnection(boolean sendCloseMessageFlag)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
