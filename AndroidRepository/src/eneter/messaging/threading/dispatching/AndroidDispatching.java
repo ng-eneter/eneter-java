@@ -4,7 +4,10 @@ import eneter.messaging.diagnostic.EneterTrace;
 import android.os.Handler;
 
 /**
- * Invokes using Android Handler mechanism (e.g. to invoke in Android application UI thread). 
+ * Invokes one by one using Android Handler mechanism (e.g. to invoke in the UI thread).
+ * 
+ * This dispatcher is available only in Eneter for Android and is intended to route messages
+ * and events to the thread associated with the provided Handler.
  *
  */
 public class AndroidDispatching implements IThreadDispatcherProvider
@@ -25,6 +28,10 @@ public class AndroidDispatching implements IThreadDispatcherProvider
         private Handler myDispatcher;
     }
     
+    /**
+     * Constructs dispatcher.
+     * @param threadDispatcher handler used for dispatching.
+     */
     public AndroidDispatching(Handler threadDispatcher)
     {
         EneterTrace aTrace = EneterTrace.entering();
