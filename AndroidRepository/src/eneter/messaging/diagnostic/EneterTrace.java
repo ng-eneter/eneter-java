@@ -418,14 +418,15 @@ public class EneterTrace
                 long aMiliseconds = anElapsedTime / 1000000;
                 anElapsedTime -= aMiliseconds * 1000000;
                 
-                double aMicroseconds = anElapsedTime / 1000.0;
+                // Microseconds rounded to one digit place.
+                double aMicroseconds = Math.round(anElapsedTime / 100.0) / 10.0;
 
-                writeMessage(Log.DEBUG, String.format("<-- [%d:%d:%d %dms %.1fus]",
-                    aHours,
-                    aMinutes,
-                    aSeconds,
-                    aMiliseconds,
-                    aMicroseconds), 4);
+                StringBuilder aMessage = new StringBuilder()
+                .append("<-- [").append(aHours).append(":").append(aMinutes).append(":").append(aSeconds).append(" ")
+                .append(aMiliseconds).append("ms ")
+                .append(aMicroseconds).append("us]");
+
+                writeMessage(Log.DEBUG, aMessage.toString(), 4);
             }
         }
         catch(Exception exception)
