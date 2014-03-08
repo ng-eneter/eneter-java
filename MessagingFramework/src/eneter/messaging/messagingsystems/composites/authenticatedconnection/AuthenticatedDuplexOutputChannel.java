@@ -44,7 +44,8 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
     public AuthenticatedDuplexOutputChannel(IDuplexOutputChannel underlyingOutputChannel,
             IGetLoginMessage getLoginMessageCallback,
             IGetHandshakeResponseMessage getHandshakeResponseMessageCallback,
-            long authenticationTimeout)
+            long authenticationTimeout,
+            IThreadDispatcher threadDispatcher)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -56,6 +57,8 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
 
             myUnderlyingOutputChannel.connectionClosed().subscribe(myOnConnectionClosed);
             myUnderlyingOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
+            
+            myThreadDispatcher = threadDispatcher;
         }
         finally
         {
@@ -212,7 +215,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
     
 
     
-    private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
+    private void onConnectionClosed(Object sender, final DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -230,7 +233,14 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
 
             if (aCloseNotifyFlag)
             {
-                notifyEvent(myConnectionClosedEventImpl, e, false);
+                myThreadDispatcher.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyEvent(myConnectionClosedEventImpl, e, false);
+                    }
+                });
             }
         }
         finally
@@ -242,7 +252,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
     
     // Note: This method is called in the thread defined in used ThreadDispatcher.
     //       So it is the "correct" thread.
-    private void onResponseMessageReceived(Object sender, DuplexChannelMessageEventArgs e)
+    private void onResponseMessageReceived(Object sender, final DuplexChannelMessageEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -250,7 +260,15 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
             if (myIsConnectionAcknowledged)
             {
                 // If the connection is properly established via handshaking.
-                notifyEvent(myResponseMessageReceivedEventImpl, e, true);
+                myThreadDispatcher.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyEvent(myResponseMessageReceivedEventImpl, e, true);
+                    }
+                });
+                
                 return;
             }
             
@@ -277,8 +295,15 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                     myConnectionAcknowledged.set();
     
                     // Notify the connection is open.
-                    DuplexChannelEventArgs anEventArgs = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), e.getSenderAddress());
-                    notifyEvent(myConnectionOpenedEventImpl, anEventArgs, false);
+                    final DuplexChannelEventArgs anEventArgs = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), e.getSenderAddress());
+                    myThreadDispatcher.invoke(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            notifyEvent(myConnectionOpenedEventImpl, anEventArgs, false);
+                        }
+                    });
                 }
             }
             else
@@ -359,6 +384,8 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
+    
+    private IThreadDispatcher myThreadDispatcher;
     private IDuplexOutputChannel myUnderlyingOutputChannel;
     private IGetLoginMessage myGetLoginMessageCallback;
     private IGetHandshakeResponseMessage myGetHandshakeResponseMessageCallback;

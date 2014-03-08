@@ -10,6 +10,8 @@ package eneter.messaging.messagingsystems.composites.authenticatedconnection;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.*;
+
 
 /**
  * Extension performing the authentication during connecting.
@@ -325,6 +327,8 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
             myGetHandShakeMessageCallback = getHandshakeMessageCallback;
             myGetHandshakeResponseMessageCallback = getHandshakeResponseMessageCallback;
             myAuthenticateCallback = authenticateCallback;
+            
+            myOutputChannelThreading = new SyncDispatching();
         }
         finally
         {
@@ -357,7 +361,8 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
             }
 
             IDuplexOutputChannel anUnderlyingOutputChannel = myUnderlyingMessaging.createDuplexOutputChannel(channelId);
-            return new AuthenticatedDuplexOutputChannel(anUnderlyingOutputChannel, myGetLoginMessageCallback, myGetHandshakeResponseMessageCallback, myAuthenticationTimeout);
+            IThreadDispatcher aThreadDispatcher = myOutputChannelThreading.getDispatcher();
+            return new AuthenticatedDuplexOutputChannel(anUnderlyingOutputChannel, myGetLoginMessageCallback, myGetHandshakeResponseMessageCallback, myAuthenticationTimeout, aThreadDispatcher);
         }
         finally
         {
@@ -390,7 +395,8 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
             }
 
             IDuplexOutputChannel anUnderlyingOutputChannel = myUnderlyingMessaging.createDuplexOutputChannel(channelId, responseReceiverId);
-            return new AuthenticatedDuplexOutputChannel(anUnderlyingOutputChannel, myGetLoginMessageCallback, myGetHandshakeResponseMessageCallback, myAuthenticationTimeout);
+            IThreadDispatcher aThreadDispatcher = myOutputChannelThreading.getDispatcher();
+            return new AuthenticatedDuplexOutputChannel(anUnderlyingOutputChannel, myGetLoginMessageCallback, myGetHandshakeResponseMessageCallback, myAuthenticationTimeout, aThreadDispatcher);
         }
         finally
         {
@@ -455,6 +461,35 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
         return myAuthenticationTimeout;
     }
     
+    /**
+     * Sets the threading mode for the authenticated output channel.
+     * 
+     * When opening connection the authenticated output channel communicates with the authenticated input channel.
+     * During this communication the openConnection() is blocked until the whole authentication communication is performed.
+     * It means if openConnection() is called from the same thread into which the underlying duplex output channel
+     * routes events the openConneciton() would get into the deadlock (because the underlying output channel would
+     * route authentication messages into the same thread).<br/>
+     * <br/>
+     * Therefore it is possible to set the threading mode of the authenticated output channel independently.  
+     * 
+     * @param threadingMode threading mode for the authenticated output channel
+     * @return
+     */
+    public AuthenticatedMessagingFactory setOutputChannelThreading(IThreadDispatcherProvider threadingMode)
+    {
+        myOutputChannelThreading = threadingMode;
+        return this;
+    }
+    
+    /**
+     * Gets the threading mode used by authenticated output channel.
+     * 
+     * @return
+     */
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        return myOutputChannelThreading;
+    }
     
     private IMessagingSystemFactory myUnderlyingMessaging;
 
@@ -462,6 +497,7 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
     private IGetHandshakeMessage myGetHandShakeMessageCallback;
     private IGetHandshakeResponseMessage myGetHandshakeResponseMessageCallback;
     private IAuthenticate myAuthenticateCallback;
+    private IThreadDispatcherProvider myOutputChannelThreading;
     
     private long myAuthenticationTimeout;
     
