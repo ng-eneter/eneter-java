@@ -87,14 +87,14 @@ class MessageBusOutputConnector implements IOutputConnector
         {
             synchronized (myConnectionManipulator)
             {
+                myResponseMessageHandler = null;
+                
                 if (myMessageBusOutputChannel != null)
                 {
                     myMessageBusOutputChannel.closeConnection();
                     myMessageBusOutputChannel.responseMessageReceived().subscribe(myOnMessageFromMessageBusReceived);
                     myMessageBusOutputChannel.connectionClosed().subscribe(myOnConnectionWithMessageBusClosed);
                 }
-
-                myResponseMessageHandler = null;
             }
         }
         finally
