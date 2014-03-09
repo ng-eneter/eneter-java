@@ -13,7 +13,6 @@ import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolForma
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.NoneSecurityClientFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
 import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 
