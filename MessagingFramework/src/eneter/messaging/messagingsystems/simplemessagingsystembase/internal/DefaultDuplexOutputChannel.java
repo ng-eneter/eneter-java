@@ -283,7 +283,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                 EneterTrace.warning(TracedObject() + ErrorHandler.ReceiveMessageIncorrectFormatFailure);
             }
 
-            return aProtocolMessage != null;
+            return true;
         }
         finally
         {

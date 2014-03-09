@@ -220,7 +220,8 @@ class TcpOutputConnector implements IOutputConnector
                 {
                     if (!myResponseMessageHandler.invoke(aContext))
                     {
-                        // Disconnected.
+                        // Handler requests stop receiving.
+                        myStopReceivingRequestedFlag = true;
                         break;
                     }
                 }
