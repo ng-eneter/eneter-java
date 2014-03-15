@@ -1,8 +1,10 @@
 package eneter.messaging.endpoints.rpc;
 
 import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
 
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.*;
@@ -14,7 +16,9 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
 import eneter.net.system.*;
 import eneter.net.system.internal.Cast;
+import eneter.net.system.internal.StringExt;
 import eneter.net.system.threading.internal.AutoResetEvent;
+import eneter.net.system.threading.internal.ManualResetEvent;
 import eneter.net.system.threading.internal.ThreadPool;
 
 
@@ -28,12 +32,17 @@ public abstract class RpcBaseTester
         
         int Sum(int a, int b);
         String CreateString(String src);
+        String GetInstanceId() throws Exception;
         void Fail() throws IllegalStateException;
         void Timeout() throws TimeoutException;
     }
     
     public class HelloService implements IHello
     {
+        public HelloService()
+        {
+            myInstanceId = UUID.randomUUID().toString();
+        }
 
         @Override
         public Event<String> Open()
@@ -57,6 +66,17 @@ public abstract class RpcBaseTester
         public String CreateString(String src)
         {
             return src;
+        }
+        
+        @Override
+        public String GetInstanceId() throws Exception
+        {
+            if (myOpenEvent.isSubscribed())
+            {
+                myOpenEvent.raise(this, myInstanceId);
+            }
+            
+            return myInstanceId;
         }
 
         @Override
@@ -92,6 +112,9 @@ public abstract class RpcBaseTester
                 myCloseEvent.raise(this, new EventArgs());
             }
         }
+        
+        
+        private String myInstanceId;
         
         EventImpl<String> myOpenEvent = new EventImpl<String>();
         EventImpl<EventArgs> myCloseEvent = new EventImpl<EventArgs>();
@@ -940,6 +963,83 @@ public abstract class RpcBaseTester
     {
         RpcFactory anRpcFactory = new RpcFactory();
         anRpcFactory.createClient(String.class);
+    }
+    
+    @Test
+    public void PerClientInstanceService() throws Exception
+    {
+        RpcFactory anRpcFactory = new RpcFactory(mySerializer);
+        IRpcService<IHello> anRpcService = anRpcFactory.createService(new IFunction<IHello>()
+        {
+            @Override
+            public IHello invoke() throws Exception
+            {
+                return new HelloService();
+            }
+        }, IHello.class);
+    
+        
+        IRpcClient<IHello> anRpcClient1 = anRpcFactory.createClient(IHello.class);
+        IRpcClient<IHello> anRpcClient2 = anRpcFactory.createClient(IHello.class);
+
+        try
+        {
+            final String[] aService1IdFromEvent = { null };
+            anRpcClient1.getProxy().Open().subscribe(new EventHandler<String>()
+            {
+                @Override
+                public void onEvent(Object sender, String e)
+                {
+                    aService1IdFromEvent[0] = e;
+                }
+            });
+
+            final ManualResetEvent anEvent1Received = new ManualResetEvent(false);
+            final String[]  aService2IdFromEvent = { null };
+            anRpcClient2.getProxy().Open().subscribe(new EventHandler<String>()
+            {
+                @Override
+                public void onEvent(Object sender, String e)
+                {
+                    aService2IdFromEvent[0] = e;
+                    anEvent1Received.set();
+                }
+            });
+
+            anRpcService.attachDuplexInputChannel(myMessaging.createDuplexInputChannel(myChannelId));
+            anRpcClient1.attachDuplexOutputChannel(myMessaging.createDuplexOutputChannel(myChannelId));
+            anRpcClient2.attachDuplexOutputChannel(myMessaging.createDuplexOutputChannel(myChannelId));
+
+
+            String aServiceId1 = anRpcClient1.getProxy().GetInstanceId();
+            String aServiceId2 = anRpcClient2.getProxy().GetInstanceId();
+            
+            anEvent1Received.waitOne();
+
+            assertFalse(StringExt.isNullOrEmpty(aServiceId1));
+            assertFalse(StringExt.isNullOrEmpty(aService1IdFromEvent[0]));
+            assertFalse(StringExt.isNullOrEmpty(aServiceId2));
+            assertFalse(StringExt.isNullOrEmpty(aService2IdFromEvent[0]));
+            assertEquals(aServiceId1, aService1IdFromEvent[0]);
+            assertEquals(aServiceId2, aService2IdFromEvent[0]);
+            assertThat(aServiceId1, not(equalTo(aServiceId2)));
+        }
+        finally
+        {
+            if (anRpcClient1.isDuplexOutputChannelAttached())
+            {
+                anRpcClient1.detachDuplexOutputChannel();
+            }
+            if (anRpcClient2.isDuplexOutputChannelAttached())
+            {
+                anRpcClient2.detachDuplexOutputChannel();
+            }
+
+            if (anRpcService.isDuplexInputChannelAttached())
+            {
+                anRpcService.detachDuplexInputChannel();
+            }
+        }
     }
     
     
