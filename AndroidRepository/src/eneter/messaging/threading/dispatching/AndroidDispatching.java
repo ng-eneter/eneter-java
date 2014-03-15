@@ -6,8 +6,7 @@ import android.os.Handler;
 /**
  * Invokes one by one using Android Handler mechanism (e.g. to invoke in the UI thread).
  * 
- * This dispatcher is available only in Eneter for Android and is intended to route messages
- * and events to the thread associated with the provided Handler.
+ * This dispatcher is available only for the Android android platform.
  *
  */
 public class AndroidDispatching implements IThreadDispatcherProvider
@@ -45,6 +44,10 @@ public class AndroidDispatching implements IThreadDispatcherProvider
         }
     }
 
+    /**
+     * Returns the thread dispatcher which uses the Android Handler class.
+     * @return
+     */
     @Override
     public IThreadDispatcher getDispatcher()
     {
