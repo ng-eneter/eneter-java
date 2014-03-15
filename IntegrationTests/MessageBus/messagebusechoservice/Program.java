@@ -25,7 +25,7 @@ public class Program
         IEcho anEcho = new EchoService();
         
         // Create the RPC service.
-        IRpcService<IEcho> anEchoService = new RpcFactory().createService(anEcho, IEcho.class);
+        IRpcService<IEcho> anEchoService = new RpcFactory().createSingleInstanceService(anEcho, IEcho.class);
         
         // Attach input channel to the service and start listening via the message bus.
         anEchoService.attachDuplexInputChannel(anInputChannel);

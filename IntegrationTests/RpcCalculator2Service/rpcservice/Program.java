@@ -18,7 +18,7 @@ public class Program
         
         // Exposing the calculator as a service.
         RpcFactory anRpcFactory = new RpcFactory();
-        IRpcService<ICalculator> aService = anRpcFactory.createService(aCalculator, ICalculator.class);
+        IRpcService<ICalculator> aService = anRpcFactory.createSingleInstanceService(aCalculator, ICalculator.class);
         
         // Use TCP.
         IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
