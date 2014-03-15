@@ -35,4 +35,12 @@ public class Test_AuthenticationConnection_Sync extends AuthenticatedConnectionB
     {
         // Not applicable in synchronous messaging.
     }
+    
+    @Ignore
+    @Test
+    @Override
+    public void Duplex_13_DisconnectFromResponseReceiverConnected()
+    {
+        // N.A.
+    }
 }

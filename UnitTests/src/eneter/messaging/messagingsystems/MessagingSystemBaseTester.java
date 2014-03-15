@@ -31,7 +31,15 @@ public abstract class MessagingSystemBaseTester
         
         public void openConnection() throws Exception
         {
-            OutputChannel.openConnection();
+            try
+            {
+                OutputChannel.openConnection();
+            }
+            catch (Exception err)
+            {
+                OpenConnectionError = err;
+            }
+            
             ConnectionOpenEvent.set();
         }
         
@@ -59,6 +67,8 @@ public abstract class MessagingSystemBaseTester
         public int NumberOfReceivedResponses;
         public int NumberOfFailedResponses;
         public IDuplexOutputChannel OutputChannel;
+        
+        public Exception OpenConnectionError;
 
         public ManualResetEvent ConnectionOpenEvent;
         public ManualResetEvent ResponsesReceivedEvent;
@@ -283,6 +293,9 @@ public abstract class MessagingSystemBaseTester
         finally
         {
             anInputChannel.stopListening();
+            
+            // Wait for traces.
+            Thread.sleep(100);
         }
         
         assertTrue(!aConnectedReceiver[0].equals(""));
@@ -680,6 +693,7 @@ public abstract class MessagingSystemBaseTester
             @Override
             public void onEvent(Object t1, ResponseReceiverEventArgs t2)
             {
+                EneterTrace.info("Disconnected");
                 aResponseReceiverDisconnectedFlag[0] = true;
             }
         });
@@ -701,6 +715,7 @@ public abstract class MessagingSystemBaseTester
             @Override
             public void onEvent(Object t1, DuplexChannelEventArgs t2)
             {
+                EneterTrace.info("Connection closed");
                 aConnectionClosedReceivedInOutputChannelFlag[0] = true;
                 aConnectionClosedEvent.set();
             }
@@ -985,6 +1000,11 @@ public abstract class MessagingSystemBaseTester
             {
                 // Wait until the connection is open.
                 aClient.ConnectionOpenEvent.waitOne();
+                if (aClient.OpenConnectionError != null)
+                {
+                    throw aClient.OpenConnectionError;
+                }
+                
                 //assertTrue(aClient.ConnectionOpenEvent.waitOne(10000));
             }
 

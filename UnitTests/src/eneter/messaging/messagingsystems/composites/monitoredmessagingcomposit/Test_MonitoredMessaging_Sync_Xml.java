@@ -12,7 +12,7 @@ public class Test_MonitoredMessaging_Sync_Xml extends MonitoredMessagingTesterBa
     @Before
     public void setup()
     {
-        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
         myChannelId = "ChannelId";
         mySerializer = new XmlStringSerializer();

@@ -31,6 +31,7 @@ public class Test_MonitoredMessaging_Tcp_Xml extends MonitoredMessagingTesterBas
         mySerializer = new XmlStringSerializer();
         myUnderlyingMessaging = new TcpMessagingSystemFactory();
         myMessagingSystemFactory = new MonitoredMessagingFactory(myUnderlyingMessaging, mySerializer, 1000, 2000);
+        
     }
     
     @Ignore
