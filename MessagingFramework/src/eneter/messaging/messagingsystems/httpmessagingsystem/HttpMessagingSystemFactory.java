@@ -203,7 +203,8 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
             IOutputConnectorFactory aClientConnectorFactory = new HttpOutputConnectorFactory(myPollingFrequency);
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aClientConnectorFactory, myProtocolFormatter, false);
+            IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aDispatcherAfterMessageDecoded, aClientConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -234,7 +235,8 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
             IOutputConnectorFactory aClientConnectorFactory = new HttpOutputConnectorFactory(myPollingFrequency);
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aClientConnectorFactory, myProtocolFormatter, false);
+            IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aDispatcherAfterMessageDecoded, aClientConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -263,7 +265,8 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
             IServerSecurityFactory aServerSecurityFactory = getServerSecurityFactory(channelId);
             IInputConnectorFactory anInputConnectorFactory = new HttpInputConnectorFactory(myInactivityTimeout, aServerSecurityFactory);
             IInputConnector anInputConnector = anInputConnectorFactory.createInputConnector(channelId);
-            return new DefaultDuplexInputChannel(channelId, aDispatcher, anInputConnector, myProtocolFormatter);
+            IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, aDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
         }
         finally
         {
@@ -339,4 +342,5 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
     private IProtocolFormatter<byte[]> myProtocolFormatter;
     private IThreadDispatcherProvider myInputChannelThreading;
     private IThreadDispatcherProvider myOutputChannelThreading;
+    private IThreadDispatcherProvider myDispatchingAfterMessageDecoded = new SyncDispatching();
 }

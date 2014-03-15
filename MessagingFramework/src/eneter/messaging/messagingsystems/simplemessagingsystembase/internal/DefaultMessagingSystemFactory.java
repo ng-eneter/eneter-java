@@ -24,8 +24,11 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
             myInputConnectorFactory = new DefaultInputConnectorFactory(messagingProvider);
             myProtocolFormatter = protocolFromatter;
 
-            myInputChannelThreading = new NoDispatching();
-            myOutputChannelThreading = myInputChannelThreading;
+            NoDispatching aNoDispatching = new NoDispatching();
+            myInputChannelThreading = aNoDispatching;
+            myOutputChannelThreading = aNoDispatching;
+            
+            myDispatcherAfterMessageDecoded = aNoDispatching.getDispatcher();
         }
         finally
         {
@@ -41,7 +44,7 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, myOutputConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -57,7 +60,7 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, myOutputConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -74,7 +77,7 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
             IInputConnector anInputConnector = myInputConnectorFactory.createInputConnector(channelId);
-            return new DefaultDuplexInputChannel(channelId, aDispatcher, anInputConnector, myProtocolFormatter);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
         }
         finally
         {
@@ -105,6 +108,7 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
     private IProtocolFormatter<?> myProtocolFormatter;
     private IOutputConnectorFactory myOutputConnectorFactory;
     private IInputConnectorFactory myInputConnectorFactory;
+    private IThreadDispatcher myDispatcherAfterMessageDecoded;
     
     private IThreadDispatcherProvider myOutputChannelThreading;
     private IThreadDispatcherProvider myInputChannelThreading;

@@ -20,7 +20,6 @@ import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.internal.*;
 import eneter.net.system.linq.internal.EnumerableExt;
-import eneter.net.system.threading.internal.ThreadPool;
 
 
 public class DefaultDuplexInputChannel implements IDuplexInputChannel
@@ -40,6 +39,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     
     public DefaultDuplexInputChannel(String channelId,      // address to listen
             IThreadDispatcher dispatcher,                         // threading model used to notify messages and events
+            IThreadDispatcher dispatchingAfterMessageReading,
             IInputConnector inputConnector,                 // listener used for listening to messages
             IProtocolFormatter<?> protocolFormatter)        // how messages are encoded between channels
             throws Exception
@@ -55,6 +55,12 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     
                 myChannelId = channelId;
                 myDispatcher = dispatcher;
+                
+                // Internal dispatcher used when the message is decoded.
+                // E.g. Shared memory messaging needs to return looping immediately the protocol message is decoded
+                //      so that other senders are not blocked.
+                myDispatchingAfterMessageReading = dispatchingAfterMessageReading;
+                
                 myProtocolFormatter = protocolFormatter;
                 myInputConnector = inputConnector;
                 
@@ -140,6 +146,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         {
             synchronized (myListeningManipulatorLock)
             {
+                myStopListeningIsRunning = true;
+                
                 try
                 {
                     // Try to close connected clients.
@@ -158,6 +166,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
                 }
+                
+                myStopListeningIsRunning = false;
             }
         }
         finally
@@ -290,38 +300,47 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         {
             if (messageContext == null)
             {
-                // Try to correctly stop the whole listening.
-                // Note: Use a different thread because 'StopListening' will try to stop
-                //       this message listening thread and so the deadlock would occur.
-                ThreadPool.queueUserWorkItem(new Runnable()
+                // If the listening stopped because it was requested.
+                if (myStopListeningIsRunning)
                 {
-                    @Override
-                    public void run()
-                    {
-                        stopListening();
-                    }
-                });
+                    return false;
+                }
+                
+                // The listening failed.
+                EneterTrace.warning(TracedObject() + "detected the listening was stopped.");
+                
+                // Try to correctly stop the whole listening.
+                stopListening();
             }
             
+            // Get the protocol message from incoming data.
             ProtocolMessage aProtocolMessage = null;
             
             // if there are message data available.
             if (messageContext.getMessage() != null)
             {
-                aProtocolMessage = getProtocolMessage(messageContext.getMessage());
+                Object aMessageData = messageContext.getMessage();
+                if (aMessageData instanceof InputStream)
+                {
+                    aProtocolMessage = myProtocolFormatter.decodeMessage((InputStream)aMessageData);
+                }
+                else
+                {
+                    aProtocolMessage = myProtocolFormatter.decodeMessage(aMessageData);
+                }
             }
             
             if (aProtocolMessage == null)
             {
                 // Try to correctly close the client.
-                ThreadPool.queueUserWorkItem(new Runnable()
+                myDispatchingAfterMessageReading.invoke(new Runnable()
                 {
                     @Override
                     public void run()
                     {
                         try
                         {
-                            cleanDisconnectedResponseReceiver(messageContext.getResponseSender(), messageContext.getSenderAddress());
+                            cleanAfterDisconnectedResponseReceiver(messageContext.getResponseSender(), messageContext.getSenderAddress());
                         }
                         catch (Exception err)
                         {
@@ -333,21 +352,34 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 // Stop listening for this client.
                 return false;
             }
-
-            if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
+            else if (aProtocolMessage.MessageType == EProtocolMessageType.MessageReceived)
             {
                 EneterTrace.debug("REQUEST MESSAGE RECEIVED");
                 
-                // If the connection is not open then it will open it.
-                createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId);
-
                 final ProtocolMessage aProtocolMessageTmp = aProtocolMessage;
-                myDispatcher.invoke(new Runnable()
+                myDispatchingAfterMessageReading.invoke(new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        notifyMessageReceived(messageContext, aProtocolMessageTmp);
+                        try
+                        {
+                            // If the connection is not open then it will open it.
+                            createResponseMessageSender(messageContext, aProtocolMessageTmp.ResponseReceiverId);
+                            
+                            myDispatcher.invoke(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    notifyMessageReceived(messageContext, aProtocolMessageTmp);
+                                }
+                            });
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + "failed to create response message sender.", err);
+                        }
                     }
                 });
             }
@@ -355,15 +387,29 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             {
                 EneterTrace.debug("CLIENT CONNECTION RECEIVED");
                 
-                // If the connection is not approved.
-                createResponseMessageSender(messageContext, aProtocolMessage.ResponseReceiverId);
+                final ProtocolMessage aProtocolMessageTmp = aProtocolMessage;
+                myDispatchingAfterMessageReading.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            createResponseMessageSender(messageContext, aProtocolMessageTmp.ResponseReceiverId);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + "failed to create response message sender.", err);
+                        }
+                    }
+                });
             }
             else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
             {
-                EneterTrace.debug("CLIEN DISCONNECTION RECEIVED");
+                EneterTrace.debug("CLIENT DISCONNECTION RECEIVED");
                 
                 final String aResponseReceiverId = aProtocolMessage.ResponseReceiverId;
-                ThreadPool.queueUserWorkItem(new Runnable()
+                myDispatchingAfterMessageReading.invoke(new Runnable()
                 {
                     @Override
                     public void run()
@@ -371,6 +417,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                         closeResponseMessageSender(aResponseReceiverId, false);
                     }
                 });
+                return false;
             }
             else
             {
@@ -385,7 +432,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void cleanDisconnectedResponseReceiver(final ISender responseSender, String senderAddress)
+    private void cleanAfterDisconnectedResponseReceiver(final ISender responseSender, String senderAddress)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -462,19 +509,12 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 final String aSenderAddress = aConnectionContext.mySenderAddress;
                 
                 // Notify the connection was open.
-                ThreadPool.queueUserWorkItem(new Runnable()
+                myDispatcher.invoke(new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        myDispatcher.invoke(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                notifyEvent(myResponseReceiverConnectedEvent, responseReceiverId, aSenderAddress);
-                            }
-                        });
+                        notifyEvent(myResponseReceiverConnectedEvent, responseReceiverId, aSenderAddress);
                     }
                 });
             }
@@ -550,31 +590,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    // Utility method to decode the incoming message into the ProtocolMessage.
-    private ProtocolMessage getProtocolMessage(Object message)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            ProtocolMessage aProtocolMessage = null;
-
-            if (message instanceof InputStream)
-            {
-                aProtocolMessage = myProtocolFormatter.decodeMessage((InputStream)message);
-            }
-            else
-            {
-                aProtocolMessage = myProtocolFormatter.decodeMessage(message);
-            }
-
-            return aProtocolMessage;
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
     private void notifyEvent(EventImpl<ResponseReceiverEventArgs> handler, String responseReceiverId, String senderAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -634,8 +649,11 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     
     private HashMap<String, TConnectionContext> myConnectedClients = new HashMap<String, TConnectionContext>();
     
+    private IThreadDispatcher myDispatchingAfterMessageReading;
     private IInputConnector myInputConnector;
     private IProtocolFormatter<?> myProtocolFormatter;
+    
+    private boolean myStopListeningIsRunning;
     private Object myListeningManipulatorLock = new Object();
   
     private String myChannelId;

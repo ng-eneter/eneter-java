@@ -89,28 +89,31 @@ class HttpOutputConnector implements IOutputConnector
             myStopReceivingRequestedFlag = true;
             myStopPollingWaitingEvent.set();
             
-            if (myResponseReceiverThread != null && myResponseReceiverThread.getState() != State.NEW)
+            if (myResponseReceiverThread != null && Thread.currentThread().getId() != myResponseReceiverThread.getId())
             {
-                try
+                if (myResponseReceiverThread.getState() != State.NEW)
                 {
-                    myResponseReceiverThread.join(3000);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myResponseReceiverThread.getId());
-                }
-                
-                if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myResponseReceiverThread.getId());
-
                     try
                     {
-                        myResponseReceiverThread.stop();
+                        myResponseReceiverThread.join(3000);
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                        EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myResponseReceiverThread.getId());
+                    }
+                    
+                    if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myResponseReceiverThread.getId());
+    
+                        try
+                        {
+                            myResponseReceiverThread.stop();
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                        }
                     }
                 }
             }

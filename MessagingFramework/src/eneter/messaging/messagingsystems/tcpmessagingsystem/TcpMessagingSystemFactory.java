@@ -145,7 +145,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
             IOutputConnectorFactory anOutputConnectorFactory = new TcpOutputConnectorFactory(myClientSecurityFactory);
             
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, anOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, anOutputConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -177,7 +177,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
             IOutputConnectorFactory anOutputConnectorFactory = new TcpOutputConnectorFactory(myClientSecurityFactory);
             
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, anOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, anOutputConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -206,7 +206,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
             IInputConnectorFactory aFactory = new TcpInputConnectorFactory(myServerSecurityFactory);
             IInputConnector anInputConnector = aFactory.createInputConnector(channelId);
             
-            return new DefaultDuplexInputChannel(channelId, aDispatcher, anInputConnector, myProtocolFormatter);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
         }
         finally
         {
@@ -297,5 +297,6 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     private IClientSecurityFactory myClientSecurityFactory = new NoneSecurityClientFactory();
     private IThreadDispatcherProvider myInputChannelThreading;
     private IThreadDispatcherProvider myOutputChannelThreading;
+    private IThreadDispatcher myDispatcherAfterMessageDecoded = new NoDispatching().getDispatcher();
     
 }

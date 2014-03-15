@@ -230,7 +230,8 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
             myConnectorFactory = new MessageBusConnectorFactory(serviceConnctingAddress, clientConnectingAddress, underlyingMessaging);
 
             // Dispatch events in the same thread as notified from the underlying messaging.
-            myDispatcher = new NoDispatching().getDispatcher();
+            myOutputChannelThreading = new NoDispatching();
+            myInputChannelThreading = myOutputChannelThreading;
 
             myProtocolFormatter = protocolFormatter;
         }
@@ -247,7 +248,9 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultDuplexOutputChannel(channelId, null, myDispatcher, myConnectorFactory, myProtocolFormatter, false);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aDispatcherAfterMessageDecoded, myConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -262,7 +265,9 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, myDispatcher, myConnectorFactory, myProtocolFormatter, false);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aDispatcherAfterMessageDecoded, myConnectorFactory, myProtocolFormatter, false);
         }
         finally
         {
@@ -277,8 +282,10 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
+            IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
             IInputConnector anInputConnector = myConnectorFactory.createInputConnector(channelId);
-            DefaultDuplexInputChannel anInputChannel = new DefaultDuplexInputChannel(channelId, myDispatcher, anInputConnector, myProtocolFormatter);
+            DefaultDuplexInputChannel anInputChannel = new DefaultDuplexInputChannel(channelId, aDispatcher, aDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
             anInputChannel.includeResponseReceiverIdToResponses(true);
             return anInputChannel;
         }
@@ -288,9 +295,51 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Sets threading mode for input channels.
+     * @param inputChannelThreading threading model
+     * @return
+     */
+    public MessageBusMessagingFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    {
+        myInputChannelThreading = inputChannelThreading;
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for input channels.
+     * @return
+     */
+    public IThreadDispatcherProvider getInputChannelThreading()
+    {
+        return myInputChannelThreading;
+    }
+    
+    /**
+     * Sets threading mode for output channels.
+     * @param outputChannelThreading
+     * @return
+     */
+    public MessageBusMessagingFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    {
+        myOutputChannelThreading = outputChannelThreading;
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for output channels.
+     * @return
+     */
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        return myOutputChannelThreading;
+    }
+    
     
     private IProtocolFormatter<?> myProtocolFormatter;
 
-    private IThreadDispatcher myDispatcher;
     private MessageBusConnectorFactory myConnectorFactory;
+    private IThreadDispatcherProvider myInputChannelThreading;
+    private IThreadDispatcherProvider myOutputChannelThreading;
+    private IThreadDispatcherProvider myDispatchingAfterMessageDecoded = new SyncDispatching();
 }

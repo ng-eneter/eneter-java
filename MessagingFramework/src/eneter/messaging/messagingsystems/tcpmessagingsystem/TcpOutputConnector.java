@@ -122,28 +122,31 @@ class TcpOutputConnector implements IOutputConnector
                     myTcpClient = null;
                 }
                 
-                if (myResponseReceiverThread != null && myResponseReceiverThread.getState() != Thread.State.NEW)
+                if (myResponseReceiverThread != null && Thread.currentThread().getId() != myResponseReceiverThread.getId())
                 {
-                    try
+                    if (myResponseReceiverThread.getState() != Thread.State.NEW)
                     {
-                        myResponseReceiverThread.join(3000);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myResponseReceiverThread.getId());
-                    }
-                    
-                    if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myResponseReceiverThread.getId());
-
                         try
                         {
-                            myResponseReceiverThread.stop();
+                            myResponseReceiverThread.join(3000);
                         }
                         catch (Exception err)
                         {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                            EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myResponseReceiverThread.getId());
+                        }
+                        
+                        if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myResponseReceiverThread.getId());
+    
+                            try
+                            {
+                                myResponseReceiverThread.stop();
+                            }
+                            catch (Exception err)
+                            {
+                                EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                            }
                         }
                     }
                 }
@@ -242,7 +245,7 @@ class TcpOutputConnector implements IOutputConnector
             if (!myStopReceivingRequestedFlag)
             {
                 // Try to clean the connection.
-                ThreadPool.queueUserWorkItem(myCloseConnectionCallback);
+                myCloseConnectionCallback.run();
             }
         }
         finally
