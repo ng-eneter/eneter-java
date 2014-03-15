@@ -142,7 +142,7 @@ public abstract class RpcBaseTester
     public void rpcCall() throws Exception
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(new HelloService(), IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(new HelloService(), IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -174,7 +174,7 @@ public abstract class RpcBaseTester
     public void rpcCall_NullArgument() throws Exception
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(new HelloService(), IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(new HelloService(), IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -206,7 +206,7 @@ public abstract class RpcBaseTester
     public void dynamicRpcCall() throws Exception
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(new HelloService(), IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(new HelloService(), IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -238,7 +238,7 @@ public abstract class RpcBaseTester
     public void rpcCallError() throws Exception
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(new HelloService(), IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(new HelloService(), IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -274,7 +274,7 @@ public abstract class RpcBaseTester
             .setRpcTimeout(1000);
 
 
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(new HelloService(), IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(new HelloService(), IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -305,7 +305,7 @@ public abstract class RpcBaseTester
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
         HelloService aService = new HelloService();
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(aService, IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(aService, IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -360,7 +360,7 @@ public abstract class RpcBaseTester
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
         HelloService aService = new HelloService();
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(aService, IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(aService, IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -414,7 +414,7 @@ public abstract class RpcBaseTester
 
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
         HelloService aService = new HelloService();
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(aService, IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(aService, IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -470,7 +470,7 @@ public abstract class RpcBaseTester
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
         HelloService aService = new HelloService();
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(aService, IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(aService, IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -528,7 +528,7 @@ public abstract class RpcBaseTester
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
         HelloService aService = new HelloService();
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(aService, IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(aService, IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -597,7 +597,7 @@ public abstract class RpcBaseTester
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
         HelloService aService = new HelloService();
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(aService, IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(aService, IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -663,7 +663,7 @@ public abstract class RpcBaseTester
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
         HelloService aService = new HelloService();
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(aService, IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(aService, IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -727,7 +727,7 @@ public abstract class RpcBaseTester
     public void rpcCall_10000() throws Exception
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(new HelloService(), IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(new HelloService(), IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
         try
@@ -779,7 +779,7 @@ public abstract class RpcBaseTester
         //EneterTrace.StartProfiler();
 
         RpcFactory anRpcFactory = new RpcFactory(mySerializer).setRpcTimeout(30);
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(new HelloService(), IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(new HelloService(), IHello.class);
 
         final ArrayList<IRpcClient<IHello>> aClients = new ArrayList<IRpcClient<IHello>>();
         for (int i = 0; i < 10; ++i )
@@ -854,7 +854,7 @@ public abstract class RpcBaseTester
 
         HelloService aService = new HelloService();
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(aService, IHello.class);
+        IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(aService, IHello.class);
 
         final ArrayList<IRpcClient<IHello>> aClients = new ArrayList<IRpcClient<IHello>>();
         for (int i = 0; i < 10; ++i)
@@ -969,7 +969,7 @@ public abstract class RpcBaseTester
     public void PerClientInstanceService() throws Exception
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
-        IRpcService<IHello> anRpcService = anRpcFactory.createService(new IFunction<IHello>()
+        IRpcService<IHello> anRpcService = anRpcFactory.createPerClientInstanceService(new IFunction<IHello>()
         {
             @Override
             public IHello invoke() throws Exception
