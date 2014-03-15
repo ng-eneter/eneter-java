@@ -195,7 +195,7 @@ public class RpcFactory implements IRpcFactory
     }
 
     @Override
-    public <TServiceInterface> IRpcService<TServiceInterface> createService(TServiceInterface service, Class<TServiceInterface> clazz)
+    public <TServiceInterface> IRpcService<TServiceInterface> createSingleInstanceService(TServiceInterface service, Class<TServiceInterface> clazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -209,7 +209,7 @@ public class RpcFactory implements IRpcFactory
     }
     
     @Override
-    public <TServiceInterface> IRpcService<TServiceInterface> createService(
+    public <TServiceInterface> IRpcService<TServiceInterface> createPerClientInstanceService(
             IFunction<TServiceInterface> serviceFactoryMethod,
             Class<TServiceInterface> clazz)
     {

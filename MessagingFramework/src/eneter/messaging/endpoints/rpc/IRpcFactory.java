@@ -34,7 +34,7 @@ public interface IRpcFactory
      * @param clazz service interface type.
      * @return RpcService instance.
      */
-    <TServiceInterface> IRpcService<TServiceInterface> createService(TServiceInterface service, Class<TServiceInterface> clazz);
+    <TServiceInterface> IRpcService<TServiceInterface> createSingleInstanceService(TServiceInterface service, Class<TServiceInterface> clazz);
     
     /**
      * Creates per-client-instance RPC service for the given interface.
@@ -45,5 +45,5 @@ public interface IRpcFactory
      * @param clazz service interface type
      * @return RpcService instance
      */
-    <TServiceInterface> IRpcService<TServiceInterface> createService(IFunction<TServiceInterface> serviceFactoryMethod, Class<TServiceInterface> clazz);
+    <TServiceInterface> IRpcService<TServiceInterface> createPerClientInstanceService(IFunction<TServiceInterface> serviceFactoryMethod, Class<TServiceInterface> clazz);
  }
