@@ -11,6 +11,7 @@ package eneter.messaging.endpoints.rpc;
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.threading.dispatching.*;
+import eneter.net.system.IFunction;
 
 
 
@@ -200,6 +201,22 @@ public class RpcFactory implements IRpcFactory
         try
         {
             return new RpcService<TServiceInterface>(service, mySerializer ,clazz);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public <TServiceInterface> IRpcService<TServiceInterface> createService(
+            IFunction<TServiceInterface> serviceFactoryMethod,
+            Class<TServiceInterface> clazz)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new RpcService<TServiceInterface>(serviceFactoryMethod, mySerializer ,clazz);
         }
         finally
         {

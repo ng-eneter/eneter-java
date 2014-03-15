@@ -11,7 +11,7 @@ package eneter.messaging.dataprocessing.messagequeueing;
 import java.util.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.net.system.internal.IFunction;
+import eneter.net.system.IFunction;
 
 
 /**
