@@ -12,7 +12,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 
 /**
- * Invokes one by one from from the queue.
+ * Invokes one by one from the queue.
  *
  */
 public class SyncDispatching implements IThreadDispatcherProvider
