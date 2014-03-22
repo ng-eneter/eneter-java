@@ -269,9 +269,16 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                 // If it is a method.
                 else
                 {
-                    Type[] anArguments = aMethodInfo.getGenericParameterTypes();
+                    // Note: casting from Type[] to Class<?>[] works in Java but not in Android.
+                    //       Therefore we need to cast it manually item by item.
+                    Type[] anArgumentsTmp = aMethodInfo.getGenericParameterTypes();
+                    Class<?>[] anArguments = new Class<?>[anArgumentsTmp.length];
+                    for (int i = 0; i < anArguments.length; ++i)
+                    {
+                        anArguments[i] = (Class<?>) anArgumentsTmp[i];
+                    }
                     
-                    RemoteMethod aRemoteMethod = new RemoteMethod(aReturnType, (Class<?>[])anArguments);
+                    RemoteMethod aRemoteMethod = new RemoteMethod(aReturnType, anArguments);
                     myRemoteMethods.put(aMethodInfo.getName(), aRemoteMethod);
                 }
             }
