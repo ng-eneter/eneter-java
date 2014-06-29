@@ -614,7 +614,7 @@ public class EneterTrace
     private static Object myTraceBufferLock = new Object();
     private static int myTraceBufferCapacity = 16384;
     private static StringBuilder myTraceBuffer = new StringBuilder(myTraceBufferCapacity);
-    private static Timer myTraceBufferFlushTimer = new Timer("TraceBufferFlushTimer", false);
+    private static Timer myTraceBufferFlushTimer = new Timer("TraceBufferFlushTimer", true);
     
     // Ensures sequential writing of messages. 
     private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
