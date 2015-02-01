@@ -35,11 +35,11 @@ import eneter.net.system.*;
  * {
  *     // Declares event which notifies String.
  *     // Note: This event would not be compatible in cross Java/C# communication.
- *     Event&lt;String&gt; someEventHappend();
+ *     Event<String> someEventHappend();
  *     
  *     // Declares event which notifies EventArgs.
  *     // Note: event arguments derived from EventArgs can be used in cross Java/C# communication.
- *     Event&lt;EventArgs&gt; otherEventHappened();
+ *     Event<EventArgs> otherEventHappened();
  *     
  *     // Declares method taking arguments and returning a value.
  *     int calculate(int a, int b);
