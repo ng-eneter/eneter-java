@@ -3,7 +3,6 @@ package eneter.messaging.messagingsystems;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -187,6 +186,13 @@ public abstract class MessagingSystemBaseTester
     public void Duplex_03_Send100_10MB() throws Exception
     {
         sendMessageReceiveResponse(myChannelId, myMessage_10MB, myMessage_10MB, 1, 100);
+    }
+    
+    //@Ignore
+    @Test
+    public void Duplex_03_Send1_10MB() throws Exception
+    {
+        sendMessageReceiveResponse(myChannelId, myMessage_10MB, myMessage_10MB, 1, 1);
     }
     
     @Test
