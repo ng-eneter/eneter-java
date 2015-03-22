@@ -101,7 +101,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     myUnderlyingOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
                     myUnderlyingOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
 
-                    EneterTrace.error(TracedObject() + ErrorHandler.OpenConnectionFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedToOpenConnection, err);
 
                     throw err;
                 }
@@ -167,7 +167,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     
                     if (myPingingThread.getState() != State.TERMINATED)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myPingingThread.getId());
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId + myPingingThread.getId());
 
                         try
                         {
@@ -175,7 +175,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                         }
                         catch (Exception err)
                         {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToAbortThread, err);
                         }
                     }
                 }
@@ -215,7 +215,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
             {
                 if (!isConnected())
                 {
-                    String anError = TracedObject() + ErrorHandler.SendMessageNotConnectedFailure;
+                    String anError = TracedObject() + ErrorHandler.FailedToSendMessageBecauseNotConnected;
                     EneterTrace.error(anError);
                     throw new IllegalStateException(anError);
                 }
@@ -268,7 +268,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToReceiveMessage, err);
             }
         }
         finally
@@ -335,7 +335,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                 }
                 catch (Exception err)
                 {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
+                    EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
                 }
 
                 myUnderlyingOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);

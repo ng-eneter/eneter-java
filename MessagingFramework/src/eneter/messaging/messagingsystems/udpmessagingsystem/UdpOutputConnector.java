@@ -131,7 +131,7 @@ class UdpOutputConnector implements IOutputConnector
             {
                 if (!isConnected())
                 {
-                    throw new IllegalStateException(TracedObject() + ErrorHandler.SendMessageNotConnectedFailure);
+                    throw new IllegalStateException(TracedObject() + ErrorHandler.FailedToSendMessageBecauseNotConnected);
                 }
 
                 byte[] aMessageData = (byte[])message;

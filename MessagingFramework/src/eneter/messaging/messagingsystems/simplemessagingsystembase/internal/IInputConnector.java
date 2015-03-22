@@ -8,13 +8,15 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
-import eneter.net.system.IFunction1;
+import eneter.net.system.IMethod1;
 
 public interface IInputConnector
 {
-    void startListening(IFunction1<Boolean, MessageContext> messageHandler) throws Exception;
+    void startListening(IMethod1<MessageContext> messageHandler) throws Exception;
     void stopListening();
     boolean isListening();
 
-    ISender createResponseSender(String responseReceiverAddress) throws Exception;
+    void sendResponseMessage(String outputConnectorAddress, Object message) throws Exception;
+
+    void closeConnection(String outputConnectorAddress) throws Exception;
 }

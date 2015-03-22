@@ -258,7 +258,7 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                         catch (Exception err)
                         {
                             aConnection.getDuplexOutputChannel().responseMessageReceived().unsubscribe(myOnResponseMessageReceivedHandler);
-                            EneterTrace.warning(TracedObject() + ErrorHandler.OpenConnectionFailure, err);
+                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToOpenConnection, err);
                             
                             // Try to forward the request to the next receiver.
                             continue;
@@ -272,7 +272,7 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.SendMessageFailure, err);
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToSendMessage, err);
 
                         // Remove this unavailable connection from connections of this receiver.
                         try
@@ -281,7 +281,7 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                         }
                         catch (Exception err2)
                         {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err2);
+                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err2);
                         }
                         aConnection.getDuplexOutputChannel().responseMessageReceived().unsubscribe(myOnResponseMessageReceivedHandler);
                         aReceiver.getOpenConnections().remove(aConnection);
@@ -383,7 +383,7 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+                        EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
                     }
                 }
                 else

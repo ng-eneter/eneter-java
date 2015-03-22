@@ -124,7 +124,7 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
             {
                 if (!myAuthenticatedConnections.contains(responseReceiverId))
                 {
-                    String aMessage = TracedObject() + ErrorHandler.SendResponseNotConnectedFailure;
+                    String aMessage = TracedObject() + ErrorHandler.FailedToSendResponseBecauaeClientNotConnected;
                     EneterTrace.error(aMessage);
                     throw new IllegalStateException(aMessage);
                 }

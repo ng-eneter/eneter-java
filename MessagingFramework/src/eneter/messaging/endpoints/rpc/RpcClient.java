@@ -727,7 +727,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
         {
             if (getAttachedDuplexOutputChannel() == null)
             {
-                String anError = TracedObject() + ErrorHandler.ChannelNotAttached;
+                String anError = TracedObject() + ErrorHandler.FailedToSendMessageBecauseNotAttached;
                 EneterTrace.error(anError);
                 throw new IllegalStateException(anError);
             }

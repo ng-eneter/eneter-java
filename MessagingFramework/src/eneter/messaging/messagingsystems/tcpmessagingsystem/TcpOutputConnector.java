@@ -137,7 +137,7 @@ class TcpOutputConnector implements IOutputConnector
                         
                         if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
                         {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myResponseReceiverThread.getId());
+                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId + myResponseReceiverThread.getId());
     
                             try
                             {
@@ -145,7 +145,7 @@ class TcpOutputConnector implements IOutputConnector
                             }
                             catch (Exception err)
                             {
-                                EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                                EneterTrace.warning(TracedObject() + ErrorHandler.FailedToAbortThread, err);
                             }
                         }
                     }
@@ -234,7 +234,7 @@ class TcpOutputConnector implements IOutputConnector
                 // If it is not an exception caused by closing the socket.
                 if (!myStopReceivingRequestedFlag)
                 {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedInListeningLoop, err);
                 }
             }
 

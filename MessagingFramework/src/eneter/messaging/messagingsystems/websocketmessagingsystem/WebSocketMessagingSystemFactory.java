@@ -26,11 +26,12 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
 {
     private class WebSocketInputConnectorFactory implements IInputConnectorFactory
     {
-        public WebSocketInputConnectorFactory(IServerSecurityFactory serverSecurityFactory)
+        public WebSocketInputConnectorFactory(IProtocolFormatter protocolFormatter, IServerSecurityFactory serverSecurityFactory)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
+                myProtocolFormatter = protocolFormatter;
                 myServerSecurityFactory = serverSecurityFactory;
             }
             finally
@@ -40,13 +41,13 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
 
         @Override
-        public IInputConnector createInputConnector(String receiverAddress)
+        public IInputConnector createInputConnector(String inputConnectorAddress)
                 throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new WebSocketInputConnector(receiverAddress, myServerSecurityFactory);
+                return new WebSocketInputConnector(inputConnectorAddress, myProtocolFormatter, myServerSecurityFactory);
             }
             finally
             {
@@ -54,18 +55,21 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
             }
         }
         
+        private IProtocolFormatter myProtocolFormatter;
         private IServerSecurityFactory myServerSecurityFactory;
     }
     
     private class WebSocketOutputConnectorFactory implements IOutputConnectorFactory
     {
-        public WebSocketOutputConnectorFactory(int pingFrequency, IClientSecurityFactory clientSecurityFactory)
+        public WebSocketOutputConnectorFactory(IProtocolFormatter protocolFormatter, IClientSecurityFactory clientSecurityFactory,
+                int pingFrequency)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                myPingingFrequency = pingFrequency;
+                myProtocolFormatter = protocolFormatter;
                 myClientSecurityFactory = clientSecurityFactory;
+                myPingingFrequency = pingFrequency;
             }
             finally
             {
@@ -74,14 +78,13 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
 
         @Override
-        public IOutputConnector createOutputConnector(
-                String serviceConnectorAddress, String clientConnectorAddress)
+        public IOutputConnector createOutputConnector(String inputConnectorAddress, String outputConnectorAddress)
                 throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new WebSocketOutputConnector(serviceConnectorAddress, myPingingFrequency, myClientSecurityFactory);
+                return new WebSocketOutputConnector(inputConnectorAddress, outputConnectorAddress, myProtocolFormatter, myClientSecurityFactory, myPingingFrequency);
             }
             finally
             {
@@ -89,6 +92,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
             }
         }
      
+        private IProtocolFormatter myProtocolFormatter;
         private IClientSecurityFactory myClientSecurityFactory;
         private int myPingingFrequency;
     }
@@ -110,7 +114,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      * Constructs the websocket messaging factory.
      * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
      */
-    public WebSocketMessagingSystemFactory(IProtocolFormatter<?> protocolFormatter)
+    public WebSocketMessagingSystemFactory(IProtocolFormatter protocolFormatter)
     {
         this(300000, protocolFormatter);
     }
@@ -137,7 +141,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      * @param pingFrequency how often the client pings the server to keep the connection alive. If set to 0, the pinging will not start.
      * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
      */
-    private WebSocketMessagingSystemFactory(int pingFrequency, IProtocolFormatter<?> protocolFormatter)
+    private WebSocketMessagingSystemFactory(int pingFrequency, IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -173,9 +177,9 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            IOutputConnectorFactory anOutputConnectorFactory = new WebSocketOutputConnectorFactory(myPingFrequency, myClientSecurityFactory);
+            IOutputConnectorFactory aFactory = new WebSocketOutputConnectorFactory(myProtocolFormatter, myClientSecurityFactory, myPingFrequency);
             
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, anOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, aFactory);
         }
         finally
         {
@@ -204,9 +208,9 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            IOutputConnectorFactory anOutputConnectorFactory = new WebSocketOutputConnectorFactory(myPingFrequency, myClientSecurityFactory);
+            IOutputConnectorFactory aFactory = new WebSocketOutputConnectorFactory(myProtocolFormatter, myClientSecurityFactory, myPingFrequency);
             
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, anOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, aFactory);
         }
         finally
         {
@@ -231,10 +235,10 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
             
-            IInputConnectorFactory aFactory = new WebSocketInputConnectorFactory(myServerSecurityFactory);
+            IInputConnectorFactory aFactory = new WebSocketInputConnectorFactory(myProtocolFormatter, myServerSecurityFactory);
             IInputConnector anInputConnector = aFactory.createInputConnector(channelId);
             
-            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector);
         }
         finally
         {
@@ -324,7 +328,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     private IServerSecurityFactory myServerSecurityFactory = new NoneSecurityServerFactory();
     private IClientSecurityFactory myClientSecurityFactory = new NoneSecurityClientFactory();
 
-    private IProtocolFormatter<?> myProtocolFormatter;
+    private IProtocolFormatter myProtocolFormatter;
     private IThreadDispatcher myDispatcherAfterMessageDecoded = new NoDispatching().getDispatcher();
     
     private int myPingFrequency;

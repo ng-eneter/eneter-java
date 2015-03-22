@@ -19,10 +19,10 @@ import eneter.messaging.diagnostic.EneterTrace;
  * Implements encoding/decoding of low-level messages into eneter format.  
  *
  */
-public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
+public class EneterProtocolFormatter implements IProtocolFormatter
 {
     @Override
-    public byte[] encodeOpenConnectionMessage(String responseReceiverId) throws Exception
+    public Object encodeOpenConnectionMessage(String responseReceiverId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -59,7 +59,7 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
 
 
     @Override
-    public byte[] encodeCloseConnectionMessage(String responseReceiverId) throws Exception
+    public Object encodeCloseConnectionMessage(String responseReceiverId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -97,7 +97,7 @@ public class EneterProtocolFormatter implements IProtocolFormatter<byte[]>
 
     
     @Override
-    public byte[] encodeMessage(String responseReceiverId, Object message) throws Exception
+    public Object encodeMessage(String responseReceiverId, Object message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

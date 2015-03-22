@@ -72,7 +72,7 @@ class ResponseMessageSender
                 {
                     if (!mySendingThreadStoppedEvent.waitOne(5000))
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure);
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId);
                     }
                 }
                 catch (Exception err)

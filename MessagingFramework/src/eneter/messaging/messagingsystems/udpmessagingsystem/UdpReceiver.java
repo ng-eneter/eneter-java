@@ -12,10 +12,9 @@ import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.MessageContext;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
-import eneter.net.system.IFunction1;
+import eneter.net.system.internal.IMethod2;
 import eneter.net.system.threading.internal.ManualResetEvent;
 
 class UdpReceiver
@@ -35,7 +34,7 @@ class UdpReceiver
         }
     }
     
-    public void startListening(IFunction1<Boolean, MessageContext> messageHandler) throws Exception
+    public void startListening(IMethod2<byte[], InetSocketAddress> messageHandler) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -88,7 +87,7 @@ class UdpReceiver
                 }
                 catch (Exception err)
                 {
-                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedToStartListening, err);
 
                     try
                     {
@@ -141,7 +140,7 @@ class UdpReceiver
                     
                     if (myListeningThread.getState() != Thread.State.TERMINATED)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myListeningThread.getId());
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId + myListeningThread.getId());
 
                         try
                         {
@@ -150,7 +149,7 @@ class UdpReceiver
                         }
                         catch (Exception err)
                         {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToAbortThread, err);
                         }
                     }
                 }
@@ -206,39 +205,13 @@ class UdpReceiver
                         @Override
                         public void run()
                         {
-                            EneterTrace aTrace = EneterTrace.entering();
                             try
                             {
-                                try
-                                {
-                                    MessageContext aMessageContext;
-    
-                                    // If this is service then we need to create the sender for response messages.
-                                    if (myIsService)
-                                    {
-                                        // Get the sender IP address.
-                                        String aSenderIp = (aSenderEndPoint != null && aSenderEndPoint.getAddress() != null) ? aSenderEndPoint.getAddress().getHostAddress() : "";
-    
-                                        // Create the response sender.
-                                        UdpSender aResponseSender = new UdpSender(mySocket, aSenderEndPoint);
-    
-                                        aMessageContext = new MessageContext(aDatagram, aSenderIp, aResponseSender);
-                                    }
-                                    else
-                                    {
-                                        aMessageContext = new MessageContext(aDatagram, "", null);
-                                    }
-    
-                                    myMessageHandler.invoke(aMessageContext);
-                                }
-                                catch (Exception err)
-                                {
-                                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                                }
+                                myMessageHandler.invoke(aDatagram, aSenderEndPoint);
                             }
-                            finally
+                            catch (Exception err)
                             {
-                                EneterTrace.leaving(aTrace);
+                                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                             }
                         }
                     });
@@ -250,7 +223,7 @@ class UdpReceiver
                 // If the error did not occur because of StopListening().
                 if (!myStopListeningRequested)
                 {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedInListeningLoop, err);
                 }
             }
 
@@ -266,7 +239,7 @@ class UdpReceiver
                         {
                             try
                             {
-                                myMessageHandler.invoke(null);
+                                myMessageHandler.invoke(null, null);
                             }
                             catch (Exception err)
                             {
@@ -298,7 +271,7 @@ class UdpReceiver
     private Object myListeningManipulatorLock = new Object();
     private Thread myListeningThread;
     private ManualResetEvent myListeningToResponsesStartedEvent = new ManualResetEvent(false);
-    private IFunction1<Boolean, MessageContext> myMessageHandler;
+    private IMethod2<byte[], InetSocketAddress> myMessageHandler;
     private IThreadDispatcher myWorkingThreadDispatcher;
     
     private String TracedObject()

@@ -368,7 +368,7 @@ class MessageBus implements IMessageBus
                 }
                 catch (Exception err)
                 {
-                    String anErrorMessage = TracedObject() + ErrorHandler.CloseConnectionFailure;
+                    String anErrorMessage = TracedObject() + ErrorHandler.FailedToCloseConnection;
                     EneterTrace.warning(anErrorMessage, err);
                 }
             }

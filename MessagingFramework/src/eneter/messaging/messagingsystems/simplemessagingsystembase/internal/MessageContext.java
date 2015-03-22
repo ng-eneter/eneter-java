@@ -8,16 +8,17 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
+import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
+
 public class MessageContext
 {
-    public MessageContext(Object message, String senderAddress, ISender responseSender)
+    public MessageContext(ProtocolMessage message, String senderAddress)
     {
         myMessage = message;
         mySenderAddress = senderAddress;
-        myResponseSender = responseSender;
     }
 
-    public Object getMessage()
+    public ProtocolMessage getProtocolMessage()
     {
         return myMessage;
     }
@@ -27,12 +28,7 @@ public class MessageContext
         return mySenderAddress;
     }
     
-    public ISender getResponseSender()
-    {
-        return myResponseSender;
-    }
     
-    private Object myMessage;
+    private ProtocolMessage myMessage;
     private String mySenderAddress;
-    private ISender myResponseSender;
 }

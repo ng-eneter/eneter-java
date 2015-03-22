@@ -15,14 +15,13 @@ import eneter.messaging.threading.dispatching.*;
 
 public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
 {
-    public DefaultMessagingSystemFactory(IMessagingProvider messagingProvider, IProtocolFormatter<?> protocolFromatter)
+    public DefaultMessagingSystemFactory(IMessagingProvider messagingProvider, IProtocolFormatter protocolFromatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myOutputConnectorFactory = new DefaultOutputConnectorFactory(messagingProvider);
-            myInputConnectorFactory = new DefaultInputConnectorFactory(messagingProvider);
-            myProtocolFormatter = protocolFromatter;
+            myOutputConnectorFactory = new DefaultOutputConnectorFactory(messagingProvider, protocolFromatter);
+            myInputConnectorFactory = new DefaultInputConnectorFactory(messagingProvider, protocolFromatter);
 
             NoDispatching aNoDispatching = new NoDispatching();
             myInputChannelThreading = aNoDispatching;
@@ -44,7 +43,7 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, myOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, myOutputConnectorFactory);
         }
         finally
         {
@@ -60,7 +59,7 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, myOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, myOutputConnectorFactory);
         }
         finally
         {
@@ -77,7 +76,7 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
             IInputConnector anInputConnector = myInputConnectorFactory.createInputConnector(channelId);
-            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector);
         }
         finally
         {
@@ -85,16 +84,6 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
-    public void setOutputChannelThreading(IThreadDispatcherProvider threadDispatcherProvider)
-    {
-        myOutputChannelThreading = threadDispatcherProvider;
-    }
-    
-    public IThreadDispatcherProvider getOutputChannelThreading()
-    {
-        return myOutputChannelThreading;
-    }
-    
     public void setInputChannelThreading(IThreadDispatcherProvider threadDispatcherProvider)
     {
         myInputChannelThreading = threadDispatcherProvider;
@@ -105,7 +94,16 @@ public class DefaultMessagingSystemFactory implements IMessagingSystemFactory
         return myInputChannelThreading;
     }
     
-    private IProtocolFormatter<?> myProtocolFormatter;
+    public void setOutputChannelThreading(IThreadDispatcherProvider threadDispatcherProvider)
+    {
+        myOutputChannelThreading = threadDispatcherProvider;
+    }
+    
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        return myOutputChannelThreading;
+    }
+    
     private IOutputConnectorFactory myOutputConnectorFactory;
     private IInputConnectorFactory myInputConnectorFactory;
     private IThreadDispatcher myDispatcherAfterMessageDecoded;

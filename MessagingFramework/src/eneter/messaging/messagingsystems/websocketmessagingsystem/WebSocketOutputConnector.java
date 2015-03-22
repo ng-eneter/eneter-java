@@ -8,22 +8,23 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
-import java.io.OutputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
 import eneter.net.system.*;
 
 class WebSocketOutputConnector implements IOutputConnector
 {
-    public WebSocketOutputConnector(String serviceConnectorAddress,
-            int pingFrequency,
-            IClientSecurityFactory clientSecurityFactory)
+    public WebSocketOutputConnector(String inputConnectorAddress, String outputConnectorAddress, IProtocolFormatter protocolFormatter,
+                        IClientSecurityFactory clientSecurityFactory,
+                        int pingFrequency)
                     throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -32,15 +33,18 @@ class WebSocketOutputConnector implements IOutputConnector
             URI aUri;
             try
             {
-                aUri = new URI(serviceConnectorAddress);
+                aUri = new URI(inputConnectorAddress);
             }
             catch (Exception err)
             {
-                EneterTrace.error(serviceConnectorAddress + ErrorHandler.InvalidUriAddress, err);
+                EneterTrace.error(inputConnectorAddress + ErrorHandler.InvalidUriAddress, err);
                 throw err;
             }
             
             myClient = new WebSocketClient(aUri, clientSecurityFactory);
+            
+            myOutputConnectorAddress = outputConnectorAddress;
+            myProtocolFormatter = protocolFormatter;
             
             myPingFrequency = pingFrequency;
             myTimer = new Timer("ReliableMessageTimeTracker", true);
@@ -52,27 +56,37 @@ class WebSocketOutputConnector implements IOutputConnector
     }
     
     @Override
-    public void openConnection(
-            IFunction1<Boolean, MessageContext> responseMessageHandler)
+    public void openConnection(IMethod1<MessageContext> responseMessageHandler)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (responseMessageHandler != null)
+            if (responseMessageHandler == null)
             {
+                throw new IllegalArgumentException("responseMessageHandler is null.");
+            }
+            
+            synchronized (myConnectionManipulatorLock)
+            {
+                myResponseMessageHandler = responseMessageHandler;
                 myClient.connectionClosed().subscribe(myOnWebSocketConnectionClosed);
                 myClient.messageReceived().subscribe(myOnWebSocketMessageReceived);
-                myResponseMessageHandler = responseMessageHandler;
-            }
-
-            myClient.openConnection();
-
-            myIpAddress = (myClient.getLocalEndPoint() != null) ? myClient.getLocalEndPoint().toString() : "";
-            
-            if (myPingFrequency > 0)
-            {
-                myTimer.schedule(getTimerTask(), myPingFrequency);
+    
+                myClient.openConnection();
+    
+                myIpAddress = (myClient.getLocalEndPoint() != null) ? myClient.getLocalEndPoint().toString() : "";
+                
+                if (myPingFrequency > 0)
+                {
+                    myTimer.schedule(getTimerTask(), myPingFrequency);
+                }
+                
+                Object anEncodedMessage = myProtocolFormatter.encodeOpenConnectionMessage(myOutputConnectorAddress);
+                if (anEncodedMessage != null)
+                {
+                    myClient.sendMessage(anEncodedMessage);
+                }
             }
         }
         finally
@@ -87,6 +101,11 @@ class WebSocketOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            // Note: do not send a close message in WebSockets. Just close the socket.
+
+            // Note: this must be before myClient.closeConnection().
+            myResponseMessageHandler = null;
+            
             myClient.closeConnection();
             myClient.messageReceived().unsubscribe(myOnWebSocketMessageReceived);
             myClient.connectionClosed().unsubscribe(myOnWebSocketConnectionClosed);
@@ -104,30 +123,21 @@ class WebSocketOutputConnector implements IOutputConnector
     }
 
     @Override
-    public boolean isStreamWritter()
-    {
-        return false;
-    }
-
-    @Override
-    public void sendMessage(Object message) throws Exception
+    public void sendRequestMessage(Object message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myClient.sendMessage(message);
+            synchronized (myConnectionManipulatorLock)
+            {
+                Object anEncodedMessage = myProtocolFormatter.encodeMessage(myOutputConnectorAddress, message);
+                myClient.sendMessage(anEncodedMessage);
+            }
         }
         finally
         {
             EneterTrace.leaving(aTrace);
         }
-    }
-
-    @Override
-    public void sendMessage(IMethod1<OutputStream> toStreamWritter)
-            throws Exception
-    {
-        throw new UnsupportedOperationException();
     }
     
     private void onWebSocketConnectionClosed(Object sender, Object e)
@@ -135,15 +145,29 @@ class WebSocketOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseMessageHandler != null)
+            IMethod1<MessageContext> aResponseHandler;
+            synchronized (myConnectionManipulatorLock)
             {
-                // With null indicate the connection was closed.
-                myResponseMessageHandler.invoke(null);
+                aResponseHandler = myResponseMessageHandler;
+                closeConnection();
             }
-        }
-        catch (Exception err)
-        {
-            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+
+            ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, myOutputConnectorAddress, null);
+            MessageContext aMessageContext = new MessageContext(aProtocolMessage, myIpAddress);
+
+            try
+            {
+                // If the connection closed is not caused that the client called CloseConnection()
+                // but the connection was closed from the service.
+                if (aResponseHandler != null)
+                {
+                    aResponseHandler.invoke(aMessageContext);
+                }
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
         }
         finally
         {
@@ -156,15 +180,17 @@ class WebSocketOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseMessageHandler != null)
+            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage((InputStream)e.getInputStream());
+            MessageContext aMessageContext = new MessageContext(aProtocolMessage, myIpAddress);
+
+            try
             {
-                MessageContext aContext = new MessageContext(e.getInputStream(), myIpAddress, this);
-                myResponseMessageHandler.invoke(aContext);
+                myResponseMessageHandler.invoke(aMessageContext);
             }
-        }
-        catch (Exception err)
-        {
-            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
         }
         finally
         {
@@ -217,9 +243,12 @@ class WebSocketOutputConnector implements IOutputConnector
         return aTimerTask;
     }
     
+    private String myOutputConnectorAddress;
+    private IProtocolFormatter myProtocolFormatter;
     private WebSocketClient myClient;
-    private IFunction1<Boolean, MessageContext> myResponseMessageHandler;
+    private IMethod1<MessageContext> myResponseMessageHandler;
     private String myIpAddress;
+    private Object myConnectionManipulatorLock = new Object();
     private Timer myTimer;
     private int myPingFrequency;
 

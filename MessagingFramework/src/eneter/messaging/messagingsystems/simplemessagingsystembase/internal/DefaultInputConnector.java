@@ -8,69 +8,23 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
-import java.io.OutputStream;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.net.system.*;
+
 
 class DefaultInputConnector implements IInputConnector
 {
-    private class DefaultResponseSender implements ISender
-    {
-        public DefaultResponseSender(String clientConnectorAddress, IMessagingProvider messagingProvider)
-        {
-            EneterTrace aTrace = EneterTrace.entering();
-            try
-            {
-                myClientConnectorAddress = clientConnectorAddress;
-                myMessagingProvider = messagingProvider;
-            }
-            finally
-            {
-                EneterTrace.leaving(aTrace);
-            }
-        }
-
-        @Override
-        public boolean isStreamWritter()
-        {
-            return false;
-        }
-
-        @Override
-        public void sendMessage(Object message) throws Exception
-        {
-            EneterTrace aTrace = EneterTrace.entering();
-            try
-            {
-                myMessagingProvider.sendMessage(myClientConnectorAddress, message);
-            }
-            finally
-            {
-                EneterTrace.leaving(aTrace);
-            }
-        }
-
-        @Override
-        public void sendMessage(IMethod1<OutputStream> toStreamWritter)
-                throws Exception
-        {
-            throw new UnsupportedOperationException("To stream writer is not supported.");
-        }
-        
-        private String myClientConnectorAddress;
-        private IMessagingProvider myMessagingProvider;
-    }
-
-    
-    
-    public DefaultInputConnector(String serviceConnectorAddress, IMessagingProvider messagingProvider)
+    public DefaultInputConnector(String inputConnectorAddress, IMessagingProvider messagingProvider, IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myServiceConnectorAddress = serviceConnectorAddress;
+            myInputConnectorAddress = inputConnectorAddress;
             myMessagingProvider = messagingProvider;
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -80,27 +34,29 @@ class DefaultInputConnector implements IInputConnector
     
     
     @Override
-    public void startListening(final IFunction1<Boolean, MessageContext> messageHandler)
+    public void startListening(final IMethod1<MessageContext> messageHandler) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (messageHandler == null)
+            {
+                throw new IllegalArgumentException("messageHandler is null.");
+            }
+            
             synchronized (myListeningManipulatorLock)
             {
-                if (messageHandler == null)
+                try
                 {
-                    throw new IllegalArgumentException("Input parameter messageHandler is null.");
+                    myMessageHandler = messageHandler;
+                    myMessagingProvider.registerMessageHandler(myInputConnectorAddress, myOnRequestMessageReceived);
+                    myIsListeningFlag = true;
                 }
-                
-                myMessagingProvider.registerMessageHandler(myServiceConnectorAddress, new IMethod1<Object>()
+                catch (Exception err)
                 {
-                    @Override
-                    public void invoke(Object x) throws Exception
-                    {
-                        messageHandler.invoke(new MessageContext(x, "", null));
-                    }
-                });
-                myIsListeningFlag = true;
+                    stopListening();
+                    throw err;
+                }
             }
         }
         finally
@@ -118,7 +74,8 @@ class DefaultInputConnector implements IInputConnector
             synchronized (myListeningManipulatorLock)
             {
                 myIsListeningFlag = false;
-                myMessagingProvider.unregisterMessageHandler(myServiceConnectorAddress);
+                myMessagingProvider.unregisterMessageHandler(myInputConnectorAddress);
+                myMessageHandler = null;
             }
         }
         finally
@@ -137,13 +94,13 @@ class DefaultInputConnector implements IInputConnector
     }
 
     @Override
-    public ISender createResponseSender(String responseReceiverAddress)
+    public void sendResponseMessage(String outputConnectorAddress, Object message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            ISender aResponseSender = new DefaultResponseSender(responseReceiverAddress, myMessagingProvider);
-            return aResponseSender;
+            Object anEncodedMessage = myProtocolFormatter.encodeMessage(outputConnectorAddress, message);
+            myMessagingProvider.sendMessage(outputConnectorAddress, anEncodedMessage);
         }
         finally
         {
@@ -151,9 +108,72 @@ class DefaultInputConnector implements IInputConnector
         }
     }
 
+
+    @Override
+    public void closeConnection(String outputConnectorAddress) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(outputConnectorAddress);
+            myMessagingProvider.sendMessage(outputConnectorAddress, anEncodedMessage);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
-    private String myServiceConnectorAddress;
+    private void onRequestMessageReceived(Object message)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(message);
+            if (aProtocolMessage != null)
+            {
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, "");
+
+                try
+                {
+                    if (myMessageHandler != null)
+                    {
+                        myMessageHandler.invoke(aMessageContext);
+                    }
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    
+    private String myInputConnectorAddress;
     private IMessagingProvider myMessagingProvider;
+    private IProtocolFormatter myProtocolFormatter;
     private Object myListeningManipulatorLock = new Object();
     private boolean myIsListeningFlag;
+    private IMethod1<MessageContext> myMessageHandler;
+    
+    
+    private IMethod1<Object> myOnRequestMessageReceived = new IMethod1<Object>()
+    {
+        @Override
+        public void invoke(Object t) throws Exception
+        {
+            onRequestMessageReceived(t);
+        }
+    };
+    
+    
+    private String TracedObject()
+    {
+        return getClass().getSimpleName() + " ";
+    }
 }

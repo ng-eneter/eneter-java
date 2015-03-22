@@ -257,7 +257,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
                     }
 
                 }
@@ -332,7 +332,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
             }
         }
         finally

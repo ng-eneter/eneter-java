@@ -414,7 +414,7 @@ public class WebSocketClient
                     {
                     }
 
-                    EneterTrace.error(TracedObject() + ErrorHandler.OpenConnectionFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedToOpenConnection, err);
                     throw err;
                 }
             }
@@ -450,7 +450,7 @@ public class WebSocketClient
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
                     }
 
                     try
@@ -478,7 +478,7 @@ public class WebSocketClient
                     
                     if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myResponseReceiverThread.getId());
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId + myResponseReceiverThread.getId());
 
                         try
                         {
@@ -486,7 +486,7 @@ public class WebSocketClient
                         }
                         catch (Exception err)
                         {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToAbortThread, err);
                         }
                     }
                 }
@@ -498,7 +498,7 @@ public class WebSocketClient
                 }
                 catch (Exception err)
                 {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.UnregisterMessageHandlerThreadFailure, err);
+                    EneterTrace.warning(TracedObject() + ErrorHandler.FailedToUnregisterMessageHandler, err);
                 }
 
                 // Reset the responsibility for starting of threads looping for response messages.
@@ -729,7 +729,7 @@ public class WebSocketClient
                 !responseRegExResult.containsKey("Connection") ||
                 StringExt.isNullOrEmpty(aSecurityAccept))
             {
-                String anErrorMessage = TracedObject() + ErrorHandler.OpenConnectionFailure + " A required header field was missing.";
+                String anErrorMessage = TracedObject() + ErrorHandler.FailedToOpenConnection + " A required header field was missing.";
                 EneterTrace.error(anErrorMessage);
                 throw new IllegalStateException(anErrorMessage);
             }
@@ -739,7 +739,7 @@ public class WebSocketClient
             String aCalculatedAcceptance = WebSocketFormatter.encryptWebSocketKey(aWebSocketKeyBase64);
             if (!aCalculatedAcceptance.equals(aSecurityAccept))
             {
-                String anErrorMessage = TracedObject() + ErrorHandler.OpenConnectionFailure + " Sec-WebSocket-Accept has incorrect value.";
+                String anErrorMessage = TracedObject() + ErrorHandler.FailedToOpenConnection + " Sec-WebSocket-Accept has incorrect value.";
                 EneterTrace.error(anErrorMessage);
                 throw new IllegalStateException(anErrorMessage);
             }
@@ -760,7 +760,7 @@ public class WebSocketClient
             {
                 if (!isConnected())
                 {
-                    String aMessage = TracedObject() + ErrorHandler.SendMessageNotConnectedFailure;
+                    String aMessage = TracedObject() + ErrorHandler.FailedToSendMessageBecauseNotConnected;
                     EneterTrace.error(aMessage);
                     throw new IllegalStateException(aMessage);
                 }
@@ -775,7 +775,7 @@ public class WebSocketClient
                 }
                 catch (Exception err)
                 {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendMessage, err);
                     throw err;
                 }
             }
@@ -963,7 +963,7 @@ public class WebSocketClient
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedInListeningLoop, err);
             }
 
             // If the connection is being closed due to a protocol error.

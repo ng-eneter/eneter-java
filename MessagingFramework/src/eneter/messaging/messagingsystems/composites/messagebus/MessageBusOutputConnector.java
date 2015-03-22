@@ -69,7 +69,7 @@ class MessageBusOutputConnector implements IOutputConnector
 
                 if (!myMessageBusOutputChannel.isConnected())
                 {
-                    throw new IllegalStateException(TracedObject() + ErrorHandler.OpenConnectionFailure);
+                    throw new IllegalStateException(TracedObject() + ErrorHandler.FailedToOpenConnection);
                 }
             }
         }

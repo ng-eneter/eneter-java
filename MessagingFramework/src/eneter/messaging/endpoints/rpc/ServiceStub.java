@@ -441,7 +441,7 @@ class ServiceStub<TServiceInterface>
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
             }
         }
         catch (Exception err)

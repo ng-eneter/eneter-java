@@ -8,11 +8,12 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
-import eneter.net.system.IFunction1;
+import eneter.net.system.IMethod1;
 
-public interface IOutputConnector extends ISender
+public interface IOutputConnector
 {
-    void openConnection(IFunction1<Boolean, MessageContext> responseMessageHandler) throws Exception;
+    void openConnection(IMethod1<MessageContext> responseMessageHandler) throws Exception;
     void closeConnection();
     boolean isConnected();
+    void sendRequestMessage(Object message) throws Exception;
 }

@@ -148,7 +148,7 @@ class WebSocketClientContext implements IWebSocketClientContext
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.CloseConnectionFailure, err);
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
                     }
 
                     try
@@ -357,7 +357,7 @@ class WebSocketClientContext implements IWebSocketClientContext
             {
                 if (!isConnected())
                 {
-                    String aMessage = TracedObject() + ErrorHandler.SendMessageNotConnectedFailure;
+                    String aMessage = TracedObject() + ErrorHandler.FailedToSendMessageBecauseNotConnected;
                     EneterTrace.error(aMessage);
                     throw new IllegalStateException(aMessage);
                 }
@@ -373,7 +373,7 @@ class WebSocketClientContext implements IWebSocketClientContext
                 }
                 catch (Exception err)
                 {
-                    EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendMessage, err);
                     throw err;
                 }
             }
@@ -510,7 +510,7 @@ class WebSocketClientContext implements IWebSocketClientContext
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedInListeningLoop, err);
             }
 
             // If the connection is being closed due to a protocol error.

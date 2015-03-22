@@ -167,7 +167,7 @@ class ReliableDuplexTypedMessageReceiver<_ResponseType, _RequestType> implements
                 // Remove the message from the tracking.
                 myTimeTracker.RemoveTracking(aMessageId);
 
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
                 throw err;
             }
         }

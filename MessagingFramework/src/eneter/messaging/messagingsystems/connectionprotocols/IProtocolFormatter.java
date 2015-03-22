@@ -14,9 +14,8 @@ import java.io.*;
 /**
  * Declares functionality to encode and decode messages used for the communication between channels. 
  *
- * @param <T> type of encoded data. It can be byte[] or String.
  */
-public interface IProtocolFormatter<T>
+public interface IProtocolFormatter
 {
     /**
      * Encodes the open connection request message.
@@ -27,7 +26,7 @@ public interface IProtocolFormatter<T>
      * @return encoded message
      * @throws Exception
      */
-    T encodeOpenConnectionMessage(String responseReceiverId) throws Exception;
+    Object encodeOpenConnectionMessage(String responseReceiverId) throws Exception;
     
     /**
      * Encodes the open connection request message to the stream.
@@ -47,7 +46,7 @@ public interface IProtocolFormatter<T>
      * @return encoded message
      * @throws Exception
      */
-    T encodeCloseConnectionMessage(String responseReceiverId) throws Exception;
+    Object encodeCloseConnectionMessage(String responseReceiverId) throws Exception;
     
     /**
      * Encodes the close connecion request message to the stream.
@@ -69,7 +68,7 @@ public interface IProtocolFormatter<T>
      * @return encoded message
      * @throws Exception
      */
-    T encodeMessage(String responseReceiverId, Object message) throws Exception;
+    Object encodeMessage(String responseReceiverId, Object message) throws Exception;
     
     /**
      * Encodes a message or a response message to the stream.

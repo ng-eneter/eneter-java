@@ -190,7 +190,7 @@ public class TcpListenerProvider
                     
                     if (myTcpListeningThread.getState() != Thread.State.TERMINATED)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myTcpListeningThread.getId());
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId + myTcpListeningThread.getId());
 
                         try
                         {
@@ -199,7 +199,7 @@ public class TcpListenerProvider
                         }
                         catch (Exception err)
                         {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToAbortThread, err);
                         }
                     }
                 }
@@ -261,12 +261,12 @@ public class TcpListenerProvider
                 // If the stop listening is not requested to stop then it is an error.
                 if (!myStopTcpListeningRequested)
                 {
-                    EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedInListeningLoop, err);
                 }
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedInListeningLoop, err);
             }
             
             myListeningStartedEvent.reset();

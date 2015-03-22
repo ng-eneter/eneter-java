@@ -48,7 +48,7 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
                         // Ignore exception in exception.
                     }
     
-                    String aMessage = TracedObject() + ErrorHandler.OpenConnectionFailure;
+                    String aMessage = TracedObject() + ErrorHandler.FailedToOpenConnection;
                     EneterTrace.error(aMessage, err);
                     throw err;
                 }

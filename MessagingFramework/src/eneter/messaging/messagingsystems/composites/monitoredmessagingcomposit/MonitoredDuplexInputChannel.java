@@ -205,7 +205,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
                 throw err;
             }
         }
@@ -228,7 +228,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             }
             catch (Exception err)
             {
-                EneterTrace.warning(TracedObject() + ErrorHandler.DisconnectResponseReceiverFailure + responseReceiverId, err);
+                EneterTrace.warning(TracedObject() + ErrorHandler.FailedToDisconnectResponseReceiver + responseReceiverId, err);
             }
         }
         finally
@@ -312,7 +312,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.ReceiveMessageFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToReceiveMessage, err);
             }
         }
         finally

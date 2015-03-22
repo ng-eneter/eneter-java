@@ -9,15 +9,17 @@
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 
 class DefaultInputConnectorFactory implements IInputConnectorFactory
 {
-    public DefaultInputConnectorFactory(IMessagingProvider messagingProvider)
+    public DefaultInputConnectorFactory(IMessagingProvider messagingProvider, IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myMessagingProvider = messagingProvider;
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -27,12 +29,12 @@ class DefaultInputConnectorFactory implements IInputConnectorFactory
     
 
     @Override
-    public IInputConnector createInputConnector(String serviceConnectorAddress)
+    public IInputConnector createInputConnector(String inputConnectorAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultInputConnector(serviceConnectorAddress, myMessagingProvider);
+            return new DefaultInputConnector(inputConnectorAddress, myMessagingProvider, myProtocolFormatter);
         }
         finally
         {
@@ -42,4 +44,5 @@ class DefaultInputConnectorFactory implements IInputConnectorFactory
 
     
     private IMessagingProvider myMessagingProvider;
+    private IProtocolFormatter myProtocolFormatter;
 }

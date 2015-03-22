@@ -138,7 +138,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                     
                     if (!isConnected())
                     {
-                        String anErrorMessage = TracedObject() + ErrorHandler.OpenConnectionFailure;
+                        String anErrorMessage = TracedObject() + ErrorHandler.FailedToOpenConnection;
                         EneterTrace.error(anErrorMessage);
                         throw new IllegalStateException(anErrorMessage);
                     }
@@ -198,7 +198,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
             {
                 if (!isConnected())
                 {
-                    String aMessage = TracedObject() + ErrorHandler.SendMessageNotConnectedFailure;
+                    String aMessage = TracedObject() + ErrorHandler.FailedToSendMessageBecauseNotConnected;
                     EneterTrace.error(aMessage);
                     throw new IllegalStateException(aMessage);
                 }

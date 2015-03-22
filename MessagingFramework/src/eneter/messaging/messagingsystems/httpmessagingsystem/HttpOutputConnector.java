@@ -104,7 +104,7 @@ class HttpOutputConnector implements IOutputConnector
                     
                     if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopThreadFailure + myResponseReceiverThread.getId());
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId + myResponseReceiverThread.getId());
     
                         try
                         {
@@ -112,7 +112,7 @@ class HttpOutputConnector implements IOutputConnector
                         }
                         catch (Exception err)
                         {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.AbortThreadFailure, err);
+                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToAbortThread, err);
                         }
                     }
                 }
@@ -204,7 +204,7 @@ class HttpOutputConnector implements IOutputConnector
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.DoListeningFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedInListeningLoop, err);
             }
 
             myIsListeningToResponses = false;

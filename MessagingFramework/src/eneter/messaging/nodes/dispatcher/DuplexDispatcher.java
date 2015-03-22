@@ -111,7 +111,7 @@ class DuplexDispatcher extends AttachableMultipleDuplexInputChannelsBase
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
+                        EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendMessage, err);
                     }
                 }
             }
@@ -134,7 +134,7 @@ class DuplexDispatcher extends AttachableMultipleDuplexInputChannelsBase
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
             }
         }
         finally

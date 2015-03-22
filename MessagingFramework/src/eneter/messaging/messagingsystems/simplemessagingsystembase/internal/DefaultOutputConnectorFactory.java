@@ -9,15 +9,17 @@
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 
 class DefaultOutputConnectorFactory implements IOutputConnectorFactory
 {
-    public DefaultOutputConnectorFactory(IMessagingProvider messagingProvider)
+    public DefaultOutputConnectorFactory(IMessagingProvider messagingProvider, IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myMessagingProvider = messagingProvider;
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -26,13 +28,12 @@ class DefaultOutputConnectorFactory implements IOutputConnectorFactory
     }
 
     @Override
-    public IOutputConnector createOutputConnector(
-            String serviceConnectorAddress, String clientConnectorAddress)
+    public IOutputConnector createOutputConnector(String inputConnectorAddress, String outputConnectorAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DefaultOutputConnector(serviceConnectorAddress, clientConnectorAddress, myMessagingProvider);
+            return new DefaultOutputConnector(inputConnectorAddress, outputConnectorAddress, myMessagingProvider, myProtocolFormatter);
         }
         finally
         {
@@ -41,4 +42,5 @@ class DefaultOutputConnectorFactory implements IOutputConnectorFactory
     }
 
     private IMessagingProvider myMessagingProvider;
+    private IProtocolFormatter myProtocolFormatter;
 }

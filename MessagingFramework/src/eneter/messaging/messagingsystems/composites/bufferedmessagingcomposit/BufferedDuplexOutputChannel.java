@@ -205,7 +205,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         {
             if (!isConnected())
             {
-                String aMessage = TracedObject() + ErrorHandler.SendMessageNotConnectedFailure;
+                String aMessage = TracedObject() + ErrorHandler.FailedToSendMessageBecauseNotConnected;
                 EneterTrace.error(aMessage);
                 throw new IllegalStateException(aMessage);
             }

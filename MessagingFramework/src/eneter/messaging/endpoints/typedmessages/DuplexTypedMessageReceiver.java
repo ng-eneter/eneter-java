@@ -74,7 +74,7 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendResponseFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
                 throw err;
             }
         }
