@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import eneter.messaging.dataprocessing.messagequeueing.MessageQueue;
+import eneter.messaging.dataprocessing.streaming.DynamicInputStream;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.OutputStreamTimeoutWriter;
@@ -383,6 +384,8 @@ class WebSocketClientContext implements IWebSocketClientContext
         }
     }
     
+    // Note: aContinuousMessageStream cannot be close() because it is put to the WebSocketMessage
+    @SuppressWarnings("resource")
     public void doRequestListening()
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -393,7 +396,7 @@ class WebSocketClientContext implements IWebSocketClientContext
 
             try
             {
-                PipedOutputStream aCurrentMessageStream = null;
+                DynamicInputStream aContinuousMessageStream = null;
 
                 while (!myStopReceivingRequestedFlag)
                 {
@@ -431,11 +434,11 @@ class WebSocketClientContext implements IWebSocketClientContext
                         {
                             notify(myPongReceivedEvent);
                         }
-                        // If a new binary message starts.
+                        // If a new message starts.
                         else if (aFrame.FrameType == EFrameType.Binary || aFrame.FrameType == EFrameType.Text)
                         {
                             // If a previous message is not finished then the new message is not expected -> protocol error.
-                            if (aCurrentMessageStream != null)
+                            if (aContinuousMessageStream != null)
                             {
                                 EneterTrace.warning(TracedObject() + "detected unexpected new message. (previous message was not finished)");
 
@@ -444,34 +447,33 @@ class WebSocketClientContext implements IWebSocketClientContext
                                 break;
                             }
 
-                            // Create stream where the message data will be writen.
-                            aCurrentMessageStream = new PipedOutputStream();
-                            PipedInputStream anMessageInputStream = new PipedInputStream(aCurrentMessageStream);
-                            aCurrentMessageStream.write(aFrame.Message);
+                            WebSocketMessage aReceivedMessage = null;
 
-                            // If this frame is also the final frame then set the stream to unblocking mode.
-                            // Note: Due to performance, unblock the stream before the event is sent.
-                            //       So that the client will not wait for unblock.
+                            // If the message does not come in multiple frames then optimize the performance
+                            // and use MemoryStream instead of DynamicStream.
                             if (aFrame.IsFinal)
                             {
-                                aCurrentMessageStream.close();
+                                ByteArrayInputStream aMessageStream = new ByteArrayInputStream(aFrame.Message);
+                                aReceivedMessage = new WebSocketMessage(aFrame.FrameType == EFrameType.Text, aMessageStream);
                             }
-
+                            else
+                            // if the message is split to several frames then use DynamicStream so that writing of incoming
+                            // frames and reading of already received data can run in parallel.
+                            {
+                                // Create stream where the message data will be writen.
+                                aContinuousMessageStream = new DynamicInputStream();
+                                aContinuousMessageStream.writeWithoutCopying(aFrame.Message, 0, aFrame.Message.length);
+                                aReceivedMessage = new WebSocketMessage(aFrame.FrameType == EFrameType.Text, aContinuousMessageStream);
+                            }
+                            
                             // Put received message to the queue.
-                            WebSocketMessage aReceivedMessage = new WebSocketMessage(aFrame.FrameType == EFrameType.Text, anMessageInputStream);
                             myReceivedMessages.enqueueMessage(aReceivedMessage);
-
-                            if (aFrame.IsFinal)
-                            {
-                                // The message is finalized.
-                                aCurrentMessageStream = null;
-                            }
                         }
                         // If a message continues. (I.e. message is split into more fragments.)
                         else if (aFrame.FrameType == EFrameType.Continuation)
                         {
                             // If the message does not exist then continuing frame does not have any sense -> protocol error.
-                            if (aCurrentMessageStream == null)
+                            if (aContinuousMessageStream == null)
                             {
                                 EneterTrace.warning(TracedObject() + "detected unexpected continuing of a message. (none message was started before)");
 
@@ -480,13 +482,15 @@ class WebSocketClientContext implements IWebSocketClientContext
                                 break;
                             }
 
-                            aCurrentMessageStream.write(aFrame.Message);
+                            aContinuousMessageStream.writeWithoutCopying(aFrame.Message, 0, aFrame.Message.length);
 
                             // If this is the final frame.
                             if (aFrame.IsFinal)
                             {
-                                aCurrentMessageStream.close();
-                                aCurrentMessageStream = null;
+                                aContinuousMessageStream.setBlockingMode(false);
+                                
+                                // Note: aContinuousMessageStream cannot be close() because it is put to the WebSocketMessage
+                                aContinuousMessageStream = null;
                             }
                         }
                     }
