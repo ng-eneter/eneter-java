@@ -14,6 +14,8 @@ import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.IpAddressUtil;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.OutputStreamTimeoutWriter;
@@ -174,13 +176,7 @@ class TcpOutputConnector implements IOutputConnector
 
     
     @Override
-    public boolean isStreamWritter()
-    {
-        return false;
-    }
-
-    @Override
-    public void sendMessage(Object message) throws Exception
+    public void sendRequestMessage(Object message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -189,8 +185,8 @@ class TcpOutputConnector implements IOutputConnector
             {
                 OutputStream aStream = myTcpClient.getOutputStream();
                 int aSendTimeout = myClientSecurityFactory.getSendTimeout();
-                byte[] aMessage = (byte[])message;
-                myStreamWriter.write(aStream, aMessage, aSendTimeout);
+                byte[] anEncodedMessage = (byte[])myProtocolFormatter.encodeMessage(myOutputConnectorAddress, message);
+                myStreamWriter.write(aStream, anEncodedMessage, aSendTimeout);
             }
         }
         finally
@@ -199,12 +195,6 @@ class TcpOutputConnector implements IOutputConnector
         }
     }
 
-    @Override
-    public void sendMessage(IMethod1<OutputStream> toStreamWritter)
-            throws Exception
-    {
-        throw new UnsupportedOperationException("toStreamWritter is not supported.");
-    }
     
     private void doResponseListening()
     {
@@ -216,16 +206,25 @@ class TcpOutputConnector implements IOutputConnector
 
             try
             {
-                InputStream anInputStream = myTcpClient.getInputStream();
-                MessageContext aContext = new MessageContext(anInputStream, myIpAddress, null);
-
                 while (!myStopReceivingRequestedFlag)
                 {
-                    if (!myResponseMessageHandler.invoke(aContext))
+                    InputStream anInputStream = myTcpClient.getInputStream();
+                    ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage((InputStream)anInputStream);
+                    if (aProtocolMessage == null)
                     {
-                        // Handler requests stop receiving.
-                        myStopReceivingRequestedFlag = true;
+                        // The client is disconneced by the service.
                         break;
+                    }
+                    
+                    MessageContext aMessageContext = new MessageContext(aProtocolMessage, myIpAddress);
+                    
+                    try
+                    {
+                        myResponseMessageHandler.invoke(aMessageContext);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                     }
                 }
             }
@@ -241,11 +240,20 @@ class TcpOutputConnector implements IOutputConnector
             myIsListeningToResponses = false;
             myListeningToResponsesStartedEvent.reset();
 
-            // If this closing is not caused by CloseConnection method.
+            // If the connection was closed from the service.
             if (!myStopReceivingRequestedFlag)
             {
-                // Try to clean the connection.
-                myCloseConnectionCallback.run();
+                IMethod1<MessageContext> aResponseHandler = myResponseMessageHandler;
+                closeConnection();
+
+                try
+                {
+                    aResponseHandler.invoke(null);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
             }
         }
         finally
@@ -255,13 +263,17 @@ class TcpOutputConnector implements IOutputConnector
     }
     
     
+    
+    
     private InetSocketAddress mySocketAddress;
+    private String myOutputConnectorAddress;
     private Socket myTcpClient;
     private IClientSecurityFactory myClientSecurityFactory;
+    private IProtocolFormatter myProtocolFormatter;
     private String myIpAddress;
     private Object myOpenConnectionLock = new Object();
 
-    private IFunction1<Boolean, MessageContext> myResponseMessageHandler;
+    private IMethod1<MessageContext> myResponseMessageHandler;
     private Thread myResponseReceiverThread;
     private volatile boolean myStopReceivingRequestedFlag;
     private volatile boolean myIsListeningToResponses;
@@ -293,4 +305,14 @@ class TcpOutputConnector implements IOutputConnector
     {
         return getClass().getSimpleName() + ' ';
     }
+
+    @Override
+    public void openConnection(IMethod1<MessageContext> responseMessageHandler)
+            throws Exception
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    
 }
