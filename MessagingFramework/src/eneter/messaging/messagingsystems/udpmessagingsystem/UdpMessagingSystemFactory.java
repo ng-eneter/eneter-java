@@ -26,14 +26,26 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
 {
     private class UdpConnectorFactory implements IOutputConnectorFactory, IInputConnectorFactory
     {
-        @Override
-        public IOutputConnector createOutputConnector(
-                String serviceConnectorAddress, String clientConnectorAddress) throws Exception
+        public UdpConnectorFactory(IProtocolFormatter protocolFormatter)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new UdpOutputConnector(serviceConnectorAddress);
+                myProtocolFormatter = protocolFormatter;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+        @Override
+        public IOutputConnector createOutputConnector(String inputConnectorAddress, String outputConnectorAddress) throws Exception
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                return new UdpOutputConnector(inputConnectorAddress, outputConnectorAddress, myProtocolFormatter);
             }
             finally
             {
@@ -42,19 +54,20 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         }
 
         @Override
-        public IInputConnector createInputConnector(
-                String serviceConnectorAddress) throws Exception
+        public IInputConnector createInputConnector(String inputConnectorAddress) throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new UdpInputConnector(serviceConnectorAddress);
+                return new UdpInputConnector(inputConnectorAddress, myProtocolFormatter);
             }
             finally
             {
                 EneterTrace.leaving(aTrace);
             }
         }
+        
+        private IProtocolFormatter myProtocolFormatter;
     }
     
     /**
@@ -69,13 +82,12 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
      * Constructs the UDP messaging factory. 
      * @param protocolFromatter formatter used for low-level messaging between output and input channels
      */
-    public UdpMessagingSystemFactory(IProtocolFormatter<?> protocolFromatter)
+    public UdpMessagingSystemFactory(IProtocolFormatter protocolFromatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myProtocolFormatter = protocolFromatter;
-            myConnectorFactory = new UdpConnectorFactory();
+            myConnectorFactory = new UdpConnectorFactory(protocolFromatter);
             
             myInputChannelThreading = new SyncDispatching();
             myOutputChannelThreading = myInputChannelThreading;
@@ -97,7 +109,7 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, myConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, myConnectorFactory);
         }
         finally
         {
@@ -116,7 +128,7 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, myConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, myConnectorFactory);
         }
         finally
         {
@@ -136,7 +148,7 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
             IInputConnector anInputConnector = myConnectorFactory.createInputConnector(channelId);
-            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector);
         }
         finally
         {
@@ -186,7 +198,6 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
     }
     
     
-    private IProtocolFormatter<?> myProtocolFormatter;
     private UdpConnectorFactory myConnectorFactory;
     private IThreadDispatcher myDispatcherAfterMessageDecoded = new NoDispatching().getDispatcher();
     

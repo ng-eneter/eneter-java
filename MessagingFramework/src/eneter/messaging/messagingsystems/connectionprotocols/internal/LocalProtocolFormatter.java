@@ -14,7 +14,7 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 
 
-public class LocalProtocolFormatter implements IProtocolFormatter<Object>
+public class LocalProtocolFormatter implements IProtocolFormatter
 {
 
     @Override

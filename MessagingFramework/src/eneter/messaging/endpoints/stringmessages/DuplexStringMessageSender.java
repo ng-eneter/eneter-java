@@ -55,7 +55,7 @@ class DuplexStringMessageSender extends AttachableDuplexOutputChannelBase
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.SendMessageFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendMessage, err);
                 throw err;
             }
         }

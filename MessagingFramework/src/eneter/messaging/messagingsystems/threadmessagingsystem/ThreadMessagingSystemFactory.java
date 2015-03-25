@@ -50,7 +50,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
      * 
      * @param protocolFormatter low-level message formatter for the communication between channels.
      */
-    public ThreadMessagingSystemFactory(IProtocolFormatter<?> protocolFormatter)
+    public ThreadMessagingSystemFactory(IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

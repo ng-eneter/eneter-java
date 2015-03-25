@@ -132,7 +132,7 @@ public class TcpListenerProvider
                 }
                 catch (Exception err)
                 {
-                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedToStartListening, err);
 
                     try
                     {
@@ -172,7 +172,7 @@ public class TcpListenerProvider
                     }
                     catch (Exception err)
                     {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
+                        EneterTrace.warning(TracedObject() + ErrorHandler.IncorrectlyStoppedListening, err);
                     }
                     myServerSocket = null;
                 }

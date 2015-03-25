@@ -66,7 +66,7 @@ public abstract class PathListenerProviderBase
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToStartListening, err);
                 throw err;
             }
         }
@@ -91,7 +91,7 @@ public abstract class PathListenerProviderBase
             }
             catch (Exception err)
             {
-                EneterTrace.warning(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                EneterTrace.warning(TracedObject() + ErrorHandler.IncorrectlyStoppedListening, err);
             }
         }
         finally

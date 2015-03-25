@@ -42,7 +42,7 @@ public class SynchronousMessagingSystemFactory implements IMessagingSystemFactor
      * 
      * @param protocolFormatter formatter used to encode low-level messages between channels
      */
-    public SynchronousMessagingSystemFactory(IProtocolFormatter<?> protocolFormatter)
+    public SynchronousMessagingSystemFactory(IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

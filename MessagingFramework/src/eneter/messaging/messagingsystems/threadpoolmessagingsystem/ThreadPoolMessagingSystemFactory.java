@@ -41,7 +41,7 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
      * 
      * @param protocolFormatter formatting of low-level messages between output and input channels.
      */
-    public ThreadPoolMessagingSystemFactory(IProtocolFormatter<?> protocolFormatter)
+    public ThreadPoolMessagingSystemFactory(IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try

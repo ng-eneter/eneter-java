@@ -92,7 +92,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                     myUnderlyingInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
                     myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
 
-                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedToStartListening, err);
                 }
 
                 myMaxOfflineCheckerRequestedToStop = false;
@@ -133,7 +133,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                 }
                 catch (Exception err)
                 {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.StopListeningFailure, err);
+                    EneterTrace.warning(TracedObject() + ErrorHandler.IncorrectlyStoppedListening, err);
                 }
 
                 myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
