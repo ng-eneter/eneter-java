@@ -14,6 +14,9 @@ import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.messagingsystems.connectionprotocols.EProtocolMessageType;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.*;
 import eneter.net.system.threading.internal.ManualResetEvent;
@@ -50,13 +53,19 @@ class HttpOutputConnector implements IOutputConnector
 
 
     @Override
-    public void openConnection(
-            IFunction1<Boolean, MessageContext> responseMessageHandler)
+    public void openConnection(IMethod1<MessageContext> responseMessageHandler)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (responseMessageHandler == null)
+            {
+                throw new IllegalArgumentException("responseMessageHandler is null.");
+            }
+            ...
+            
+            
             if (responseMessageHandler != null)
             {
                 myStopReceivingRequestedFlag = false;
@@ -86,39 +95,7 @@ class HttpOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myStopReceivingRequestedFlag = true;
-            myStopPollingWaitingEvent.set();
-            
-            if (myResponseReceiverThread != null && Thread.currentThread().getId() != myResponseReceiverThread.getId())
-            {
-                if (myResponseReceiverThread.getState() != State.NEW)
-                {
-                    try
-                    {
-                        myResponseReceiverThread.join(3000);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myResponseReceiverThread.getId());
-                    }
-                    
-                    if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId + myResponseReceiverThread.getId());
-    
-                        try
-                        {
-                            myResponseReceiverThread.stop();
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToAbortThread, err);
-                        }
-                    }
-                }
-            }
-            myResponseReceiverThread = null;
-            myResponseMessageHandler = null;
+            cleanConnection(true);
         }
         finally
         {
@@ -133,13 +110,24 @@ class HttpOutputConnector implements IOutputConnector
     }
     
     @Override
-    public boolean isStreamWritter()
+    public void sendRequestMessage(Object message) throws Exception
     {
-        return false;
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                Object anEncodedMessage = myProtocolFormatter.encodeMessage(myResponseReceiverId, message);
+                sendMessage(anEncodedMessage);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
-    @Override
-    public void sendMessage(Object message) throws Exception
+    private void sendMessage(Object message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -151,13 +139,6 @@ class HttpOutputConnector implements IOutputConnector
         {
             EneterTrace.leaving(aTrace);
         }
-    }
-
-    @Override
-    public void sendMessage(IMethod1<OutputStream> toStreamWritter)
-            throws Exception
-    {
-        throw new UnsupportedOperationException("toStreamWritter is not supported.");
     }
     
     private void doPolling()
@@ -174,7 +155,8 @@ class HttpOutputConnector implements IOutputConnector
                 String aParameters = "?id=" + myResponseReceiverId;
                 URL aPollingUrl = new URL(myUrl.toString() + aParameters);
 
-                while (!myStopReceivingRequestedFlag)
+                boolean aServiceClosedConnection = false;
+                while (!myStopReceivingRequestedFlag && !aServiceClosedConnection)
                 {
                     myStopPollingWaitingEvent.waitOne(myPollingFrequencyMiliseconds);
                     
@@ -186,16 +168,30 @@ class HttpOutputConnector implements IOutputConnector
                         if (aResponseMessages != null && aResponseMessages.length > 0)
                         {
                             // Convert the response to the fast memory stream
-                            ByteArrayInputStream aBufferedMessages = new ByteArrayInputStream(aResponseMessages);
+                            ByteArrayInputStream aBufferedResponse = new ByteArrayInputStream(aResponseMessages);
                             
-                            MessageContext aMessageContext = new MessageContext(aBufferedMessages, myUrl.getHost(), null);
-                            
-                            while (!myStopReceivingRequestedFlag && aBufferedMessages.available() > 0)
+                            while (!myStopReceivingRequestedFlag && !aServiceClosedConnection && aBufferedResponse.available() > 0)
                             {
-                                if (!myResponseMessageHandler.invoke(aMessageContext))
+                                IMethod1<MessageContext> aResponseHandler = myResponseMessageHandler;
+                                
+                                ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage((InputStream)aBufferedResponse);
+                                MessageContext aMessageContext = new MessageContext(aProtocolMessage, myUrl.getHost());
+                                
+                                if (aProtocolMessage != null && aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
                                 {
-                                    EneterTrace.warning(TracedObject() + "failed to process all response messages.");
-                                    break;
+                                    aServiceClosedConnection = true;
+                                }
+                                
+                                try
+                                {
+                                    if (aResponseHandler != null)
+                                    {
+                                        aResponseHandler.invoke(aMessageContext);
+                                    }
+                                }
+                                catch (Exception err)
+                                {
+                                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                                 }
                             }
                         }
@@ -209,6 +205,84 @@ class HttpOutputConnector implements IOutputConnector
 
             myIsListeningToResponses = false;
             myListeningToResponsesStartedEvent.reset();
+            
+            // If the connection was closed from the service.
+            if (!myStopReceivingRequestedFlag)
+            {
+                IMethod1<MessageContext> aResponseHandler = myResponseMessageHandler;
+                cleanConnection(false);
+
+                try
+                {
+                    aResponseHandler.invoke(null);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void cleanConnection(boolean sendMessageFlag)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                myStopReceivingRequestedFlag = true;
+                myStopPollingWaitingEvent.set();
+
+                if (sendMessageFlag)
+                {
+                    // Send close connection message.
+                    try
+                    {
+                        Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(myResponseReceiverId);
+                        sendMessage(anEncodedMessage);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + "failed to send close connection message.", err);
+                    }
+                }
+
+                if (myResponseReceiverThread != null && Thread.currentThread().getId() != myResponseReceiverThread.getId())
+                {
+                    if (myResponseReceiverThread.getState() != State.NEW)
+                    {
+                        try
+                        {
+                            myResponseReceiverThread.join(3000);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of thread. The thread id = " + myResponseReceiverThread.getId());
+                        }
+                        
+                        if (myResponseReceiverThread.getState() != Thread.State.TERMINATED)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId + myResponseReceiverThread.getId());
+        
+                            try
+                            {
+                                myResponseReceiverThread.stop();
+                            }
+                            catch (Exception err)
+                            {
+                                EneterTrace.warning(TracedObject() + ErrorHandler.FailedToAbortThread, err);
+                            }
+                        }
+                    }
+                }
+                myResponseReceiverThread = null;
+                myResponseMessageHandler = null;
+            }
         }
         finally
         {
@@ -217,17 +291,18 @@ class HttpOutputConnector implements IOutputConnector
     }
     
     
-    
     private URL myUrl;
     private String myResponseReceiverId;
+    private IProtocolFormatter myProtocolFormatter;
     private Thread myResponseReceiverThread;
     private volatile boolean myIsListeningToResponses;
     private volatile boolean myStopReceivingRequestedFlag;
     private ManualResetEvent myListeningToResponsesStartedEvent = new ManualResetEvent(false);
-    private IFunction1<Boolean, MessageContext> myResponseMessageHandler;
+    private IMethod1<MessageContext> myResponseMessageHandler;
 
     private int myPollingFrequencyMiliseconds;
     private ManualResetEvent myStopPollingWaitingEvent = new ManualResetEvent(false);
+    private Object myConnectionManipulatorLock = new Object();
     
     private Runnable myDoPolling = new Runnable()
     {

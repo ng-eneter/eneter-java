@@ -8,24 +8,21 @@
 
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
-import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.IpAddressUtil;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.OutputStreamTimeoutWriter;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.*;
 import eneter.net.system.*;
 import eneter.net.system.threading.internal.*;
 
 
 class TcpOutputConnector implements IOutputConnector
 {
-    public TcpOutputConnector(String ipAddressAndPort, IClientSecurityFactory clientSecurityFactory)
+    public TcpOutputConnector(String ipAddressAndPort, String outputConnectorAddress, IProtocolFormatter protocolFormatter, IClientSecurityFactory clientSecurityFactory)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -41,9 +38,11 @@ class TcpOutputConnector implements IOutputConnector
                 EneterTrace.error(ipAddressAndPort + ErrorHandler.InvalidUriAddress, err);
                 throw err;
             }
-
             mySocketAddress = new InetSocketAddress(aUri.getHost(), aUri.getPort());
+            
+            myOutputConnectorAddress = outputConnectorAddress;
             myClientSecurityFactory = clientSecurityFactory;
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -51,39 +50,42 @@ class TcpOutputConnector implements IOutputConnector
         }
     }
 
+    
     @Override
-    public void openConnection(
-            IFunction1<Boolean, MessageContext> responseMessageHandler)
+    public void openConnection(IMethod1<MessageContext> responseMessageHandler)
             throws Exception
-    {
+        {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (responseMessageHandler == null)
+            {
+                throw new IllegalArgumentException("responseMessageHandler is null.");
+            }
+            
             synchronized (myOpenConnectionLock)
             {
-                if (isConnected())
-                {
-                    throw new IllegalStateException(TracedObject() + ErrorHandler.IsAlreadyConnected);
-                }
-
                 try
                 {
                     myTcpClient = myClientSecurityFactory.createClientSocket(mySocketAddress);
-                    
                     myIpAddress = IpAddressUtil.getLocalIpAddress(myTcpClient);
 
-                    // If it shall listen to response messages.
-                    if (responseMessageHandler != null)
+                    myStopReceivingRequestedFlag = false;
+
+                    myResponseMessageHandler = responseMessageHandler;
+
+                    myResponseReceiverThread = new Thread(myDoResponseListening);
+                    myResponseReceiverThread.start();
+
+                    // Wait until thread listening to response messages is running.
+                    myListeningToResponsesStartedEvent.waitOne(1000);
+                    
+                    byte[] anEncodedMessage = (byte[])myProtocolFormatter.encodeOpenConnectionMessage(myOutputConnectorAddress);
+                    if (anEncodedMessage != null)
                     {
-                        myStopReceivingRequestedFlag = false;
-
-                        myResponseMessageHandler = responseMessageHandler;
-
-                        myResponseReceiverThread = new Thread(myDoResponseListening);
-                        myResponseReceiverThread.start();
-
-                        // Wait until thread listening to response messages is running.
-                        myListeningToResponsesStartedEvent.waitOne(1000);
+                        OutputStream aStream = myTcpClient.getOutputStream();
+                        int aSendTimeout = myClientSecurityFactory.getSendTimeout();
+                        myStreamWriter.write(aStream, anEncodedMessage, aSendTimeout);
                     }
                 }
                 catch (Exception err)
@@ -153,7 +155,6 @@ class TcpOutputConnector implements IOutputConnector
                     }
                 }
                 myResponseReceiverThread = null;
-
                 myResponseMessageHandler = null;
             }
         }
@@ -305,14 +306,4 @@ class TcpOutputConnector implements IOutputConnector
     {
         return getClass().getSimpleName() + ' ';
     }
-
-    @Override
-    public void openConnection(IMethod1<MessageContext> responseMessageHandler)
-            throws Exception
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    
 }

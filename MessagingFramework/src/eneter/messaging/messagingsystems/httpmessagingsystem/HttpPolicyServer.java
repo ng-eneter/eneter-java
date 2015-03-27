@@ -127,7 +127,7 @@ public class HttpPolicyServer
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                EneterTrace.error(TracedObject() + ErrorHandler.FailedToStartListening, err);
                 throw err;
             }
         }

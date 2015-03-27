@@ -26,11 +26,12 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
 {
     private class TcpInputConnectorFactory implements IInputConnectorFactory
     {
-        public TcpInputConnectorFactory(IServerSecurityFactory securityFactory)
+        public TcpInputConnectorFactory(IProtocolFormatter protocolFormatter, IServerSecurityFactory securityFactory)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
+                myProtocolFormatter = protocolFormatter;
                 mySecurityFactory = securityFactory;
             }
             finally
@@ -40,13 +41,12 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
         
         @Override
-        public IInputConnector createInputConnector(
-                String receiverAddress) throws Exception
+        public IInputConnector createInputConnector(String inputConnectorAddress) throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new TcpInputConnector(receiverAddress, mySecurityFactory);
+                return new TcpInputConnector(inputConnectorAddress, myProtocolFormatter, mySecurityFactory);
             }
             finally
             {
@@ -54,16 +54,18 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
             }
         }
         
+        private IProtocolFormatter myProtocolFormatter;
         private IServerSecurityFactory mySecurityFactory;
     }
     
     private class TcpOutputConnectorFactory implements IOutputConnectorFactory
     {
-        public TcpOutputConnectorFactory(IClientSecurityFactory securityFactory)
+        public TcpOutputConnectorFactory(IProtocolFormatter protocolFormatter, IClientSecurityFactory securityFactory)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
+                myProtocolFormatter = protocolFormatter;
                 mySecurityFactory = securityFactory;
             }
             finally
@@ -73,14 +75,13 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
 
         @Override
-        public IOutputConnector createOutputConnector(
-                String serviceConnectorAddress, String clientConnectorAddress)
+        public IOutputConnector createOutputConnector(String inputConnectorAddress, String outputConnectorAddress)
                 throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new TcpOutputConnector(serviceConnectorAddress, mySecurityFactory);
+                return new TcpOutputConnector(inputConnectorAddress, outputConnectorAddress, myProtocolFormatter, mySecurityFactory);
             }
             finally
             {
@@ -88,6 +89,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
             }
         }
         
+        private IProtocolFormatter myProtocolFormatter;
         private IClientSecurityFactory mySecurityFactory;
     }
     
@@ -106,7 +108,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
      * 
      * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
      */
-    public TcpMessagingSystemFactory(IProtocolFormatter<byte[]> protocolFormatter)
+    public TcpMessagingSystemFactory(IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -143,9 +145,9 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            IOutputConnectorFactory anOutputConnectorFactory = new TcpOutputConnectorFactory(myClientSecurityFactory);
+            IOutputConnectorFactory anOutputConnectorFactory = new TcpOutputConnectorFactory(myProtocolFormatter, myClientSecurityFactory);
             
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, anOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, anOutputConnectorFactory);
         }
         finally
         {
@@ -175,9 +177,9 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            IOutputConnectorFactory anOutputConnectorFactory = new TcpOutputConnectorFactory(myClientSecurityFactory);
+            IOutputConnectorFactory anOutputConnectorFactory = new TcpOutputConnectorFactory(myProtocolFormatter, myClientSecurityFactory);
             
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, anOutputConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, anOutputConnectorFactory);
         }
         finally
         {
@@ -203,10 +205,10 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
             
-            IInputConnectorFactory aFactory = new TcpInputConnectorFactory(myServerSecurityFactory);
+            IInputConnectorFactory aFactory = new TcpInputConnectorFactory(myProtocolFormatter, myServerSecurityFactory);
             IInputConnector anInputConnector = aFactory.createInputConnector(channelId);
             
-            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector);
         }
         finally
         {
@@ -292,11 +294,12 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         return myOutputChannelThreading;
     }
     
-    private IProtocolFormatter<byte[]> myProtocolFormatter;
+    
+    private IProtocolFormatter myProtocolFormatter;
+    private IThreadDispatcher myDispatcherAfterMessageDecoded = new NoDispatching().getDispatcher();
+    
     private IServerSecurityFactory myServerSecurityFactory = new NoneSecurityServerFactory();
     private IClientSecurityFactory myClientSecurityFactory = new NoneSecurityClientFactory();
     private IThreadDispatcherProvider myInputChannelThreading;
     private IThreadDispatcherProvider myOutputChannelThreading;
-    private IThreadDispatcher myDispatcherAfterMessageDecoded = new NoDispatching().getDispatcher();
-    
 }
