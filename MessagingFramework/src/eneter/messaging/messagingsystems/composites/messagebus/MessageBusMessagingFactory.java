@@ -7,8 +7,8 @@
 
 package eneter.messaging.messagingsystems.composites.messagebus;
 
+import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.threading.dispatching.*;
@@ -153,6 +153,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
                 myClientConnectingAddress = clientConnectingAddress;
                 myServiceConnectingAddress = serviceConnctingAddress;
                 myMessageBusMessaging = messageBusMessaging;
+                myOpenConnectionTimeout = 30000;
             }
             finally
             {
@@ -170,7 +171,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
             try
             {
                 IDuplexOutputChannel aMessageBusOutputChannel = myMessageBusMessaging.createDuplexOutputChannel(myClientConnectingAddress, clientConnectorAddress);
-                return new MessageBusOutputConnector(serviceConnectorAddress, aMessageBusOutputChannel);
+                return new MessageBusOutputConnector(serviceConnectorAddress, mySerializer, aMessageBusOutputChannel, myOpenConnectionTimeout);
             }
             finally
             {
@@ -179,7 +180,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         }
         
         @Override
-        public IInputConnector createInputConnector(String receiverAddress)
+        public IInputConnector createInputConnector(String inputConnectorAddress)
                 throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
@@ -187,8 +188,8 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
             {
                 // Note: message bus service address is encoded in OpenConnectionMessage when the service connects the message bus.
                 //       Therefore receiverAddress (which is message bus service address) is used when creating output channel.
-                IDuplexOutputChannel aMessageBusOutputChannel = myMessageBusMessaging.createDuplexOutputChannel(myServiceConnectingAddress, receiverAddress);
-                return new MessageBusInputConnector(aMessageBusOutputChannel);
+                IDuplexOutputChannel aMessageBusOutputChannel = myMessageBusMessaging.createDuplexOutputChannel(myServiceConnectingAddress, inputConnectorAddress);
+                return new MessageBusInputConnector(mySerializer, aMessageBusOutputChannel);
             }
             finally
             {
@@ -196,9 +197,22 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
             }
         }
         
+        public int getOpenConnectionTimeout()
+        {
+            return myOpenConnectionTimeout;
+        }
+
+        public void setOpenConnectionTimeout(int openConnectionTimeout)
+        {
+            myOpenConnectionTimeout = openConnectionTimeout;
+        }
+
         private String myClientConnectingAddress;
         private String myServiceConnectingAddress;
+        private ISerializer mySerializer;
         private IMessagingSystemFactory myMessageBusMessaging;
+        
+        private int myOpenConnectionTimeout;
     }
     
    
@@ -211,7 +225,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
      */
     public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory underlyingMessaging)
     {
-        this(serviceConnctingAddress, clientConnectingAddress, underlyingMessaging, new EneterProtocolFormatter());
+        this(serviceConnctingAddress, clientConnectingAddress, underlyingMessaging, new MessageBusCustomSerializer());
     }
     
     /**
@@ -222,7 +236,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
      * @param underlyingMessaging messaging system used by the message bus.
      * @param protocolFormatter protocol formatter used for the communication between channels.
      */
-    public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory underlyingMessaging, IProtocolFormatter<?> protocolFormatter)
+    public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory underlyingMessaging, ISerializer serializer)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -232,8 +246,6 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
             // Dispatch events in the same thread as notified from the underlying messaging.
             myOutputChannelThreading = new NoDispatching();
             myInputChannelThreading = myOutputChannelThreading;
-
-            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -250,7 +262,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
             IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aDispatcherAfterMessageDecoded, myConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aDispatcherAfterMessageDecoded, myConnectorFactory);
         }
         finally
         {
@@ -259,15 +271,14 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
     }
 
     @Override
-    public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
-            String responseReceiverId) throws Exception
+    public IDuplexOutputChannel createDuplexOutputChannel(String channelId, String responseReceiverId) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
             IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aDispatcherAfterMessageDecoded, myConnectorFactory, myProtocolFormatter, false);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aDispatcherAfterMessageDecoded, myConnectorFactory);
         }
         finally
         {
@@ -285,8 +296,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
             IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
             IInputConnector anInputConnector = myConnectorFactory.createInputConnector(channelId);
-            DefaultDuplexInputChannel anInputChannel = new DefaultDuplexInputChannel(channelId, aDispatcher, aDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
-            anInputChannel.includeResponseReceiverIdToResponses(true);
+            DefaultDuplexInputChannel anInputChannel = new DefaultDuplexInputChannel(channelId, aDispatcher, aDispatcherAfterMessageDecoded, anInputConnector);
             return anInputChannel;
         }
         finally
@@ -335,9 +345,37 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         return myOutputChannelThreading;
     }
     
+    /**
+     * Sets maximum time for opening connection with the service via the message bus. Default value is 30 seconds.
+     * 
+     * When the client opens the connection with a service via message bus it requests message bus to open connection
+     * with a desired service. The message checks if the requested service exists and if yes it forwards the open connection request.
+     * Then when the service receives the open connection request it sends back the confirmation message that the client is connected.
+     * This timeout specifies the maximum time which is allowed for sending the open connection request and receiving the confirmation from the service.
+     * 
+     * @param milliseconds
+     */
+    public void setConnectTimeout(int milliseconds)
+    {
+        myConnectorFactory.setOpenConnectionTimeout(milliseconds);
+    }
     
-    private IProtocolFormatter<?> myProtocolFormatter;
-
+    /**
+     * Returns maximum time for opening connection with the service via the message bus. Default value is 30 seconds.
+     * 
+     * When the client opens the connection with a service via message bus it requests message bus to open connection
+     * with a desired service. The message checks if the requested service exists and if yes it forwards the open connection request.
+     * Then when the service receives the open connection request it sends back the confirmation message that the client is connected.
+     * This timeout specifies the maximum time which is allowed for sending the open connection request and receiving the confirmation from the service.
+     * 
+     * 
+     * @return time in milliseconds
+     */
+    public int getConnectionTimeout()
+    {
+        return myConnectorFactory.getOpenConnectionTimeout();
+    }
+    
     private MessageBusConnectorFactory myConnectorFactory;
     private IThreadDispatcherProvider myInputChannelThreading;
     private IThreadDispatcherProvider myOutputChannelThreading;

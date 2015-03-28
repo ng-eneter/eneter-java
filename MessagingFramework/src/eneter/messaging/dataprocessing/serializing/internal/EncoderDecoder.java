@@ -6,7 +6,7 @@
  * 
  */
 
-package eneter.messaging.dataprocessing.streaming.internal;
+package eneter.messaging.dataprocessing.serializing.internal;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -133,6 +133,138 @@ public class EncoderDecoder
         }
     }
     
+    public void write(DataOutputStream writer, Object data, boolean isLittleEndianRequested) throws Exception
+    {
+        if (data instanceof String)
+        {
+            writeString(writer, (String)data, isLittleEndianRequested);
+        }
+        else if (data instanceof byte[] ||
+                 data instanceof Byte[])
+        {
+            writeByteArray(writer, (byte[])data, isLittleEndianRequested);
+        }
+        else
+        {
+            throw new IllegalStateException("Only byte[] or String is supported.");
+        }
+    }
+    
+    public void writeString(DataOutputStream writer, String data, boolean isLittleEndianRequested) throws IOException
+    {
+        // Write info, that encoded data is string.
+        Charset anEncoding = Charset.forName("UTF-8");
+        writer.write((byte)STRING_UTF8_ID);
+        writePlainString(writer, data, anEncoding, isLittleEndianRequested);
+    }
+    
+    public void writeByteArray(DataOutputStream writer, byte[] data, boolean isLittleEndianRequested) throws IOException
+    {
+        // Write info, that encoded data is array of bytes.
+        writer.write((byte)BYTES_ID);
+        writePlainByteArray(writer, data, isLittleEndianRequested);
+    }
+    
+    public Object read(DataInputStream reader, boolean isLittleEndian) throws Exception
+    {
+        byte aDataType = reader.readByte();
+        Object aResult;
+
+        if (aDataType == BYTES_ID)
+        {
+            aResult = readPlainByteArray(reader, isLittleEndian);
+        }
+        else
+        {
+            Charset anEncoding;
+            
+            if (aDataType == STRING_UTF8_ID)
+            {
+                anEncoding = Charset.forName("UTF-8");
+            }
+            else if (aDataType == STRING_UTF16_LE_ID)
+            {
+                anEncoding = Charset.forName("UTF-16LE");
+            }
+            else if (aDataType == STRING_UTF16_BE_ID)
+            {
+                anEncoding = Charset.forName("UTF-16BE");
+            }
+            else
+            {
+                throw new IllegalStateException("Unknnown data encoding " + aDataType);
+            }
+
+            aResult = readPlainString(reader, anEncoding, isLittleEndian);
+        }
+
+        return aResult;
+    }
+    
+    public void writePlainString(DataOutputStream writer, String data, Charset stringEncoding, boolean isLittleEndianRequested) throws IOException
+    {
+        ByteBuffer aDataBytes = stringEncoding.encode(data);
+
+        writePlainByteArray(writer, aDataBytes.array(), isLittleEndianRequested);
+    }
+    
+    public String readPlainString(DataInputStream reader, Charset stringEncoding, boolean isLittleEndian) throws IOException
+    {
+        byte[] aStringBytes = readPlainByteArray(reader, isLittleEndian);
+
+        String aResult = new String(aStringBytes, stringEncoding);
+        return aResult;
+    }
+    
+    public void writePlainByteArray(DataOutputStream writer, byte[] data, boolean isLittleEndianRequested) throws IOException
+    {
+        // Length of the array.
+        writeInt32(writer, data.length, isLittleEndianRequested);
+
+        // Bytes.
+        writer.write(data);
+    }
+    
+    public byte[] readPlainByteArray(DataInputStream reader, boolean isLittleEndian) throws IOException
+    {
+        int aLength = readInt32(reader, isLittleEndian);
+        byte[] aData = new byte[aLength]; 
+        reader.readFully(aData);
+
+        return aData;
+    }
+    
+    public void writeInt32(DataOutputStream writer, int value, boolean isLittleEndianRequested) throws IOException
+    {
+        // If the endianess of the machine is different than requested endianess then correct it.
+        if (isLittleEndianRequested)
+        {
+            value = switchEndianess(value);
+        }
+
+        writer.writeInt(value);
+    }
+    
+    public int readInt32(DataInputStream reader, boolean isLittleEndian) throws IOException
+    {
+        int aValue = reader.readInt();
+
+        if (isLittleEndian)
+        {
+            // If the endianess of the machine is same as requested endianess then just write.
+            aValue = switchEndianess(aValue);
+        }
+
+        return aValue;
+    }
+    
+    private int switchEndianess(int i)
+    {
+        int anInt = ((i & 0x000000ff) << 24) + ((i & 0x0000ff00) << 8) +
+                    ((i & 0x00ff0000) >> 8) + (int)((i & 0xff000000) >> 24);
+
+        return anInt;
+    }
     
     
     private final byte STRING_UTF8_ID = 10;

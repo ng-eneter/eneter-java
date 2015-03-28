@@ -7,70 +7,24 @@
 
 package eneter.messaging.messagingsystems.composites.messagebus;
 
-import java.io.OutputStream;
-
+import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.*;
 
 class MessageBusInputConnector implements IInputConnector
 {
-    private class ResponseSender implements ISender
-    {
-        public ResponseSender(IDuplexOutputChannel messageBusOutputChannel)
-        {
-            EneterTrace aTrace = EneterTrace.entering();
-            try
-            {
-                myMessageBusOutputChannel = messageBusOutputChannel;
-            }
-            finally
-            {
-                EneterTrace.leaving(aTrace);
-            }
-        }
-
-        @Override
-        public boolean isStreamWritter()
-        {
-            return false;
-        }
-
-        @Override
-        public void sendMessage(Object message) throws Exception
-        {
-            EneterTrace aTrace = EneterTrace.entering();
-            try
-            {
-                myMessageBusOutputChannel.sendMessage(message);
-            }
-            finally
-            {
-                EneterTrace.leaving(aTrace);
-            }
-        }
-
-        @Override
-        public void sendMessage(IMethod1<OutputStream> toStreamWritter)
-                throws Exception
-        {
-            throw new IllegalStateException();
-        }
-    
-        private IDuplexOutputChannel myMessageBusOutputChannel;
-    }
-    
-
-    
-    public MessageBusInputConnector(IDuplexOutputChannel messageBusOutputChannel)
+    public MessageBusInputConnector(ISerializer serializer, IDuplexOutputChannel messageBusOutputChannel)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myServiceId = messageBusOutputChannel.getResponseReceiverId();
+            mySerializer = serializer;
             myMessageBusOutputChannel = messageBusOutputChannel;
-            myResponseSender = new ResponseSender(myMessageBusOutputChannel);
         }
         finally
         {
@@ -79,19 +33,39 @@ class MessageBusInputConnector implements IInputConnector
     }
     
     @Override
-    public void startListening(IFunction1<Boolean, MessageContext> messageHandler)
+    public void startListening(IMethod1<MessageContext> messageHandler)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myMessageHandler = messageHandler;
-            myMessageBusOutputChannel.responseMessageReceived().subscribe(myOnMessageFromMessageBusReceived);
-            myMessageBusOutputChannel.connectionClosed().subscribe(myOnConnectionWithMessageBusClosed);
+            if (messageHandler == null)
+            {
+                throw new IllegalArgumentException("messageHandler is null.");
+            }
+            
+            synchronized (myListeningManipulatorLock)
+            {
+                try
+                {
+                    myMessageHandler = messageHandler;
+                    myMessageBusOutputChannel.responseMessageReceived().subscribe(myOnMessageFromMessageBusReceived);
 
-            // Open the connection with the service.
-            // Note: the response receiver id of this output channel represents the service id inside the message bus.
-            myMessageBusOutputChannel.openConnection();
+                    // Open connection with the message bus.
+                    myMessageBusOutputChannel.openConnection();
+
+                    // Register service in the message bus.
+                    MessageBusMessage aMessage = new MessageBusMessage(EMessageBusRequest.RegisterService, myServiceId, null);
+                    Object aSerializedMessage = mySerializer.serialize(aMessage, MessageBusMessage.class);
+
+                    myMessageBusOutputChannel.sendMessage(aSerializedMessage);
+                }
+                catch (Exception err)
+                {
+                    stopListening();
+                    throw err;
+                }
+            }
         }
         finally
         {
@@ -105,13 +79,8 @@ class MessageBusInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myMessageBusOutputChannel != null)
-            {
-                myMessageBusOutputChannel.closeConnection();
-                myMessageBusOutputChannel.responseMessageReceived().subscribe(myOnMessageFromMessageBusReceived);
-                myMessageBusOutputChannel.connectionClosed().subscribe(myOnConnectionWithMessageBusClosed);
-            }
-
+            myMessageBusOutputChannel.closeConnection();
+            myMessageBusOutputChannel.responseMessageReceived().subscribe(myOnMessageFromMessageBusReceived);
             myMessageHandler = null;
         }
         finally
@@ -127,38 +96,96 @@ class MessageBusInputConnector implements IInputConnector
     }
 
     @Override
-    public ISender createResponseSender(String clientId)
-            throws Exception
+    public void sendResponseMessage(String clientId, Object message) throws Exception
     {
-        throw new UnsupportedOperationException("CreateResponseSender is not supported.");
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            MessageBusMessage aMessage = new MessageBusMessage(EMessageBusRequest.SendResponseMessage, clientId, message);
+            Object aSerializedMessage = mySerializer.serialize(aMessage, MessageBusMessage.class);
+
+            myMessageBusOutputChannel.sendMessage(aSerializedMessage);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
     }
 
+
+    @Override
+    public void closeConnection(String clientId) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            MessageBusMessage aMessage = new MessageBusMessage(EMessageBusRequest.DisconnectClient, clientId, null);
+            Object aSerializedMessage = mySerializer.serialize(aMessage, MessageBusMessage.class);
+
+            myMessageBusOutputChannel.sendMessage(aSerializedMessage);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     private void onMessageFromMessageBusReceived(Object sender, DuplexChannelMessageEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myMessageHandler != null)
+            MessageBusMessage aMessageBusMessage;
+            try
+            {
+                aMessageBusMessage = mySerializer.deserialize(e.getMessage(), MessageBusMessage.class);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.error(TracedObject() + "failed to deserialize message.", err);
+                return;
+            }
+            
+            if (aMessageBusMessage.Request == EMessageBusRequest.ConnectClient)
             {
                 try
                 {
-                    MessageContext aMessageContext = new MessageContext(e.getMessage(), e.getSenderAddress(), myResponseSender);
-                    myMessageHandler.invoke(aMessageContext);
+                    MessageBusMessage aResponseMessage = new MessageBusMessage(EMessageBusRequest.ConfirmClient, aMessageBusMessage.Id, null);
+                    Object aSerializedResponse = mySerializer.serialize(aResponseMessage, MessageBusMessage.class);
+                    myMessageBusOutputChannel.sendMessage(aSerializedResponse);
                 }
                 catch (Exception err)
                 {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedToReceiveMessage);
+                    return;
                 }
+
+                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.OpenConnectionRequest, aMessageBusMessage.Id, null);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
+                notifyMessageContext(aMessageContext);
+            }
+            else if (aMessageBusMessage.Request == EMessageBusRequest.DisconnectClient)
+            {
+                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aMessageBusMessage.Id, aMessageBusMessage.MessageData);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
+                notifyMessageContext(aMessageContext);
+            }
+            else if (aMessageBusMessage.Request == EMessageBusRequest.SendRequestMessage)
+            {
+                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.MessageReceived, aMessageBusMessage.Id, aMessageBusMessage.MessageData);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
+                notifyMessageContext(aMessageContext);
             }
         }
+        
         finally
         {
             EneterTrace.leaving(aTrace);
         }
     }
     
-    private void onConnectionWithMessageBusClosed(Object sender, DuplexChannelEventArgs e)
+    
+    private void notifyMessageContext(MessageContext messageContext)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -167,7 +194,7 @@ class MessageBusInputConnector implements IInputConnector
             {
                 try
                 {
-                    myMessageHandler.invoke(null);
+                    myMessageHandler.invoke(messageContext);
                 }
                 catch (Exception err)
                 {
@@ -182,9 +209,11 @@ class MessageBusInputConnector implements IInputConnector
     }
     
     
-    private ISender myResponseSender;
+    private String myServiceId;
+    private ISerializer mySerializer;
     private IDuplexOutputChannel myMessageBusOutputChannel;
-    private IFunction1<Boolean, MessageContext> myMessageHandler;
+    private IMethod1<MessageContext> myMessageHandler;
+    private Object myListeningManipulatorLock = new Object();
     
     private EventHandler<DuplexChannelMessageEventArgs> myOnMessageFromMessageBusReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
@@ -192,15 +221,6 @@ class MessageBusInputConnector implements IInputConnector
         public void onEvent(Object sender, DuplexChannelMessageEventArgs e)
         {
             onMessageFromMessageBusReceived(sender, e);
-        }
-    };
-    
-    private EventHandler<DuplexChannelEventArgs> myOnConnectionWithMessageBusClosed = new EventHandler<DuplexChannelEventArgs>()
-    {
-        @Override
-        public void onEvent(Object sender, DuplexChannelEventArgs e)
-        {
-            onConnectionWithMessageBusClosed(sender, e);
         }
     };
     

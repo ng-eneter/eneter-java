@@ -7,11 +7,12 @@
 
 package eneter.messaging.messagingsystems.composites.messagebus;
 
-import java.io.OutputStream;
 import java.util.concurrent.TimeoutException;
 
+import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.*;
@@ -21,13 +22,17 @@ class MessageBusOutputConnector implements IOutputConnector
 {
 
     
-    public MessageBusOutputConnector(String serviceAddressInMessageBus, IDuplexOutputChannel messageBusOutputChannel)
+    public MessageBusOutputConnector(String inputConnectorAddress, ISerializer serializer, IDuplexOutputChannel messageBusOutputChannel,
+            int openConnectionTimeout)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myServiceAddressInMessageBus = serviceAddressInMessageBus;
+            myServiceId = inputConnectorAddress;
+            myClientId = messageBusOutputChannel.getResponseReceiverId();
+            mySerializer = serializer;
             myMessageBusOutputChannel = messageBusOutputChannel;
+            myOpenConnectionTimeout = (openConnectionTimeout == -1) ? 0 : openConnectionTimeout;
         }
         finally
         {
@@ -35,14 +40,18 @@ class MessageBusOutputConnector implements IOutputConnector
         }
     }
     
-
     @Override
-    public void openConnection(IFunction1<Boolean, MessageContext> responseMessageHandler)
+    public void openConnection(IMethod1<MessageContext> responseMessageHandler)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (responseMessageHandler == null)
+            {
+                throw new IllegalArgumentException("responseMessageHandler is null.");
+            }
+            
             synchronized (myConnectionManipulator)
             {
                 try
@@ -52,24 +61,27 @@ class MessageBusOutputConnector implements IOutputConnector
                     myMessageBusOutputChannel.connectionClosed().subscribe(myOnConnectionWithMessageBusClosed);
                     myMessageBusOutputChannel.openConnection();
 
-                    // Inform the message bus which service this client wants to connect.
                     myOpenConnectionConfirmed.reset();
-                    myMessageBusOutputChannel.sendMessage(myServiceAddressInMessageBus);
+                    
+                    // Tell message bus which service shall be associated with this connection.
+                    MessageBusMessage aMessage = new MessageBusMessage(EMessageBusRequest.ConnectClient, myServiceId, null);
+                    Object aSerializedMessage = mySerializer.serialize(aMessage, MessageBusMessage.class);
+                    myMessageBusOutputChannel.sendMessage(aSerializedMessage);
 
-                    if (!myOpenConnectionConfirmed.waitOne(30000))
+                    if (!myOpenConnectionConfirmed.waitOne(myOpenConnectionTimeout))
                     {
-                        throw new TimeoutException(TracedObject() + "failed to open the connection within the timeout.");
+                        throw new TimeoutException(TracedObject() + "failed to open the connection within the timeout: " + myOpenConnectionTimeout);
+                    }
+                    
+                    if (!myMessageBusOutputChannel.isConnected())
+                    {
+                        throw new IllegalStateException(TracedObject() + ErrorHandler.FailedToOpenConnection);
                     }
                 }
                 catch (Exception err)
                 {
                     closeConnection();
                     throw err;
-                }
-
-                if (!myMessageBusOutputChannel.isConnected())
-                {
-                    throw new IllegalStateException(TracedObject() + ErrorHandler.FailedToOpenConnection);
                 }
             }
         }
@@ -89,12 +101,10 @@ class MessageBusOutputConnector implements IOutputConnector
             {
                 myResponseMessageHandler = null;
                 
-                if (myMessageBusOutputChannel != null)
-                {
-                    myMessageBusOutputChannel.closeConnection();
-                    myMessageBusOutputChannel.responseMessageReceived().subscribe(myOnMessageFromMessageBusReceived);
-                    myMessageBusOutputChannel.connectionClosed().subscribe(myOnConnectionWithMessageBusClosed);
-                }
+                // Close connection with the message bus.
+                myMessageBusOutputChannel.closeConnection();
+                myMessageBusOutputChannel.responseMessageReceived().subscribe(myOnMessageFromMessageBusReceived);
+                myMessageBusOutputChannel.connectionClosed().subscribe(myOnConnectionWithMessageBusClosed);
             }
         }
         finally
@@ -113,18 +123,16 @@ class MessageBusOutputConnector implements IOutputConnector
     }
 
     @Override
-    public boolean isStreamWritter()
-    {
-        return false;
-    }
-    
-    @Override
-    public void sendMessage(Object message) throws Exception
+    public void sendRequestMessage(Object message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myMessageBusOutputChannel.sendMessage(message);
+            // Note: do not send the client id. It will be automatically assign in the message bus before forwarding the message to the service.
+            //       It is done like this due to security reasons. So that some client cannot pretend other client just by sending a different id.
+            MessageBusMessage aMessage = new MessageBusMessage(EMessageBusRequest.SendRequestMessage, "", message);
+            Object aSerializedMessage = mySerializer.serialize(aMessage, MessageBusMessage.class);
+            myMessageBusOutputChannel.sendMessage(aSerializedMessage);
         }
         finally
         {
@@ -132,36 +140,47 @@ class MessageBusOutputConnector implements IOutputConnector
         }
     }
 
-    @Override
-    public void sendMessage(IMethod1<OutputStream> toStreamWritter)
-            throws Exception
-    {
-        throw new UnsupportedOperationException();
-    }
     
     private void onMessageFromMessageBusReceived(Object sender, DuplexChannelMessageEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            Object aMessage = e.getMessage();
+            MessageBusMessage aMessageBusMessage;
+            try
+            {
+                aMessageBusMessage = mySerializer.deserialize(e.getMessage(), MessageBusMessage.class);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.error(TracedObject() + "failed to deserialize message.", err);
+                return;
+            }
             
-            // If it is a confirmation message that the connection was really open.
-            if (aMessage instanceof String && ((String)aMessage).equals("OK"))
+            if (aMessageBusMessage.Request == EMessageBusRequest.ConfirmClient)
             {
                 // Indicate the connection is open and relase the waiting in the OpenConnection().
                 myOpenConnectionConfirmed.set();
+
+                EneterTrace.debug("CONNECTION CONFIRMED");
             }
-            else if (myResponseMessageHandler != null)
+            else if (aMessageBusMessage.Request == EMessageBusRequest.SendResponseMessage)
             {
-                try
+                IMethod1<MessageContext> aResponseHandler = myResponseMessageHandler;
+
+                if (aResponseHandler != null)
                 {
-                    MessageContext aMessageContext = new MessageContext(aMessage, e.getSenderAddress(), null);
-                    myResponseMessageHandler.invoke(aMessageContext);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                    ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.MessageReceived, myServiceId, aMessageBusMessage.MessageData);
+                    MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
+
+                    try
+                    {
+                        aResponseHandler.invoke(aMessageContext);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                    }
                 }
             }
         }
@@ -179,11 +198,14 @@ class MessageBusOutputConnector implements IOutputConnector
             // In case the OpenConnection() is waiting until the connection is open relase it.
             myOpenConnectionConfirmed.set();
 
-            if (myResponseMessageHandler != null)
+            IMethod1<MessageContext> aResponseHandler = myResponseMessageHandler;
+            closeConnection();
+
+            if (aResponseHandler != null)
             {
                 try
                 {
-                    myResponseMessageHandler.invoke(null);
+                    aResponseHandler.invoke(null);
                 }
                 catch (Exception err)
                 {
@@ -197,9 +219,13 @@ class MessageBusOutputConnector implements IOutputConnector
         }
     }
     
+    
+    private String myClientId;
+    private int myOpenConnectionTimeout;
+    private ISerializer mySerializer;
     private IDuplexOutputChannel myMessageBusOutputChannel;
-    private String myServiceAddressInMessageBus;
-    private IFunction1<Boolean, MessageContext> myResponseMessageHandler;
+    private String myServiceId;
+    private IMethod1<MessageContext> myResponseMessageHandler;
     private Object myConnectionManipulator = new Object();
     private ManualResetEvent myOpenConnectionConfirmed = new ManualResetEvent(false);
     

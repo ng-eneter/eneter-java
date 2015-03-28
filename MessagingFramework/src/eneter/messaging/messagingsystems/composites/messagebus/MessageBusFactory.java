@@ -7,8 +7,9 @@
 
 package eneter.messaging.messagingsystems.composites.messagebus;
 
+import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.messagingsystems.connectionprotocols.*;
+
 
 /**
  * Implements factory for creating the message bus.
@@ -19,23 +20,23 @@ public class MessageBusFactory implements IMessageBusFactory
     /**
      * Constructs the factory with default parameters.
      * 
-     * Default EneterProtocolFormatter is used.
+     * It uses internal MessageBusCustomSerializer which is optimazed to serialize/deserialze only the MessageBusMessage.
      */
     public MessageBusFactory()
     {
-        this(new EneterProtocolFormatter());
+        this(new MessageBusCustomSerializer());
     }
 
     /**
      * Construct the factory.
-     * @param protocolFormatter This protocol formatter must be exactly same as is used by both channels that will be attached to the message bus.
+     * @param protocolFormatter Serializer which will be used to serialize/deserialize MessageBusMessage.
      */
-    public MessageBusFactory(IProtocolFormatter<?> protocolFormatter)
+    public MessageBusFactory(ISerializer serializer)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myProtocolFormatter = protocolFormatter;
+            mySerializer = serializer;
         }
         finally
         {
@@ -49,7 +50,7 @@ public class MessageBusFactory implements IMessageBusFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new MessageBus(myProtocolFormatter);
+            return new MessageBus(mySerializer);
         }
         finally
         {
@@ -58,5 +59,5 @@ public class MessageBusFactory implements IMessageBusFactory
     }
 
     
-    private IProtocolFormatter<?> myProtocolFormatter;
+    private ISerializer mySerializer;
 }

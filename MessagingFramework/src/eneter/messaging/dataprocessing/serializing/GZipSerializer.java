@@ -11,7 +11,7 @@ package eneter.messaging.dataprocessing.serializing;
 import java.io.*;
 import java.util.zip.*;
 
-import eneter.messaging.dataprocessing.streaming.internal.EncoderDecoder;
+import eneter.messaging.dataprocessing.serializing.internal.EncoderDecoder;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
