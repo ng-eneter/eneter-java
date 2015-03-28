@@ -67,7 +67,7 @@ public interface IDuplexInputChannel
      * @param responseReceiverId response receiver to be disconnected.
      * @throws Exception 
      */
-    void disconnectResponseReceiver(String responseReceiverId) throws Exception;
+    void disconnectResponseReceiver(String responseReceiverId);
     
     /**
      * Returns dispatcher that defines the threading model for raising events.

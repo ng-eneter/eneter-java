@@ -220,14 +220,16 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
 
     @Override
     public void disconnectResponseReceiver(final String responseReceiverId)
-            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             synchronized (myResponseReceivers)
             {
-                ResponseReceiverContext aResponseReceiverContext = EnumerableExt.firstOrDefault(myResponseReceivers,
+                ResponseReceiverContext aResponseReceiverContext = null;
+                try
+                {
+                    aResponseReceiverContext = EnumerableExt.firstOrDefault(myResponseReceivers,
                         new IFunction1<Boolean, ResponseReceiverContext>()
                         {
                             @Override
@@ -238,6 +240,12 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                             }
                      
                         });
+                }
+                catch (Exception err)
+                {
+                    // This should never happen.
+                    EneterTrace.error(TracedObject() + "failed to search firstOrDefault.");
+                }
                         
                 if (aResponseReceiverContext != null)
                 {

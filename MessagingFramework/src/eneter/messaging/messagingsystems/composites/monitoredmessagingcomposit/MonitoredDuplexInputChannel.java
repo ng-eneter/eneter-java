@@ -217,7 +217,6 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
 
     @Override
     public void disconnectResponseReceiver(String responseReceiverId)
-            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
