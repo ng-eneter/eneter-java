@@ -84,7 +84,6 @@ class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
 
     @Override
     public void disconnectResponseReceiver(String responseReceiverId)
-            throws Exception
     {
         myUnderlyingInputChannel.disconnectResponseReceiver(responseReceiverId);
     }
