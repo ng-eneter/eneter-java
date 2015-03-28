@@ -26,6 +26,12 @@ public final class ManualResetEvent
         waitOne(0);
     }
     
+    /**
+     * 
+     * @param timeout 0 infinite waiting.
+     * @return
+     * @throws InterruptedException
+     */
     public boolean waitOne(long timeout) throws InterruptedException
     {
         synchronized (myMonitor)
