@@ -231,7 +231,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                 }
                 catch (Exception err)
                 {
-                    String anErrorMessage = TracedObject() + ErrorHandler.SendMessageFailure;
+                    String anErrorMessage = TracedObject() + ErrorHandler.FailedToSendMessage;
                     EneterTrace.error(anErrorMessage, err);
                     throw err;
                 }

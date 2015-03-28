@@ -9,11 +9,9 @@
 package eneter.messaging.messagingsystems.androidusbcablemessagingsystem;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
-import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
-import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 
 /**
@@ -174,14 +172,13 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
      * @param protocolFormatter Low level formatting used for encoding messages between channels.
      *  EneterProtocolFormatter() can be used by default.
      */
-    public AndroidUsbCableMessagingFactory(int adbHostPort, IProtocolFormatter<byte[]> protocolFormatter)
+    public AndroidUsbCableMessagingFactory(int adbHostPort, IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myAdbHostPort = adbHostPort;
             myUnderlyingTcpMessaging = new TcpMessagingSystemFactory(protocolFormatter);
-            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -201,7 +198,7 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new AndroidUsbDuplexOutputChannel(Integer.parseInt(channelId), null, myAdbHostPort, myProtocolFormatter, myUnderlyingTcpMessaging);
+            return new AndroidUsbDuplexOutputChannel(Integer.parseInt(channelId), null, myAdbHostPort, myUnderlyingTcpMessaging);
         }
         finally
         {
@@ -222,7 +219,7 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new AndroidUsbDuplexOutputChannel(Integer.parseInt(channelId), responseReceiverId, myAdbHostPort, myProtocolFormatter, myUnderlyingTcpMessaging);
+            return new AndroidUsbDuplexOutputChannel(Integer.parseInt(channelId), responseReceiverId, myAdbHostPort, myUnderlyingTcpMessaging);
         }
         finally
         {
@@ -274,5 +271,4 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     
     private int myAdbHostPort;
     private TcpMessagingSystemFactory myUnderlyingTcpMessaging;
-    private IProtocolFormatter<byte[]> myProtocolFormatter;
 }

@@ -48,7 +48,7 @@ public abstract class AttachableDuplexInputChannelBase implements IAttachableDup
                         // Ignore exception in exception.
                     }
 
-                    EneterTrace.error(TracedObject() + ErrorHandler.StartListeningFailure, err);
+                    EneterTrace.error(TracedObject() + ErrorHandler.FailedToStartListening, err);
                     throw err;
                 }
             }

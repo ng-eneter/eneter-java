@@ -34,9 +34,8 @@ class AndroidUsbDuplexOutputChannel implements IDuplexOutputChannel
     }
     
     
-    public AndroidUsbDuplexOutputChannel(int port, String responseReceiverId, int adbHostPort,
-            IProtocolFormatter<byte[]> protocolFormatter,
-            IMessagingSystemFactory underlyingTcpMessaging) throws Exception
+    public AndroidUsbDuplexOutputChannel(int port, String responseReceiverId, int adbHostPort, IMessagingSystemFactory underlyingTcpMessaging)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
