@@ -13,15 +13,9 @@ import java.net.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.DefaultDuplexInputChannel;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.DefaultDuplexOutputChannel;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IInputConnector;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IInputConnectorFactory;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IOutputConnector;
-import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IOutputConnectorFactory;
+import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
-import eneter.messaging.threading.dispatching.IThreadDispatcher;
-import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
+import eneter.messaging.threading.dispatching.*;
 import eneter.messaging.threading.dispatching.SyncDispatching;
 
 /**
@@ -41,11 +35,12 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
 {
     private class HttpInputConnectorFactory implements IInputConnectorFactory
     {
-        public HttpInputConnectorFactory(int responseReceiverInactivityTimeout, IServerSecurityFactory serverSecurityFactory)
+        public HttpInputConnectorFactory(IProtocolFormatter protocolFormatter, int responseReceiverInactivityTimeout, IServerSecurityFactory serverSecurityFactory)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
+                myProtocolFormatter = protocolFormatter;
                 myOutputConnectorInactivityTimeout = responseReceiverInactivityTimeout;
                 myServerSecurityFactory = serverSecurityFactory;
             }
@@ -62,7 +57,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new HttpInputConnector(inputConnectorAddress, myOutputConnectorInactivityTimeout, myServerSecurityFactory);
+                return new HttpInputConnector(inputConnectorAddress, myProtocolFormatter, myOutputConnectorInactivityTimeout, myServerSecurityFactory);
             }
             finally
             {
@@ -70,17 +65,19 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
             }
         }
 
+        private IProtocolFormatter myProtocolFormatter;
         private int myOutputConnectorInactivityTimeout;
         private IServerSecurityFactory myServerSecurityFactory;
     }
     
     private class HttpOutputConnectorFactory implements IOutputConnectorFactory
     {
-        public HttpOutputConnectorFactory(int pollingFrequency)
+        public HttpOutputConnectorFactory(IProtocolFormatter protocolFormatter, int pollingFrequency)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
+                myProtocolFormatter = protocolFormatter;
                 myPollingFrequency = pollingFrequency;
             }
             finally
@@ -96,7 +93,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new HttpOutputConnector(inputConnectorAddress, outputConnectorAddress, myPollingFrequency);
+                return new HttpOutputConnector(inputConnectorAddress, outputConnectorAddress, myProtocolFormatter, myPollingFrequency);
             }
             finally
             {
@@ -104,6 +101,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
             }
         }
 
+        private IProtocolFormatter myProtocolFormatter;
         private int myPollingFrequency;
     }
     
@@ -162,7 +160,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
      *    for response messages. If the time is exceeded, the duplex output channel is considered as disconnected.
      * @param protocolFormatter formatter for low-level messages between duplex output channel and duplex input channel
      */
-    public HttpMessagingSystemFactory(int pollingFrequency, int inactivityTimeout, IProtocolFormatter<byte[]> protocolFormatter)
+    public HttpMessagingSystemFactory(int pollingFrequency, int inactivityTimeout, IProtocolFormatter protocolFormatter)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -202,9 +200,9 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            IOutputConnectorFactory aClientConnectorFactory = new HttpOutputConnectorFactory(myPollingFrequency);
             IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aDispatcherAfterMessageDecoded, aClientConnectorFactory, myProtocolFormatter, false);
+            IOutputConnectorFactory aClientConnectorFactory = new HttpOutputConnectorFactory(myProtocolFormatter, myPollingFrequency);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aDispatcherAfterMessageDecoded, aClientConnectorFactory);
         }
         finally
         {
@@ -234,9 +232,9 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            IOutputConnectorFactory aClientConnectorFactory = new HttpOutputConnectorFactory(myPollingFrequency);
             IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aDispatcherAfterMessageDecoded, aClientConnectorFactory, myProtocolFormatter, false);
+            IOutputConnectorFactory aClientConnectorFactory = new HttpOutputConnectorFactory(myProtocolFormatter, myPollingFrequency);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aDispatcherAfterMessageDecoded, aClientConnectorFactory);
         }
         finally
         {
@@ -263,10 +261,10 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
             IServerSecurityFactory aServerSecurityFactory = getServerSecurityFactory(channelId);
-            IInputConnectorFactory anInputConnectorFactory = new HttpInputConnectorFactory(myInactivityTimeout, aServerSecurityFactory);
+            IInputConnectorFactory anInputConnectorFactory = new HttpInputConnectorFactory(myProtocolFormatter, myInactivityTimeout, aServerSecurityFactory);
             IInputConnector anInputConnector = anInputConnectorFactory.createInputConnector(channelId);
             IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
-            return new DefaultDuplexInputChannel(channelId, aDispatcher, aDispatcherAfterMessageDecoded, anInputConnector, myProtocolFormatter);
+            return new DefaultDuplexInputChannel(channelId, aDispatcher, aDispatcherAfterMessageDecoded, anInputConnector);
         }
         finally
         {
@@ -339,7 +337,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
     
     private int myPollingFrequency;
     private int myInactivityTimeout;
-    private IProtocolFormatter<byte[]> myProtocolFormatter;
+    private IProtocolFormatter myProtocolFormatter;
     private IThreadDispatcherProvider myInputChannelThreading;
     private IThreadDispatcherProvider myOutputChannelThreading;
     private IThreadDispatcherProvider myDispatchingAfterMessageDecoded = new SyncDispatching();

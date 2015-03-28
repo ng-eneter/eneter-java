@@ -15,21 +15,22 @@ import java.util.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
-import eneter.net.system.internal.IDisposable;
-import eneter.net.system.internal.StringExt;
+import eneter.net.system.internal.*;
 import eneter.net.system.linq.internal.EnumerableExt;
 
 class HttpInputConnector implements IInputConnector
 {
-    private class HttpResponseSender implements ISender, IDisposable
+    private class HttpResponseSender implements IDisposable
     {
-        public HttpResponseSender(String responseReceiverId)
+        public HttpResponseSender(String responseReceiverId, String clientIp)
         {
             ResponseReceiverId = responseReceiverId;
+            ClientIp = clientIp;
             LastPollingActivityTime = System.currentTimeMillis();
         }
 
@@ -52,14 +53,7 @@ class HttpInputConnector implements IInputConnector
             }
         }
 
-        @Override
-        public boolean isStreamWritter()
-        {
-            return false;
-        }
-
-        @Override
-        public void sendMessage(Object message) throws Exception
+        public void sendResponseMessage(Object message) throws Exception
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
@@ -81,13 +75,6 @@ class HttpInputConnector implements IInputConnector
             }
         }
 
-        @Override
-        public void sendMessage(IMethod1<OutputStream> toStreamWritter)
-                throws Exception
-        {
-            throw new UnsupportedOperationException("Http ResponseSender is not a stream sender.");
-        }
-    
         
         // Note: this method must be available after the dispose.
         public byte[] dequeueCollectedMessages()
@@ -132,6 +119,7 @@ class HttpInputConnector implements IInputConnector
         }
         
         public String ResponseReceiverId;
+        public String ClientIp;
         public long LastPollingActivityTime;
         public boolean IsDisposed;
         
@@ -140,7 +128,7 @@ class HttpInputConnector implements IInputConnector
     
 
     
-    public HttpInputConnector(String httpAddress, int responseReceiverInactivityTimeout,
+    public HttpInputConnector(String httpAddress, IProtocolFormatter protocolFormatter, int responseReceiverInactivityTimeout,
             IServerSecurityFactory serverSecurityFactory) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -156,9 +144,9 @@ class HttpInputConnector implements IInputConnector
                 EneterTrace.error(TracedObject() + ErrorHandler.InvalidUriAddress, err);
                 throw err;
             }
-            
             myHttpListenerProvider = new HttpListener(aUri, serverSecurityFactory);
 
+            myProtocolFormatter = protocolFormatter;
             myResponseReceiverInactivityTimeout = responseReceiverInactivityTimeout;
 
 
@@ -174,17 +162,31 @@ class HttpInputConnector implements IInputConnector
         }
     }
     
-    
     @Override
-    public void startListening(
-            IFunction1<Boolean, MessageContext> messageHandler)
+    public void startListening(IMethod1<MessageContext> messageHandler)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myMessageHandler = messageHandler;
-            myHttpListenerProvider.startListening(myHandleConnection);
+            if (messageHandler == null)
+            {
+                throw new IllegalArgumentException("messageHandler is null.");
+            }
+            
+            synchronized (myListeningManipulatorLock)
+            {
+                try
+                {
+                    myMessageHandler = messageHandler;
+                    myHttpListenerProvider.startListening(myHandleConnection);
+                }
+                catch (Exception err)
+                {
+                    stopListening();
+                    throw err;
+                }
+            }
         }
         finally
         {
@@ -198,8 +200,11 @@ class HttpInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myHttpListenerProvider.stopListening();
-            myMessageHandler = null;
+            synchronized (myListeningManipulatorLock)
+            {
+                myHttpListenerProvider.stopListening();
+                myMessageHandler = null;
+            }
         }
         finally
         {
@@ -210,53 +215,89 @@ class HttpInputConnector implements IInputConnector
     @Override
     public boolean isListening()
     {
-        return myHttpListenerProvider.isListening();
+        synchronized (myListeningManipulatorLock)
+        {
+            return myHttpListenerProvider.isListening();
+        }
     }
 
     @Override
-    public ISender createResponseSender(final String responseReceiverAddress) throws Exception
+    public void sendResponseMessage(final String outputConnectorAddress, Object message) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myResponseSenders)
+            HttpResponseSender aClientContext;
+            synchronized (myConnectedClients)
             {
-                // If there are some disposed senders then remove them.
-                HashSetExt.removeWhere(myResponseSenders, new IFunction1<Boolean, HttpResponseSender>()
+                aClientContext = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
                 {
                     @Override
                     public Boolean invoke(HttpResponseSender x)
                             throws Exception
                     {
-                        return x.IsDisposed;
+                        return x.ResponseReceiverId.equals(outputConnectorAddress);
                     }
                 });
-                
-                // If does not exist create one.
-                HttpResponseSender aResponseSender = EnumerableExt.firstOrDefault(myResponseSenders, new IFunction1<Boolean, HttpResponseSender>()
-                {
-                    @Override
-                    public Boolean invoke(HttpResponseSender x)
-                            throws Exception
-                    {
-                        return x.ResponseReceiverId.equals(responseReceiverAddress);
-                    }
-                });
-                
-                if (aResponseSender == null)
-                {
-                    aResponseSender = new HttpResponseSender(responseReceiverAddress);
-                    myResponseSenders.add(aResponseSender);
+            }
 
-                    // If this is the only sender then start the timer measuring the inactivity to detect if the client is disconnected.
-                    // If it is not the only sender, then the timer is already running.
-                    if (myResponseSenders.size() == 1)
+            if (aClientContext == null)
+            {
+                throw new IllegalStateException("The connection with client '" + outputConnectorAddress + "' is not open.");
+            }
+
+            Object anEncodedMessage = myProtocolFormatter.encodeMessage(outputConnectorAddress, message);
+            aClientContext.sendResponseMessage(anEncodedMessage);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public void closeConnection(final String outputConnectorAddress) throws Exception
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            HttpResponseSender aClientContext;
+            synchronized (myConnectedClients)
+            {
+                aClientContext = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
+                {
+                    @Override
+                    public Boolean invoke(HttpResponseSender x)
+                            throws Exception
                     {
-                        myResponseReceiverInactivityTimer.schedule(getTimerTask(), myResponseReceiverInactivityTimeout);
+                        return x.ResponseReceiverId.equals(outputConnectorAddress);
                     }
+                }); 
+                        
+                // Note: we cannot remove the client context from myConnectedClients because the following close message
+                //       will be put to the queue. And if it is removed from myConnectedClients then the client context
+                //       would not be found during polling and the close connection message woiuld never be sent to the client.
+                //       
+                //       The removing of the client context works like this:
+                //       The client gets the close connection message. The client processes it and stops polling.
+                //       On the service side the time detects the client sopped polling and so it removes
+                //       the client context from my connected clients.
+            }
+
+            if (aClientContext != null)
+            {
+                try
+                {
+                    // Send close connection message.
+                    Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(outputConnectorAddress);
+                    aClientContext.sendResponseMessage(anEncodedMessage);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning("failed to send the close message.", err);
                 }
 
-                return aResponseSender;
+                aClientContext.dispose();
             }
         }
         finally
@@ -265,13 +306,15 @@ class HttpInputConnector implements IInputConnector
         }
     }
 
+
+   
     
     private void handleConnection(HttpRequestContext httpRequestContext) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // If polling.
+            // If polling. (when client polls to get response messages)
             if (httpRequestContext.getHttpMethod().equals("GET"))
             {
                 // Get responseReceiverId.
@@ -282,9 +325,9 @@ class HttpInputConnector implements IInputConnector
 
                     // Find the sender for the response receiver.
                     HttpResponseSender aResponseSender = null;
-                    synchronized (myResponseSenders)
+                    synchronized (myConnectedClients)
                     {
-                        aResponseSender = EnumerableExt.firstOrDefault(myResponseSenders, new IFunction1<Boolean, HttpResponseSender>()
+                        aResponseSender = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
                         {
                             @Override
                             public Boolean invoke(HttpResponseSender x) throws Exception
@@ -320,13 +363,101 @@ class HttpInputConnector implements IInputConnector
                 }
             }
             else
+             // Client sends a request message.
             {
                 byte[] aMessage = httpRequestContext.getRequestMessage();
 
                 String aClientIp = httpRequestContext.getRemoteEndPoint();
-                MessageContext aMessageContext = new MessageContext(aMessage, aClientIp, null);
+                
+                final ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(aMessage);
+                
+                boolean anIsProcessingOk = true;
+                if (aProtocolMessage != null && !StringExt.isNullOrEmpty(aProtocolMessage.ResponseReceiverId))
+                {
+                    MessageContext aMessageContext = new MessageContext(aProtocolMessage, aClientIp);
 
-                if (!myMessageHandler.invoke(aMessageContext))
+                    if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
+                    {
+                        synchronized (myConnectedClients)
+                        {
+                            HttpResponseSender aClientContext = EnumerableExt.firstOrDefault(myConnectedClients,
+                                new IFunction1<Boolean, HttpResponseSender>()
+                                {
+                                    @Override
+                                    public Boolean invoke(HttpResponseSender x) throws Exception
+                                    {
+                                        return x.ResponseReceiverId.equals(aProtocolMessage.ResponseReceiverId); 
+                                    }
+                                }
+                            );
+                                    
+                            if (aClientContext != null && aClientContext.IsDisposed)
+                            {
+                                // The client with the same id exists but was closed and disposed.
+                                // It is just that the timer did not remove it. So delete it now.
+                                myConnectedClients.remove(aClientContext);
+                                
+                                // Indicate the new client context shall be created.
+                                aClientContext = null;
+                            }
+
+                            if (aClientContext == null)
+                            {
+                                aClientContext = new HttpResponseSender(aProtocolMessage.ResponseReceiverId, aClientIp);
+                                myConnectedClients.add(aClientContext);
+
+                                // If this is the only sender then start the timer measuring the inactivity to detect if the client is disconnected.
+                                // If it is not the only sender, then the timer is already running.
+                                if (myConnectedClients.size() == 1)
+                                {
+                                    myResponseReceiverInactivityTimer.schedule(getTimerTask(), myResponseReceiverInactivityTimeout);
+                                }
+                            }
+                            else
+                            {
+                                EneterTrace.warning(TracedObject() + "could not open connection for client '" + aProtocolMessage.ResponseReceiverId + "' because the client with same id is already connected.");
+                                anIsProcessingOk = false;
+                            }
+                        }
+                    }
+                    else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
+                    {
+                        synchronized (myConnectedClients)
+                        {
+                            HttpResponseSender aClientContext = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
+                            {
+                                @Override
+                                public Boolean invoke(HttpResponseSender x) throws Exception
+                                {
+                                    return x.ResponseReceiverId.equals(aProtocolMessage.ResponseReceiverId);
+                                }
+                            });
+                                    
+                            if (aClientContext != null)
+                            {
+                                // Note: the disconnection comes from the client.
+                                //       It means the client closed the connection and will not poll anymore.
+                                //       Therefore the client context can be removed.
+                                myConnectedClients.remove(aClientContext);
+                                aClientContext.dispose();
+                            }
+                        }
+                    }
+                    
+                    if (anIsProcessingOk)
+                    {
+                        try
+                        {
+                            myMessageHandler.invoke(aMessageContext);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                        }
+                    }
+                }
+                
+                if (!anIsProcessingOk)
                 {
                     // The request was not processed.
                     httpRequestContext.responseError(404);
@@ -344,12 +475,15 @@ class HttpInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myResponseSenders)
+            final ArrayList<HttpResponseSender> aClientsToNotify = new ArrayList<HttpResponseSender>();
+            boolean aStartTimerFlag = false;
+            
+            synchronized (myConnectedClients)
             {
                 final long aTime = System.currentTimeMillis();
 
                 // Check the connection for each connected duplex output channel.
-                HashSetExt.removeWhere(myResponseSenders, new IFunction1<Boolean, HttpResponseSender>()
+                HashSetExt.removeWhere(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
                 {
                     @Override
                     public Boolean invoke(HttpResponseSender x) throws Exception
@@ -360,11 +494,10 @@ class HttpInputConnector implements IInputConnector
                         //       it caused problems with 'Inactivity_Timeout' unit test.
                         if (aTime - x.LastPollingActivityTime >= myResponseReceiverInactivityTimeout)
                         {
-                            // If the connection was broken unexpectidly then the message handler must be notified.
+                            // If the connection was broken unexpectedly then the message handler must be notified.
                             if (!x.IsDisposed)
                             {
-                                MessageContext aMessageContext = new MessageContext(null, "", x);
-                                myMessageHandler.invoke(aMessageContext);
+                                aClientsToNotify.add(x);
                             }
 
                             // Indicate to remove the item.
@@ -377,10 +510,33 @@ class HttpInputConnector implements IInputConnector
                 }); 
 
                 // If there connected clients we need to check if they are active.
-                if (myResponseSenders.size() > 0)
+                if (myConnectedClients.size() > 0)
                 {
-                    myResponseReceiverInactivityTimer.schedule(getTimerTask(), myResponseReceiverInactivityTimeout);
+                    aStartTimerFlag = true;
                 }
+            }
+            
+            for (HttpResponseSender aClientContext : aClientsToNotify)
+            {
+                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aClientContext.ResponseReceiverId, null);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, aClientContext.ClientIp);
+
+                try
+                {
+                    if (myMessageHandler != null)
+                    {
+                        myMessageHandler.invoke(aMessageContext);
+                    }
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+            
+            if (aStartTimerFlag)
+            {
+                myResponseReceiverInactivityTimer.schedule(getTimerTask(), myResponseReceiverInactivityTimeout);
             }
         }
         catch (Exception err)
@@ -421,11 +577,13 @@ class HttpInputConnector implements IInputConnector
     }
     
     
+    private IProtocolFormatter myProtocolFormatter;
     private HttpListener myHttpListenerProvider;
-    private IFunction1<Boolean, MessageContext> myMessageHandler;
-    private HashSet<HttpResponseSender> myResponseSenders = new HashSet<HttpResponseSender>();
+    private IMethod1<MessageContext> myMessageHandler;
+    private Object myListeningManipulatorLock = new Object();
     private Timer myResponseReceiverInactivityTimer;
     private int myResponseReceiverInactivityTimeout;
+    private HashSet<HttpResponseSender> myConnectedClients = new HashSet<HttpResponseSender>();
     
     private IMethod1<HttpRequestContext> myHandleConnection = new IMethod1<HttpRequestContext>()
     {

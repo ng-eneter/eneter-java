@@ -14,9 +14,7 @@ import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.messagingsystems.connectionprotocols.EProtocolMessageType;
-import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
-import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
+import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.*;
 import eneter.net.system.threading.internal.ManualResetEvent;
@@ -25,7 +23,7 @@ import eneter.net.system.threading.internal.ManualResetEvent;
 class HttpOutputConnector implements IOutputConnector
 {
 
-    public HttpOutputConnector(String httpServiceConnectorAddress, String responseReceiverId, int pollingFrequencyMiliseconds)
+    public HttpOutputConnector(String httpServiceConnectorAddress, String responseReceiverId, IProtocolFormatter protocolFormatter, int pollingFrequencyMiliseconds)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -44,6 +42,7 @@ class HttpOutputConnector implements IOutputConnector
 
             myResponseReceiverId = responseReceiverId;
             myPollingFrequencyMiliseconds = pollingFrequencyMiliseconds;
+            myProtocolFormatter = protocolFormatter;
         }
         finally
         {
@@ -63,24 +62,34 @@ class HttpOutputConnector implements IOutputConnector
             {
                 throw new IllegalArgumentException("responseMessageHandler is null.");
             }
-            ...
             
-            
-            if (responseMessageHandler != null)
+            try
             {
-                myStopReceivingRequestedFlag = false;
-
-                myResponseMessageHandler = responseMessageHandler;
-
-                myStopPollingWaitingEvent.reset();
-                myResponseReceiverThread = new Thread(myDoPolling);
-                myResponseReceiverThread.start();
-
-                // Wait until thread listening to response messages is running.
-                if (!myListeningToResponsesStartedEvent.waitOne(1000))
+                synchronized (myConnectionManipulatorLock)
                 {
-                    EneterTrace.warning(TracedObject() + "failed to start the thread listening to response messages within 1 second.");
+                    myStopReceivingRequestedFlag = false;
+    
+                    myResponseMessageHandler = responseMessageHandler;
+    
+                    myStopPollingWaitingEvent.reset();
+                    myResponseReceiverThread = new Thread(myDoPolling);
+                    myResponseReceiverThread.start();
+    
+                    // Wait until thread listening to response messages is running.
+                    if (!myListeningToResponsesStartedEvent.waitOne(1000))
+                    {
+                        EneterTrace.warning(TracedObject() + "failed to start the thread listening to response messages within 1 second.");
+                    }
+                    
+                    // Send open connection message.
+                    Object anEncodedMessage = myProtocolFormatter.encodeOpenConnectionMessage(myResponseReceiverId);
+                    sendMessage(anEncodedMessage);
                 }
+            }
+            catch (Exception err)
+            {
+                closeConnection();
+                throw err;
             }
         }
         finally
