@@ -145,13 +145,14 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
 {
     private class MessageBusConnectorFactory implements IOutputConnectorFactory, IInputConnectorFactory
     {
-        public MessageBusConnectorFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory messageBusMessaging)
+        public MessageBusConnectorFactory(String serviceConnctingAddress, String clientConnectingAddress, ISerializer serializer, IMessagingSystemFactory messageBusMessaging)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
                 myClientConnectingAddress = clientConnectingAddress;
                 myServiceConnectingAddress = serviceConnctingAddress;
+                mySerializer = serializer;
                 myMessageBusMessaging = messageBusMessaging;
                 myOpenConnectionTimeout = 30000;
             }
@@ -241,7 +242,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myConnectorFactory = new MessageBusConnectorFactory(serviceConnctingAddress, clientConnectingAddress, underlyingMessaging);
+            myConnectorFactory = new MessageBusConnectorFactory(serviceConnctingAddress, clientConnectingAddress, serializer, underlyingMessaging);
 
             // Dispatch events in the same thread as notified from the underlying messaging.
             myOutputChannelThreading = new NoDispatching();
