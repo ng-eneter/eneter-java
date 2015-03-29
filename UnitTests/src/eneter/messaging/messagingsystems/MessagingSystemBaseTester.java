@@ -1,9 +1,11 @@
 package eneter.messaging.messagingsystems;
 
 import static org.junit.Assert.*;
+import junit.framework.Assert;
 
 import helper.*;
 
+import org.hamcrest.core.IsEqual;
 import org.junit.Test;
 
 import eneter.messaging.diagnostic.EneterTrace;
@@ -187,8 +189,8 @@ public abstract class MessagingSystemBaseTester
 
             aClient.waitUntilResponseMessagesAreReceived(1, 1000);
 
-            assertEquals(myRequestMessage, aService.getReceivedMessages().get(0).getMessage());
-            assertEquals(myResponseMessage, aClient.getReceivedMessages().get(0).getMessage());
+            assertThat(myRequestMessage, IsEqual.equalTo(aService.getReceivedMessages().get(0).getMessage()));
+            assertThat(myResponseMessage, IsEqual.equalTo(aClient.getReceivedMessages().get(0).getMessage()));
         }
         finally
         {
@@ -431,7 +433,7 @@ public abstract class MessagingSystemBaseTester
 
             aService.waitUntilMessagesAreReceived(1, 1000);
 
-            assertEquals(myRequestMessage, aService.getReceivedMessages().get(0).getMessage());
+            assertThat(myRequestMessage, IsEqual.equalTo(aService.getReceivedMessages().get(0).getMessage()));
         }
         finally
         {
@@ -587,11 +589,12 @@ public abstract class MessagingSystemBaseTester
             assertEquals(numberOfMessages * numberOfClients, aClientFarm.getReceivedResponses().size());
             for (DuplexChannelMessageEventArgs aMessage : aService.getReceivedMessages())
             {
-                assertEquals(message, aMessage.getMessage());
+                // Note: IsEqual recognizes byte[] but essertEquals not.
+                assertThat(message, IsEqual.equalTo(aMessage.getMessage()));
             }
             for (DuplexChannelMessageEventArgs aResponseMessage : aClientFarm.getReceivedResponses())
             {
-                assertEquals(responseMessage, aResponseMessage.getMessage());
+                assertThat(responseMessage, IsEqual.equalTo(aResponseMessage.getMessage()));
             }
         }
         finally
@@ -650,7 +653,7 @@ public abstract class MessagingSystemBaseTester
 
             for (DuplexChannelMessageEventArgs aResponseMessage : aClientFarm.getReceivedResponses())
             {
-                assertEquals(broadcastMessage, aResponseMessage.getMessage());
+                assertThat(broadcastMessage, IsEqual.equalTo(aResponseMessage.getMessage()));
             }
         }
         finally
@@ -675,5 +678,5 @@ public abstract class MessagingSystemBaseTester
     protected Object myRequestMessage = "Message";
     protected Object myResponseMessage = "Response";
     
-    private static String myMessage_10MB = RandomDataGenerator.getString(10000000);
+    protected Object myMessage_10MB = RandomDataGenerator.getString(10000000);
 }
