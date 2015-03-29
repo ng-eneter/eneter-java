@@ -152,7 +152,7 @@ public class EneterProtocolFormatter implements IProtocolFormatter
                 if (h[0] != 'E' || h[1] != 'N' || h[2] != 'E' || h[3] != 'T' || h[4] != 'E' || h[5] != 'R')
                 {
                     EneterTrace.warning(TracedObject() + "detected unknown protocol format.");
-                    return myNonProtocolMessage;
+                    return null;
                 }
 
                 // Get endian encoding (Big Endian or Little Endian)
@@ -165,7 +165,7 @@ public class EneterProtocolFormatter implements IProtocolFormatter
                 if (anEndianEncodingId != LITTLE_ENDIAN && anEndianEncodingId != BIG_ENDIAN)
                 {
                     EneterTrace.warning(TracedObject() + "detected unknown endian encoding.");
-                    return myNonProtocolMessage;
+                    return null;
                 }
 
 
@@ -179,7 +179,7 @@ public class EneterProtocolFormatter implements IProtocolFormatter
                 if (aStringEncodingId != UTF8 && aStringEncodingId != UTF16)
                 {
                     EneterTrace.warning(TracedObject() + "detected unknown string encoding.");
-                    return myNonProtocolMessage;
+                    return null;
                 }
 
 
@@ -208,7 +208,7 @@ public class EneterProtocolFormatter implements IProtocolFormatter
                 else
                 {
                     EneterTrace.warning(TracedObject() + "detected unknown string encoding.");
-                    aProtocolMessage = myNonProtocolMessage;
+                    aProtocolMessage = null;
                 }
 
                 return aProtocolMessage;
@@ -226,7 +226,7 @@ public class EneterProtocolFormatter implements IProtocolFormatter
                 // Note: Just because somebody sends and invalid string the loop reading messages should
                 //       not be disturbed/interrupted by an exception.
                 //       The reading must continue with the next message.
-                return myNonProtocolMessage;
+                return null;
             }
         }
         finally
@@ -494,7 +494,6 @@ public class EneterProtocolFormatter implements IProtocolFormatter
     private final byte CLOSE_CONNECTION_REQUEST = 20;
     private final byte REQUEST_MESSAGE = 40;
     
-    private static final ProtocolMessage myNonProtocolMessage = new ProtocolMessage(EProtocolMessageType.Unknown, "", null);
     
     private String TracedObject()
     {

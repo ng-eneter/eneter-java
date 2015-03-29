@@ -15,11 +15,6 @@ package eneter.messaging.messagingsystems.connectionprotocols;
 public enum EProtocolMessageType
 {
     /**
-     * Unknown message.
-     */
-    Unknown,
-    
-    /**
      * Open connection request message.
      */
     OpenConnectionRequest,
