@@ -265,55 +265,59 @@ class TcpInputConnector implements IInputConnector
                 {
                     ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage((InputStream)anInputStream);
 
-                    // Note: Due to security reasons ignore close connection message in TCP.
-                    //       So that it is not possible that somebody will just send a close message which will have id of somebody else.
-                    //       The TCP connection will be closed when the client closes the socket.
-                    if (aProtocolMessage != null && aProtocolMessage.MessageType != EProtocolMessageType.CloseConnectionRequest)
+                    // If the stream was not closed.
+                    if (aProtocolMessage != null)
                     {
-                        MessageContext aMessageContext = new MessageContext(aProtocolMessage, aClientIp);
-
-                        // If open connection message is received and the current protocol formatter uses open connection message
-                        // then create the connection now.
-                        if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest &&
-                            myProtocolUsesOpenConnectionMessage)
+                        // Note: Due to security reasons ignore close connection message in TCP.
+                        //       So that it is not possible that somebody will just send a close message which will have id of somebody else.
+                        //       The TCP connection will be closed when the client closes the socket.
+                        if (aProtocolMessage.MessageType != EProtocolMessageType.CloseConnectionRequest)
                         {
-                            // Note: if client id is already set then it means this client has already open connection.
-                            if (StringExt.isNullOrEmpty(aClientId))
+                            MessageContext aMessageContext = new MessageContext(aProtocolMessage, aClientIp);
+    
+                            // If open connection message is received and the current protocol formatter uses open connection message
+                            // then create the connection now.
+                            if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest &&
+                                myProtocolUsesOpenConnectionMessage)
                             {
-                                aClientId = !StringExt.isNullOrEmpty(aProtocolMessage.ResponseReceiverId) ? aProtocolMessage.ResponseReceiverId : UUID.randomUUID().toString();
-
-                                synchronized (myConnectedClients)
+                                // Note: if client id is already set then it means this client has already open connection.
+                                if (StringExt.isNullOrEmpty(aClientId))
                                 {
-                                    if (!myConnectedClients.containsKey(aClientId))
+                                    aClientId = !StringExt.isNullOrEmpty(aProtocolMessage.ResponseReceiverId) ? aProtocolMessage.ResponseReceiverId : UUID.randomUUID().toString();
+    
+                                    synchronized (myConnectedClients)
                                     {
-                                        myConnectedClients.put(aClientId, aClientContext);
-                                    }
-                                    else
-                                    {
-                                        // Note: if the client id already exists then the connection cannot be open
-                                        //       and the connection with this  client will be closed.
-                                        EneterTrace.warning(TracedObject() + "could not open connection for client '" + aClientId + "' because the client with same id is already connected.");
-                                        break;
+                                        if (!myConnectedClients.containsKey(aClientId))
+                                        {
+                                            myConnectedClients.put(aClientId, aClientContext);
+                                        }
+                                        else
+                                        {
+                                            // Note: if the client id already exists then the connection cannot be open
+                                            //       and the connection with this  client will be closed.
+                                            EneterTrace.warning(TracedObject() + "could not open connection for client '" + aClientId + "' because the client with same id is already connected.");
+                                            break;
+                                        }
                                     }
                                 }
+                                else
+                                {
+                                    EneterTrace.warning(TracedObject() + "the client '" + aClientId + "' has already open connection.");
+                                }
                             }
-                            else
+    
+                            try
                             {
-                                EneterTrace.warning(TracedObject() + "the client '" + aClientId + "' has already open connection.");
+                                // Ensure that nobody will try to use id of somebody else.
+                                aMessageContext.getProtocolMessage().ResponseReceiverId = aClientId;
+    
+                                // Notify message.
+                                myMessageHandler.invoke(aMessageContext);
                             }
-                        }
-
-                        try
-                        {
-                            // Ensure that nobody will try to use id of somebody else.
-                            aMessageContext.getProtocolMessage().ResponseReceiverId = aClientId;
-
-                            // Notify message.
-                            myMessageHandler.invoke(aMessageContext);
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                            catch (Exception err)
+                            {
+                                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                            }
                         }
                     }
                     else

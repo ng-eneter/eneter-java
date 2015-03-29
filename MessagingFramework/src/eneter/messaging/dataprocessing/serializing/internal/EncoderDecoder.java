@@ -154,14 +154,14 @@ public class EncoderDecoder
     {
         // Write info, that encoded data is string.
         Charset anEncoding = Charset.forName("UTF-8");
-        writer.write((byte)STRING_UTF8_ID);
+        writer.writeByte(STRING_UTF8_ID);
         writePlainString(writer, data, anEncoding, isLittleEndianRequested);
     }
     
     public void writeByteArray(DataOutputStream writer, byte[] data, boolean isLittleEndianRequested) throws IOException
     {
         // Write info, that encoded data is array of bytes.
-        writer.write((byte)BYTES_ID);
+        writer.writeByte(BYTES_ID);
         writePlainByteArray(writer, data, isLittleEndianRequested);
     }
     
@@ -192,7 +192,7 @@ public class EncoderDecoder
             }
             else
             {
-                throw new IllegalStateException("Unknnown data encoding " + aDataType);
+                throw new IllegalStateException("Unknown encoding type value: " + aDataType);
             }
 
             aResult = readPlainString(reader, anEncoding, isLittleEndian);
@@ -260,8 +260,10 @@ public class EncoderDecoder
     
     private int switchEndianess(int i)
     {
-        int anInt = ((i & 0x000000ff) << 24) + ((i & 0x0000ff00) << 8) +
-                    ((i & 0x00ff0000) >> 8) + (int)((i & 0xff000000) >> 24);
+        int anInt = ((i & 0x000000ff) << 24) +
+                    ((i & 0x0000ff00) << 8) +
+                    ((i & 0x00ff0000) >>> 8) + 
+                    ((i & 0xff000000) >>> 24);
 
         return anInt;
     }

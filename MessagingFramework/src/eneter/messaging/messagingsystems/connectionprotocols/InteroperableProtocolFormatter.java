@@ -3,6 +3,7 @@ package eneter.messaging.messagingsystems.connectionprotocols;
 import java.io.*;
 
 import eneter.messaging.dataprocessing.serializing.internal.EncoderDecoder;
+import eneter.messaging.diagnostic.EneterTrace;
 
 public class InteroperableProtocolFormatter implements IProtocolFormatter
 {
@@ -86,6 +87,8 @@ public class InteroperableProtocolFormatter implements IProtocolFormatter
         }
         catch (Exception err)
         {
+            EneterTrace.warning("Failed to decode the message.", err);
+            
             return null;
         }
     }
