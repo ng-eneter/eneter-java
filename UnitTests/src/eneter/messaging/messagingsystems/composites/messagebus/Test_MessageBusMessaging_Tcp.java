@@ -31,10 +31,10 @@ public class Test_MessageBusMessaging_Tcp extends MessagingSystemBaseTester
         myMessageBus = new MessageBusFactory().createMessageBus();
         myMessageBus.attachDuplexInputChannels(aMessageBusServiceInputChannel, aMessageBusClientInputChannel);
 
-        myMessagingSystemFactory = new MessageBusMessagingFactory("tcp://[::1]:" + aPort1 + "/", "tcp://[::1]:" + aPort2 + "/", anUnderlyingMessaging);
+        MessagingSystemFactory = new MessageBusMessagingFactory("tcp://[::1]:" + aPort1 + "/", "tcp://[::1]:" + aPort2 + "/", anUnderlyingMessaging);
 
         // Address of the service in the message bus.
-        myChannelId = "Service1_Address";
+        ChannelId = "Service1_Address";
     }
     
     @After

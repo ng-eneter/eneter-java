@@ -30,10 +30,10 @@ public class Test_MessageBusMessaging_Ws extends MessagingSystemBaseTester
         myMessageBus = new MessageBusFactory().createMessageBus();
         myMessageBus.attachDuplexInputChannels(aMessageBusServiceInputChannel, aMessageBusClientInputChannel);
 
-        myMessagingSystemFactory = new MessageBusMessagingFactory("ws://[::1]:" + aPort + "/Clients/", "ws://[::1]:" + (aPort + 10) + "/Services/", anUnderlyingMessaging);
+        MessagingSystemFactory = new MessageBusMessagingFactory("ws://[::1]:" + aPort + "/Clients/", "ws://[::1]:" + (aPort + 10) + "/Services/", anUnderlyingMessaging);
 
         // Address of the service in the message bus.
-        myChannelId = "Service1_Address";
+        ChannelId = "Service1_Address";
     }
     
     @After

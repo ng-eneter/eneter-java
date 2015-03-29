@@ -16,9 +16,9 @@ public class Test_AuthenticationConnection_Sync extends AuthenticatedConnectionB
         //EneterTrace.TraceLog = new StreamWriter("d:/tracefile.txt");
 
         SynchronousMessagingSystemFactory anUnderlyingMessaging = new SynchronousMessagingSystemFactory();
-        myChannelId = "MyChannel1";
+        ChannelId = "MyChannel1";
 
-        myMessagingSystemFactory = new AuthenticatedMessagingFactory(anUnderlyingMessaging,
+        MessagingSystemFactory = new AuthenticatedMessagingFactory(anUnderlyingMessaging,
             this, // get login
             this, // get handshake response
             this, // get handshake

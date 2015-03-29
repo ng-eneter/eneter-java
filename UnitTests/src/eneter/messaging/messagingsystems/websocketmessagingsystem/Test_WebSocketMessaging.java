@@ -1,10 +1,9 @@
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
-import static org.junit.Assert.*;
+import helper.EventWaitHandleExt;
+import helper.RandomPortGenerator;
 
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Random;
+import java.net.SocketTimeoutException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -15,6 +14,7 @@ import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
 import eneter.net.system.threading.internal.ManualResetEvent;
+import eneter.net.system.threading.internal.ThreadPool;
 
 public class Test_WebSocketMessaging extends MessagingSystemBaseTester
 {
@@ -23,11 +23,137 @@ public class Test_WebSocketMessaging extends MessagingSystemBaseTester
     {
         //EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
-        Random aRandomPort = new Random();
-        int aPort = 7000 + aRandomPort.nextInt(1000);
+        String aPort = RandomPortGenerator.generate();
         
-        myMessagingSystemFactory = new WebSocketMessagingSystemFactory();
-        myChannelId = "ws://127.0.0.1:" + Integer.toString(aPort) + "/";
+        MessagingSystemFactory = new WebSocketMessagingSystemFactory();
+        ChannelId = "ws://127.0.0.1:" + aPort + "/";
     }
     
+    @Test(expected = SocketTimeoutException.class)
+    public void ConnectionTimeout() throws Exception
+    {
+        WebSocketMessagingSystemFactory aMessaging = new WebSocketMessagingSystemFactory();
+        aMessaging.getClientSecurity().setConnectionTimeout(1000);
+
+        // Nobody is listening on this address.
+        final IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("ws://109.74.151.135:8045/");
+
+        final ManualResetEvent aConnectionCompleted = new ManualResetEvent(false);
+
+        try
+        {
+            // Start opening in another thread to be able to measure
+            // if the timeout occured with the specified time.
+            final Exception[] anException = { null };
+            ThreadPool.queueUserWorkItem(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        anOutputChannel.openConnection();
+                    }
+                    catch (Exception err)
+                    {
+                        anException[0] = err;
+
+                    }
+                    aConnectionCompleted.set();
+                }
+            });
+
+            if (aConnectionCompleted.waitOne(1500))
+            {
+                throw anException[0];
+            }
+        }
+        finally
+        {
+            anOutputChannel.closeConnection();
+        }
+    }
+    
+    @Test
+    public void ClientReceiveTimeout() throws Exception
+    {
+        WebSocketMessagingSystemFactory aMessaging = new WebSocketMessagingSystemFactory();
+        aMessaging.getClientSecurity().setReceiveTimeout(1000);
+
+        IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("ws://127.0.0.1:8046/");
+        IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("ws://127.0.0.1:8046/");
+
+        try
+        {
+            final ManualResetEvent aConnectionClosed = new ManualResetEvent(false);
+            anOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
+            {
+                @Override
+                public void onEvent(Object sender, DuplexChannelEventArgs e)
+                {
+                    EneterTrace.info("Connection closed.");
+                    aConnectionClosed.set();
+                }
+            });
+            
+            anInputChannel.startListening();
+            anOutputChannel.openConnection();
+
+            EneterTrace.info("Connection opened.");
+
+            // According to set receive timeout the client should get disconnected within 1 second.
+            EventWaitHandleExt.waitIfNotDebugging(aConnectionClosed, 3000);
+        }
+        finally
+        {
+            anOutputChannel.closeConnection();
+            anInputChannel.stopListening();
+        }
+    }
+    
+    @Test
+    public void ServiceReceiveTimeout() throws Exception
+    {
+        WebSocketMessagingSystemFactory aMessaging = new WebSocketMessagingSystemFactory();
+        aMessaging.getServerSecurity().setReceiveTimeout(1000);
+
+        IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("ws://127.0.0.1:8046/");
+        IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("ws://127.0.0.1:8046/");
+
+        try
+        {
+            final ManualResetEvent aConnectionClosed = new ManualResetEvent(false);
+            anInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
+            {
+                @Override
+                public void onEvent(Object x, ResponseReceiverEventArgs y)
+                {
+                    EneterTrace.info("Response Receiver Disconnected: " + y.getResponseReceiverId());
+                }
+            });
+            
+            anOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
+            {
+                @Override
+                public void onEvent(Object sender, DuplexChannelEventArgs e)
+                {
+                    EneterTrace.info("Connection closed.");
+                    aConnectionClosed.set();
+                }
+            });
+
+            anInputChannel.startListening();
+            anOutputChannel.openConnection();
+
+            EneterTrace.info("Connection opened: " + anOutputChannel.getResponseReceiverId());
+
+            // According to set receive timeout the client should get disconnected within 1 second.
+            EventWaitHandleExt.waitIfNotDebugging(aConnectionClosed, 3000);
+        }
+        finally
+        {
+            anOutputChannel.closeConnection();
+            anInputChannel.stopListening();
+        }
+    }
 }

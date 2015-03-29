@@ -14,9 +14,9 @@ public class Test_MonitoredMessaging_Sync_Xml extends MonitoredMessagingTesterBa
     {
         EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
-        myChannelId = "ChannelId";
+        ChannelId = "ChannelId";
         mySerializer = new XmlStringSerializer();
         myUnderlyingMessaging = new SynchronousMessagingSystemFactory();
-        myMessagingSystemFactory = new MonitoredMessagingFactory(myUnderlyingMessaging, mySerializer, 1000, 2000);
+        MessagingSystemFactory = new MonitoredMessagingFactory(myUnderlyingMessaging, mySerializer, 1000, 2000);
     }
 }

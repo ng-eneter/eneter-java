@@ -2,7 +2,8 @@ package eneter.messaging.messagingsystems.httpmessagingsystem;
 
 import static org.junit.Assert.*;
 
-import java.net.ConnectException;
+import helper.RandomPortGenerator;
+
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -40,22 +41,15 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
         //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
         //EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
-        Random aRandomPort = new Random();
-        int aPort = 7000 + aRandomPort.nextInt(1000);
+        String aPort = RandomPortGenerator.generate();
         
-        myMessagingSystemFactory = new HttpMessagingSystemFactory();
-        myChannelId = "http://127.0.0.1:" + Integer.toString(aPort) + "/Testing/";
+        MessagingSystemFactory = new HttpMessagingSystemFactory();
+        ChannelId = "http://127.0.0.1:" + aPort + "/Testing/";
         
-        myChannelId2 = "http://127.0.0.1:" + Integer.toString(aPort) + "/Testing2/";
-        myChannelId3 = "http://127.0.0.1:" + Integer.toString(aPort) + "/";
+        myChannelId2 = "http://127.0.0.1:" + aPort + "/Testing2/";
+        myChannelId3 = "http://127.0.0.1:" + aPort + "/";
     }
     
-    @Ignore
-    @Test
-    @Override
-    public void Duplex_03_Send100_10MB() throws Exception
-    {
-    }
     
     @Ignore
     @Test
@@ -84,10 +78,10 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
         // inactivity is simulated in this test.
         IMessagingSystemFactory aMessagingSystem = new HttpMessagingSystemFactory(3000, 2000);
 
-        IDuplexOutputChannel anOutputChannel1 = aMessagingSystem.createDuplexOutputChannel(myChannelId);
-        IDuplexOutputChannel anOutputChannel2 = aMessagingSystem.createDuplexOutputChannel(myChannelId);
+        IDuplexOutputChannel anOutputChannel1 = aMessagingSystem.createDuplexOutputChannel(ChannelId);
+        IDuplexOutputChannel anOutputChannel2 = aMessagingSystem.createDuplexOutputChannel(ChannelId);
 
-        IDuplexInputChannel anInputChannel = aMessagingSystem.createDuplexInputChannel(myChannelId);
+        IDuplexInputChannel anInputChannel = aMessagingSystem.createDuplexInputChannel(ChannelId);
 
         final AutoResetEvent aConncetionEvent = new AutoResetEvent(false);
         final AutoResetEvent aDisconncetionEvent = new AutoResetEvent(false);
@@ -171,7 +165,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 @Override
                 public Object call() throws Exception
                 {
-                    sendMessageReceiveResponse(myChannelId, "Hello1", "Response1", 1, 100);
+                    sendMessageReceiveResponse(ChannelId, "Hello1", "Response1", 1, 100, 1000, 1000);
                     return null;
                 }
             });
@@ -181,7 +175,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 @Override
                 public Object call() throws Exception
                 {
-                    sendMessageReceiveResponse(myChannelId2, "Hello2", "Response3", 1, 100);
+                    sendMessageReceiveResponse(myChannelId2, "Hello2", "Response3", 1, 100, 1000, 1000);
                     return null;
                 }
             });
@@ -191,7 +185,7 @@ public class Test_HttpMessagingSystem extends MessagingSystemBaseTester
                 @Override
                 public Object call() throws Exception
                 {
-                    sendMessageReceiveResponse(myChannelId3, "Hello3", "Response3", 1, 100);
+                    sendMessageReceiveResponse(myChannelId3, "Hello3", "Response3", 1, 100, 1000, 1000);
                     return null;
                 }
             });

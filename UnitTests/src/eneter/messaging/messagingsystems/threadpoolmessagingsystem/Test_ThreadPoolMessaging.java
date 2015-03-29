@@ -9,6 +9,6 @@ public class Test_ThreadPoolMessaging extends MessagingSystemBaseTester
     @Before
     public void setup()
     {
-        myMessagingSystemFactory = new ThreadPoolMessagingSystemFactory();
+        MessagingSystemFactory = new ThreadPoolMessagingSystemFactory();
     }
 }

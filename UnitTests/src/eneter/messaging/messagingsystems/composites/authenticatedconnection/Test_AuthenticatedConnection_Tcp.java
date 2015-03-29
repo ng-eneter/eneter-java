@@ -19,9 +19,9 @@ public class Test_AuthenticatedConnection_Tcp extends AuthenticatedConnectionBas
         int aPort = 7000 + aRandomPort.nextInt(1000);
         
         TcpMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
-        myChannelId = "tcp://[::1]:" + Integer.toString(aPort) + "/";
+        ChannelId = "tcp://[::1]:" + Integer.toString(aPort) + "/";
 
-        myMessagingSystemFactory = new AuthenticatedMessagingFactory(anUnderlyingMessaging,
+        MessagingSystemFactory = new AuthenticatedMessagingFactory(anUnderlyingMessaging,
             this, // get login
             this, // get handshake response
             this, // get handshake

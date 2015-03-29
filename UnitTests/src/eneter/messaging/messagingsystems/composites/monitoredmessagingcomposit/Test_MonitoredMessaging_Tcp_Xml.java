@@ -26,11 +26,11 @@ public class Test_MonitoredMessaging_Tcp_Xml extends MonitoredMessagingTesterBas
         
         Random aRandomPort = new Random();
         int aPort = 7000 + aRandomPort.nextInt(1000);
-        myChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
+        ChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
         
         mySerializer = new XmlStringSerializer();
         myUnderlyingMessaging = new TcpMessagingSystemFactory();
-        myMessagingSystemFactory = new MonitoredMessagingFactory(myUnderlyingMessaging, mySerializer, 1000, 2000);
+        MessagingSystemFactory = new MonitoredMessagingFactory(myUnderlyingMessaging, mySerializer, 1000, 2000);
         
     }
     

@@ -25,10 +25,10 @@ public class Test_WebSocketMessaging_Parallel extends MessagingSystemBaseTester
         Random aRandomPort = new Random();
         int aPort = 7000 + aRandomPort.nextInt(1000);
         
-        myMessagingSystemFactory = new WebSocketMessagingSystemFactory()
+        MessagingSystemFactory = new WebSocketMessagingSystemFactory()
             .setInputChannelThreading(new NoDispatching())
             .setInputChannelThreading(new NoDispatching());
-        myChannelId = "ws://127.0.0.1:" + Integer.toString(aPort) + "/";
+        ChannelId = "ws://127.0.0.1:" + Integer.toString(aPort) + "/";
     }
     
 }

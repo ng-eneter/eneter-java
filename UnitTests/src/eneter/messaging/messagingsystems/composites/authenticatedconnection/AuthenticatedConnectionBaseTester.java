@@ -14,8 +14,8 @@ public abstract class AuthenticatedConnectionBaseTester extends MessagingSystemB
     @Test(expected = TimeoutException.class)
     public void authenticationTimeout() throws Exception
     {
-        IDuplexInputChannel anInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
-        IDuplexOutputChannel anOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+        IDuplexInputChannel anInputChannel = MessagingSystemFactory.createDuplexInputChannel(ChannelId);
+        IDuplexOutputChannel anOutputChannel = MessagingSystemFactory.createDuplexOutputChannel(ChannelId);
 
         try
         {

@@ -1,5 +1,7 @@
 package eneter.messaging.messagingsystems.udpmessagingsystem;
 
+import helper.RandomPortGenerator;
+
 import java.util.Random;
 
 import org.junit.*;
@@ -14,21 +16,13 @@ public class Test_UdpMessagingSystem extends MessagingSystemBaseTester
     {
         //EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
-        Random aRandomPort = new Random();
-        int aPort = 7000 + aRandomPort.nextInt(1000);
+        String aPort = RandomPortGenerator.generate();
         
-        myMessagingSystemFactory = new UdpMessagingSystemFactory();
-        myChannelId = "udp://127.0.0.1:" + Integer.toString(aPort) + "/";
+        MessagingSystemFactory = new UdpMessagingSystemFactory();
+        ChannelId = "udp://127.0.0.1:" + aPort + "/";
     }
     
 
-    @Ignore
-    @Test
-    @Override
-    public void Duplex_03_Send100_10MB()
-    {
-    }
-    
     @Ignore
     @Test
     @Override
@@ -40,6 +34,13 @@ public class Test_UdpMessagingSystem extends MessagingSystemBaseTester
     @Test
     @Override
     public void Duplex_09_StopListening_SendMessage()
+    {
+    }
+    
+    @Ignore
+    @Test
+    @Override
+    public void Duplex_03_Send1_10MB()
     {
     }
 }

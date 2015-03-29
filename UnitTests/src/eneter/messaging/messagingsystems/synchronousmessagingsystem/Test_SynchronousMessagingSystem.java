@@ -9,6 +9,6 @@ public class Test_SynchronousMessagingSystem extends MessagingSystemBaseTester
     @Before
     public void setup()
     {
-        myMessagingSystemFactory = new SynchronousMessagingSystemFactory();
+        MessagingSystemFactory = new SynchronousMessagingSystemFactory();
     }
 }

@@ -2,6 +2,8 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
 import static org.junit.Assert.*;
 
+import helper.RandomPortGenerator;
+
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.net.SocketException;
@@ -27,20 +29,13 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
         //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
         //EneterTrace.setDetailLevel(EDetailLevel.Debug);
         
-        Random aRandomPort = new Random();
-        int aPort = 7000 + aRandomPort.nextInt(1000);
+        String aPort = RandomPortGenerator.generate();
         
-        myMessagingSystemFactory = new TcpMessagingSystemFactory();
-        //myChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
-        myChannelId = "tcp://[::1]:" + Integer.toString(aPort) + "/";
+        MessagingSystemFactory = new TcpMessagingSystemFactory();
+        
+        //ChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
+        ChannelId = "tcp://[::1]:" + aPort + "/";
     }
     
-    @Ignore
-    @Test
-    @Override
-    public void Duplex_03_Send100_10MB() throws Exception
-    {
-        super.Duplex_03_Send100_10MB();
-    }
     
 }

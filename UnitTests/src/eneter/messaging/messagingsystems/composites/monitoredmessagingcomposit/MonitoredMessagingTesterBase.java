@@ -27,8 +27,8 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
     @Test
     public void B01_Pinging_StopListening() throws Exception
     {
-        IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
-        IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+        IDuplexInputChannel aDuplexInputChannel = MessagingSystemFactory.createDuplexInputChannel(ChannelId);
+        IDuplexOutputChannel aDuplexOutputChannel = MessagingSystemFactory.createDuplexOutputChannel(ChannelId);
 
         final AutoResetEvent aDisconnectedEvent = new AutoResetEvent(false);
 
@@ -72,8 +72,8 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
     @Test
     public void B02_Pinging_DisconnectResponseReceiver() throws Exception
     {
-        IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
-        IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+        IDuplexInputChannel aDuplexInputChannel = MessagingSystemFactory.createDuplexInputChannel(ChannelId);
+        IDuplexOutputChannel aDuplexOutputChannel = MessagingSystemFactory.createDuplexOutputChannel(ChannelId);
 
         final AutoResetEvent aDisconnectedEvent = new AutoResetEvent(false);
 
@@ -118,10 +118,10 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
     public void B03_Pinging_NoResponseForPing() throws Exception
     {
         // Create mock for the monitor duplex input channel.
-        IDuplexInputChannel anUnderlyingDuplexInputChannel = myUnderlyingMessaging.createDuplexInputChannel(myChannelId);
+        IDuplexInputChannel anUnderlyingDuplexInputChannel = myUnderlyingMessaging.createDuplexInputChannel(ChannelId);
         Mock_MonitorDuplexInputChannel aDuplexInputChannel = new Mock_MonitorDuplexInputChannel(anUnderlyingDuplexInputChannel, mySerializer);
         
-        IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+        IDuplexOutputChannel aDuplexOutputChannel = MessagingSystemFactory.createDuplexOutputChannel(ChannelId);
 
         final AutoResetEvent aDisconnectedEvent = new AutoResetEvent(false);
 
@@ -166,8 +166,8 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
     @Test
     public void B04_Pinging_CloseConnection() throws Exception
     {
-        IDuplexInputChannel aDuplexInputChannel = myMessagingSystemFactory.createDuplexInputChannel(myChannelId);
-        IDuplexOutputChannel aDuplexOutputChannel = myMessagingSystemFactory.createDuplexOutputChannel(myChannelId);
+        IDuplexInputChannel aDuplexInputChannel = MessagingSystemFactory.createDuplexInputChannel(ChannelId);
+        IDuplexOutputChannel aDuplexOutputChannel = MessagingSystemFactory.createDuplexOutputChannel(ChannelId);
 
         final AutoResetEvent aConnectionClosedEvent = new AutoResetEvent(false);
         

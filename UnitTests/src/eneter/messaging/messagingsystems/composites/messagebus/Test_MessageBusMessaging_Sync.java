@@ -25,10 +25,10 @@ public class Test_MessageBusMessaging_Sync extends MessagingSystemBaseTester
         myMessageBus = new MessageBusFactory().createMessageBus();
         myMessageBus.attachDuplexInputChannels(aMessageBusServiceInputChannel, aMessageBusClientInputChannel);
 
-        myMessagingSystemFactory = new MessageBusMessagingFactory("MyServicesAddress", "MyClientsAddress", anUnderlyingMessaging);
+        MessagingSystemFactory = new MessageBusMessagingFactory("MyServicesAddress", "MyClientsAddress", anUnderlyingMessaging);
 
         // Address of the service in the message bus.
-        myChannelId = "Service1_Address";
+        ChannelId = "Service1_Address";
     }
     
     @After
