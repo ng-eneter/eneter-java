@@ -8,15 +8,16 @@
 
 package eneter.messaging.endpoints.typedmessages;
 
+import eneter.messaging.infrastructure.attachable.IAttachableDuplexOutputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.net.system.Event;
 
 
-public interface ISyncMultitypedMessageSender
+public interface ISyncMultitypedMessageSender extends IAttachableDuplexOutputChannel
 {
     Event<DuplexChannelEventArgs> connectionOpened();
     
     Event<DuplexChannelEventArgs> connectionClosed();
     
-    <TRequest, TResponse> TResponse sendRequestMessage(TRequest message, Class<TRequest> requestClazz, Class<TResponse> responseClazz);
+    <TRequest, TResponse> TResponse sendRequestMessage(TRequest message, Class<TRequest> requestClazz, Class<TResponse> responseClazz) throws Exception;
 }
