@@ -200,7 +200,7 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     }
 
     @Override
-    public <TResponseMessage> void SendResponseMessage(String responseReceiverId, TResponseMessage responseMessage, Class<TResponseMessage> clazz)
+    public <TResponseMessage> void sendResponseMessage(String responseReceiverId, TResponseMessage responseMessage, Class<TResponseMessage> clazz)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();

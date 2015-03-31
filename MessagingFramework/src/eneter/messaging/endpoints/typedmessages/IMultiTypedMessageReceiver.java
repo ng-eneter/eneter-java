@@ -24,5 +24,5 @@ public interface IMultiTypedMessageReceiver extends IAttachableDuplexInputChanne
     
     Class<?>[] getRegisteredRequestMessageTypes();
     
-    <TResponseMessage> void SendResponseMessage(String responseReceiverId, TResponseMessage responseMessage, Class<TResponseMessage> clazz) throws Exception;
+    <TResponseMessage> void sendResponseMessage(String responseReceiverId, TResponseMessage responseMessage, Class<TResponseMessage> clazz) throws Exception;
 }
