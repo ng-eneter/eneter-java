@@ -20,11 +20,11 @@ public interface IMultiTypedMessageSender extends IAttachableDuplexOutputChannel
     
     Event<DuplexChannelEventArgs> connectionClosed();
     
-    <T> void registerResponseMessageReceiver(EventHandler<TypedResponseReceivedEventArgs<T>> handler, Class<T> clazz);
+    <T> void registerResponseMessageReceiver(EventHandler<TypedResponseReceivedEventArgs<T>> handler, Class<T> clazz) throws Exception;
     
     <T> void unregisterResponseMessageReceiver(Class<T> clazz);
     
     Class<?>[] getRegisteredResponseMessageTypes();
     
-    <TRequestMessage> void sendRequestMessage(TRequestMessage message, Class<TRequestMessage> clazz);
+    <TRequestMessage> void sendRequestMessage(TRequestMessage message, Class<TRequestMessage> clazz) throws Exception;
 }

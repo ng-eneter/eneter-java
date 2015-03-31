@@ -18,7 +18,7 @@ public interface IMultiTypedMessageReceiver extends IAttachableDuplexInputChanne
     
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
     
-    <T> void registerRequestMessageReceiver(EventHandler<TypedRequestReceivedEventArgs<T>> handler, Class<T> clazz);
+    <T> void registerRequestMessageReceiver(EventHandler<TypedRequestReceivedEventArgs<T>> handler, Class<T> clazz) throws Exception;
     
     <T> void unregisterRequestMessageReceiver(Class<T> clazz);
     

@@ -6,6 +6,7 @@
  * 
  */
 
+
 package eneter.messaging.endpoints.typedmessages;
 
 import java.util.HashMap;
@@ -15,24 +16,26 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
-import eneter.net.system.internal.IMethod4;
+import eneter.net.system.internal.*;
 
-class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
+
+
+class MultiTypedMessageSender implements IMultiTypedMessageSender
 {
     private class TMessageHandler
     {
-        public TMessageHandler(Class<?> type, IMethod4<String, String, Object, Exception> eventInvoker)
+        public TMessageHandler(Class<?> type, IMethod2<Object, Exception> eventInvoker)
         {
             Type = type;
             Invoke = eventInvoker;
         }
 
-        private Class<?> Type;
-        private IMethod4<String, String, Object, Exception> Invoke;
+        public final Class<?> Type;
+        public final IMethod2<Object, Exception> Invoke;
     }
-
-   
-    public MultiTypedMessageReceiver(ISerializer serializer)
+    
+    
+    public MultiTypedMessageSender(ISerializer serializer)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -40,10 +43,10 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
             mySerializer = serializer;
 
             IDuplexTypedMessagesFactory aFactory = new DuplexTypedMessagesFactory(serializer);
-            myReceiver = aFactory.createDuplexTypedMessageReceiver(MultiTypedMessage.class, MultiTypedMessage.class);
-            myReceiver.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
-            myReceiver.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
-            myReceiver.messageReceived().subscribe(myOnRequestMessageReceived);
+            mySender = aFactory.createDuplexTypedMessageSender(MultiTypedMessage.class, MultiTypedMessage.class);
+            mySender.connectionOpened().subscribe(myOnConnectionOpened);
+            mySender.connectionClosed().subscribe(myOnConnectionClosed);
+            mySender.responseReceived().subscribe(myOnResponseReceived);
         }
         finally
         {
@@ -53,27 +56,25 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     
     
     @Override
-    public Event<ResponseReceiverEventArgs> responseReceiverConnected()
+    public Event<DuplexChannelEventArgs> connectionOpened()
     {
-        return myResponseReceiverConnectedImpl.getApi();
+        return myConnectionOpened.getApi();
     }
 
     @Override
-    public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
+    public Event<DuplexChannelEventArgs> connectionClosed()
     {
-        return myResponseReceiverDisconnectedImpl.getApi();
+        return myConnectionClosed.getApi();
     }
     
-    
-    
+
     @Override
-    public void attachDuplexInputChannel(IDuplexInputChannel duplexInputChannel)
-            throws Exception
+    public void attachDuplexOutputChannel(IDuplexOutputChannel duplexOutputChannel) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myReceiver.attachDuplexInputChannel(duplexInputChannel);
+            mySender.attachDuplexOutputChannel(duplexOutputChannel);
         }
         finally
         {
@@ -82,12 +83,12 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     }
 
     @Override
-    public void detachDuplexInputChannel()
+    public void detachDuplexOutputChannel()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myReceiver.detachDuplexInputChannel();
+            mySender.detachDuplexOutputChannel();
         }
         finally
         {
@@ -96,22 +97,20 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     }
 
     @Override
-    public boolean isDuplexInputChannelAttached()
+    public boolean isDuplexOutputChannelAttached()
     {
-        return myReceiver.isDuplexInputChannelAttached();
+        return mySender.isDuplexOutputChannelAttached();
     }
 
     @Override
-    public IDuplexInputChannel getAttachedDuplexInputChannel()
+    public IDuplexOutputChannel getAttachedDuplexOutputChannel()
     {
-        return myReceiver.getAttachedDuplexInputChannel();
+        return mySender.getAttachedDuplexOutputChannel();
     }
 
-    
-
     @Override
-    public <T> void registerRequestMessageReceiver(final EventHandler<TypedRequestReceivedEventArgs<T>> handler, Class<T> clazz)
-            throws Exception
+    public <T> void registerResponseMessageReceiver(final EventHandler<TypedResponseReceivedEventArgs<T>> handler, Class<T> clazz)
+        throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -122,7 +121,7 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
                 EneterTrace.error(anError);
                 throw new IllegalArgumentException(anError);
             }
-
+            
             synchronized (myMessageHandlers)
             {
                 TMessageHandler aMessageHandler = myMessageHandlers.get(clazz.getSimpleName());
@@ -137,21 +136,21 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
                 // Note: the invoking method must be cached for particular types because
                 //       during deserialization the generic argument is not available and so it would not be possible
                 //       to instantiate TypedRequestReceivedEventArgs<T>.
-                IMethod4<String, String, Object, Exception> anEventInvoker = new IMethod4<String, String, Object, Exception>()
+                IMethod2<Object, Exception> anEventInvoker = new IMethod2<Object, Exception>()
                 {
                     @SuppressWarnings("unchecked")
                     @Override
-                    public void invoke(String responseReceiverId, String senderAddress, Object message, Exception receivingError)
+                    public void invoke(Object message, Exception receivingError)
                             throws Exception
                     {
-                        TypedRequestReceivedEventArgs<T> anEvent;
+                        TypedResponseReceivedEventArgs<T> anEvent;
                         if (receivingError == null)
                         {
-                            anEvent = new TypedRequestReceivedEventArgs<T>(responseReceiverId, senderAddress, (T)message);
+                            anEvent = new TypedResponseReceivedEventArgs<T>((T)message);
                         }
                         else
                         {
-                            anEvent = new TypedRequestReceivedEventArgs<T>(responseReceiverId, senderAddress, receivingError);
+                            anEvent = new TypedResponseReceivedEventArgs<T>(receivingError);
                         }
                         handler.onEvent(this, anEvent);
                     }
@@ -167,7 +166,7 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     }
 
     @Override
-    public <T> void unregisterRequestMessageReceiver(Class<T> clazz)
+    public <T> void unregisterResponseMessageReceiver(Class<T> clazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -184,7 +183,7 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     }
 
     @Override
-    public Class<?>[] getRegisteredRequestMessageTypes()
+    public Class<?>[] getRegisteredResponseMessageTypes()
     {
         synchronized (myMessageHandlers)
         {
@@ -200,17 +199,25 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     }
 
     @Override
-    public <TResponseMessage> void SendResponseMessage(String responseReceiverId, TResponseMessage responseMessage, Class<TResponseMessage> clazz)
-            throws Exception
+    public <TRequestMessage> void sendRequestMessage(TRequestMessage message, Class<TRequestMessage> clazz) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            MultiTypedMessage aMessage = new MultiTypedMessage();
-            aMessage.TypeName = clazz.getSimpleName();
-            aMessage.MessageData = mySerializer.serialize(responseMessage, clazz);
+            try
+            {
+                MultiTypedMessage aMessage = new MultiTypedMessage();
+                aMessage.TypeName = clazz.getSimpleName();
+                aMessage.MessageData = mySerializer.serialize(message, clazz);
 
-            myReceiver.sendResponseMessage(responseReceiverId, aMessage);
+                mySender.sendRequestMessage(aMessage);
+            }
+            catch (Exception err)
+            {
+                String anErrorMessage = TracedObject() + ErrorHandler.FailedToSendMessage;
+                EneterTrace.error(anErrorMessage, err);
+                throw err;
+            }
         }
         finally
         {
@@ -219,17 +226,16 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     }
 
     
-    
-    private void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e)
+    private void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverConnectedImpl.isSubscribed())
+            if (myConnectionOpened.isSubscribed())
             {
                 try
                 {
-                    myResponseReceiverConnectedImpl.raise(this, e);
+                    myConnectionOpened.raise(this, e);
                 }
                 catch (Exception err)
                 {
@@ -243,16 +249,16 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
         }
     }
     
-    private void onResponseReceiverDisconnected(Object sender, ResponseReceiverEventArgs e)
+    private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverDisconnectedImpl.isSubscribed())
+            if (myConnectionClosed.isSubscribed())
             {
                 try
                 {
-                    myResponseReceiverDisconnectedImpl.raise(this, e);
+                    myConnectionClosed.raise(this, e);
                 }
                 catch (Exception err)
                 {
@@ -266,22 +272,18 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
         }
     }
     
-    private void onRequestMessageReceived(Object sender, TypedRequestReceivedEventArgs<MultiTypedMessage> e)
+    private void onResponseReceived(Object sender, TypedResponseReceivedEventArgs<MultiTypedMessage> e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (e.getReceivingError() != null)
-            {
-                EneterTrace.warning(TracedObject() + ErrorHandler.FailedToReceiveMessage, e.getReceivingError());
-            }
-            else
+            if (e.getReceivingError() == null)
             {
                 TMessageHandler aMessageHandler;
 
                 synchronized (myMessageHandlers)
                 {
-                    aMessageHandler = myMessageHandlers.get(e.getRequestMessage().TypeName);
+                    aMessageHandler = myMessageHandlers.get(e.getResponseMessage().TypeName);
                 }
 
                 if (aMessageHandler != null)
@@ -289,11 +291,11 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
                     Object aMessageData;
                     try
                     {
-                        aMessageData = mySerializer.deserialize(e.getRequestMessage().MessageData, aMessageHandler.Type);
+                        aMessageData = mySerializer.deserialize(e.getResponseMessage().MessageData, aMessageHandler.Type);
 
                         try
                         {
-                            aMessageHandler.Invoke.invoke(e.getResponseReceiverId(), e.getSenderAddress(), aMessageData, null);
+                            aMessageHandler.Invoke.invoke(aMessageData, null);
                         }
                         catch (Exception err)
                         {
@@ -304,18 +306,23 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
                     {
                         try
                         {
-                            aMessageHandler.Invoke.invoke(e.getResponseReceiverId(), e.getSenderAddress(), null, err);
+                            aMessageHandler.Invoke.invoke(null, err);
                         }
                         catch (Exception err2)
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err2);
                         }
                     }
+
                 }
                 else
                 {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage + " Message type = " + e.getRequestMessage().TypeName);
+                    EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage + " Message type = " + e.getResponseMessage().TypeName);
                 }
+            }
+            else
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.FailedToReceiveMessage, e.getReceivingError());
             }
         }
         finally
@@ -326,38 +333,39 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     
     
     private ISerializer mySerializer;
-    private IDuplexTypedMessageReceiver<MultiTypedMessage, MultiTypedMessage> myReceiver;
-    
+    private IDuplexTypedMessageSender<MultiTypedMessage, MultiTypedMessage> mySender;
+
     private HashMap<String, TMessageHandler> myMessageHandlers = new HashMap<String, TMessageHandler>();
     
     
-    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedImpl = new EventImpl<ResponseReceiverEventArgs>();
-    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedImpl = new EventImpl<ResponseReceiverEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionOpened = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionClosed = new EventImpl<DuplexChannelEventArgs>();
     
-    private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionOpened = new EventHandler<DuplexChannelEventArgs>()
+    {
+             @Override
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
+        {
+            onConnectionOpened(sender, e);
+        }
+    }; 
+    
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionClosed = new EventHandler<DuplexChannelEventArgs>()
     {
         @Override
-        public void onEvent(Object sender, ResponseReceiverEventArgs e)
+        public void onEvent(Object sender, DuplexChannelEventArgs e)
         {
-            onResponseReceiverConnected(sender, e);
+            onConnectionClosed(sender, e);
         }
     };
     
-    private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverDisconnected = new EventHandler<ResponseReceiverEventArgs>()
+    private EventHandler<TypedResponseReceivedEventArgs<MultiTypedMessage>> myOnResponseReceived = new EventHandler<TypedResponseReceivedEventArgs<MultiTypedMessage>>()
     {
         @Override
-        public void onEvent(Object sender, ResponseReceiverEventArgs e)
+        public void onEvent(Object sender, TypedResponseReceivedEventArgs<MultiTypedMessage> e)
         {
-            onResponseReceiverDisconnected(sender, e);
-        }
-    };
-    
-    private EventHandler<TypedRequestReceivedEventArgs<MultiTypedMessage>> myOnRequestMessageReceived = new EventHandler<TypedRequestReceivedEventArgs<MultiTypedMessage>>()
-    {
-        @Override
-        public void onEvent(Object sender, TypedRequestReceivedEventArgs<MultiTypedMessage> e)
-        {
-            onRequestMessageReceived(sender, e);
+            onResponseReceived(sender, e);
         }
     };
     
