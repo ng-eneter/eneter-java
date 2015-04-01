@@ -205,7 +205,8 @@ public class EncoderDecoder
     {
         ByteBuffer aDataBytes = stringEncoding.encode(data);
 
-        writePlainByteArray(writer, aDataBytes.array(), isLittleEndianRequested);
+        // Note: linit() returns how many bytes are really used.
+        writePlainByteArray(writer, aDataBytes.array(), 0, aDataBytes.limit(), isLittleEndianRequested);
     }
     
     public String readPlainString(DataInputStream reader, Charset stringEncoding, boolean isLittleEndian) throws IOException
@@ -218,11 +219,16 @@ public class EncoderDecoder
     
     public void writePlainByteArray(DataOutputStream writer, byte[] data, boolean isLittleEndianRequested) throws IOException
     {
+        writePlainByteArray(writer, data, 0, data.length, isLittleEndianRequested);
+    }
+    
+    private void writePlainByteArray(DataOutputStream writer, byte[] data, int startIndex, int length, boolean isLittleEndianRequested) throws IOException
+    {
         // Length of the array.
-        writeInt32(writer, data.length, isLittleEndianRequested);
+        writeInt32(writer, length, isLittleEndianRequested);
 
         // Bytes.
-        writer.write(data);
+        writer.write(data, startIndex, length);
     }
     
     public byte[] readPlainByteArray(DataInputStream reader, boolean isLittleEndian) throws IOException
