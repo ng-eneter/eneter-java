@@ -9,6 +9,7 @@
 
 package eneter.messaging.endpoints.typedmessages;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
@@ -183,16 +184,14 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
     }
 
     @Override
-    public Class<?>[] getRegisteredResponseMessageTypes()
+    public ArrayList<Class<?>> getRegisteredResponseMessageTypes()
     {
         synchronized (myMessageHandlers)
         {
-            Class<?>[] aRegisteredMessageTypes = new Class<?>[myMessageHandlers.size()];
-            int i = 0;
+            ArrayList<Class<?>> aRegisteredMessageTypes = new ArrayList<Class<?>>();
             for (TMessageHandler aHandler : myMessageHandlers.values())
             {
-                aRegisteredMessageTypes[i] = aHandler.Type;
-                ++i;
+                aRegisteredMessageTypes.add(aHandler.Type);
             }
             return aRegisteredMessageTypes;
         }

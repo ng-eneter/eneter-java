@@ -8,6 +8,8 @@
 
 package eneter.messaging.endpoints.typedmessages;
 
+import java.util.ArrayList;
+
 import eneter.messaging.infrastructure.attachable.IAttachableDuplexInputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEventArgs;
 import eneter.net.system.*;
@@ -22,7 +24,7 @@ public interface IMultiTypedMessageReceiver extends IAttachableDuplexInputChanne
     
     <T> void unregisterRequestMessageReceiver(Class<T> clazz);
     
-    Class<?>[] getRegisteredRequestMessageTypes();
+    ArrayList<Class<?>> getRegisteredRequestMessageTypes();
     
     <TResponseMessage> void sendResponseMessage(String responseReceiverId, TResponseMessage responseMessage, Class<TResponseMessage> clazz) throws Exception;
 }
