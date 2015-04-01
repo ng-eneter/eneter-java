@@ -2,8 +2,7 @@ package eneter.messaging.endpoints.multitypedmessages;
 
 import static org.junit.Assert.*;
 
-import java.lang.reflect.Array;
-import java.util.*;
+import java.io.Serializable;
 
 import org.junit.Test;
 
@@ -17,10 +16,12 @@ import eneter.net.system.threading.internal.AutoResetEvent;
 
 public abstract class MultiTypedMessagesBaseTester
 {
-    public static class CustomClass
+    public static class CustomClass implements Serializable
     {
         public String Name;
         public int Count;
+        
+        private static final long serialVersionUID = 6245713373722869822L;
     }
     
     protected void Setup(IMessagingSystemFactory messagingSystemFactory, String channelId, ISerializer serializer) throws Exception
@@ -218,6 +219,7 @@ public abstract class MultiTypedMessagesBaseTester
     @Test
     public void RegisterUnregister() throws Exception
     {
+        // Registering / unregistering in service.
         Responser.registerRequestMessageReceiver(new EventHandler<TypedRequestReceivedEventArgs<Integer>>()
         {
             @Override
@@ -250,6 +252,51 @@ public abstract class MultiTypedMessagesBaseTester
         assertTrue(Responser.getRegisteredRequestMessageTypes().contains(CustomClass.class));
         assertTrue(Responser.getRegisteredRequestMessageTypes().contains(String.class));
         
+        Responser.unregisterRequestMessageReceiver(CustomClass.class);
+        
+        assertEquals(2, Responser.getRegisteredRequestMessageTypes().size());
+        assertTrue(Responser.getRegisteredRequestMessageTypes().contains(int.class));
+        assertTrue(Responser.getRegisteredRequestMessageTypes().contains(String.class));
+        
+        
+        // Registering / unregistering in client.
+        Requester.registerResponseMessageReceiver(new EventHandler<TypedResponseReceivedEventArgs<Integer>>()
+        {
+            @Override
+            public void onEvent(Object x, TypedResponseReceivedEventArgs<Integer> y)
+            {
+            }
+            
+        }, int.class);
+                
+        Requester.registerResponseMessageReceiver(new EventHandler<TypedResponseReceivedEventArgs<CustomClass>>()
+        {
+            @Override
+            public void onEvent(Object x, TypedResponseReceivedEventArgs<CustomClass> y)
+            {
+            }
+    
+        }, CustomClass.class);
+        
+        Requester.registerResponseMessageReceiver(new EventHandler<TypedResponseReceivedEventArgs<String>>()
+        {
+            @Override
+            public void onEvent(Object x, TypedResponseReceivedEventArgs<String> y)
+            {
+            }
+    
+        }, String.class);
+
+        assertEquals(3, Requester.getRegisteredResponseMessageTypes().size());
+        assertTrue(Requester.getRegisteredResponseMessageTypes().contains(int.class));
+        assertTrue(Requester.getRegisteredResponseMessageTypes().contains(CustomClass.class));
+        assertTrue(Requester.getRegisteredResponseMessageTypes().contains(String.class));
+        
+        Requester.unregisterResponseMessageReceiver(CustomClass.class);
+        
+        assertEquals(2, Requester.getRegisteredResponseMessageTypes().size());
+        assertTrue(Requester.getRegisteredResponseMessageTypes().contains(int.class));
+        assertTrue(Requester.getRegisteredResponseMessageTypes().contains(String.class));
     }
     
     
