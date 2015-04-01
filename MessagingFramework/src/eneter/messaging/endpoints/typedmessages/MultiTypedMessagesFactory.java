@@ -16,6 +16,11 @@ import eneter.messaging.threading.dispatching.SyncDispatching;
 
 public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
 {
+    public MultiTypedMessagesFactory()
+    {
+        this(0, new XmlStringSerializer());
+    }
+    
     public MultiTypedMessagesFactory(ISerializer serializer)
     {
         this(0, serializer);
