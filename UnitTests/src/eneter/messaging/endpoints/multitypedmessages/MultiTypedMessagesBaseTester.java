@@ -2,6 +2,9 @@ package eneter.messaging.endpoints.multitypedmessages;
 
 import static org.junit.Assert.*;
 
+import java.lang.reflect.Array;
+import java.util.*;
+
 import org.junit.Test;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
@@ -140,7 +143,115 @@ public abstract class MultiTypedMessagesBaseTester
         assertNotNull(aReceivedMessage2[0]);
         assertEquals("House", aReceivedMessage2[0].Name);
         assertEquals(1000, aReceivedMessage2[0].Count);
+        
+        assertNotNull(aReceivedResponse2[0]);
+        assertEquals("Car", aReceivedResponse2[0].Name);
+        assertEquals(100, aReceivedResponse2[0].Count);
     }
+    
+    @Test
+    public void SendReceive_NullMessage() throws Exception
+    {
+        // The test can be performed from more threads therefore we must synchronize.
+        final AutoResetEvent aMessageReceivedEvent = new AutoResetEvent(false);
+
+        final CustomClass[] aReceivedMessage2 = { null };
+        Responser.registerRequestMessageReceiver(new EventHandler<TypedRequestReceivedEventArgs<CustomClass>>()
+        {
+            @Override
+            public void onEvent(Object x, TypedRequestReceivedEventArgs<CustomClass> y)
+            {
+                aReceivedMessage2[0] = y.getRequestMessage();
+
+                try
+                {
+                    Responser.sendResponseMessage(y.getResponseReceiverId(), null, CustomClass.class);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error("Failed to send response.", err);
+                    aMessageReceivedEvent.set();
+                }
+            }
+    
+        }, CustomClass.class);
+        
+
+        Responser.attachDuplexInputChannel(DuplexInputChannel);
+
+        final CustomClass[] aReceivedResponse2 = { null };
+        Requester.registerResponseMessageReceiver(new EventHandler<TypedResponseReceivedEventArgs<CustomClass>>()
+        {
+            @Override
+            public void onEvent(Object x, TypedResponseReceivedEventArgs<CustomClass> y)
+            {
+                aReceivedResponse2[0] = y.getResponseMessage();
+
+                // Signal that the response message was received -> the loop is closed.
+                aMessageReceivedEvent.set();
+            }
+        }, CustomClass.class);
+        
+        Requester.attachDuplexOutputChannel(DuplexOutputChannel);
+
+        try
+        {
+            Requester.sendRequestMessage(1000, int.class);
+
+            Requester.sendRequestMessage(null, CustomClass.class);
+
+            // Wait for the signal that the message is received.
+            aMessageReceivedEvent.waitOne();
+            //Assert.IsTrue(aMessageReceivedEvent.WaitOne(2000));
+        }
+        finally
+        {
+            Requester.detachDuplexOutputChannel();
+            Responser.detachDuplexInputChannel();
+        }
+
+        // Check received values
+        assertNull(aReceivedMessage2[0]);
+        assertNull(aReceivedResponse2[0]);
+    }
+    
+    @Test
+    public void RegisterUnregister() throws Exception
+    {
+        Responser.registerRequestMessageReceiver(new EventHandler<TypedRequestReceivedEventArgs<Integer>>()
+        {
+            @Override
+            public void onEvent(Object x, TypedRequestReceivedEventArgs<Integer> y)
+            {
+            }
+            
+        }, int.class);
+        
+        Responser.registerRequestMessageReceiver(new EventHandler<TypedRequestReceivedEventArgs<CustomClass>>()
+        {
+            @Override
+            public void onEvent(Object x, TypedRequestReceivedEventArgs<CustomClass> y)
+            {
+            }
+    
+        }, CustomClass.class);
+        
+        Responser.registerRequestMessageReceiver(new EventHandler<TypedRequestReceivedEventArgs<String>>()
+        {
+            @Override
+            public void onEvent(Object x, TypedRequestReceivedEventArgs<String> y)
+            {
+            }
+    
+        }, String.class);
+
+        assertEquals(3, Responser.getRegisteredRequestMessageTypes().size());
+        assertTrue(Responser.getRegisteredRequestMessageTypes().contains(int.class));
+        assertTrue(Responser.getRegisteredRequestMessageTypes().contains(CustomClass.class));
+        assertTrue(Responser.getRegisteredRequestMessageTypes().contains(String.class));
+        
+    }
+    
     
     protected IMessagingSystemFactory MessagingSystemFactory;
     protected IDuplexOutputChannel DuplexOutputChannel;
