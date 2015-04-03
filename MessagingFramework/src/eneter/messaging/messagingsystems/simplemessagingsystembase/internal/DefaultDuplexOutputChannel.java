@@ -149,7 +149,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            cleanAfterConnection(true);
+            cleanAfterConnection(true, false);
         }
         finally
         {
@@ -221,7 +221,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                     @Override
                     public void run()
                     {
-                        cleanAfterConnection(false);
+                        cleanAfterConnection(false, true);
                     }
                 });
             }
@@ -255,12 +255,12 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void cleanAfterConnection(boolean sendCloseMessageFlag)
+    private void cleanAfterConnection(boolean sendCloseMessageFlag, boolean notifyConnectionClosedFlag)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            boolean aNotifyFlag = false;
+            boolean aConnectionWasCorrectlyOpen = false;
             
             synchronized (myConnectionManipulatorLock)
             {
@@ -277,13 +277,13 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                 }
 
                 // Note: the notification must run outside the lock because of potententional deadlock.
-                aNotifyFlag = myConnectionIsCorrectlyOpen;
+                aConnectionWasCorrectlyOpen = myConnectionIsCorrectlyOpen;
                 myConnectionIsCorrectlyOpen = false;
             }
         
-            // Notify the connection closed only if it was successfuly open before.
+            // Notify the connection closed only if it was successfully open before.
             // E.g. It will be not notified if the CloseConnection() is called for already closed connection.
-            if (aNotifyFlag)
+            if (aConnectionWasCorrectlyOpen && notifyConnectionClosedFlag)
             {
                 myDispatcher.invoke(new Runnable()
                 {
