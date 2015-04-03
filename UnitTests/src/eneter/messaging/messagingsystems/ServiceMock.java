@@ -29,6 +29,7 @@ public class ServiceMock
         myAllResponseReceiversDisconnectedEvent.reset();
         myRequestMessagesReceivedEvent.reset();
 
+        myConnectedResponseReceivers.clear();
         myDisconnectedResponseReceivers.clear();
         myReceivedMessages.clear();
     }
