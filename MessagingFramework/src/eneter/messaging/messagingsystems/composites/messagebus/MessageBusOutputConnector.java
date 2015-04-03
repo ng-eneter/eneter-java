@@ -100,11 +100,12 @@ class MessageBusOutputConnector implements IOutputConnector
             synchronized (myConnectionManipulator)
             {
                 myResponseMessageHandler = null;
-                
+
                 // Close connection with the message bus.
                 myMessageBusOutputChannel.closeConnection();
-                myMessageBusOutputChannel.responseMessageReceived().subscribe(myOnMessageFromMessageBusReceived);
-                myMessageBusOutputChannel.connectionClosed().subscribe(myOnConnectionWithMessageBusClosed);
+                myMessageBusOutputChannel.responseMessageReceived().unsubscribe(myOnMessageFromMessageBusReceived);
+                myMessageBusOutputChannel.connectionClosed().unsubscribe(myOnConnectionWithMessageBusClosed);
+                
             }
         }
         finally
@@ -195,7 +196,7 @@ class MessageBusOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // In case the OpenConnection() is waiting until the connection is open relase it.
+            // In case the OpenConnection() is waiting until the connection is open release it.
             myOpenConnectionConfirmed.set();
 
             IMethod1<MessageContext> aResponseHandler = myResponseMessageHandler;

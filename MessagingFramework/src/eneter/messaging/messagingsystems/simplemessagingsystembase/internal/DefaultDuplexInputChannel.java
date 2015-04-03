@@ -8,6 +8,7 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -188,6 +189,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             // If broadcast to all connected response receivers.
             if (responseReceiverId.equals("*"))
             {
+                ArrayList<String> aDisconnectedClients = new ArrayList<String>();
+                
                 synchronized (myConnectedClients)
                 {
                     // Send the response message to all connected clients.
@@ -201,12 +204,18 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                         catch (Exception err)
                         {
                             EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
-                            closeConnection(aConnectedClient.getKey(), true);
+                            aDisconnectedClients.add(aConnectedClient.getKey());
 
                             // Note: Exception is not rethrown because if sending to one client fails it should not
                             //       affect sending to other clients.
                         }
                     }
+                }
+                
+                // Disconnect failed clients.
+                for (String aResponseReceiverId : aDisconnectedClients)
+                {
+                    closeConnection(aResponseReceiverId, true, true);
                 }
             }
             else
@@ -219,7 +228,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 catch (Exception err)
                 {
                     EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
-                    closeConnection(responseReceiverId, true);
+                    closeConnection(responseReceiverId, true, true);
                     throw err;
                 }
             }
@@ -236,7 +245,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            closeConnection(responseReceiverId, true);
+            closeConnection(responseReceiverId, true, false);
         }
         finally
         {
@@ -334,7 +343,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     @Override
                     public void run()
                     {
-                        closeConnection(messageContext.getProtocolMessage().ResponseReceiverId, false);
+                        closeConnection(messageContext.getProtocolMessage().ResponseReceiverId, false, true);
                     }
                 });
             }
@@ -387,7 +396,9 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void closeConnection(final String responseReceiverId, boolean sendCloseMessageFlag)
+    private void closeConnection(final String responseReceiverId,
+            boolean sendCloseMessageFlag,
+            boolean notifyDisconnectFlag)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -420,8 +431,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 EneterTrace.warning(TracedObject() + "failed to close connection with response receiver.", err);
             }
 
-            // If a connection was closed.
-            if (aConnecionExisted)
+            // If a connection was closed and notification event is required.
+            if (aConnecionExisted && notifyDisconnectFlag)
             {
                 // Notify the connection was closed.
                 final String aSenderAddressTmp = (aSenderAddress != null) ? aSenderAddress : "";

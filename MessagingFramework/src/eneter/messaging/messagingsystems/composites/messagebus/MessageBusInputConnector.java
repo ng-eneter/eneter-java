@@ -80,7 +80,7 @@ class MessageBusInputConnector implements IInputConnector
         try
         {
             myMessageBusOutputChannel.closeConnection();
-            myMessageBusOutputChannel.responseMessageReceived().subscribe(myOnMessageFromMessageBusReceived);
+            myMessageBusOutputChannel.responseMessageReceived().unsubscribe(myOnMessageFromMessageBusReceived);
             myMessageHandler = null;
         }
         finally

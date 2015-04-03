@@ -18,6 +18,7 @@ import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.linq.internal.EnumerableExt;
+import eneter.net.system.threading.internal.ManualResetEvent;
 
 
 class MessageBus implements IMessageBus
@@ -282,7 +283,7 @@ class MessageBus implements IMessageBus
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            unregisterClient(e.getResponseReceiverId(), true);
+            unregisterClient(e.getResponseReceiverId(), true, false);
         }
         finally
         {
@@ -304,7 +305,7 @@ class MessageBus implements IMessageBus
             catch (Exception err)
             {
                 EneterTrace.error(TracedObject() + "failed to deserialize message from service. The service will be disconnected.", err);
-                unregisterClient(e.getResponseReceiverId(), true);
+                unregisterClient(e.getResponseReceiverId(), true, true);
                 return;
             }
 
@@ -375,7 +376,7 @@ class MessageBus implements IMessageBus
                         return;
                     }
                             
-                    // If requestedservice exists.
+                    // If requested service exists.
                     if (aServiceContext != null)
                     {
                         aClientContext = new TClientContext(clientResponseReceiverId, serviceId, aServiceContext.getServiceResponseReceiverId());
@@ -405,13 +406,13 @@ class MessageBus implements IMessageBus
 
                     // Note: The service should not be disconnected from the message bus when not available.
                     //       Because it can be "just" overloaded. So only this new client will be disconnected from the message bus.
-                    unregisterClient(clientResponseReceiverId, false);
+                    unregisterClient(clientResponseReceiverId, false, true);
                 }
             }
             else
             {
                 EneterTrace.warning(TracedObject() + "failed to connect the client already exists. The connection will be closed.");
-                unregisterClient(clientResponseReceiverId, true);
+                unregisterClient(clientResponseReceiverId, true, true);
             }
         }
         finally
@@ -420,11 +421,14 @@ class MessageBus implements IMessageBus
         }
     }
 
-    private void unregisterClient(final String clientResponseReceiverId, boolean sendCloseConnectionToServiceFlag)
+    private void unregisterClient(final String clientResponseReceiverId,
+            boolean sendCloseConnectionToServiceFlag,
+            boolean disconnectClientFlag)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            // Unregistering client. 
             final TClientContext[] aClientContext = { null };
             synchronized (myConnectionLock)
             {
@@ -474,10 +478,14 @@ class MessageBus implements IMessageBus
                     }
                 }
 
-                IDuplexInputChannel anInputChannel1 = myClientConnector.getAttachedDuplexInputChannel();
-                if (anInputChannel1 != null)
+                // Disconnecting the client.
+                if (disconnectClientFlag)
                 {
-                    anInputChannel1.disconnectResponseReceiver(aClientContext[0].getClientResponseReceiverId());
+                    IDuplexInputChannel anInputChannel1 = myClientConnector.getAttachedDuplexInputChannel();
+                    if (anInputChannel1 != null)
+                    {
+                        anInputChannel1.disconnectResponseReceiver(aClientContext[0].getClientResponseReceiverId());
+                    }
                 }
             }
         }
@@ -593,7 +601,7 @@ class MessageBus implements IMessageBus
             else if (aMessageBusMessage.Request == EMessageBusRequest.DisconnectClient)
             {
                 EneterTrace.debug("SERVICE DISCONNECTs CLIENT");
-                unregisterClient(aMessageBusMessage.Id, false);
+                unregisterClient(aMessageBusMessage.Id, false, true);
             }
             else if (aMessageBusMessage.Request == EMessageBusRequest.ConfirmClient)
             {
@@ -831,7 +839,7 @@ class MessageBus implements IMessageBus
                     String anErrorMessage = TracedObject() + "failed to send message to the client.";
                     EneterTrace.error(anErrorMessage, err);
 
-                    unregisterClient(aClientContext.getClientResponseReceiverId(), true);
+                    unregisterClient(aClientContext.getClientResponseReceiverId(), true, true);
                 }
             }
         }
