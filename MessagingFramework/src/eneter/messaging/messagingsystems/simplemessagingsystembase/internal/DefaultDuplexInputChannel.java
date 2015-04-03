@@ -269,7 +269,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 for (Entry<String, String> aConnection : myConnectedClients.entrySet())
                 {
                     final String aResponseReceiverId = aConnection.getKey();
-                    final String aSenderAddreaa = aConnection.getValue();
                     
                     try
                     {
@@ -279,15 +278,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     {
                         EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
                     }
-                    
-                    myDispatcher.invoke(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            notifyEvent(myResponseReceiverDisconnected, aResponseReceiverId, aSenderAddreaa);
-                        }
-                    });
                 }
                 myConnectedClients.clear();
             }
