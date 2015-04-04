@@ -381,7 +381,7 @@ public abstract class MessagingSystemBaseTester
 
             aService.waitUntilResponseReceiversConnectNotified(1, 1000);
             aClient.waitUntilConnectionOpenIsNotified(1000);
-            String aConnectedResponseReceiverId = aService.getConnectedResponseReceivers().get(0).getResponseReceiverId();
+            //String aConnectedResponseReceiverId = aService.getConnectedResponseReceivers().get(0).getResponseReceiverId();
 
             aService.getInputChannel().disconnectResponseReceiver(aService.getConnectedResponseReceivers().get(0).getResponseReceiverId());
 
