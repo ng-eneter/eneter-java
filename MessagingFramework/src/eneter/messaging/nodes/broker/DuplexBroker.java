@@ -9,7 +9,6 @@
 package eneter.messaging.nodes.broker;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
@@ -18,31 +17,20 @@ import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInput
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
-import eneter.net.system.linq.internal.EnumerableExt;
+
 
 class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBroker
 {
-    private class TSubscriptionItem
+    private class TSubscription
     {
-        public TSubscriptionItem(String messageTypeId, String receiverId)
+        public TSubscription(String messageTypeId, String receiverId)
         {
-            myMessageTypeId = messageTypeId;
-            myReceiverId = receiverId;
+            MessageTypeId = messageTypeId;
+            ReceiverId = receiverId;
         }
 
-        // MessageTypeId or regular expression used to recognize matching message type id.
-        public String getMessageTypeId()
-        {
-            return myMessageTypeId;
-        }
-        
-        public String getReceiverId()
-        {
-            return myReceiverId;
-        }
-        
-        private String myMessageTypeId;
-        private String myReceiverId;
+        public final String MessageTypeId;
+        public final String ReceiverId;
     }
     
     @Override
@@ -89,7 +77,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         try
         {
             String[] aEventsToSubscribe = { eventId };
-            subscribe(myLocalReceiverId, aEventsToSubscribe, myMessageSubscribtions);
+            subscribe(myLocalReceiverId, aEventsToSubscribe);
         }
         finally
         {
@@ -103,7 +91,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            subscribe(myLocalReceiverId, eventIds, myMessageSubscribtions);
+            subscribe(myLocalReceiverId, eventIds);
         }
         finally
         {
@@ -118,7 +106,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         try
         {
             String[] aEventsToUnsubscribe = { eventId };
-            unsubscribe(myLocalReceiverId, aEventsToUnsubscribe, myMessageSubscribtions);
+            unsubscribe(myLocalReceiverId, aEventsToUnsubscribe);
         }
         finally
         {
@@ -132,65 +120,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            unsubscribe(myLocalReceiverId, eventIds, myMessageSubscribtions);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
-    public void subscribeRegExp(String regularExpression) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            String[] aSubscribingExpressions = { regularExpression };
-            subscribe(myLocalReceiverId, aSubscribingExpressions, myRegExpSubscribtions);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
-    public void subscribeRegExp(String[] regularExpressions) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            subscribe(myLocalReceiverId, regularExpressions, myRegExpSubscribtions);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    @Override
-    public void unsubscribeRegExp(String regularExpression) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            String[] aUnsubscribingExpressions = { regularExpression };
-            unsubscribe(myLocalReceiverId, aUnsubscribingExpressions, myRegExpSubscribtions);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
-    public void unsubscribeRegExp(String[] regularExpressions) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            unsubscribe(myLocalReceiverId, regularExpressions, myRegExpSubscribtions);
+            unsubscribe(myLocalReceiverId, eventIds);
         }
         finally
         {
@@ -204,11 +134,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (mySubscribtionManipulatorLock)
-            {
-                unsubscribe(myLocalReceiverId, null, myMessageSubscribtions);
-                unsubscribe(myLocalReceiverId, null, myRegExpSubscribtions);
-            }
+            unsubscribe(myLocalReceiverId, null);
         }
         finally
         {
@@ -242,27 +168,15 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
             }
             else if (aBrokerMessage.Request == EBrokerRequest.Subscribe)
             {
-                subscribe(e.getResponseReceiverId(), aBrokerMessage.MessageTypes, myMessageSubscribtions);
-            }
-            else if (aBrokerMessage.Request == EBrokerRequest.SubscribeRegExp)
-            {
-                subscribe(e.getResponseReceiverId(), aBrokerMessage.MessageTypes, myRegExpSubscribtions);
+                subscribe(e.getResponseReceiverId(), aBrokerMessage.MessageTypes);
             }
             else if (aBrokerMessage.Request == EBrokerRequest.Unsubscribe)
             {
-                unsubscribe(e.getResponseReceiverId(), aBrokerMessage.MessageTypes, myMessageSubscribtions);
-            }
-            else if (aBrokerMessage.Request == EBrokerRequest.UnsubscribeRegExp)
-            {
-                unsubscribe(e.getResponseReceiverId(), aBrokerMessage.MessageTypes, myRegExpSubscribtions);
+                unsubscribe(e.getResponseReceiverId(), aBrokerMessage.MessageTypes);
             }
             else if (aBrokerMessage.Request == EBrokerRequest.UnsubscribeAll)
             {
-                synchronized (mySubscribtionManipulatorLock)
-                {
-                    unsubscribe(e.getResponseReceiverId(), null, myMessageSubscribtions);
-                    unsubscribe(e.getResponseReceiverId(), null, myRegExpSubscribtions);
-                }
+                unsubscribe(e.getResponseReceiverId(), null);
             }
         }
         catch (Exception err)
@@ -276,29 +190,18 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
     }
     
     @Override
-    protected void onResponseReceiverConnected(Object sender,
-            ResponseReceiverEventArgs e)
+    protected void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e)
     {
         // n.a.
     }
     
     @Override
-    protected void onResponseReceiverDisconnected(Object sender,
-            ResponseReceiverEventArgs e)
+    protected void onResponseReceiverDisconnected(Object sender, ResponseReceiverEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Remove all subscriptions for the disconnected subscriber.
-            synchronized (mySubscribtionManipulatorLock)
-            {
-                unsubscribe(e.getResponseReceiverId(), null, myMessageSubscribtions);
-                unsubscribe(e.getResponseReceiverId(), null, myRegExpSubscribtions);
-            }
-        }
-        catch (Exception err)
-        {
-            EneterTrace.error(TracedObject() + "detected exception when subscriber disconnected.", err);
+            unsubscribe(e.getResponseReceiverId(), null);
         }
         finally
         {
@@ -312,87 +215,29 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (mySubscribtionManipulatorLock)
+            ArrayList<TSubscription> anIdetifiedSubscriptions = new ArrayList<TSubscription>();
+            
+            synchronized (mySubscribtions)
             {
-                final ArrayList<TSubscriptionItem> anIncorrectRegExpCollector = new ArrayList<TSubscriptionItem>();
-                Iterable<TSubscriptionItem> aMessageSubscribers = EnumerableExt.where(myMessageSubscribtions, new IFunction1<Boolean, TSubscriptionItem>()
-                        {
-                            @Override
-                            public Boolean invoke(TSubscriptionItem x) throws Exception
-                            {
-                                return (myIsPublisherSelfnotified || !x.getReceiverId().equals(publisherResponseReceiverId)) && 
-                                        x.getMessageTypeId().equals(message.MessageTypes[0]);
-                            }
-                        });
-
-
-                Iterable<TSubscriptionItem> aRegExpSubscribers = EnumerableExt.where(myRegExpSubscribtions, new IFunction1<Boolean, TSubscriptionItem>()
-                    {
-                        @Override
-                        public Boolean invoke(TSubscriptionItem x) throws Exception
-                        {
-                            if (myIsPublisherSelfnotified || !x.getReceiverId().equals(publisherResponseReceiverId))
-                            {
-                                try
-                                {
-                                    String aRegEx = x.getMessageTypeId();
-                                    String aMessageType = message.MessageTypes[0];
-                                    boolean aMatchResult = Pattern.matches(aRegEx, aMessageType);
-                                    return aMatchResult;
-                                }
-                                catch (Exception err)
-                                {
-                                    // The regular expression provided by a client can be incorrect and can cause an exception.
-                                    // Other clients should not be affected by this. Therefore, we catch the exception and remove the invalid expression.
-                                    EneterTrace.error(TracedObject() + "detected an incorrect regular expression: " + x.getMessageTypeId(), err);
-    
-                                    // Store the subscribtion with the wrong expression.
-                                    anIncorrectRegExpCollector.add(x);
-    
-                                    return false;
-                                }
-                            }
-                            else
-                            {
-                                return false;
-                            }
-                        }
-                    }); 
-                
-                // Remove subscriptions with regular expresions causing exceptions.
-                for (TSubscriptionItem x : anIncorrectRegExpCollector)
+                for (TSubscription aMessageSubscription : mySubscribtions)
                 {
-                    myRegExpSubscribtions.remove(x);
+                    if ((myIsPublisherSelfnotified || !aMessageSubscription.ReceiverId.equals(publisherResponseReceiverId)) &&
+                        aMessageSubscription.MessageTypeId.equals(message.MessageTypes[0]))
+                    {
+                        anIdetifiedSubscriptions.add(aMessageSubscription);
+                    }
                 }
-
-                // Notify subscribers
-                sendNotifyMessages(message, originalSerializedMessage, aMessageSubscribers);
-                
-                // Notify subscribers subscribed via the regular expression.
-                sendNotifyMessages(message, originalSerializedMessage, aRegExpSubscribers);
             }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    private void sendNotifyMessages(BrokerMessage brokerMessage, Object serializedMessage, Iterable<TSubscriptionItem> subscribers)
-            throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            for (TSubscriptionItem aSubscriber : subscribers)
+            
+            for (TSubscription aSubscription : anIdetifiedSubscriptions)
             {
-                if (aSubscriber.getReceiverId().equals(myLocalReceiverId))
+                if (aSubscription.ReceiverId.equals(myLocalReceiverId))
                 {
                     if (myBrokerMessageReceivedEvent.isSubscribed())
                     {
                         try
                         {
-                            BrokerMessageReceivedEventArgs anEvent = new BrokerMessageReceivedEventArgs(brokerMessage.MessageTypes[0], brokerMessage.Message);
+                            BrokerMessageReceivedEventArgs anEvent = new BrokerMessageReceivedEventArgs(message.MessageTypes[0], message.Message);
                             myBrokerMessageReceivedEvent.raise(this, anEvent);
                         }
                         catch (Exception err)
@@ -403,7 +248,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                 }
                 else
                 {
-                    send(aSubscriber.getReceiverId(), serializedMessage);
+                    send(aSubscription.ReceiverId, originalSerializedMessage);
                 }
             }
         }
@@ -444,11 +289,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                 }
 
                 // Unsubscribe the failed client.
-                synchronized (myDuplexInputChannelManipulatorLock)
-                {
-                    unsubscribe(responseReceiverId, null, myMessageSubscribtions);
-                    unsubscribe(responseReceiverId, null, myRegExpSubscribtions);
-                }
+                unsubscribe(responseReceiverId, null);
             }
         }
         finally
@@ -457,27 +298,27 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         }
     }
     
-    private void subscribe(String responseReceiverId, String[] messageTypes, HashSet<TSubscriptionItem> subscribtions)
+    private void subscribe(String responseReceiverId, String[] messageTypes)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (mySubscribtionManipulatorLock)
+            synchronized (mySubscribtions)
             {
                 // Subscribe only messages that are not subscribed yet.
                 ArrayList<String> aMessagesToSubscribe = new ArrayList<String>(Arrays.asList(messageTypes));
-                for (TSubscriptionItem aSubscription : subscribtions)
+                for (TSubscription aSubscription : mySubscribtions)
                 {
-                    if (aSubscription.getReceiverId().equals(responseReceiverId))
+                    if (aSubscription.ReceiverId.equals(responseReceiverId))
                     {
-                        aMessagesToSubscribe.remove(aSubscription.getMessageTypeId());
+                        aMessagesToSubscribe.remove(aSubscription.MessageTypeId);
                     }
                 }
                 
                 // Subscribe
                 for (String aMessageType : aMessagesToSubscribe)
                 {
-                    subscribtions.add(new TSubscriptionItem(aMessageType, responseReceiverId));
+                    mySubscribtions.add(new TSubscription(aMessageType, responseReceiverId));
                 }
             }
         }
@@ -487,43 +328,52 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         }
     }
     
-    private void unsubscribe(final String responseReceiverId, final String[] messageTypes, HashSet<TSubscriptionItem> subscribtions) throws Exception
+    private void unsubscribe(final String responseReceiverId, final String[] messageTypes)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (mySubscribtionManipulatorLock)
+            synchronized (mySubscribtions)
             {
                 // If unsubscribe from all messages
                 if (messageTypes == null || messageTypes.length == 0)
                 {
-                    HashSetExt.removeWhere(subscribtions, new IFunction1<Boolean, TSubscriptionItem>()
+                    try
+                    {
+                        HashSetExt.removeWhere(mySubscribtions, new IFunction1<Boolean, TSubscription>()
                             {
                                 @Override
-                                public Boolean invoke(TSubscriptionItem x)
+                                public Boolean invoke(TSubscription x)
                                         throws Exception
                                 {
-                                    return x.getReceiverId().equals(responseReceiverId);
+                                    return x.ReceiverId.equals(responseReceiverId);
                                 }
                         
                             });
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error(TracedObject() + "failed to unregister subscriber.", err);
+                    }
                 }
                 // If unsubscribe from specified messages
                 else
                 {
-                    HashSetExt.removeWhere(subscribtions, new IFunction1<Boolean, TSubscriptionItem>()
+                    try
+                    {
+                        HashSetExt.removeWhere(mySubscribtions, new IFunction1<Boolean, TSubscription>()
                             {
                                 @Override
-                                public Boolean invoke(TSubscriptionItem x)
+                                public Boolean invoke(TSubscription x)
                                         throws Exception
                                 {
-                                    if (x.getReceiverId().equals(responseReceiverId))
+                                    if (x.ReceiverId.equals(responseReceiverId))
                                     {
                                         // If it is one of messages that should be unsubscribed then return
                                         // true indicating the item shall be removed.
                                         for (String aMessageType : messageTypes)
                                         {
-                                            if (aMessageType.equals(x.getMessageTypeId()))
+                                            if (aMessageType.equals(x.MessageTypeId))
                                             {
                                                 return true;
                                             }
@@ -534,6 +384,11 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                                 }
                         
                             });
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error(TracedObject() + "failed to unregister subscription.", err);
+                    }
                 }
             }
         }
@@ -544,9 +399,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
     }
     
     
-    private Object mySubscribtionManipulatorLock = new Object();
-    private HashSet<TSubscriptionItem> myMessageSubscribtions = new HashSet<TSubscriptionItem>();
-    private HashSet<TSubscriptionItem> myRegExpSubscribtions = new HashSet<TSubscriptionItem>();
+    private HashSet<TSubscription> mySubscribtions = new HashSet<TSubscription>();
     private boolean myIsPublisherSelfnotified;
     private ISerializer mySerializer;
     

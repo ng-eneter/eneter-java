@@ -22,21 +22,9 @@ public enum EBrokerRequest
     Subscribe,
     
     /**
-     * Request to subscribe for message type ids that match with the regular expression.
-     * I.e. regular expression is used to identify what message types shall be notified
-     * to the client.
-     */
-    SubscribeRegExp,
-    
-    /**
      * Request to unsubscribe from exactly specified message.
      */
     Unsubscribe,
-    
-    /**
-     * Request to unsubscribe the regular expression.
-     */
-    UnsubscribeRegExp,
     
     /**
      * Request to unsubscribe all messages and regular expressions.

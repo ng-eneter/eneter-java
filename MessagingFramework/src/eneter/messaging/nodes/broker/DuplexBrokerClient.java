@@ -8,8 +8,6 @@
 
 package eneter.messaging.nodes.broker;
 
-import java.util.regex.Pattern;
-
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
@@ -126,58 +124,6 @@ class DuplexBrokerClient extends AttachableDuplexOutputChannelBase implements ID
     }
 
     @Override
-    public void subscribeRegExp(String regularExpression) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            String[] aRegularExpression = { regularExpression };
-            subscribeRegExp(aRegularExpression);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
-    public void subscribeRegExp(String[] regularExpressions) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            if (regularExpressions == null)
-            {
-                String anErrorMessage = TracedObject() + "cannot subscribe to null.";
-                EneterTrace.error(anErrorMessage);
-                throw new IllegalArgumentException(anErrorMessage);
-            }
-            
-            // Check if the client has a correct regular expression.
-            // If not, then the exception will be thrown here on the client side and not in the broker during the evaluation.
-            for (String aRegExpression : regularExpressions)
-            {
-                try
-                {
-                    Pattern.matches(aRegExpression, "");
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.error(TracedObject() + "failed to subscribe the regular expression because the regular expression '"
-                        + aRegExpression + "' is incorrect.", err);
-                    throw err;
-                }
-            }
-
-            send(EBrokerRequest.SubscribeRegExp, regularExpressions);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
     public void unsubscribe(String messageType) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -199,35 +145,6 @@ class DuplexBrokerClient extends AttachableDuplexOutputChannelBase implements ID
         try
         {
             send(EBrokerRequest.Unsubscribe, messageTypes);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
-    public void unsubscribeRegExp(String regularExpression) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            String[] aRegularExpression = { regularExpression };
-            send(EBrokerRequest.UnsubscribeRegExp, aRegularExpression);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-
-    @Override
-    public void unsubscribeRegExp(String[] regularExpressions) throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            send(EBrokerRequest.UnsubscribeRegExp, regularExpressions);
         }
         finally
         {
