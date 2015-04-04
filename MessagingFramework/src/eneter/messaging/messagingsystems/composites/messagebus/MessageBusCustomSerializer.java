@@ -47,7 +47,7 @@ class MessageBusCustomSerializer implements ISerializer
             
             // Write messagebus request.
             byte aRequestType = (byte)aMessage.Request.geValue();
-            aWriter.write((byte)aRequestType);
+            aWriter.writeByte(aRequestType);
 
             // Write Id.
             Charset anEncoding = Charset.forName("UTF-8");

@@ -19,20 +19,48 @@ public enum EBrokerRequest
     /**
      * Request to subscribe exactly for the specified message.
      */
-    Subscribe,
+    Subscribe(10),
     
     /**
      * Request to unsubscribe from exactly specified message.
      */
-    Unsubscribe,
+    Unsubscribe(20),
     
     /**
      * Request to unsubscribe all messages and regular expressions.
      */
-    UnsubscribeAll,
+    UnsubscribeAll(30),
     
     /**
      * Request to publish a message.
      */
-    Publish
+    Publish(40);
+    
+    /**
+     * Returns value of the enumeration type.
+     * @return
+     */
+    public int geValue()
+    {
+        return myValue;
+    }
+    
+    public static EBrokerRequest fromInt(int i)
+    {
+        switch (i)
+        {
+            case 10: return Subscribe;
+            case 20: return Unsubscribe;
+            case 30: return UnsubscribeAll;
+            case 40: return Publish;
+        }
+        return null;
+    }
+    
+    private EBrokerRequest(int value)
+    {
+        myValue = value;
+    }
+
+    private final int myValue;
 }
