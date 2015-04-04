@@ -11,9 +11,12 @@ import java.util.Random;
 
 import org.junit.Test;
 
+import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.dataprocessing.serializing.JavaBinarySerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
+import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.InteroperableProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousMessagingSystemFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
@@ -310,71 +313,51 @@ public class Test_Broker
     @Test
     public void Notify_50000() throws Exception
     {
-        // Create channels
         IMessagingSystemFactory aMessagingSystem = new SynchronousMessagingSystemFactory();
-
-        IDuplexInputChannel aBrokerInputChannel = aMessagingSystem.createDuplexInputChannel("BrokerChannel");
-        IDuplexOutputChannel aClient1OutputChannel = aMessagingSystem.createDuplexOutputChannel("BrokerChannel");
-        IDuplexOutputChannel aClient2OutputChannel = aMessagingSystem.createDuplexOutputChannel("BrokerChannel");
-
-        // Specify in the factory that the publisher shall not be notified from its own published events.
-        IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory(false, new JavaBinarySerializer());
-
-        IDuplexBroker aBroker = aBrokerFactory.createBroker();
-        aBroker.attachDuplexInputChannel(aBrokerInputChannel);
-
-        IDuplexBrokerClient aClient1 = aBrokerFactory.createBrokerClient();
-        final int[] aCount = { 0 };
-        aClient1.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
-        {
-            @Override
-            public void onEvent(Object sender, BrokerMessageReceivedEventArgs e)
-            {
-                ++aCount[0];
-            }
-        });
-        aClient1.attachDuplexOutputChannel(aClient1OutputChannel);
-
-        IDuplexBrokerClient aClient2 = aBrokerFactory.createBrokerClient();
-        aClient2.attachDuplexOutputChannel(aClient2OutputChannel);
-
-        aClient1.subscribe("TypeA");
-
-        PerformanceTimer aTimer = new PerformanceTimer();
-        aTimer.start();
-        
-        for (int i = 0; i < 50000; ++i)
-        {
-            // Notify the message.
-            aClient2.sendMessage("TypeA", "Message A");
-        }
-        
-        aTimer.stop();
-
-        // Client 2 should not get the notification.
-        assertEquals(50000, aCount[0]);
+        String aBrokerAddress = "BrokerChannel";
+        ISerializer aSerializer = new JavaBinarySerializer();
+        notify(50000, aSerializer, aMessagingSystem, aBrokerAddress);
     }
     
     @Test
     public void Notify_50000_TCP() throws Exception
     {
+        int aPort = RandomPortGenerator.generateInt();
+
+        IMessagingSystemFactory aMessagingSystem = new TcpMessagingSystemFactory();
+        String aBrokerAddress = "tcp://127.0.0.1:" + aPort + "/";
+
+        ISerializer aSerializer = new JavaBinarySerializer();
+
+        notify(50000, aSerializer, aMessagingSystem, aBrokerAddress);
+    }
+    
+    @Test
+    public void Notify_50000_TCP_Interop_BrokerSerializer() throws Exception
+    {
+        int aPort = RandomPortGenerator.generateInt();
+
+        IProtocolFormatter aProtocolFormatter = new InteroperableProtocolFormatter();
+        IMessagingSystemFactory aMessagingSystem = new TcpMessagingSystemFactory(aProtocolFormatter);
+        String aBrokerAddress = "tcp://127.0.0.1:" + aPort + "/";
+
+        ISerializer aSerializer = new BrokerCustomSerializer();
+
+        notify(50000, aSerializer, aMessagingSystem, aBrokerAddress);
+    }
+    
+    private void notify(final int numberOfTimes, ISerializer serializer, IMessagingSystemFactory messaging, String aBrokerAddress)
+            throws Exception
+    {
         //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
         EneterTrace.setDetailLevel(EDetailLevel.Short);
         
-        final int aMessageCount = 50000;
-        
-        Random aRandomPort = new Random();
-        int aPort = 7000 + aRandomPort.nextInt(1000);
-        
-        // Create channels
-        IMessagingSystemFactory aMessagingSystem = new TcpMessagingSystemFactory();
-
-        IDuplexInputChannel aBrokerInputChannel = aMessagingSystem.createDuplexInputChannel("tcp://127.0.0.1:" + aPort + "/");
-        IDuplexOutputChannel aClient1OutputChannel = aMessagingSystem.createDuplexOutputChannel("tcp://127.0.0.1:" + aPort + "/");
-        IDuplexOutputChannel aClient2OutputChannel = aMessagingSystem.createDuplexOutputChannel("tcp://127.0.0.1:" + aPort + "/");
+        IDuplexInputChannel aBrokerInputChannel = messaging.createDuplexInputChannel(aBrokerAddress);
+        IDuplexOutputChannel aClient1OutputChannel = messaging.createDuplexOutputChannel(aBrokerAddress);
+        IDuplexOutputChannel aClient2OutputChannel = messaging.createDuplexOutputChannel(aBrokerAddress);
 
         // Specify in the factory that the publisher shall not be notified from its own published events.
-        IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory(false, new JavaBinarySerializer());
+        IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory(false, serializer);
 
         IDuplexBroker aBroker = aBrokerFactory.createBroker();
         aBroker.attachDuplexInputChannel(aBrokerInputChannel);
@@ -384,16 +367,11 @@ public class Test_Broker
         final AutoResetEvent aCompletedEvent = new AutoResetEvent(false);
         aClient1.brokerMessageReceived().subscribe(new EventHandler<BrokerMessageReceivedEventArgs>()
         {
-            
             @Override
             public void onEvent(Object sender, BrokerMessageReceivedEventArgs e)
             {
                 int k = ++aCount[0];
-                if (k % 10000 == 0)
-                {
-                    EneterTrace.info(Integer.toString(k / 10000));
-                }
-                if (aCount[0] == aMessageCount)
+                if (aCount[0] == numberOfTimes)
                 {
                     aCompletedEvent.set();
                 }
@@ -406,12 +384,12 @@ public class Test_Broker
 
         try
         {
-            aClient1.subscribe("TypeA");
-
             PerformanceTimer aTimer = new PerformanceTimer();
             aTimer.start();
             
-            for (int i = 0; i < aMessageCount; ++i)
+            aClient1.subscribe("TypeA");
+            
+            for (int i = 0; i < numberOfTimes; ++i)
             {
                 // Notify the message.
                 aClient2.sendMessage("TypeA", "Message A");
@@ -422,7 +400,7 @@ public class Test_Broker
             aTimer.stop();
             
             // Client 2 should not get the notification.
-            assertEquals(aMessageCount, aCount[0]);
+            assertEquals(numberOfTimes, aCount[0]);
         }
         finally
         {
