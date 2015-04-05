@@ -107,7 +107,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      */
     public WebSocketMessagingSystemFactory()
     {
-        this(300000, new EneterProtocolFormatter());
+        this(new EneterProtocolFormatter());
     }
     
     /**
@@ -116,37 +116,10 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
      */
     public WebSocketMessagingSystemFactory(IProtocolFormatter protocolFormatter)
     {
-        this(300000, protocolFormatter);
-    }
-    
-    /**
-     * Constructs the websocket messaging factory.
-     * It allows to set the ping frequency. The pinging is intended to keep the connection alive in
-     * environments that would drop the connection if not active for some time.
-     * (e.g. Android phone can drop the connection if there is no activity several minutes.)
-     * @param pingFrequency frequency of pinging in milliseconds.
-     */
-    public WebSocketMessagingSystemFactory(int pingFrequency)
-    {
-        this(pingFrequency, new EneterProtocolFormatter());
-    }
-    
-
-    /**
-     * Constructs the websocket messaging factory.
-     * It allows to set the ping frequency. The pinging is intended to keep the connection alive in
-     * environments that would drop the connection if not active for some time.
-     * (e.g. Android phone can drop the connection if there is no activity several minutes.) 
-     * 
-     * @param pingFrequency how often the client pings the server to keep the connection alive. If set to 0, the pinging will not start.
-     * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
-     */
-    private WebSocketMessagingSystemFactory(int pingFrequency, IProtocolFormatter protocolFormatter)
-    {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myPingFrequency = pingFrequency;
+            myPingFrequency = 300000;
             myProtocolFormatter = protocolFormatter;
             
             myInputChannelThreading = new SyncDispatching();
@@ -323,6 +296,17 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     public IThreadDispatcherProvider getOutputChannelThreading()
     {
         return myOutputChannelThreading;
+    }
+    
+    public WebSocketMessagingSystemFactory setPingFrequency(int milliseconds)
+    {
+        myPingFrequency = milliseconds;
+        return this;
+    }
+    
+    public int getPingFrequency()
+    {
+        return myPingFrequency;
     }
     
     private IServerSecurityFactory myServerSecurityFactory = new NoneSecurityServerFactory();

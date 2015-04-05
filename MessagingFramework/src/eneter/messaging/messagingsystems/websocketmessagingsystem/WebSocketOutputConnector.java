@@ -47,7 +47,7 @@ class WebSocketOutputConnector implements IOutputConnector
             myProtocolFormatter = protocolFormatter;
             
             myPingFrequency = pingFrequency;
-            myTimer = new Timer("ReliableMessageTimeTracker", true);
+            myTimer = new Timer("WebSocketOutputConnectorPinging", true);
         }
         finally
         {
@@ -77,15 +77,15 @@ class WebSocketOutputConnector implements IOutputConnector
     
                 myIpAddress = (myClient.getLocalEndPoint() != null) ? myClient.getLocalEndPoint().toString() : "";
                 
-                if (myPingFrequency > 0)
-                {
-                    myTimer.schedule(getTimerTask(), myPingFrequency);
-                }
-                
                 Object anEncodedMessage = myProtocolFormatter.encodeOpenConnectionMessage(myOutputConnectorAddress);
                 if (anEncodedMessage != null)
                 {
                     myClient.sendMessage(anEncodedMessage);
+                }
+                
+                if (myPingFrequency > 0)
+                {
+                    myTimer.schedule(getTimerTask(), myPingFrequency);
                 }
             }
         }
@@ -198,7 +198,7 @@ class WebSocketOutputConnector implements IOutputConnector
         }
     }
     
-    private void onTimerTick()
+    private void onPing()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -236,7 +236,7 @@ class WebSocketOutputConnector implements IOutputConnector
             @Override
             public void run()
             {
-                onTimerTick();
+                onPing();
             }
         };
         
