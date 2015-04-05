@@ -18,25 +18,15 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
 {
     public MultiTypedMessagesFactory()
     {
-        this(0, new XmlStringSerializer());
+        this(new XmlStringSerializer());
     }
     
     public MultiTypedMessagesFactory(ISerializer serializer)
     {
-        this(0, serializer);
-    }
-    
-    public MultiTypedMessagesFactory(int responseReceiveTimeout)
-    {
-        this(responseReceiveTimeout, new XmlStringSerializer());
-    }
-    
-    public MultiTypedMessagesFactory(int responseReceiveTimeout, ISerializer serializer)
-    {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myResponseReceiveTimeout = responseReceiveTimeout;
+            mySyncResponseReceiveTimeout = 0;
             mySerializer = serializer;
             mySyncDuplexTypedSenderThreadMode = new SyncDispatching();
         }
@@ -45,6 +35,7 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
             EneterTrace.leaving(aTrace);
         }
     }
+    
 
     @Override
     public IMultiTypedMessageSender createMultiTypedMessageSender()
@@ -66,7 +57,7 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new SyncMultiTypedMessageSender(myResponseReceiveTimeout, mySerializer, mySyncDuplexTypedSenderThreadMode);
+            return new SyncMultiTypedMessageSender(mySyncResponseReceiveTimeout, mySerializer, mySyncDuplexTypedSenderThreadMode);
         }
         finally
         {
@@ -124,8 +115,30 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
         return mySyncDuplexTypedSenderThreadMode;
     }
     
+    public MultiTypedMessagesFactory setSerializer(ISerializer serializer)
+    {
+        mySerializer = serializer;
+        return this;
+    }
+    
+    public ISerializer getSerializer()
+    {
+        return mySerializer;
+    }
+    
+    public MultiTypedMessagesFactory setSyncResponseReceiveTimeout(int milliseconds)
+    {
+        mySyncResponseReceiveTimeout = milliseconds;
+        return this;
+    }
+    
+    public int getSyncResponseReceiveTimeout()
+    {
+        return mySyncResponseReceiveTimeout;
+    }
+    
     
     private ISerializer mySerializer;
-    private int myResponseReceiveTimeout;
+    private int mySyncResponseReceiveTimeout;
     private IThreadDispatcherProvider mySyncDuplexTypedSenderThreadMode;
 }

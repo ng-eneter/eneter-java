@@ -266,7 +266,8 @@ public class Test_Broker
         IDuplexOutputChannel aClient2OutputChannel = aMessagingSystem.createDuplexOutputChannel("BrokerChannel");
 
         // Specify in the factory that the publisher shall not be notified from its own published events.
-        IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory(false);
+        IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory()
+            .setIsPublisherNotified(false);
 
         IDuplexBroker aBroker = aBrokerFactory.createBroker();
         aBroker.attachDuplexInputChannel(aBrokerInputChannel);
@@ -357,7 +358,8 @@ public class Test_Broker
         IDuplexOutputChannel aClient2OutputChannel = messaging.createDuplexOutputChannel(aBrokerAddress);
 
         // Specify in the factory that the publisher shall not be notified from its own published events.
-        IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory(false, serializer);
+        IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory(serializer)
+            .setIsPublisherNotified(false);
 
         IDuplexBroker aBroker = aBrokerFactory.createBroker();
         aBroker.attachDuplexInputChannel(aBrokerInputChannel);

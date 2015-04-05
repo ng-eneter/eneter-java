@@ -72,5 +72,16 @@ public class ChannelWrapperFactory implements IChannelWrapperFactory
         }
     }
     
+    public ChannelWrapperFactory setSerializer(ISerializer serializer)
+    {
+        mySerializer = serializer;
+        return this;
+    }
+    
+    public ISerializer getSerializer()
+    {
+        return mySerializer;
+    }
+    
     private ISerializer mySerializer;
 }

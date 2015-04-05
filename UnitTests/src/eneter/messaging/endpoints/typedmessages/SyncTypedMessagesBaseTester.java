@@ -151,7 +151,8 @@ public abstract class SyncTypedMessagesBaseTester
         IDuplexTypedMessageReceiver<Integer, Integer> aReceiver = DuplexTypedMessagesFactory.createDuplexTypedMessageReceiver(Integer.class, Integer.class);
 
         // Create sender expecting the response within 500 ms.
-        IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory(500);
+        IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory()
+            .setSyncResponseReceiveTimeout(500);
         ISyncDuplexTypedMessageSender<Integer, Integer> aSender = aSenderFactory.createSyncDuplexTypedMessageSender(Integer.class, Integer.class);
 
         try

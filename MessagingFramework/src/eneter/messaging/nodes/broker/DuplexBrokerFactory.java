@@ -84,7 +84,7 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
      */
     public DuplexBrokerFactory()
     {
-        this(true, new XmlStringSerializer());
+        this(new XmlStringSerializer());
     }
     
     /**
@@ -93,39 +93,10 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
      */
     public DuplexBrokerFactory(ISerializer serializer)
     {
-        this(true, serializer);
-    }
-    
-    /**
-     * Constructs the broker factory.
-     * It allows to specify if the broker client gets notification from the broker for its own published events.
-     * E.g. if the broker client is subscribed to the event 'StatusChanged' and if this broker client also publishes the
-     * event 'StatusChanged' then if the parmater publisherCanBeNotified is false the broker client will not get notification events
-     * from its own published events.
-     * 
-     * @param publisherCanBeNotified false - broker does not send notifications to the broker client which published the event.
-     */
-    public DuplexBrokerFactory(boolean publisherCanBeNotified)
-    {
-        this(publisherCanBeNotified, new XmlStringSerializer());
-    }
-    
-    /**
-     * Constructs the broker factory.
-     * It allows to specify if the broker client gets notification from the broker for its own published events.
-     * E.g. if the broker client is subscribed to the event 'StatusChanged' and if this broker client also publishes the
-     * event 'StatusChanged' then if the parmater publisherCanBeNotified is false the broker client will not get notification events
-     * from its own published events.
-     * 
-     * @param publisherCanBeNotified false - broker does not send notifications to the broker client which published the event.
-     * @param serializer serializer used by the broker
-     */
-    public DuplexBrokerFactory(boolean publisherCanBeNotified, ISerializer serializer)
-    {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myIsPublisherNotified = publisherCanBeNotified;
+            myIsPublisherNotified = true;
             mySerializer = serializer;
         }
         finally
@@ -133,7 +104,7 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
             EneterTrace.leaving(aTrace);
         }
     }
-
+    
     @Override
     public IDuplexBrokerClient createBrokerClient() throws Exception
     {
@@ -162,6 +133,27 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
         }
     }
     
+    public DuplexBrokerFactory setSerializer(ISerializer serializer)
+    {
+        mySerializer = serializer;
+        return this;
+    }
+    
+    public ISerializer getSerializer()
+    {
+        return mySerializer;
+    }
+    
+    public DuplexBrokerFactory setIsPublisherNotified(boolean isPublisherNotified)
+    {
+        myIsPublisherNotified = isPublisherNotified;
+        return this;
+    }
+    
+    public boolean getIsPublisherNotified()
+    {
+        return myIsPublisherNotified;
+    }
     
     
     private ISerializer mySerializer;

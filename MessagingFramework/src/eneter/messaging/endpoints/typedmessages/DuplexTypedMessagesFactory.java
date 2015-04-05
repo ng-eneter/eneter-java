@@ -201,7 +201,7 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
      */
     public DuplexTypedMessagesFactory()
     {
-        this(0, new XmlStringSerializer());
+        this(new XmlStringSerializer());
     }
 
     /**
@@ -216,37 +216,11 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
      */
     public DuplexTypedMessagesFactory(ISerializer serializer)
     {
-        this(0, serializer);
-    }
-    
-    /**
-     * Constructs the factory with specified timeout for {@link ISyncDuplexTypedMessageSender}.
-     * 
-     * The factory will create senders and receivers using the default XmlStringSerializer
-     * and the factory will create ISyncDuplexTypedMessageSender with specified timeout
-     * indicating how long it can wait for a response message from the service.
-     * 
-     * @param syncResponseReceiveTimeout maximum waiting time when synchronous message sender is used. 
-     */
-    public DuplexTypedMessagesFactory(int syncResponseReceiveTimeout)
-    {
-        this(syncResponseReceiveTimeout, new XmlStringSerializer());
-    }
-    
-    
-    
-    /**
-     * Constructs the factory with specified timeout for synchronous message sender and specified serializer.
-     * @param syncResponseReceiveTimeout maximum waiting time when synchronous message sender is used.
-     * @param serializer serializer that will be used to serialize/deserialize messages.
-     */
-    public DuplexTypedMessagesFactory(int syncResponseReceiveTimeout, ISerializer serializer)
-    {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             mySerializer = serializer;
-            mySyncResponseReceiveTimeout = syncResponseReceiveTimeout;
+            mySyncResponseReceiveTimeout = 0;
             mySyncDuplexTypedSenderThreadMode = new SyncDispatching();
         }
         finally
@@ -333,6 +307,28 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
     public IThreadDispatcherProvider getSyncDuplexTypedSenderThreadMode()
     {
         return mySyncDuplexTypedSenderThreadMode;
+    }
+    
+    public DuplexTypedMessagesFactory setSerializer(ISerializer serializer)
+    {
+        mySerializer = serializer;
+        return this;
+    }
+    
+    public ISerializer getSerializer()
+    {
+        return mySerializer;
+    }
+    
+    public DuplexTypedMessagesFactory setSyncResponseReceiveTimeout(int milliseconds)
+    {
+        mySyncResponseReceiveTimeout = milliseconds;
+        return this;
+    }
+    
+    public int getSyncResponseReceiveTimeout()
+    {
+        return mySyncResponseReceiveTimeout;
     }
     
     private ISerializer mySerializer;
