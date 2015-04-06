@@ -5,9 +5,10 @@ import org.junit.Before;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.dataprocessing.serializing.XmlStringSerializer;
 import eneter.messaging.messagingsystems.composites.BufferedMonitoredMessagingFactory;
+import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
 import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousMessagingSystemFactory;
 
-public class Test_QueuedMonitoredMessaging_Sync_Xml extends BufferedMessagingBaseTester
+public class Test_BufferedMonitoredMessaging_Sync_Xml extends BufferedMessagingBaseTester
 {
     @Before
     public void Setup() throws Exception
@@ -16,10 +17,10 @@ public class Test_QueuedMonitoredMessaging_Sync_Xml extends BufferedMessagingBas
         //EneterTrace.TraceLog = new StreamWriter("d:/tracefile.txt");
 
         ChannelId = "Channel_1";
-        UnderlyingMessaging = new SynchronousMessagingSystemFactory();
+        IMessagingSystemFactory anUnderlyingMessaging = new SynchronousMessagingSystemFactory();
         ISerializer aSerializer = new XmlStringSerializer();
         int aMaxOfflineTime = 1000;
-        MessagingSystem = new BufferedMonitoredMessagingFactory(UnderlyingMessaging, aSerializer, aMaxOfflineTime, 50, 50);
+        MessagingSystem = new BufferedMonitoredMessagingFactory(anUnderlyingMessaging, aSerializer, aMaxOfflineTime, 50, 50);
         ConnectionInterruptionFrequency = 5;
     }
 }

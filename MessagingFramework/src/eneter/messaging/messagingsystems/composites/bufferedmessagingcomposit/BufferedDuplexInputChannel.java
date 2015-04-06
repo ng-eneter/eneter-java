@@ -15,18 +15,138 @@ import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
-import eneter.net.system.collections.generic.internal.HashSetExt;
-import eneter.net.system.internal.StringExt;
+import eneter.net.system.collections.generic.internal.*;
 import eneter.net.system.linq.internal.EnumerableExt;
 
 class BufferedDuplexInputChannel implements IDuplexInputChannel
 {
+    private class TBufferedResponseReceiver
+    {
+        public TBufferedResponseReceiver(String responseReceiverId, IDuplexInputChannel duplexInputChannel)
+        {
+            ResponseReceiverId = responseReceiverId;
+
+            // Note: at the time of instantiation the client address does not have to be known.
+            //       E.g. if sending response to a not yet connected response receiver.
+            //       Therefore it will be set explicitly.
+            myClientAddress = "";
+            myDuplexInputChannel = duplexInputChannel;
+            setOnline(false);
+        }
+
+        public void setOnline(boolean value)
+        {
+            myIsOnline = value;
+
+            if (!myIsOnline)
+            {
+                myOfflineStartedAt = System.currentTimeMillis();
+            }
+        }
+        
+        public boolean isOnline()
+        {
+            return myIsOnline;
+        }
+
+        public void setPendingResponseReceiverConnectedEvent(boolean value)
+        {
+            myPendingResponseReceiverConnectedEvent = value;
+        }
+        public boolean getPendingResponseReceiverConnectedEvent()
+        {
+            return myPendingResponseReceiverConnectedEvent;
+        }
+
+        public void sendResponseMessage(Object message)
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                myMessageQueue.add(message);
+                sendMessagesFromQueue();
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        public void sendMessagesFromQueue()
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                if (myIsOnline)
+                {
+                    while (myMessageQueue.size() > 0)
+                    {
+                        Object aMessage = myMessageQueue.peek();
+                        try
+                        {
+                            myDuplexInputChannel.sendResponseMessage(ResponseReceiverId, aMessage);
+
+                            // Message was successfully sent therefore it can be removed from the queue.
+                            myMessageQueue.poll();
+                        }
+                        catch (Exception err)
+                        {
+                            // Sending failed because of disconnection.
+                            setOnline(false);
+                            break;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        public long getOfflineStartedAt()
+        {
+            return myOfflineStartedAt;
+        }
+        
+        public void setClientAddress(String clientAddress)
+        {
+            myClientAddress = clientAddress;
+        }
+        
+        public String getClientAddress()
+        {
+            return myClientAddress;
+        }
+
+        public final String ResponseReceiverId;
+
+        private IDuplexInputChannel myDuplexInputChannel;
+        private ArrayDeque<Object> myMessageQueue = new ArrayDeque<Object>();
+        private boolean myIsOnline;
+        
+        private boolean myPendingResponseReceiverConnectedEvent;
+        private long myOfflineStartedAt;
+        public String myClientAddress;
+    }
+    
+    private class TBroadcast
+    {
+        public TBroadcast(Object message)
+        {
+            Message = message;
+            SentAt = System.currentTimeMillis();
+        }
+        public final long SentAt;
+        public final Object Message;
+    }
+    
     public BufferedDuplexInputChannel(IDuplexInputChannel underlyingDuplexInputChannel, long maxOfflineTime)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myUnderlyingInputChannel = underlyingDuplexInputChannel;
+            myInputChannel = underlyingDuplexInputChannel;
             myMaxOfflineTime = maxOfflineTime;
 
             myMaxOfflineChecker = new Timer("MaxOfflineChecker",true);
@@ -56,18 +176,27 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         return myMessageReceivedEventImpl.getApi();
     }
     
+    public Event<ResponseReceiverEventArgs> responseReceiverOnline()
+    {
+        return myResponseReceiverOnlineEventImpl.getApi();
+    }
+    
+    public Event<ResponseReceiverEventArgs> responseReceiverOffline()
+    {
+        return myResponseReceiverOfflineEventImpl.getApi();
+    } 
     
 
     @Override
     public String getChannelId()
     {
-        return myUnderlyingInputChannel.getChannelId();
+        return myInputChannel.getChannelId();
     }
     
     @Override
     public IThreadDispatcher getDispatcher()
     {
-        return myUnderlyingInputChannel.getDispatcher();
+        return myInputChannel.getDispatcher();
     }
     
     @Override
@@ -78,21 +207,19 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         {
             synchronized (myListeningManipulatorLock)
             {
-                myUnderlyingInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
-                myUnderlyingInputChannel.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
-                myUnderlyingInputChannel.messageReceived().subscribe(myOnMessageReceived);
+                myInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
+                myInputChannel.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
+                myInputChannel.messageReceived().subscribe(myOnMessageReceived);
 
                 try
                 {
-                    myUnderlyingInputChannel.startListening();
+                    myInputChannel.startListening();
                 }
                 catch (Exception err)
                 {
-                    myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
-                    myUnderlyingInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
-                    myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
-
                     EneterTrace.error(TracedObject() + ErrorHandler.FailedToStartListening, err);
+                    stopListening();
+                    throw err;
                 }
 
                 myMaxOfflineCheckerRequestedToStop = false;
@@ -115,30 +242,25 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                 // Indicate, that the timer responsible for checking if response receivers are timeouted (i.e. exceeded the max offline time)
                 // shall stop.
                 myMaxOfflineCheckerRequestedToStop = true;
-
-                synchronized (myResponseReceivers)
-                {
-                    // Stop buffering for all connected response receivers.
-                    for (ResponseReceiverContext aResponseReceiverContext : myResponseReceivers)
-                    {
-                        aResponseReceiverContext.stopSendingOfResponseMessages();
-                    }
-
-                    myResponseReceivers.clear();
-                }
                 
                 try
                 {
-                    myUnderlyingInputChannel.stopListening();
+                    myInputChannel.stopListening();
                 }
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.IncorrectlyStoppedListening, err);
                 }
 
-                myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
-                myUnderlyingInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
-                myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
+                synchronized (myResponseReceivers)
+                {
+                    myBroadcasts.clear();
+                    myResponseReceivers.clear();
+                }
+
+                myInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
+                myInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
+                myInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
             }
         }
         finally
@@ -155,7 +277,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         {
             synchronized (myListeningManipulatorLock)
             {
-                return myUnderlyingInputChannel.isListening();
+                return myInputChannel.isListening();
             }
         }
         finally
@@ -171,46 +293,49 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            ResponseReceiverContext aResponseReceiverContext;
-
-            synchronized (myResponseReceivers)
+         // If it is a broadcast response message.
+            if (responseReceiverId.equals("*"))
             {
-                aResponseReceiverContext = EnumerableExt.firstOrDefault(myResponseReceivers,
-                        new IFunction1<Boolean, ResponseReceiverContext>()
-                        {
-                            @Override
-                            public Boolean invoke(ResponseReceiverContext x)
-                                    throws Exception
-                            {
-                                return x.getResponseReceiverId().equals(responseReceiverId);
-                            }
-                    
-                        });
-                        
-
-                // If the response receiver was not found, then it means, that the response receiver is not connected.
-                // In order to support independent startup order, we can suppose, the response receiver can connect later
-                // and the response messages will be then delivered.
-                // If not, then response messages will be deleted automatically after the timeout (maxOfflineTime).
-                if (aResponseReceiverContext == null)
+                synchronized (myResponseReceivers)
                 {
-                    // Create the response receiver context - it allows to enqueue response messages before connection of
-                    // the response receiver.
-                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, "", myUnderlyingInputChannel);
-                    myResponseReceivers.add(aResponseReceiverContext);
+                    TBroadcast aBroadcastMessage = new TBroadcast(message);
+                    myBroadcasts.add(aBroadcastMessage);
 
-                    // If it is the first response receiver, then start the timer checking which response receivers
-                    // are disconnected due to the timeout (i.e. max offline time)
-                    if (myResponseReceivers.size() == 1)
+                    for (TBufferedResponseReceiver aResponseReceiver : myResponseReceivers)
                     {
-                        myMaxOfflineChecker.schedule(getTimerTask(), 300);
+                        // Note: it does not throw exception.
+                        aResponseReceiver.sendResponseMessage(message);
                     }
-
                 }
             }
+            else
+            {
+                boolean aNotifyOffline = false;
+                synchronized (myResponseReceivers)
+                {
+                    TBufferedResponseReceiver aResponseReciever = getResponseReceiver(responseReceiverId);
+                    if (aResponseReciever == null)
+                    {
+                        aResponseReciever = createResponseReceiver(responseReceiverId, "", true);
+                        aNotifyOffline = true;
+                    }
 
-            // Enqueue the message.
-            aResponseReceiverContext.sendResponseMessage(message);
+                    aResponseReciever.sendResponseMessage(message);
+
+                    if (aNotifyOffline)
+                    {
+                        getDispatcher().invoke(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                ResponseReceiverEventArgs anEvent = new ResponseReceiverEventArgs(responseReceiverId, "");
+                                notifyEvent(myResponseReceiverOfflineEventImpl, anEvent, false);
+                            }
+                        });
+                    }
+                }
+            }
         }
         finally
         {
@@ -226,38 +351,25 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         {
             synchronized (myResponseReceivers)
             {
-                ResponseReceiverContext aResponseReceiverContext = null;
                 try
                 {
-                    aResponseReceiverContext = EnumerableExt.firstOrDefault(myResponseReceivers,
-                        new IFunction1<Boolean, ResponseReceiverContext>()
+                    HashSetExt.removeWhere(myResponseReceivers, new IFunction1<Boolean, TBufferedResponseReceiver>()
+                    {
+                        @Override
+                        public Boolean invoke(TBufferedResponseReceiver x)
+                                throws Exception
                         {
-                            @Override
-                            public Boolean invoke(ResponseReceiverContext x)
-                                    throws Exception
-                            {
-                                return x.getResponseReceiverId().equals(responseReceiverId);
-                            }
-                     
-                        });
+                            return x.ResponseReceiverId.equals(responseReceiverId);
+                        }
+                    });
                 }
                 catch (Exception err)
                 {
-                    // This should never happen.
-                    EneterTrace.error(TracedObject() + "failed to search firstOrDefault.");
-                }
-                        
-                if (aResponseReceiverContext != null)
-                {
-                    // Stop the buffer queue.
-                    aResponseReceiverContext.stopSendingOfResponseMessages();
-
-                    // Remove the receiver from the list.
-                    myResponseReceivers.remove(aResponseReceiverContext);
+                    EneterTrace.error(TracedObject() + "failed in removeWhere to remove a response receiver.");
                 }
             }
 
-            myUnderlyingInputChannel.disconnectResponseReceiver(responseReceiverId);
+            myInputChannel.disconnectResponseReceiver(responseReceiverId);
         }
         finally
         {
@@ -271,15 +383,46 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Update the time for the response receiver.
-            // If the response receiver does not exist, then create it.
-            updateResponseReceiverContext(e.getResponseReceiverId(), e.getSenderAddress(), true, true);
+            boolean aPendingResponseReceicerConnectedEvent = false;
+            boolean aNewResponseReceiverFlag = false;
+            TBufferedResponseReceiver aResponseReciever;
+            synchronized (myResponseReceivers)
+            {
+                aResponseReciever = getResponseReceiver(e.getResponseReceiverId());
+                if (aResponseReciever == null)
+                {
+                    aResponseReciever = createResponseReceiver(e.getResponseReceiverId(), e.getSenderAddress(), false);
+                    aNewResponseReceiverFlag = true;
+                }
+                
+                aResponseReciever.setOnline(true);
 
-            notifyEvent(myResponseReceiverConnectedEventImpl, e, false);
-        }
-        catch (Exception err)
-        {
-            EneterTrace.error(TracedObject() + "detected exception when response receiver connected.", err);
+                if (aResponseReciever.getPendingResponseReceiverConnectedEvent())
+                {
+                    aResponseReciever.setClientAddress(e.getSenderAddress());
+                    aPendingResponseReceicerConnectedEvent = aResponseReciever.getPendingResponseReceiverConnectedEvent();
+                    aResponseReciever.setPendingResponseReceiverConnectedEvent(false);
+                }
+
+                if (aNewResponseReceiverFlag)
+                {
+                    // This is a fresh new response receiver. Therefore broadcast messages were not sent to it yet.
+                    for (TBroadcast aBroadcastMessage : myBroadcasts)
+                    {
+                        aResponseReciever.sendResponseMessage(aBroadcastMessage.Message);
+                    }
+                }
+
+                // Send all buffered messages.
+                aResponseReciever.sendMessagesFromQueue();
+            }
+
+
+            notifyEvent(myResponseReceiverOnlineEventImpl, e, false);
+            if (aNewResponseReceiverFlag || aPendingResponseReceicerConnectedEvent)
+            {
+                notifyEvent(myResponseReceiverConnectedEventImpl, e, false);
+            }
         }
         finally
         {
@@ -292,12 +435,21 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Update that the response receiver is disconnected.
-            updateResponseReceiverContext(e.getResponseReceiverId(), e.getSenderAddress(), false, false);
-        }
-        catch (Exception err)
-        {
-            EneterTrace.error(TracedObject() + ErrorHandler.DetectedException);
+            boolean aNotify = false;
+            synchronized (myResponseReceivers)
+            {
+                TBufferedResponseReceiver aResponseReciever = getResponseReceiver(e.getResponseReceiverId());
+                if (aResponseReciever != null)
+                {
+                    aResponseReciever.setOnline(false);
+                    aNotify = true;
+                }
+            }
+
+            if (aNotify)
+            {
+                notifyEvent(myResponseReceiverOfflineEventImpl, e, false);
+            }
         }
         finally
         {
@@ -310,15 +462,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Update the time for the response receiver.
-            // If the response receiver does not exist, then create it.
-            updateResponseReceiverContext(e.getResponseReceiverId(), e.getSenderAddress(), true, true);
-            
             notifyEvent(myMessageReceivedEventImpl, e, true);
-        }
-        catch (Exception err)
-        {
-            EneterTrace.error(TracedObject() + "detected exception when message was received.", err);
         }
         finally
         {
@@ -327,57 +471,57 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
     }
     
 
-    private void updateResponseReceiverContext(final String responseReceiverId, String clientAddress, boolean isConnected, boolean createNewIfDoesNotExistFlag)
-            throws Exception
+    private TBufferedResponseReceiver getResponseReceiver(final String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myResponseReceivers)
+            TBufferedResponseReceiver aResponseReceiver = null;
+            try
             {
-                ResponseReceiverContext aResponseReceiverContext = EnumerableExt.firstOrDefault(myResponseReceivers,
-                    new IFunction1<Boolean, ResponseReceiverContext>()
-                    {
-                        @Override
-                        public Boolean invoke(ResponseReceiverContext x)
-                                throws Exception
+                aResponseReceiver = EnumerableExt.firstOrDefault(myResponseReceivers,
+                        new IFunction1<Boolean, TBufferedResponseReceiver>()
                         {
-                            return x.getResponseReceiverId().equals(responseReceiverId);
-                        }
-                    });
-                
-
-                // If the response receiver was not found, then it means, that the response receiver is not connected.
-                // In order to support independent startup order, we can suppose, the response receiver can connect later
-                // and the response messages will be then delivered.
-                // If not, then response messages will be deleted automatically after the timeout (maxOfflineTime).
-                if (aResponseReceiverContext == null && createNewIfDoesNotExistFlag)
-                {
-                    // Create the response receiver context - it allows to enqueue response messages before connection of
-                    // the response receiver.
-                    aResponseReceiverContext = new ResponseReceiverContext(responseReceiverId, clientAddress, myUnderlyingInputChannel);
-                    aResponseReceiverContext.setConnectionState(isConnected);
-                    myResponseReceivers.add(aResponseReceiverContext);
-
-                    // If it is the first response receiver, then start the timer checking which response receivers
-                    // are disconnected due to the timeout (i.e. max offline time)
-                    if (myResponseReceivers.size() == 1)
-                    {
-                        myMaxOfflineChecker.schedule(getTimerTask(), 300);
-                    }
-                }
-
-                // Update the connection status.
-                if (aResponseReceiverContext != null)
-                {
-                    aResponseReceiverContext.setConnectionState(isConnected);
-
-                    if (!StringExt.isNullOrEmpty(clientAddress))
-                    {
-                        aResponseReceiverContext.setClientAddress(clientAddress);
-                    }
-                }
+                            @Override
+                            public Boolean invoke(TBufferedResponseReceiver x)
+                            {
+                                return x.ResponseReceiverId.equals(responseReceiverId);
+                            }
+                        });
             }
+            catch (Exception err)
+            {
+                EneterTrace.error(TracedObject() + "failed in firstOrDefault when searching response receiver.", err);
+            }
+                    
+            return aResponseReceiver;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private TBufferedResponseReceiver createResponseReceiver(String responseReceiverId, String clientAddress, boolean notifyWhenConnectedFlag)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            TBufferedResponseReceiver aResponseReceiver = new TBufferedResponseReceiver(responseReceiverId, myInputChannel);
+            
+            // Note: if it is created as offline then when the client connects raise ResponseReceiverConnected event.
+            aResponseReceiver.setPendingResponseReceiverConnectedEvent(notifyWhenConnectedFlag);
+
+            myResponseReceivers.add(aResponseReceiver);
+
+            // If it is the first response receiver, then start the timer checking which response receivers
+            // are disconnected due to the timeout (i.e. max offline time)
+            if (myResponseReceivers.size() == 1)
+            {
+                myMaxOfflineChecker.schedule(getTimerTask(), 300);
+            }
+
+            return aResponseReceiver;
         }
         finally
         {
@@ -396,22 +540,33 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                 return;
             }
 
-            final ArrayList<ResponseReceiverContext> aTimeoutedResponseReceivers = new ArrayList<ResponseReceiverContext>();
+            final ArrayList<TBufferedResponseReceiver> aTimeoutedResponseReceivers = new ArrayList<TBufferedResponseReceiver>();
 
             final long aCurrentCheckTime = System.currentTimeMillis();
             boolean aTimerShallContinueFlag;
 
             synchronized (myResponseReceivers)
             {
-                HashSetExt.removeWhere(myResponseReceivers, new IFunction1<Boolean, ResponseReceiverContext>()
+                // Remove all expired broadcasts.
+                ArrayListExt.removeAll(myBroadcasts, new IFunction1<Boolean, TBroadcast>()
+                {
+                    @Override
+                    public Boolean invoke(TBroadcast x) throws Exception
+                    {
+                        return aCurrentCheckTime - x.SentAt > myMaxOfflineTime;
+                    }
+                });
+                
+                // Remove all not connected response receivers which exceeded the max offline timeout.
+                HashSetExt.removeWhere(myResponseReceivers, new IFunction1<Boolean, TBufferedResponseReceiver>()
                     {
                         @Override
-                        public Boolean invoke(ResponseReceiverContext x)
+                        public Boolean invoke(TBufferedResponseReceiver x)
                                 throws Exception
                         {
                             // If disconnected and max offline time is exceeded. 
-                            if (!x.isResponseReceiverConnected() &&
-                                aCurrentCheckTime - x.getLastConnectionChangeTime() > myMaxOfflineTime)
+                            if (!x.isOnline() &&
+                                aCurrentCheckTime - x.getOfflineStartedAt() > myMaxOfflineTime)
                             {
                                 aTimeoutedResponseReceivers.add(x);
 
@@ -428,7 +583,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
             }
 
             // Notify disconnected response receivers.
-            for (ResponseReceiverContext aResponseReceiverContext : aTimeoutedResponseReceivers)
+            for (TBufferedResponseReceiver aResponseReceiverContext : aTimeoutedResponseReceivers)
             {
                 // Stop disconnecting if the we are requested to stop.
                 if (myMaxOfflineCheckerRequestedToStop)
@@ -436,21 +591,9 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                     return;
                 }
                 
-                aResponseReceiverContext.stopSendingOfResponseMessages();
-
-                // Try to disconnect the response receiver.
-                try
-                {
-                    myUnderlyingInputChannel.disconnectResponseReceiver(aResponseReceiverContext.getResponseReceiverId());
-                }
-                catch (Exception err)
-                {
-                    // The exception could occur because the response receiver is not connected.
-                    // It is ok.
-                }
-
-                final ResponseReceiverEventArgs aMsg = new ResponseReceiverEventArgs(aResponseReceiverContext.getResponseReceiverId(), aResponseReceiverContext.getClientAddress());
-                myUnderlyingInputChannel.getDispatcher().invoke(new Runnable()
+                // Invoke the event in the correct thread.
+                final ResponseReceiverEventArgs aMsg = new ResponseReceiverEventArgs(aResponseReceiverContext.ResponseReceiverId, aResponseReceiverContext.getClientAddress());
+                getDispatcher().invoke(new Runnable()
                 {
                     @Override
                     public void run()
@@ -531,14 +674,16 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
     private long myMaxOfflineTime;
     private Timer myMaxOfflineChecker;
     private boolean myMaxOfflineCheckerRequestedToStop;
-    private IDuplexInputChannel myUnderlyingInputChannel;
+    private IDuplexInputChannel myInputChannel;
 
-    private HashSet<ResponseReceiverContext> myResponseReceivers = new HashSet<ResponseReceiverContext>();
-    
+    private HashSet<TBufferedResponseReceiver> myResponseReceivers = new HashSet<TBufferedResponseReceiver>();
+    private ArrayList<TBroadcast> myBroadcasts = new ArrayList<TBroadcast>();
     
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverDisconnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
+    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverOnlineEventImpl = new EventImpl<ResponseReceiverEventArgs>();
+    private EventImpl<ResponseReceiverEventArgs> myResponseReceiverOfflineEventImpl = new EventImpl<ResponseReceiverEventArgs>();
     
     
     private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverConnected = new EventHandler<ResponseReceiverEventArgs>()
@@ -570,7 +715,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
     
     private String TracedObject()
     {
-        String aChannelId = (myUnderlyingInputChannel != null) ? myUnderlyingInputChannel.getChannelId() : "";
+        String aChannelId = (myInputChannel != null) ? myInputChannel.getChannelId() : "";
         return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
 }

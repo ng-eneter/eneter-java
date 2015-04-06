@@ -24,7 +24,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myUnderlyingOutputChannel = underlyingDuplexOutputChannel;
+            myOutputChannel = underlyingDuplexOutputChannel;
             myMaxOfflineTime = maxOfflineTime;
         }
         finally
@@ -50,25 +50,53 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
     {
         return myConnectionClosedEventImpl.getApi();
     }
+    
+    public Event<DuplexChannelEventArgs> connectionOnline()
+    {
+        return myConnectionOnlineEventImpl.getApi();
+    }
+    
+    public Event<DuplexChannelEventArgs> connectionOffline()
+    {
+        return myConnectionOfflineEventImpl.getApi();
+    }
+    
 
     @Override
     public String getChannelId()
     {
-        return myUnderlyingOutputChannel.getChannelId();
+        return myOutputChannel.getChannelId();
     }
 
     @Override
     public String getResponseReceiverId()
     {
-        return myUnderlyingOutputChannel.getResponseReceiverId();
+        return myOutputChannel.getResponseReceiverId();
     }
     
     @Override
     public IThreadDispatcher getDispatcher()
     {
-        return myUnderlyingOutputChannel.getDispatcher();
+        return myOutputChannel.getDispatcher();
     }
 
+    @Override
+    public boolean isConnected()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                return myConnectionIsOpenFlag;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     @Override
     public void openConnection() throws Exception
     {
@@ -84,38 +112,41 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                     throw new IllegalStateException(aMessage);
                 }
 
-                myUnderlyingOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);
-                myUnderlyingOutputChannel.connectionClosed().subscribe(myOnConnectionClosed);
-                myUnderlyingOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
+                myOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);
+                myOutputChannel.connectionClosed().subscribe(myOnConnectionClosed);
+                myOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
 
-                myIsSendingThreadRequestedToStop = false;
-
-                myIsConnectionOpeningRequestedToStop = false;
-                myConnectionOpeningThreadIsStoppedEvent.reset();
+                myConnectionOpeningRequestedToStopFlag = false;
+                myConnectionOpeningEndedEvent.reset();
 
                 // Try open connection in a different thread.
-                myIsConnectionOpeningActive = true;
+                myConnectionOpeningActiveFlag = true;
                 Runnable aDoOpenConnection = new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        try
-                        {
-                            doOpenConnection();
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
+                        doOpenConnection();
                     }
                 }; 
-                        
                 ThreadPool.queueUserWorkItem(aDoOpenConnection);
 
+                // Indicate the ConnectionOpened evnt shall be raised when the connection is really open.
+                myIsConnectionOpenEventPendingFlag = true;
+
                 // Indicate the connection is open.
-                myIsOpenConnectionCalledFlag = true;
+                myConnectionIsOpenFlag = true;
             }
+            
+            getDispatcher().invoke(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    DuplexChannelEventArgs anEvent = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
+                    notifyEvent(myConnectionOfflineEventImpl, anEvent, false);
+                }
+            });
         }
         finally
         {
@@ -131,25 +162,10 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         {
             synchronized (myConnectionManipulatorLock)
             {
-                myIsSendingThreadRequestedToStop = true;
-                
+                myConnectionOpeningRequestedToStopFlag = true;
                 try
                 {
-                    if (!mySendingThreadIsStoppedEvent.waitOne(5000))
-                    {
-                        EneterTrace.warning(TracedObject() + "failed to stop the message sending thread within 5 seconds.");
-                    }
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + "failed to wait until the sending thread stop.");
-                }
-
-                myIsConnectionOpeningRequestedToStop = true;
-                
-                try
-                {
-                    if (!myConnectionOpeningThreadIsStoppedEvent.waitOne(5000))
+                    if (!myConnectionOpeningEndedEvent.waitOne(5000))
                     {
                         EneterTrace.warning(TracedObject() + "failed to stop the connection openning thread within 5 seconds.");
                     }
@@ -159,19 +175,14 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                     EneterTrace.warning(TracedObject() + "failed to wait until the connection opening thread stop.");
                 }
 
-                myUnderlyingOutputChannel.closeConnection();
-                myUnderlyingOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
-                myUnderlyingOutputChannel.connectionClosed().unsubscribe(myOnConnectionClosed);
-                myUnderlyingOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
+                myOutputChannel.closeConnection();
+                myOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
+                myOutputChannel.connectionClosed().unsubscribe(myOnConnectionClosed);
+                myOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
 
-                // Emty the queue with messages.
-                synchronized (myMessagesToSend)
-                {
-                    myMessagesToSend.clear();
-                }
+                myMessageQueue.clear();
 
-
-                myIsOpenConnectionCalledFlag = false;
+                myConnectionIsOpenFlag = false;
             }
         }
         finally
@@ -180,22 +191,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
 
-    @Override
-    public boolean isConnected()
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            synchronized (myConnectionManipulatorLock)
-            {
-                return myIsOpenConnectionCalledFlag;
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
+    
     
     @Override
     public void sendMessage(Object message) throws Exception
@@ -203,41 +199,17 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (!isConnected())
+            synchronized (myConnectionManipulatorLock)
             {
-                String aMessage = TracedObject() + ErrorHandler.FailedToSendMessageBecauseNotConnected;
-                EneterTrace.error(aMessage);
-                throw new IllegalStateException(aMessage);
-            }
-
-            synchronized (myMessagesToSend)
-            {
-                myMessagesToSend.add(message);
-
-                if (!mySendingThreadActiveFlag)
+                if (!isConnected())
                 {
-                    mySendingThreadActiveFlag = true;
-                    mySendingThreadIsStoppedEvent.reset();
-
-                    // Start thread responsible for sending messages.
-                    Runnable aSender = new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                doMessageSending();
-                            }
-                            catch (Exception err)
-                            {
-                                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                            }
-                        }
-                    }; 
-
-                    ThreadPool.queueUserWorkItem(aSender);
+                    String aMessage = TracedObject() + ErrorHandler.FailedToSendMessageBecauseNotConnected;
+                    EneterTrace.error(aMessage);
+                    throw new IllegalStateException(aMessage);
                 }
+                
+                myMessageQueue.add(message);
+                sendMessagesFromQueue();
             }
         }
         finally
@@ -251,7 +223,18 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            notifyEvent(myConnectionOpenedEventImpl, e, false);
+            notifyEvent(myConnectionOnlineEventImpl, e, false);
+
+            if (myIsConnectionOpenEventPendingFlag)
+            {
+                notifyEvent(myConnectionOpenedEventImpl, e, false);
+            }
+            
+            synchronized (myConnectionManipulatorLock)
+            {
+                myIsOnline = true;
+                sendMessagesFromQueue();
+            }
         }
         finally
         {
@@ -264,35 +247,28 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // If the opening of the connection is not desired, then just return.
-            if (myIsConnectionOpeningRequestedToStop)
+            synchronized (myConnectionManipulatorLock)
             {
-                notifyEvent(myConnectionClosedEventImpl, e, false);
-                return;
-            }
+                myIsOnline = false;
 
-            // Try to reopen the connection in a different thread.
-            if (!myIsConnectionOpeningActive)
-            {
-                myIsConnectionOpeningActive = true;
-
-                // Start openning in another thread.
-                Runnable aDoOpenConnection = new Runnable()
+                // Try to reopen the connection in a different thread.
+                if (!myConnectionOpeningActiveFlag)
                 {
-                    @Override
-                    public void run()
+                    myConnectionOpeningActiveFlag = true;
+
+                    // Start openning in another thread.
+                    ThreadPool.queueUserWorkItem(new Runnable()
                     {
-                        try
+                        @Override
+                        public void run()
                         {
                             doOpenConnection();
                         }
-                        catch (Exception e)
-                        {
-                        }
-                    }
-                }; 
-                ThreadPool.queueUserWorkItem(aDoOpenConnection);
+                    });
+                }
             }
+            
+            notifyEvent(myConnectionOfflineEventImpl, e, false);
         }
         finally
         {
@@ -313,30 +289,58 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void doOpenConnection() throws Exception
+    private void sendMessagesFromQueue()
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (isConnected())
+            {
+                while (myMessageQueue.size() > 0)
+                {
+                    Object aMessage = myMessageQueue.peek();
+
+                    try
+                    {
+                        myOutputChannel.sendMessage(aMessage);
+
+                        // Message was successfully sent therefore it can be removed from the queue.
+                        myMessageQueue.poll();
+                    }
+                    catch (Exception err)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void doOpenConnection()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            boolean aConnectionOpenFlag = false;
             long aStartConnectionTime = System.currentTimeMillis();
 
-            // Loop until the connection is open, or the connection openning is requested to stop,
+            // Loop until the connection is open, or the connection opening is requested to stop,
             // or the max offline time expired.
-            while (!myIsConnectionOpeningRequestedToStop)
+            while (!myConnectionOpeningRequestedToStopFlag)
             {
                 try
                 {
-                    myUnderlyingOutputChannel.openConnection();
+                    myOutputChannel.openConnection();
+                    aConnectionOpenFlag = true;
+                    break;
                 }
                 catch (Exception err)
                 {
                     // The connection failed, so try again.
-                    // Or the connection was already open (by some other thread).
-                }
-
-                if (myUnderlyingOutputChannel.isConnected())
-                {
-                    break;
                 }
 
                 // If the max offline time is exceeded, then notify disconnection.
@@ -346,18 +350,39 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                 }
 
                 // Do not wait for the next attempt, if the connection opening shall stop.
-                if (!myIsConnectionOpeningRequestedToStop)
+                if (!myConnectionOpeningRequestedToStopFlag)
                 {
-                    Thread.sleep(300);
+                    try
+                    {
+                        Thread.sleep(300);
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
                 }
             }
 
 
             // Indicate this connection opening is not active.
-            // The CloseConnection() is going to be called.
-            // There is the WaitOne(), waiting until the
-            myIsConnectionOpeningActive = false;
-            myConnectionOpeningThreadIsStoppedEvent.set();
+            myConnectionOpeningActiveFlag = false;
+            myConnectionOpeningEndedEvent.set();
+            
+            // If opening failed and the connection was meanwhile not explicitly closed.
+            if (!myConnectionOpeningRequestedToStopFlag)
+            {
+                if (!aConnectionOpenFlag)
+                {
+                    getDispatcher().invoke(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            DuplexChannelEventArgs anEvent = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
+                            notifyEvent(myConnectionClosedEventImpl, anEvent, false);
+                        }
+                    });
+                }
+            }
         }
         finally
         {
@@ -365,76 +390,6 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void doMessageSending() throws Exception
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            try
-            {
-                // Loop taking messages from the queue, until the queue is empty or there is a request to stop sending.
-                while (!myIsSendingThreadRequestedToStop)
-                {
-                    Object aMessage;
-
-                    synchronized (myMessagesToSend)
-                    {
-                        // If there is a message in the queue, read it.
-                        if (myMessagesToSend.size() > 0)
-                        {
-                            aMessage = myMessagesToSend.get(0);
-                        }
-                        else
-                        {
-                            // There are no messages in the queue, therefore the thread can end.
-                            return;
-                        }
-                    }
-
-
-                    // Loop until the message is sent or until there is no request to stop sending.
-                    while (!myIsSendingThreadRequestedToStop)
-                    {
-                        try
-                        {
-                            if (myUnderlyingOutputChannel.isConnected())
-                            {
-                                myUnderlyingOutputChannel.sendMessage(aMessage);
-
-                                // The message was successfuly sent, therefore remove it from the queue.
-                                synchronized (myMessagesToSend)
-                                {
-                                    myMessagesToSend.remove(0);
-                                }
-
-                                break;
-                            }
-                        }
-                        catch (Exception err)
-                        {
-                            // The sending of the message failed, therefore wait for a while and try again.
-                        }
-
-                        // Do not wait if there is a request to stop the sending.
-                        if (!myIsSendingThreadRequestedToStop)
-                        {
-                            Thread.sleep(300);
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                mySendingThreadActiveFlag = false;
-                mySendingThreadIsStoppedEvent.set();
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-        
     private <T> void notifyEvent(EventImpl<T> handler, T event, boolean isNobodySubscribedWarning)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -464,25 +419,23 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
     
     
     private long myMaxOfflineTime;
-    private IDuplexOutputChannel myUnderlyingOutputChannel;
+    private IDuplexOutputChannel myOutputChannel;
     
-    private boolean myIsOpenConnectionCalledFlag;
-    
-    private boolean mySendingThreadActiveFlag;
-    private boolean myIsSendingThreadRequestedToStop;
-    private ManualResetEvent mySendingThreadIsStoppedEvent = new ManualResetEvent(true);
-
-    private boolean myIsConnectionOpeningActive;
-    private boolean myIsConnectionOpeningRequestedToStop;
-    private ManualResetEvent myConnectionOpeningThreadIsStoppedEvent = new ManualResetEvent(true);
-
     private Object myConnectionManipulatorLock = new Object();
-    private ArrayList<Object> myMessagesToSend = new ArrayList<Object>();
+    private boolean myIsOnline;
+    private boolean myIsConnectionOpenEventPendingFlag;
+    private boolean myConnectionIsOpenFlag;
+    private boolean myConnectionOpeningActiveFlag;
+    private boolean myConnectionOpeningRequestedToStopFlag;
+    private ManualResetEvent myConnectionOpeningEndedEvent = new ManualResetEvent(true);
+    private ArrayDeque<Object> myMessageQueue = new ArrayDeque<Object>();
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
     private EventImpl<DuplexChannelEventArgs> myConnectionClosedEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionOnlineEventImpl = new EventImpl<DuplexChannelEventArgs>();
+    private EventImpl<DuplexChannelEventArgs> myConnectionOfflineEventImpl = new EventImpl<DuplexChannelEventArgs>();
     
     private EventHandler<DuplexChannelMessageEventArgs> myOnResponseMessageReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
@@ -513,7 +466,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
     
     private String TracedObject()
     {
-        String aChannelId = (myUnderlyingOutputChannel != null) ? myUnderlyingOutputChannel.getChannelId() : "";
+        String aChannelId = (myOutputChannel != null) ? myOutputChannel.getChannelId() : "";
         return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
 

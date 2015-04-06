@@ -2,428 +2,154 @@ package eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit;
 
 import static org.junit.Assert.*;
 
+import helper.PerformanceTimer;
+import helper.RandomDataGenerator;
+
 import java.lang.reflect.*;
 import java.util.*;
 
+import org.hamcrest.core.IsEqual;
 import org.junit.Test;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
+import eneter.messaging.messagingsystems.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.EventHandler;
+import eneter.net.system.IFunction1;
+import eneter.net.system.linq.internal.EnumerableExt;
 import eneter.net.system.threading.internal.AutoResetEvent;
+
+
 
 public abstract class BufferedMessagingBaseTester
 {
     @Test
-    public void A01_SimpleRequestResponse() throws Exception
+    public void A01_Send1() throws Exception
     {
-        final IDuplexOutputChannel aDuplexOutputChannel = MessagingSystem.createDuplexOutputChannel(ChannelId);
-        final IDuplexInputChannel aDuplexInputChannel = MessagingSystem.createDuplexInputChannel(ChannelId);
-
-
-        // Received messages.
-        final ArrayList<Integer> aReceivedMessages = new ArrayList<Integer>();
-        aDuplexInputChannel.messageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
-            {
-                synchronized (aReceivedMessages)
-                {
-                    String aReceivedMessage = (String)y.getMessage();
-
-                    int k = Integer.parseInt(aReceivedMessage);
-                    aReceivedMessages.add(k);
-                    k += 1000;
-
-                    try
-                    {
-						aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
-					}
-                    catch (Exception err)
-                    {
-						EneterTrace.error("Sending response message failed.", err);
-					}
-                }
-            }
-        });
-        
-        // Received response messages.
-        final ArrayList<Integer> aReceivedResponseMessages = new ArrayList<Integer>();
-        final AutoResetEvent anAllMessagesProcessedEvent = new AutoResetEvent(false);
-        aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
-            {
-                synchronized (aReceivedResponseMessages)
-                {
-                    String aReceivedMessage = (String)y.getMessage();
-
-                    int k = Integer.parseInt(aReceivedMessage);
-                    aReceivedResponseMessages.add(k);
-
-                    if (k == 1019)
-                    {
-                        anAllMessagesProcessedEvent.set();
-                    }
-                }
-            }
-        });
-        
-        try
-        {
-            aDuplexInputChannel.startListening();
-            aDuplexOutputChannel.openConnection();
-
-            for (int i = 0; i < 20; ++i)
-            {
-                aDuplexOutputChannel.sendMessage(Integer.toString(i));
-            }
-
-            // Wait untill all messages are processed.
-            //anAllMessagesProcessedEvent.waitOne();
-            assertTrue(anAllMessagesProcessedEvent.waitOne(60000));
-
-        }
-        finally
-        {
-            aDuplexOutputChannel.closeConnection();
-            aDuplexInputChannel.stopListening();
-        }
-
-        Collections.sort(aReceivedMessages);
-        assertEquals(20, aReceivedMessages.size());
-        for (int i = 0; i < 20; ++i)
-        {
-            assertEquals(i, (int)aReceivedMessages.get(i));
-        }
-
-        Collections.sort(aReceivedResponseMessages);
-        assertEquals(20, aReceivedResponseMessages.size());
-        for (int i = 0; i < 20; ++i)
-        {
-            assertEquals(i + 1000, (int)aReceivedResponseMessages.get(i));
-        }
-
-
+        sendMessageReceiveResponse(ChannelId, myRequestMessage, myResponseMessage, 1, 1, 1000, 500);
     }
     
     @Test
-    public void A02_IndependentStartupOrder() throws Exception
+    public void A02_Send500() throws Exception
     {
-        final IDuplexOutputChannel aDuplexOutputChannel = MessagingSystem.createDuplexOutputChannel(ChannelId);
-        final IDuplexInputChannel aDuplexInputChannel = MessagingSystem.createDuplexInputChannel(ChannelId);
-
-
-        // Received messages.
-        final ArrayList<Integer> aReceivedMessages = new ArrayList<Integer>();
-        aDuplexInputChannel.messageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
-            {
-                synchronized (aReceivedMessages)
-                {
-                    String aReceivedMessage = (String)y.getMessage();
-
-                    int k = Integer.parseInt(aReceivedMessage);
-                    aReceivedMessages.add(k);
-                    k += 1000;
-
-                    try
-                    {
-						aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
-					}
-                    catch (Exception err)
-                    {
-                    	EneterTrace.error("Sending response message failed.", err);
-					}
-                }
-            }
-        });
-
-        // Received response messages.
-        final ArrayList<Integer> aReceivedResponseMessages = new ArrayList<Integer>();
-        final AutoResetEvent anAllMessagesProcessedEvent = new AutoResetEvent(false);
-        aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
-            {
-                synchronized (aReceivedResponseMessages)
-                {
-                    String aReceivedMessage = (String)y.getMessage();
-
-                    int k = Integer.parseInt(aReceivedMessage);
-                    aReceivedResponseMessages.add(k);
-
-                    if (k == 1019)
-                    {
-                        anAllMessagesProcessedEvent.set();
-                    }
-                }
-            }
-        });
-
-
-        try
-        {
-            aDuplexOutputChannel.openConnection();
-
-            Thread.sleep(500);
-
-            aDuplexInputChannel.startListening();
-            
-
-            for (int i = 0; i < 20; ++i)
-            {
-                aDuplexOutputChannel.sendMessage(Integer.toString(i));
-            }
-
-            // Wait untill all messages are processed.
-            //anAllMessagesProcessedEvent.waitOne();
-            assertTrue(anAllMessagesProcessedEvent.waitOne(60000));
-
-        }
-        finally
-        {
-            aDuplexOutputChannel.closeConnection();
-            aDuplexInputChannel.stopListening();
-        }
-
-        Collections.sort(aReceivedMessages);
-        assertEquals(20, aReceivedMessages.size());
-        for (int i = 0; i < 20; ++i)
-        {
-            assertEquals(i, (int)aReceivedMessages.get(i));
-        }
-
-        Collections.sort(aReceivedResponseMessages);
-        assertEquals(20, aReceivedResponseMessages.size());
-        for (int i = 0; i < 20; ++i)
-        {
-            assertEquals(i + 1000, (int)aReceivedResponseMessages.get(i));
-        }
-
-
+        sendMessageReceiveResponse(ChannelId, myRequestMessage, myResponseMessage, 1, 500, 1000, 1000);
     }
     
-
     @Test
-    public void A04_SendMessagesOffline() throws Exception
+    public void A03_Send1_10M() throws Exception
     {
-        final IDuplexOutputChannel aDuplexOutputChannel = MessagingSystem.createDuplexOutputChannel(ChannelId);
-        final IDuplexInputChannel aDuplexInputChannel = MessagingSystem.createDuplexInputChannel(ChannelId);
-
-
-        // Received messages.
-        final ArrayList<Integer> aReceivedMessages = new ArrayList<Integer>();
-        aDuplexInputChannel.messageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
-            {
-                synchronized (aReceivedMessages)
-                {
-                    String aReceivedMessage = (String)y.getMessage();
-
-                    int k = Integer.parseInt(aReceivedMessage);
-                    aReceivedMessages.add(k);
-                    k += 1000;
-
-                    try
-                    {
-						aDuplexInputChannel.sendResponseMessage(y.getResponseReceiverId(), Integer.toString(k));
-					}
-                    catch (Exception err)
-                    {
-                    	EneterTrace.error("Sending response message failed.", err);
-					}
-                }
-            }
-        });
-        
-        // Received response messages.
-        final ArrayList<Integer> aReceivedResponseMessages = new ArrayList<Integer>();
-        final AutoResetEvent anAllMessagesProcessedEvent = new AutoResetEvent(false);
-        aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
-            {
-                synchronized (aReceivedResponseMessages)
-                {
-                    String aReceivedMessage = (String)y.getMessage();
-
-                    int k = Integer.parseInt(aReceivedMessage);
-                    aReceivedResponseMessages.add(k);
-
-                    if (k == 1019)
-                    {
-                        anAllMessagesProcessedEvent.set();
-                    }
-                }
-            }
-        });
-
-        try
-        {
-            aDuplexOutputChannel.openConnection();
-
-            for (int i = 0; i < 20; ++i)
-            {
-                aDuplexOutputChannel.sendMessage(Integer.toString(i));
-            }
-
-            Thread.sleep(500);
-
-            aDuplexInputChannel.startListening();
-
-            // Wait untill all messages are processed.
-            //anAllMessagesProcessedEvent.waitOne();
-            assertTrue(anAllMessagesProcessedEvent.waitOne(60000));
-
-        }
-        finally
-        {
-            aDuplexOutputChannel.closeConnection();
-            aDuplexInputChannel.stopListening();
-        }
-
-        Collections.sort(aReceivedMessages);
-        assertEquals(20, aReceivedMessages.size());
-        for (int i = 0; i < 20; ++i)
-        {
-            assertEquals(i, (int)aReceivedMessages.get(i));
-        }
-
-        Collections.sort(aReceivedResponseMessages);
-        assertEquals(20, aReceivedResponseMessages.size());
-        for (int i = 0; i < 20; ++i)
-        {
-            assertEquals(i + 1000, (int)aReceivedResponseMessages.get(i));
-        }
+        sendMessageReceiveResponse(ChannelId, myMessage_10MB, myMessage_10MB, 1, 1, 1000, 5000);
     }
-
+    
     @Test
-    public void A05_SendResponsesOffline() throws Exception
+    public void A04_Send50000() throws Exception
     {
-        final IDuplexOutputChannel aDuplexOutputChannel = MessagingSystem.createDuplexOutputChannel(ChannelId, "MyResponseReceiverId");
-        final IDuplexInputChannel aDuplexInputChannel = MessagingSystem.createDuplexInputChannel(ChannelId);
+        sendMessageReceiveResponse(ChannelId, myRequestMessage, myResponseMessage, 1, 50000, 500, 20000);
+    }
+    
+    @Test
+    public void A05_Send50_10Prallel() throws Exception
+    {
+        sendMessageReceiveResponse(ChannelId, myRequestMessage, myResponseMessage, 10, 50, 1000, 10000);
+    }
+    
+    @Test
+    public void A06_IndependentStartupOrder() throws Exception
+    {
+        sendOfflineMessageReceiveResponse(ChannelId, myRequestMessage, myResponseMessage, 1, 1, 3000, 3000);
+    }
+    
+    @Test
+    public void A07_IndependentStartupOrder50_10Parallel() throws Exception
+    {
+        sendOfflineMessageReceiveResponse(ChannelId, myRequestMessage, myResponseMessage, 10, 50, 3000, 3000);
+    }
+    
+    @Test
+    public void A08_SendMessagesOffline10() throws Exception
+    {
+        sendOfflineMessageReceiveResponse(ChannelId, myRequestMessage, myResponseMessage, 1, 10, 3000, 3000);
+    }
+    
+    @Test
+    public void A09_SendResponsesOffline() throws Exception
+    {
+        sendOfflineResponse(ChannelId, myResponseMessage, 1, 1, 1000, 1000);
+    }
+    
+    @Test
+    public void A10_SendResponsesOffline10() throws Exception
+    {
+        sendOfflineResponse(ChannelId, myResponseMessage, 1, 10, 1000, 1000);
+    }
+    
+    @Test
+    public void A11_SendResponsesOffline10_10Parallel() throws Exception
+    {
+        sendOfflineResponse(ChannelId, myResponseMessage, 10, 10, 1000, 1000);
+    }
+    
+    @Test
+    public void A12_SendBroadcastResponse_50_10Clients() throws Exception
+    {
+        sendBroadcastResponseMessage(ChannelId, myResponseMessage, 10, 50, 1000, 2000);sendOfflineBroadcastResponseMessage(ChannelId, myResponseMessage, 10, 50, 1000, 2000);
+    }
+    
+    @Test
+    public void A12_SendOfflineBroadcastResponse_50_10Clients() throws Exception
+    {
+        sendOfflineBroadcastResponseMessage(ChannelId, myResponseMessage, 10, 50, 1000, 2000);
+    }
+    
+    @Test
+    public void A13_TimeoutedResponseReceiver() throws Exception
+    {
+        ClientMock aClient = new ClientMock(MessagingSystem, ChannelId);
+        ServiceMock aService = new ServiceMock(MessagingSystem, ChannelId);
 
-
-        // Received response messages.
-        final ArrayList<Integer> aReceivedResponseMessages = new ArrayList<Integer>();
-        final AutoResetEvent anAllMessagesProcessedEvent = new AutoResetEvent(false);
-        aDuplexOutputChannel.responseMessageReceived().subscribe(new EventHandler<DuplexChannelMessageEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, DuplexChannelMessageEventArgs y)
-            {
-                synchronized (aReceivedResponseMessages)
-                {
-                    String aReceivedMessage = (String)y.getMessage();
-
-                    int k = Integer.parseInt(aReceivedMessage);
-                    aReceivedResponseMessages.add(k);
-
-                    if (aReceivedResponseMessages.size() == 20)
-                    {
-                        anAllMessagesProcessedEvent.set();
-                    }
-                }
-            }
-        });
-
-
-        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
-        
         try
         {
-            aDuplexInputChannel.startListening();
+            aService.getInputChannel().startListening();
 
-            // Send messages to the response receiver, that is not connected.
-            for (int i = 0; i < 20; ++i)
-            {
-                aDuplexInputChannel.sendResponseMessage("MyResponseReceiverId", Integer.toString(i));
-            }
+            // Open the connection.
+            aClient.getOutputChannel().openConnection();
+            assertTrue(aClient.getOutputChannel().isConnected());
 
-            Thread.sleep(500);
+            // handling open connection on the client side.
+            EneterTrace.info("1");
+            aClient.waitUntilConnectionOpenIsNotified(2000);
+            assertEquals(aClient.getOutputChannel().getChannelId(), aClient.getNotifiedOpenConnection().getChannelId());
+            assertEquals(aClient.getOutputChannel().getResponseReceiverId(), aClient.getNotifiedOpenConnection().getResponseReceiverId());
 
-            aDuplexOutputChannel.openConnection();
+            // handling open connection on the service side.
+            EneterTrace.info("2");
+            aService.waitUntilResponseReceiversConnectNotified(1, 1000);
+            assertEquals(1, aService.getConnectedResponseReceivers().size());
+            assertEquals(aClient.getOutputChannel().getResponseReceiverId(), aService.getConnectedResponseReceivers().get(0).getResponseReceiverId());
 
-            // Wait untill all messages are processed.
-            //anAllMessagesProcessedEvent.waitOne();
-            assertTrue(anAllMessagesProcessedEvent.waitOne(60000));
+            aClient.getOutputChannel().closeConnection();
+            assertFalse(aClient.getOutputChannel().isConnected());
 
-        }
+            // Service will disconnect the response receiver when the offline timout is exceeded.
+            EneterTrace.info("3");
+            aService.waitUntilAllResponseReceiversDisconnectNotified(2000);
+            assertEquals(1, aService.getDisconnectedResponseReceivers().size());
+            assertEquals(aClient.getOutputChannel().getResponseReceiverId(), aService.getDisconnectedResponseReceivers().get(0).getResponseReceiverId());
+         }
         finally
         {
-            aDuplexOutputChannel.closeConnection();
-            aDuplexInputChannel.stopListening();
-        }
+            EneterTrace.debug("CLEANING AFTER TEST");
 
-        Collections.sort(aReceivedResponseMessages);
-        assertEquals(20, aReceivedResponseMessages.size());
-        for (int i = 0; i < 20; ++i)
-        {
-            assertEquals(i, (int)aReceivedResponseMessages.get(i));
+            aClient.getOutputChannel().closeConnection();
+            aService.getInputChannel().stopListening();
+
+            // EneterTrace.StopProfiler();
+            Thread.sleep(200);
         }
     }
     
     @Test
-    public void A06_TimeoutedResponseReceiver() throws Exception
-    {
-        // Duplex output channel without queue - it will not try to reconnect.
-        final IDuplexOutputChannel aDuplexOutputChannel = UnderlyingMessaging.createDuplexOutputChannel(ChannelId);
-        final IDuplexInputChannel aDuplexInputChannel = MessagingSystem.createDuplexInputChannel(ChannelId);
-
-        final AutoResetEvent aConnectionClosedEvent = new AutoResetEvent(false);
-        aDuplexOutputChannel.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, DuplexChannelEventArgs y)
-            {
-                aConnectionClosedEvent.set();
-            }
-        });
-
-        final String[] aDisconnectedResponseReceiverId = {""};
-        final AutoResetEvent aResponseReceiverDisconnectedEvent = new AutoResetEvent(false);
-        aDuplexInputChannel.responseReceiverDisconnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
-        {
-            @Override
-            public void onEvent(Object x, ResponseReceiverEventArgs y)
-            {
-                aDisconnectedResponseReceiverId[0] = y.getResponseReceiverId();
-                aResponseReceiverDisconnectedEvent.set();
-            }
-        });
-        
-        try
-        {
-            aDuplexInputChannel.startListening();
-            aDuplexOutputChannel.openConnection();
-
-            // Disconnect the output channel.
-            // The input channel should disconnect the client after max offline time.
-            aDuplexOutputChannel.closeConnection();
-
-            assertTrue(aConnectionClosedEvent.waitOne(30000));
-            assertTrue(aResponseReceiverDisconnectedEvent.waitOne(30000));
-        }
-        finally
-        {
-            aDuplexOutputChannel.closeConnection();
-            aDuplexInputChannel.stopListening();
-        }
-
-    }
-    
-    @Test
-    public void A07_ResponseReceiverReconnects_AfterDisconnect() throws Exception
+    public void A14_ResponseReceiverReconnects_AfterDisconnect() throws Exception
     {
         // Duplex output channel without queue - it will not try to reconnect.
         final IDuplexOutputChannel aDuplexOutputChannel = MessagingSystem.createDuplexOutputChannel(ChannelId);
@@ -474,7 +200,7 @@ public abstract class BufferedMessagingBaseTester
     }
     
     @Test
-    public void A08_ResponseReceiverReconnects_AfterStopListening() throws Exception
+    public void A15_ResponseReceiverReconnects_AfterStopListening() throws Exception
     {
         // Duplex output channel without queue - it will not try to reconnect.
         final IDuplexOutputChannel aDuplexOutputChannel = MessagingSystem.createDuplexOutputChannel(ChannelId);
@@ -534,12 +260,12 @@ public abstract class BufferedMessagingBaseTester
     }
     
     @Test
-    public void A09_RequestResponse_100_ConstantlyInterrupted() throws Exception
+    public void A16_RequestResponse_100_ConstantlyInterrupted() throws Exception
     {
         final IDuplexOutputChannel aDuplexOutputChannel = MessagingSystem.createDuplexOutputChannel(ChannelId);
         final IDuplexInputChannel aDuplexInputChannel = MessagingSystem.createDuplexInputChannel(ChannelId);
 
-        Field aMember = aDuplexInputChannel.getClass().getDeclaredField("myUnderlyingInputChannel");
+        Field aMember = aDuplexInputChannel.getClass().getDeclaredField("myInputChannel");
         aMember.setAccessible(true);
         final IDuplexInputChannel anUnderlyingDuplexInputChannel = (IDuplexInputChannel)aMember.get(aDuplexInputChannel);
 
@@ -681,8 +407,342 @@ public abstract class BufferedMessagingBaseTester
         }
     }
     
+    private void sendMessageReceiveResponse(String channelId, Object message, Object responseMessage,
+            int numberOfClients, int numberOfMessages,
+            int openConnectionTimeout,
+            int allMessagesReceivedTimeout) throws Exception
+    {
+        ClientMockFarm aClientFarm = new ClientMockFarm(MessagingSystem, channelId, numberOfClients);
+
+        ServiceMock aService = new ServiceMock(MessagingSystem, channelId);
+        aService.doOnMessageReceived_SendResponse(responseMessage);
+
+        try
+        {
+            //EneterTrace.StartProfiler();
+
+            aService.getInputChannel().startListening();
+            aClientFarm.openConnectionsAsync();
+
+            aClientFarm.waitUntilAllConnectionsAreOpen(openConnectionTimeout);
+            aService.waitUntilResponseReceiversConnectNotified(numberOfClients, openConnectionTimeout);
+            assertEquals(aClientFarm.getClients().size(), aService.getConnectedResponseReceivers().size());
+
+            for (final ClientMock aClient : aClientFarm.getClients())
+            {
+                assertTrue(EnumerableExt.any(aService.getConnectedResponseReceivers(), new IFunction1<Boolean, ResponseReceiverEventArgs>()
+                {
+                    @Override
+                    public Boolean invoke(ResponseReceiverEventArgs x) throws Exception
+                    {
+                        return x.getResponseReceiverId().equals(aClient.getOutputChannel().getResponseReceiverId());
+                    }
+                }));
+            }
+
+            PerformanceTimer aStopWatch = new PerformanceTimer();
+            aStopWatch.start();
+
+            aClientFarm.sendMessageAsync(message, numberOfMessages);
+            aClientFarm.waitUntilAllResponsesAreReceived(numberOfMessages, allMessagesReceivedTimeout);
+
+            aStopWatch.stop();
+
+            // Wait little bit more for case there is an error that more messages are sent.
+            Thread.sleep(500);
+
+            assertEquals(numberOfMessages * numberOfClients, aService.getReceivedMessages().size());
+            assertEquals(numberOfMessages * numberOfClients, aClientFarm.getReceivedResponses().size());
+            for (DuplexChannelMessageEventArgs aMessage : aService.getReceivedMessages())
+            {
+                // Note: IsEqual recognizes byte[] but essertEquals not.
+                assertThat(message, IsEqual.equalTo(aMessage.getMessage()));
+            }
+            for (DuplexChannelMessageEventArgs aResponseMessage : aClientFarm.getReceivedResponses())
+            {
+                assertThat(responseMessage, IsEqual.equalTo(aResponseMessage.getMessage()));
+            }
+        }
+        finally
+        {
+            EneterTrace.debug("CLEANING AFTER TEST");
+
+            aClientFarm.closeAllConnections();
+            aService.getInputChannel().stopListening();
+
+            // EneterTrace.StopProfiler();
+            Thread.sleep(200);
+        }
+    }
+    
+    private void sendOfflineMessageReceiveResponse(String channelId, Object message, Object responseMessage,
+            int numberOfClients, int numberOfMessages,
+            int openConnectionTimeout,
+            int allMessagesReceivedTimeout) throws Exception
+    {
+        ClientMockFarm aClientFarm = new ClientMockFarm(MessagingSystem, channelId, numberOfClients);
+
+        ServiceMock aService = new ServiceMock(MessagingSystem, channelId);
+        aService.doOnMessageReceived_SendResponse(responseMessage);
+
+        try
+        {
+            //EneterTrace.StartProfiler();
+
+            aClientFarm.openConnectionsAsync();
+
+            Thread.sleep(500);
+
+            aService.getInputChannel().startListening();
+            aClientFarm.waitUntilAllConnectionsAreOpen(openConnectionTimeout);
+            aService.waitUntilResponseReceiversConnectNotified(numberOfClients, openConnectionTimeout);
+            assertEquals(aClientFarm.getClients().size(), aService.getConnectedResponseReceivers().size());
+
+            for (final ClientMock aClient : aClientFarm.getClients())
+            {
+                assertTrue(EnumerableExt.any(aService.getConnectedResponseReceivers(), new IFunction1<Boolean, ResponseReceiverEventArgs>()
+                {
+                    @Override
+                    public Boolean invoke(ResponseReceiverEventArgs x)
+                            throws Exception
+                    {
+                        return x.getResponseReceiverId().equals(aClient.getOutputChannel().getResponseReceiverId());
+                    }
+                }));
+            }
+
+            PerformanceTimer aStopWatch = new PerformanceTimer();
+            aStopWatch.start();
+
+            aClientFarm.sendMessageAsync(message, numberOfMessages);
+            aClientFarm.waitUntilAllResponsesAreReceived(numberOfMessages, allMessagesReceivedTimeout);
+
+            aStopWatch.stop();
+
+            // Wait little bit more for case there is an error that more messages are sent.
+            Thread.sleep(500);
+
+            assertEquals(numberOfMessages * numberOfClients, aService.getReceivedMessages().size());
+            assertEquals(numberOfMessages * numberOfClients, aClientFarm.getReceivedResponses().size());
+            for (DuplexChannelMessageEventArgs aMessage : aService.getReceivedMessages())
+            {
+                assertEquals(message, aMessage.getMessage());
+            }
+            for (DuplexChannelMessageEventArgs aResponseMessage : aClientFarm.getReceivedResponses())
+            {
+                assertEquals(responseMessage, aResponseMessage.getMessage());
+            }
+        }
+        finally
+        {
+            EneterTrace.debug("CLEANING AFTER TEST");
+
+            aClientFarm.closeAllConnections();
+            aService.getInputChannel().stopListening();
+
+            //EneterTrace.StopProfiler();
+            Thread.sleep(500);
+        }
+    }
+    
+    private void sendOfflineResponse(String channelId, Object responseMessage,
+            int numberOfClients, int numberOfMessages,
+            int openConnectionTimeout,
+            int allMessagesReceivedTimeout) throws Exception
+    {
+        ClientMockFarm aClientFarm = new ClientMockFarm(MessagingSystem, channelId, numberOfClients);
+
+        ServiceMock aService = new ServiceMock(MessagingSystem, channelId);
+        aService.doOnMessageReceived_SendResponse(responseMessage);
+
+        try
+        {
+            //EneterTrace.StartProfiler();
+
+            aService.getInputChannel().startListening();
+
+            PerformanceTimer aStopWatch = new PerformanceTimer();
+            aStopWatch.start();
+
+            for (ClientMock aClientMock : aClientFarm.getClients())
+            {
+                for (int i = 0; i < numberOfMessages; ++i)
+                {
+                    aService.getInputChannel().sendResponseMessage(aClientMock.getOutputChannel().getResponseReceiverId(), responseMessage);
+                }
+            }
+
+            Thread.sleep(500);
+
+            aClientFarm.openConnectionsAsync();
+            aClientFarm.waitUntilAllConnectionsAreOpen(openConnectionTimeout);
+
+            aClientFarm.waitUntilAllResponsesAreReceived(numberOfMessages, allMessagesReceivedTimeout);
+
+            aStopWatch.stop();
+
+            for (final ClientMock aClient : aClientFarm.getClients())
+            {
+                assertTrue(EnumerableExt.any(aService.getConnectedResponseReceivers(), new IFunction1<Boolean, ResponseReceiverEventArgs>()
+                {
+                    @Override
+                    public Boolean invoke(ResponseReceiverEventArgs x)
+                            throws Exception
+                    {
+                        return x.getResponseReceiverId().equals(aClient.getOutputChannel().getResponseReceiverId());
+                    }
+                }));
+            }
+
+            // Wait little bit more for case there is an error that more messages are sent.
+            Thread.sleep(500);
+
+            assertEquals(numberOfMessages * numberOfClients, aClientFarm.getReceivedResponses().size());
+            for (DuplexChannelMessageEventArgs aResponseMessage : aClientFarm.getReceivedResponses())
+            {
+                assertEquals(responseMessage, aResponseMessage.getMessage());
+            }
+        }
+        finally
+        {
+            EneterTrace.debug("CLEANING AFTER TEST");
+
+            aClientFarm.closeAllConnections();
+            aService.getInputChannel().stopListening();
+
+            //EneterTrace.StopProfiler();
+            Thread.sleep(500);
+        }
+    }
+    
+    private void sendBroadcastResponseMessage(String channelId, Object broadcastMessage,
+            int numberOfClients, int numberOfMessages,
+            int openConnectionTimeout,
+            int allMessagesReceivedTimeout) throws Exception
+    {
+        ClientMockFarm aClientFarm = new ClientMockFarm(MessagingSystem, channelId, numberOfClients);
+        ServiceMock aService = new ServiceMock(MessagingSystem, channelId);
+
+        try
+        {
+            aService.getInputChannel().startListening();
+            aClientFarm.openConnectionsAsync();
+
+            aClientFarm.waitUntilAllConnectionsAreOpen(openConnectionTimeout);
+            aService.waitUntilResponseReceiversConnectNotified(numberOfClients, openConnectionTimeout);
+            assertEquals(aClientFarm.getClients().size(), aService.getConnectedResponseReceivers().size());
+            for (final ClientMock aClient : aClientFarm.getClients())
+            {
+                assertTrue(EnumerableExt.any(aService.getConnectedResponseReceivers(), new IFunction1<Boolean, ResponseReceiverEventArgs>()
+                {
+                    @Override
+                    public Boolean invoke(ResponseReceiverEventArgs x)
+                            throws Exception
+                    {
+                        return x.getResponseReceiverId().equals(aClient.getOutputChannel().getResponseReceiverId());
+                    }
+                }));
+            }
+
+            PerformanceTimer aStopWatch = new PerformanceTimer();
+            aStopWatch.start();
+
+            for (int i = 0; i < numberOfMessages; ++i)
+            {
+                aService.getInputChannel().sendResponseMessage("*", broadcastMessage);
+            }
+            aClientFarm.waitUntilAllResponsesAreReceived(numberOfMessages, allMessagesReceivedTimeout);
+
+            aStopWatch.stop();
+
+            for (DuplexChannelMessageEventArgs aResponseMessage : aClientFarm.getReceivedResponses())
+            {
+                assertEquals(broadcastMessage, aResponseMessage.getMessage());
+            }
+        }
+        finally
+        {
+            EneterTrace.debug("CLEANING AFTER TEST");
+
+            aClientFarm.closeAllConnections();
+            aService.getInputChannel().stopListening();
+
+            //EneterTrace.StopProfiler();
+            Thread.sleep(500);
+        }
+    }
+    
+    
+    private void sendOfflineBroadcastResponseMessage(String channelId, Object broadcastMessage,
+            int numberOfClients, int numberOfMessages,
+            int openConnectionTimeout,
+            int allMessagesReceivedTimeout) throws Exception
+    {
+        ClientMockFarm aClientFarm = new ClientMockFarm(MessagingSystem, channelId, numberOfClients);
+        ServiceMock aService = new ServiceMock(MessagingSystem, channelId);
+
+        try
+        {
+            aService.getInputChannel().startListening();
+
+            // Send broadcasts.
+            for (int i = 0; i < numberOfMessages; ++i)
+            {
+                aService.getInputChannel().sendResponseMessage("*", broadcastMessage);
+            }
+
+            Thread.sleep(500);
+
+            aClientFarm.openConnectionsAsync();
+
+            aClientFarm.waitUntilAllConnectionsAreOpen(openConnectionTimeout);
+            aService.waitUntilResponseReceiversConnectNotified(numberOfClients, openConnectionTimeout);
+            assertEquals(aClientFarm.getClients().size(), aService.getConnectedResponseReceivers().size());
+            for (final ClientMock aClient : aClientFarm.getClients())
+            {
+                assertTrue(EnumerableExt.any(aService.getConnectedResponseReceivers(), new IFunction1<Boolean, ResponseReceiverEventArgs>()
+                {
+                    @Override
+                    public Boolean invoke(ResponseReceiverEventArgs x)
+                            throws Exception
+                    {
+                        return x.getResponseReceiverId().equals(aClient.getOutputChannel().getResponseReceiverId());
+                    }
+                })); 
+            }
+
+            PerformanceTimer aStopWatch = new PerformanceTimer();
+            aStopWatch.start();
+
+            aClientFarm.waitUntilAllResponsesAreReceived(numberOfMessages, allMessagesReceivedTimeout);
+
+            aStopWatch.stop();
+
+            for (DuplexChannelMessageEventArgs aResponseMessage : aClientFarm.getReceivedResponses())
+            {
+                assertEquals(broadcastMessage, aResponseMessage.getMessage());
+            }
+        }
+        finally
+        {
+            EneterTrace.debug("CLEANING AFTER TEST");
+
+            aClientFarm.closeAllConnections();
+            aService.getInputChannel().stopListening();
+
+            //EneterTrace.StopProfiler();
+            Thread.sleep(500);
+        }
+    }
+    
+    
+    
     protected String ChannelId;
-    protected IMessagingSystemFactory UnderlyingMessaging;
     protected IMessagingSystemFactory MessagingSystem;
     protected int ConnectionInterruptionFrequency;
+    
+    protected Object myRequestMessage = "Message";
+    protected Object myResponseMessage = "Response";
+
+    protected Object myMessage_10MB = RandomDataGenerator.getString(10000000);
 }

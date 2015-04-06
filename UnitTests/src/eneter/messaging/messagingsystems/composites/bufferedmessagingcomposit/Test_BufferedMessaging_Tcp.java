@@ -7,9 +7,10 @@ import org.junit.Before;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
+import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
 
-public class Test_BufferedMessaging_Tcp_Xml extends BufferedMessagingBaseTester
+public class Test_BufferedMessaging_Tcp extends BufferedMessagingBaseTester
 {
     @Before
     public void Setup() throws Exception
@@ -21,9 +22,9 @@ public class Test_BufferedMessaging_Tcp_Xml extends BufferedMessagingBaseTester
         int aPort = 7000 + aRandomPort.nextInt(1000);
         ChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
         
-        UnderlyingMessaging = new TcpMessagingSystemFactory();
+        IMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
         long aMaxOfflineTime = 1000;
-        MessagingSystem = new BufferedMessagingFactory(UnderlyingMessaging, aMaxOfflineTime);
+        MessagingSystem = new BufferedMessagingFactory(anUnderlyingMessaging, aMaxOfflineTime);
         ConnectionInterruptionFrequency = 80;
     }
 }
