@@ -196,12 +196,13 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
 
                 try
                 {
-                 // Send the message.
+                    // Send the message.
                     myOutputConnector.sendRequestMessage(message);
                 }
                 catch (Exception err)
                 {
                     EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendMessage, err);
+                    cleanAfterConnection(true, true);
                     throw err;
                 }
             }
