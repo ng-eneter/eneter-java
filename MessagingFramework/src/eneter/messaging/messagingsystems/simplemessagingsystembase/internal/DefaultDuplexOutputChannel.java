@@ -8,7 +8,6 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
-import java.io.InputStream;
 import java.util.UUID;
 
 import eneter.messaging.diagnostic.EneterTrace;
@@ -56,7 +55,21 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                 }
 
                 myChannelId = channelId;
-                myResponseReceiverId = (StringExt.isNullOrEmpty(responseReceiverId)) ? channelId + "_" + UUID.randomUUID().toString() : responseReceiverId;
+                
+                if (StringExt.isNullOrEmpty(responseReceiverId))
+                {
+                    myResponseReceiverId = channelId + "_" + UUID.randomUUID().toString();
+                }
+                else if (responseReceiverId.equals("*"))
+                {
+                    String anErrorMessage = "responseReceiverId cannot be '*'. It is reserved for broadcast response messages.";
+                    EneterTrace.error(anErrorMessage);
+                    throw new IllegalArgumentException(anErrorMessage);
+                }
+                else
+                {
+                    myResponseReceiverId = responseReceiverId;
+                }
 
                 myDispatcher = eventDispatcher;
                 
