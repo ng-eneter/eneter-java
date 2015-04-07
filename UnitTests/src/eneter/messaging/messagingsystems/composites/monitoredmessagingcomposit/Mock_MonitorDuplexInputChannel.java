@@ -2,6 +2,9 @@ package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal.MonitorChannelMessage;
+import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal.MonitorChannelMessageType;
+import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal.MonitoredMessagingCustomSerializer;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.Event;
@@ -10,14 +13,14 @@ import eneter.net.system.EventHandler;
 
 class Mock_MonitorDuplexInputChannel implements IDuplexInputChannel
 {
-    public Mock_MonitorDuplexInputChannel(IDuplexInputChannel underlyingInputChannel, ISerializer serializer)
+    public Mock_MonitorDuplexInputChannel(IDuplexInputChannel underlyingInputChannel)
     {
         myUnderlyingInputChannel = underlyingInputChannel;
         myUnderlyingInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
         myUnderlyingInputChannel.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
         myUnderlyingInputChannel.messageReceived().subscribe(myOnMessageReceived);
 
-        mySerializer = serializer;
+        mySerializer = new MonitoredMessagingCustomSerializer();
 
         myResponsePingFlag = true;
     }

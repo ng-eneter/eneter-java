@@ -119,7 +119,7 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
     {
         // Create mock for the monitor duplex input channel.
         IDuplexInputChannel anUnderlyingDuplexInputChannel = myUnderlyingMessaging.createDuplexInputChannel(ChannelId);
-        Mock_MonitorDuplexInputChannel aDuplexInputChannel = new Mock_MonitorDuplexInputChannel(anUnderlyingDuplexInputChannel, mySerializer);
+        Mock_MonitorDuplexInputChannel aDuplexInputChannel = new Mock_MonitorDuplexInputChannel(anUnderlyingDuplexInputChannel);
         
         IDuplexOutputChannel aDuplexOutputChannel = MessagingSystemFactory.createDuplexOutputChannel(ChannelId);
 
@@ -208,6 +208,5 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
         }
     }
     
-    protected ISerializer mySerializer;
     protected IMessagingSystemFactory myUnderlyingMessaging;
 }

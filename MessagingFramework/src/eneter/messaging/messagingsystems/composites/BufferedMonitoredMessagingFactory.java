@@ -8,7 +8,6 @@
 
 package eneter.messaging.messagingsystems.composites;
 
-import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.composites.bufferedmessagingcomposit.BufferedMessagingFactory;
 import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.MonitoredMessagingFactory;
@@ -38,26 +37,7 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
      */
     public BufferedMonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging)
     {
-        this(underlyingMessaging, new XmlStringSerializer(),
-                10000, // max offline time
-                1000, 2000);
-    }
-    
-    /**
-     * Constructs the factory with the specified parameters.
-     * 
-     * The maximum offline time is set to 10 seconds.
-     * The duplex output channel will check the connection with the 'ping' once per second and the response must be received within 2 seconds.
-     * Otherwise the connection is closed.<br/>
-     * The duplex input channel expects the 'ping' request at least once per 2 seconds. Otherwise the duplex output
-     * channel is disconnected.
-     * 
-     * @param underlyingMessaging underlying messaging system
-     * @param serializer
-     */
-    public BufferedMonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging, ISerializer serializer)
-    {
-        this(underlyingMessaging, serializer,
+        this(underlyingMessaging,
                 10000, // max offline time
                 1000, 2000);
     }
@@ -67,7 +47,6 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
      * 
      * 
      * @param underlyingMessaging underlying messaging system
-     * @param serializer serializer used to serialize the 'ping' requests
      * @param maxOfflineTime the maximum time, the messaging can work offline. When the messaging works offline,
      *      the sent messages are buffered and the connection is being reopened. If the connection is
      *      not reopen within maxOfflineTime, the connection is closed.
@@ -75,8 +54,6 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
      * @param pingResponseTimeout the maximum time, the response for the 'ping' is expected.
      */
     public BufferedMonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging,
-            ISerializer serializer,
-
             // Buffered Messaging
             long maxOfflineTime,
 
@@ -87,7 +64,7 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IMessagingSystemFactory aMonitoredMessaging = new MonitoredMessagingFactory(underlyingMessaging, serializer, pingFrequency, pingResponseTimeout);
+            IMessagingSystemFactory aMonitoredMessaging = new MonitoredMessagingFactory(underlyingMessaging, pingFrequency, pingResponseTimeout);
             myBufferedMessaging = new BufferedMessagingFactory(aMonitoredMessaging, maxOfflineTime);
         }
         finally

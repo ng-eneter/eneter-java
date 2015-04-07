@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal.MonitoredMessagingCustomSerializer;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
@@ -50,21 +51,19 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
      */
     public MonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging)
     {
-        this(underlyingMessaging, new XmlStringSerializer(), 1000, 2000);
+        this(underlyingMessaging, 1000, 2000);
     }
     
     /**
      * Constructs the factory from specified parameters.
      * 
      * @param underlyingMessaging underlying messaging system e.g. Websocket, TCP, ...
-     * @param serializer serializer used to serialize 'ping' messages
      * @param pingFrequency how often the duplex output channel pings the connection
      * @param pingResponseTimeout For the duplex output channel: the maximum time, the response for the ping must be received
      *           For the duplex input channel: the maximum time within the ping for the connected duplex output channel
      *           must be received.
      */
     public MonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging,
-            ISerializer serializer,
             long pingFrequency,
             long pingResponseTimeout)
     {
@@ -72,7 +71,7 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         try
         {
             myUnderlyingMessaging = underlyingMessaging;
-            mySerializer = serializer;
+            mySerializer = new MonitoredMessagingCustomSerializer();
             myPingFrequency = pingFrequency;
             myPingResponseTimeout = pingResponseTimeout;
             myResponseReceiverTimeout = pingFrequency + pingResponseTimeout;

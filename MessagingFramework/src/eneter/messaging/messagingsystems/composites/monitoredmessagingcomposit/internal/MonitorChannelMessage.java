@@ -6,18 +6,17 @@
  * 
  */
 
-package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
+package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal;
 
-import java.io.Serializable;
+
 
 /**
  * The message internally used to monitor the connection and also to transfer message data.
  */
-public class MonitorChannelMessage implements Serializable
+public class MonitorChannelMessage
 {
     /**
      * Constructs the message.
-     * This constructor is used by the Xml serializer for the deserialization.
      */
     public MonitorChannelMessage()
     {
@@ -44,6 +43,4 @@ public class MonitorChannelMessage implements Serializable
      * Message. In case of the 'ping', this property is null.
      */
     public Object MessageContent;
-
-    private static final long serialVersionUID = -1411932226587371691L;
 }
