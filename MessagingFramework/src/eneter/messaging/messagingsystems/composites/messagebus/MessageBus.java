@@ -18,7 +18,7 @@ import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.StringExt;
 import eneter.net.system.linq.internal.EnumerableExt;
-import eneter.net.system.threading.internal.ManualResetEvent;
+
 
 
 class MessageBus implements IMessageBus
@@ -78,10 +78,10 @@ class MessageBus implements IMessageBus
     // Helper class to wrap basic input channel functionality.
     private class TConnector extends AttachableDuplexInputChannelBase
     {
-        public Event<ResponseReceiverEventArgs> responseReceiverConnected()
-        {
-            return myResponseReceiverConnected.getApi();
-        }
+        //public Event<ResponseReceiverEventArgs> responseReceiverConnected()
+        //{
+        //    return myResponseReceiverConnected.getApi();
+        //}
         
         public Event<ResponseReceiverEventArgs> responseReceiverDisconnected()
         {
