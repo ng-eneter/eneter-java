@@ -16,7 +16,7 @@ import eneter.messaging.dataprocessing.serializing.JavaBinarySerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
-import eneter.messaging.messagingsystems.connectionprotocols.InteroperableProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.EasyProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousMessagingSystemFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
@@ -338,7 +338,7 @@ public class Test_Broker
     {
         int aPort = RandomPortGenerator.generateInt();
 
-        IProtocolFormatter aProtocolFormatter = new InteroperableProtocolFormatter();
+        IProtocolFormatter aProtocolFormatter = new EasyProtocolFormatter();
         IMessagingSystemFactory aMessagingSystem = new TcpMessagingSystemFactory(aProtocolFormatter);
         String aBrokerAddress = "tcp://127.0.0.1:" + aPort + "/";
 

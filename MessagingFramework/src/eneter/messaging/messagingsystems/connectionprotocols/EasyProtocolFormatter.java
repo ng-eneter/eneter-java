@@ -5,14 +5,14 @@ import java.io.*;
 import eneter.messaging.dataprocessing.serializing.internal.EncoderDecoder;
 import eneter.messaging.diagnostic.EneterTrace;
 
-public class InteroperableProtocolFormatter implements IProtocolFormatter
+public class EasyProtocolFormatter implements IProtocolFormatter
 {
-    public InteroperableProtocolFormatter()
+    public EasyProtocolFormatter()
     {
         this(true);
     }
 
-    public InteroperableProtocolFormatter(boolean isLittleEndian)
+    public EasyProtocolFormatter(boolean isLittleEndian)
     {
         myIsLittleEndian = isLittleEndian;
     }

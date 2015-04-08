@@ -10,7 +10,7 @@ import org.junit.Before;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
-import eneter.messaging.messagingsystems.connectionprotocols.InteroperableProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.EasyProtocolFormatter;
 
 public class Test_TcpMessagingSystem_Sync_Interoperable extends MessagingSystemBaseTester
 {
@@ -24,7 +24,7 @@ public class Test_TcpMessagingSystem_Sync_Interoperable extends MessagingSystemB
         // Generate random number for the port.
         String aPort = RandomPortGenerator.generate();
 
-        MessagingSystemFactory = new TcpMessagingSystemFactory(new InteroperableProtocolFormatter());
+        MessagingSystemFactory = new TcpMessagingSystemFactory(new EasyProtocolFormatter());
         //ChannelId = "tcp://127.0.0.1:" + aPort + "/";
         ChannelId = "tcp://[::1]:" + aPort + "/";
 

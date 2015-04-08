@@ -5,7 +5,7 @@ import helper.*;
 import org.junit.Before;
 
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
-import eneter.messaging.messagingsystems.connectionprotocols.InteroperableProtocolFormatter;
+import eneter.messaging.messagingsystems.connectionprotocols.EasyProtocolFormatter;
 
 public class Test_WebSocketMessaging_Interoperable extends MessagingSystemBaseTester
 {
@@ -16,7 +16,7 @@ public class Test_WebSocketMessaging_Interoperable extends MessagingSystemBaseTe
         
         String aPort = RandomPortGenerator.generate();
         
-        MessagingSystemFactory = new WebSocketMessagingSystemFactory(new InteroperableProtocolFormatter());
+        MessagingSystemFactory = new WebSocketMessagingSystemFactory(new EasyProtocolFormatter());
         ChannelId = "ws://127.0.0.1:" + aPort + "/";
         
         this.CompareResponseReceiverId = false;
