@@ -84,7 +84,7 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
      */
     public DuplexBrokerFactory()
     {
-        this(new XmlStringSerializer());
+        this(new BrokerCustomSerializer());
     }
     
     /**

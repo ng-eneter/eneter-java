@@ -15,7 +15,7 @@ import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.dataprocessing.serializing.internal.EncoderDecoder;
 import eneter.messaging.diagnostic.EneterTrace;
 
-public class BrokerCustomSerializer implements ISerializer
+class BrokerCustomSerializer implements ISerializer
 {
     public BrokerCustomSerializer()
     {
