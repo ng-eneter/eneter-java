@@ -6,7 +6,7 @@
  * 
  */
 
-package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal;
+package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 
 
 /**

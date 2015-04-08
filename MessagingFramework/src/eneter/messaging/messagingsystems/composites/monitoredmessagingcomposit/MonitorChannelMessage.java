@@ -6,14 +6,18 @@
  * 
  */
 
-package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal;
+package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
+
+import java.io.Serializable;
+
 
 
 
 /**
  * The message internally used to monitor the connection and also to transfer message data.
  */
-public class MonitorChannelMessage
+public class MonitorChannelMessage implements Serializable
+
 {
     /**
      * Constructs the message.
@@ -43,4 +47,7 @@ public class MonitorChannelMessage
      * Message. In case of the 'ping', this property is null.
      */
     public Object MessageContent;
+    
+    private static final long serialVersionUID = -1411932226587371691L;
+
 }

@@ -6,7 +6,7 @@
  * 
  */
 
-package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal;
+package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,7 +18,7 @@ import eneter.messaging.dataprocessing.serializing.internal.EncoderDecoder;
 import eneter.messaging.diagnostic.EneterTrace;
 
 
-public class MonitoredMessagingCustomSerializer implements ISerializer
+class MonitoredMessagingCustomSerializer implements ISerializer
 {
 
     @Override

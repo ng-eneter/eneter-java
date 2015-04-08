@@ -14,8 +14,6 @@ import java.util.TimerTask;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal.MonitorChannelMessage;
-import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal.MonitorChannelMessageType;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;

@@ -10,7 +10,6 @@ package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.internal.MonitoredMessagingCustomSerializer;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
@@ -151,6 +150,38 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    public MonitoredMessagingFactory setPingFrequency(long milliseconds)
+    {
+        myPingFrequency = milliseconds;
+        return this;
+    }
+    
+    public long getPingFrequency()
+    {
+        return myPingFrequency;
+    }
+    
+    public MonitoredMessagingFactory setReceiveTimeout(long milliseconds)
+    {
+        myReceiveTimeout = milliseconds;
+        return this;
+    }
+    
+    public long getReceiveTimeout()
+    {
+        return myReceiveTimeout;
+    }
+    
+    public MonitoredMessagingFactory setSerializer(ISerializer pingSerializer)
+    {
+        mySerializer = pingSerializer;
+        return this;
+    }
+    
+    public ISerializer getSerializer()
+    {
+        return mySerializer;
+    }
     
     private IMessagingSystemFactory myUnderlyingMessaging;
     private long myPingFrequency;
