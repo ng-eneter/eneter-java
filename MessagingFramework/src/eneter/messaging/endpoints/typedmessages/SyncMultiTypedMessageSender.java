@@ -23,7 +23,8 @@ class SyncMultiTypedMessageSender implements ISyncMultitypedMessageSender
         try
         {
             mySerializer = serializer;
-            DuplexTypedMessagesFactory aFactory = new DuplexTypedMessagesFactory(syncResponseReceiveTimeout, serializer);
+            DuplexTypedMessagesFactory aFactory = new DuplexTypedMessagesFactory(serializer)
+                .setSyncResponseReceiveTimeout(syncResponseReceiveTimeout);
             aFactory.setSyncDuplexTypedSenderThreadMode(syncDuplexTypedSenderThreadMode);
 
             mySender = aFactory.createSyncDuplexTypedMessageSender(MultiTypedMessage.class, MultiTypedMessage.class);

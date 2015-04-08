@@ -29,7 +29,6 @@ class MessageBusOutputConnector implements IOutputConnector
         try
         {
             myServiceId = inputConnectorAddress;
-            myClientId = messageBusOutputChannel.getResponseReceiverId();
             mySerializer = serializer;
             myMessageBusOutputChannel = messageBusOutputChannel;
             myOpenConnectionTimeout = (openConnectionTimeout == -1) ? 0 : openConnectionTimeout;
@@ -221,7 +220,6 @@ class MessageBusOutputConnector implements IOutputConnector
     }
     
     
-    private String myClientId;
     private int myOpenConnectionTimeout;
     private ISerializer mySerializer;
     private IDuplexOutputChannel myMessageBusOutputChannel;

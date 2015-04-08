@@ -232,7 +232,6 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
             
             synchronized (myConnectionManipulatorLock)
             {
-                myIsOnline = true;
                 sendMessagesFromQueue();
             }
         }
@@ -249,8 +248,6 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         {
             synchronized (myConnectionManipulatorLock)
             {
-                myIsOnline = false;
-
                 // Try to reopen the connection in a different thread.
                 if (!myConnectionOpeningActiveFlag)
                 {
@@ -422,7 +419,6 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
     private IDuplexOutputChannel myOutputChannel;
     
     private Object myConnectionManipulatorLock = new Object();
-    private boolean myIsOnline;
     private boolean myIsConnectionOpenEventPendingFlag;
     private boolean myConnectionIsOpenFlag;
     private boolean myConnectionOpeningActiveFlag;

@@ -282,15 +282,6 @@ class TcpOutputConnector implements IOutputConnector
     
     private OutputStreamTimeoutWriter myStreamWriter = new OutputStreamTimeoutWriter();
     
-    private Runnable myCloseConnectionCallback = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            closeConnection();
-        }
-    };
-    
     private Runnable myDoResponseListening = new Runnable()
     {
         @Override

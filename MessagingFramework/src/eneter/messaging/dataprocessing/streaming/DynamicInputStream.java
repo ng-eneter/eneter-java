@@ -116,7 +116,10 @@ public class DynamicInputStream extends InputStream
                     }
                     catch (Exception err)
                     {
-                        IOException aNewErr = new IOException("Removing bytes from the queue failed.", err);
+                        // Note: Android 2.1 does not support inner exception in the constructor.
+                        //       Therefore it is set via initCause(..) method.
+                        IOException aNewErr = new IOException("Removing bytes from the queue failed.");
+                        aNewErr.initCause(err);
                         throw aNewErr;
                     }
 

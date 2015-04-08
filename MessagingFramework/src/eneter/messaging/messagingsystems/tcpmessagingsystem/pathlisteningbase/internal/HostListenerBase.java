@@ -19,6 +19,10 @@ import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.linq.internal.EnumerableExt;
 
+// for Android
+//import eneter.java.util.AbstractMap;
+
+
 
 /**
  * Represents the host listener maintaining path listeners for the given protocol.

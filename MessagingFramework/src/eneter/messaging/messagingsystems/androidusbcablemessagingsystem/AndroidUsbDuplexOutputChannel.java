@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
