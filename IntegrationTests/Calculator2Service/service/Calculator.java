@@ -107,7 +107,6 @@ public class Calculator
     {
         // We will use Tcp for the communication.
         IMessagingSystemFactory aServiceMessagingSystem = new BufferedMonitoredMessagingFactory(new TcpMessagingSystemFactory(),
-        		new XmlStringSerializer(),
         		60000, 1000, 6000);
 
         // Create input channel for the calculator receiving messages via Tcp.

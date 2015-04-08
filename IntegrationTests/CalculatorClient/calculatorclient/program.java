@@ -31,8 +31,8 @@ public class program
             // It will wait max 5 seconds for the response.
             // To wait infinite time use TimeSpan.FromMiliseconds(-1) or
             // default constructor new DuplexTypedMessagesFactory()
-            IDuplexTypedMessagesFactory aSenderFactory =
-                new DuplexTypedMessagesFactory(25000);
+            IDuplexTypedMessagesFactory aSenderFactory = new DuplexTypedMessagesFactory()
+                .setSyncResponseReceiveTimeout(2000);
             ISyncDuplexTypedMessageSender<ResponseMessage, RequestMessage> mySender = aSenderFactory.createSyncDuplexTypedMessageSender(ResponseMessage.class, RequestMessage.class);
     
             // Use Websocket for the communication.
