@@ -117,10 +117,8 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
     @Test
     public void B03_Pinging_NoResponseForPing() throws Exception
     {
-        // Create mock for the monitor duplex input channel.
-        IDuplexInputChannel anUnderlyingDuplexInputChannel = myUnderlyingMessaging.createDuplexInputChannel(ChannelId);
-        Mock_MonitorDuplexInputChannel aDuplexInputChannel = new Mock_MonitorDuplexInputChannel(anUnderlyingDuplexInputChannel);
-        
+        // Create duplex input channel which will not send ping messages.
+        IDuplexInputChannel aDuplexInputChannel = myUnderlyingMessaging.createDuplexInputChannel(ChannelId);
         IDuplexOutputChannel aDuplexOutputChannel = MessagingSystemFactory.createDuplexOutputChannel(ChannelId);
 
         final AutoResetEvent aDisconnectedEvent = new AutoResetEvent(false);
@@ -143,13 +141,9 @@ public abstract class MonitoredMessagingTesterBase extends MessagingSystemBaseTe
 
             // Allow some time for pinging.
             aDuplexOutputChannel.openConnection();
-            Thread.sleep(5000);
-
-            EneterTrace.info("B03_Pinging_NoResponseForPing() turned off responding for Ping.");
-            assertFalse(aDisconnectedFlag[0]);
-
-            // Turn off the responding on pings.
-            aDuplexInputChannel.myResponsePingFlag = false;
+            assertTrue(aDuplexOutputChannel.isConnected());
+            
+            Thread.sleep(2000);
 
             assertTrue(aDisconnectedEvent.waitOne(60000));
 

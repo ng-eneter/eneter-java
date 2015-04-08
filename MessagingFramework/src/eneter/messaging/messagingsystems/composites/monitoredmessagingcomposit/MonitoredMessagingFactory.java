@@ -59,13 +59,13 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
      * 
      * @param underlyingMessaging underlying messaging system e.g. Websocket, TCP, ...
      * @param pingFrequency how often the duplex output channel pings the connection
-     * @param pingResponseTimeout For the duplex output channel: the maximum time, the response for the ping must be received
+     * @param pingReceiveTimeout For the duplex output channel: the maximum time, the response for the ping must be received
      *           For the duplex input channel: the maximum time within the ping for the connected duplex output channel
      *           must be received.
      */
     public MonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging,
             long pingFrequency,
-            long pingResponseTimeout)
+            long pingReceiveTimeout)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -73,8 +73,7 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
             myUnderlyingMessaging = underlyingMessaging;
             mySerializer = new MonitoredMessagingCustomSerializer();
             myPingFrequency = pingFrequency;
-            myPingResponseTimeout = pingResponseTimeout;
-            myResponseReceiverTimeout = pingFrequency + pingResponseTimeout;
+            myReceiveTimeout = pingReceiveTimeout;
         }
         finally
         {
@@ -97,7 +96,7 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         try
         {
             IDuplexOutputChannel anUnderlyingChannel = myUnderlyingMessaging.createDuplexOutputChannel(channelId);
-            return new MonitoredDuplexOutputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myPingResponseTimeout);
+            return new MonitoredDuplexOutputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myReceiveTimeout);
         }
         finally
         {
@@ -120,7 +119,7 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         try
         {
             IDuplexOutputChannel anUnderlyingChannel = myUnderlyingMessaging.createDuplexOutputChannel(channelId, responseReceiverId);
-            return new MonitoredDuplexOutputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myPingResponseTimeout);
+            return new MonitoredDuplexOutputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myReceiveTimeout);
         }
         finally
         {
@@ -144,7 +143,7 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         try
         {
             IDuplexInputChannel anUnderlyingChannel = myUnderlyingMessaging.createDuplexInputChannel(channelId);
-            return new MonitoredDuplexInputChannel(anUnderlyingChannel, mySerializer, myResponseReceiverTimeout);
+            return new MonitoredDuplexInputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myReceiveTimeout);
         }
         finally
         {
@@ -155,7 +154,6 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
     
     private IMessagingSystemFactory myUnderlyingMessaging;
     private long myPingFrequency;
-    private long myPingResponseTimeout;
-    private long myResponseReceiverTimeout;
+    private long myReceiveTimeout;
     private ISerializer mySerializer;
 }

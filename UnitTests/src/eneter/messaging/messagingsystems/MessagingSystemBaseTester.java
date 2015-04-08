@@ -261,7 +261,7 @@ public abstract class MessagingSystemBaseTester
             aService.getInputChannel().disconnectResponseReceiver(aConnectedResponseReceiverId);
 
             //aService.waitUntilResponseRecieverIdDisconnectNotified(aConnectedResponseReceiverId, 1000);
-            aClient.waitUntilConnectionClosedIsNotified(1000);
+            aClient.waitUntilConnectionClosedIsNotified(3000);
             //assertEquals(aConnectedResponseReceiverId, aService.getDisconnectedResponseReceivers().get(0).getResponseReceiverId());
 
             EneterTrace.info("SERVER HAS DISCONNECTED CLIENT");
@@ -528,7 +528,7 @@ public abstract class MessagingSystemBaseTester
 
             //aService.waitUntilAllResponseReceiversDisconnectNotified(1000);
 
-            aClient.waitUntilConnectionClosedIsNotified(1000);
+            aClient.waitUntilConnectionClosedIsNotified(3000);
         }
         finally
         {

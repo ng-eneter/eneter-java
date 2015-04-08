@@ -26,11 +26,12 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
 {
     private class TResponseReceiverContext
     {
-        public TResponseReceiverContext(String responseReceiverId, String clientAddress, long lastUpdateTime)
+        public TResponseReceiverContext(String responseReceiverId, String clientAddress)
         {
             myResponseReceiverId = responseReceiverId;
-            myLastUpdateTime = lastUpdateTime;
             myClientAddress = clientAddress;
+            myLastReceiveTime = System.currentTimeMillis();
+            myLastPingSentTime = System.currentTimeMillis();
         }
 
         public String getResponseReceiverId()
@@ -38,34 +39,54 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             return myResponseReceiverId;
         }
         
-        public long getLastUpdateTime()
-        {
-            return myLastUpdateTime;
-        }
-        
         public String getClientAddress()
         {
             return myClientAddress;
         }
         
+        public void setLastReceiveTime(long time)
+        {
+            myLastReceiveTime = time;
+        }
+        
+        public long getLastReceiveTime()
+        {
+            return myLastReceiveTime;
+        }
+        
+        public void setLastPingSentTime(long time)
+        {
+            myLastPingSentTime = time;
+        }
+        
+        public long getLastPingSentTime()
+        {
+            return myLastPingSentTime;
+        }
+        
         private String myResponseReceiverId;
-        private long myLastUpdateTime;
         private String myClientAddress;
+        public long myLastReceiveTime;
+        public long myLastPingSentTime;
     }
     
     
-    public MonitoredDuplexInputChannel(IDuplexInputChannel underlyingInputChannel, ISerializer serializer, long pingTimeout)
+    public MonitoredDuplexInputChannel(IDuplexInputChannel underlyingInputChannel, ISerializer serializer,
+            long pingFrequency,
+            long receiveTimeout) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myUnderlyingInputChannel = underlyingInputChannel;
             mySerializer = serializer;
-            myPingTimeout = pingTimeout;
+            
+            myPingFrequency = pingFrequency;
+            myReceiveTimeout = receiveTimeout;
+            myCheckTimer = new Timer(true);
 
-            // Create timer checking if pings are received within desired time-window.
-            // Note: The timer thread is daemon.
-            myPingTimeoutChecker = new Timer(true);
+            MonitorChannelMessage aPingMessage = new MonitorChannelMessage(MonitorChannelMessageType.Ping, null);
+            myPreserializedPingMessage = mySerializer.serialize(aPingMessage, MonitorChannelMessage.class);
         }
         finally
         {
@@ -124,6 +145,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 }
 
                 myUnderlyingInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
+                myUnderlyingInputChannel.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
                 myUnderlyingInputChannel.messageReceived().subscribe(myOnMessageReceived);
 
                 try
@@ -132,10 +154,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 }
                 catch (Exception err)
                 {
-                    myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
-                    myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
-
                     EneterTrace.error(TracedObject() + ErrorHandler.FailedToStartListening, err);
+                    stopListening();
                 }
             }
         }
@@ -163,6 +183,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 }
 
                 myUnderlyingInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
+                myUnderlyingInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
                 myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
             }
         }
@@ -218,13 +239,26 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     }
 
     @Override
-    public void disconnectResponseReceiver(String responseReceiverId)
+    public void disconnectResponseReceiver(final String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             try
             {
+                synchronized (myResponseReceiverContexts)
+                {
+                    HashSetExt.removeWhere(myResponseReceiverContexts, new IFunction1<Boolean, TResponseReceiverContext>()
+                    {
+                        @Override
+                        public Boolean invoke(TResponseReceiverContext x)
+                                throws Exception
+                        {
+                            return x.getResponseReceiverId().equals(responseReceiverId);
+                        }
+                    });
+                }
+                
                 myUnderlyingInputChannel.disconnectResponseReceiver(responseReceiverId);
             }
             catch (Exception err)
@@ -243,8 +277,19 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // Update the activity time for the response receiver
-            updateResponseReceiver(e.getResponseReceiverId(), e.getSenderAddress());
+            synchronized (myResponseReceiverContexts)
+            {
+                TResponseReceiverContext aResponseReceiver = getResponseReceiver(e.getResponseReceiverId());
+                if (aResponseReceiver != null)
+                {
+                    EneterTrace.warning(TracedObject() + "received open connection from already connected response receiver.");
+                    return;
+                }
+                else
+                {
+                    createResponseReceiver(e.getResponseReceiverId(), e.getSenderAddress());
+                }
+            }
 
             if (myResponseReceiverConnectedEventImpl.isSubscribed())
             {
@@ -268,6 +313,44 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
+    private void onResponseReceiverDisconnected(Object sender, final ResponseReceiverEventArgs e)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            int aNumberOfRemoved = 0;
+            synchronized (myResponseReceiverContexts)
+            {
+                try
+                {
+                    aNumberOfRemoved = HashSetExt.removeWhere(myResponseReceiverContexts,
+                            new IFunction1<Boolean, TResponseReceiverContext>()
+                    {
+                        @Override
+                        public Boolean invoke(TResponseReceiverContext x)
+                                throws Exception
+                        {
+                            return x.getResponseReceiverId().equals(e.getResponseReceiverId());
+                        }
+                    });
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + "failed in removeWhere to remove the response receiver.");
+                }
+            }
+
+            if (aNumberOfRemoved > 0)
+            {
+                notifyResponseReceiverDisconnected(e);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     private void onMessageReceived(Object sender, DuplexChannelMessageEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -275,25 +358,23 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         {
             try
             {
-                // Update the activity time for the response receiver
-                updateResponseReceiver(e.getResponseReceiverId(), e.getSenderAddress());
+                synchronized (myResponseReceiverContexts)
+                {
+                    TResponseReceiverContext aResponseReceiver = getResponseReceiver(e.getResponseReceiverId());
+                    if (aResponseReceiver == null)
+                    {
+                        // Note: the response receiver was just disconnected.
+                        return;
+                    }
 
+                    aResponseReceiver.setLastReceiveTime(System.currentTimeMillis());
+                }
+                
                 // Deserialize the incoming message.
                 MonitorChannelMessage aMessage = mySerializer.deserialize(e.getMessage(), MonitorChannelMessage.class);
 
                 // if the message is ping, then response.
-                if (aMessage.MessageType == MonitorChannelMessageType.Ping)
-                {
-                    try
-                    {
-                        myUnderlyingInputChannel.sendResponseMessage(e.getResponseReceiverId(), e.getMessage());
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + "failed to response the ping message.", err);
-                    }
-                }
-                else
+                if (aMessage.MessageType == MonitorChannelMessageType.Message)
                 {
                     // Notify the incoming message.
                     if (myMessageReceivedEventImpl.isSubscribed())
@@ -322,14 +403,14 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
 
-    private void onPingTimeoutCheckerTick()
+    private void onCheckerTick()
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            final ArrayList<TResponseReceiverContext> aPingNeededReceivers = new ArrayList<TResponseReceiverContext>();
             final ArrayList<TResponseReceiverContext> aTimeoutedResponseReceivers = new ArrayList<TResponseReceiverContext>();
-
             boolean aContinueTimerFlag = false;
 
             synchronized (myResponseReceiverContexts)
@@ -343,13 +424,18 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                             public Boolean invoke(TResponseReceiverContext x)
                                     throws Exception
                             {
-                                if (aCurrentTime - x.getLastUpdateTime() > myPingTimeout)
+                                if (aCurrentTime - x.getLastReceiveTime() > myReceiveTimeout)
                                 {
                                     // Store the timeouted response receiver.
                                     aTimeoutedResponseReceivers.add(x);
 
                                     // Indicate, that the response receiver can be removed.
                                     return true;
+                                }
+                                
+                                if (aCurrentTime - x.getLastPingSentTime() >= myPingFrequency)
+                                {
+                                    aPingNeededReceivers.add(x);
                                 }
 
                                 // Indicate, that the response receiver cannot be removed.
@@ -360,7 +446,21 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 aContinueTimerFlag = myResponseReceiverContexts.size() > 0;
             }
 
-            // Close connection for all timeouted response receivers.
+            // Send pings to all receivers which need it.
+            for (TResponseReceiverContext aResponseReceiver : aPingNeededReceivers)
+            {
+                try
+                {
+                    myUnderlyingInputChannel.sendResponseMessage(aResponseReceiver.getResponseReceiverId(), myPreserializedPingMessage);
+                    aResponseReceiver.setLastPingSentTime(System.currentTimeMillis());
+                }
+                catch (Exception err)
+                {
+                    // The sending of ping failed. It means the response receiver will be notified as disconnected.
+                }
+            }
+            
+            // Close all removed response receivers.
             for (TResponseReceiverContext aResponseReceiver : aTimeoutedResponseReceivers)
             {
                 // Try to disconnect the response receiver.
@@ -389,7 +489,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             // If the timer chall continue.
             if (aContinueTimerFlag)
             {
-                myPingTimeoutChecker.schedule(getTimerTask(), 500);
+                myCheckTimer.schedule(getTimerTask(), myPingFrequency);
             }
         }
         finally
@@ -398,44 +498,52 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void updateResponseReceiver(final String responseReceiverId, String clientAddress)
-            throws Exception
+    private TResponseReceiverContext getResponseReceiver(final String responseReceiverId)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myResponseReceiverContexts)
+            TResponseReceiverContext aResponseReceiverContext = null;
+            try
             {
-                boolean aStartTimerFlag = myResponseReceiverContexts.size() == 0;
-
-                long aCurrentTime = System.currentTimeMillis();
-
-                TResponseReceiverContext aResponseReceiverContext = EnumerableExt.firstOrDefault(myResponseReceiverContexts,
-                        new IFunction1<Boolean, TResponseReceiverContext>()
+                aResponseReceiverContext = EnumerableExt.firstOrDefault(myResponseReceiverContexts,
+                    new IFunction1<Boolean, TResponseReceiverContext>()
+                    {
+                        @Override
+                        public Boolean invoke(TResponseReceiverContext x)
+                                throws Exception
                         {
-                            @Override
-                            public Boolean invoke(TResponseReceiverContext x)
-                                    throws Exception
-                            {
-                                return x.getResponseReceiverId().equals(responseReceiverId);
-                            }
-                        });
-
-                if (aResponseReceiverContext == null)
-                {
-                    aResponseReceiverContext = new TResponseReceiverContext(responseReceiverId, clientAddress, aCurrentTime);
-                    myResponseReceiverContexts.add(aResponseReceiverContext);
-                }
-                else
-                {
-                    aResponseReceiverContext.myLastUpdateTime = aCurrentTime;
-                }
-
-                if (aStartTimerFlag)
-                {
-                    myPingTimeoutChecker.schedule(getTimerTask(), 500);
-                }
+                            return x.getResponseReceiverId().equals(responseReceiverId);
+                        }
+                    });
             }
+            catch (Exception err)
+            {
+                EneterTrace.error(TracedObject() + "failed in firstOrDefault to find the response receiver.", err);
+            }
+
+            return aResponseReceiverContext;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private TResponseReceiverContext createResponseReceiver(String responseReceiverId, String clientAddress)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            TResponseReceiverContext aResponseReceiver = new TResponseReceiverContext(responseReceiverId, clientAddress);
+            myResponseReceiverContexts.add(aResponseReceiver);
+
+            if (myResponseReceiverContexts.size() == 1)
+            {
+                myCheckTimer.schedule(getTimerTask(), myPingFrequency);
+            }
+
+            return aResponseReceiver;
         }
         finally
         {
@@ -480,7 +588,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             {
                 try
                 {
-                    onPingTimeoutCheckerTick();
+                    onCheckerTick();
                 }
                 catch (Exception e)
                 {
@@ -496,9 +604,12 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     private IDuplexInputChannel myUnderlyingInputChannel;
     private ISerializer mySerializer;
 
-    private long myPingTimeout;
-    private Timer myPingTimeoutChecker;
+    private long myPingFrequency;
+    private long myReceiveTimeout;
+    private Timer myCheckTimer;
     private HashSet<TResponseReceiverContext> myResponseReceiverContexts = new HashSet<TResponseReceiverContext>();
+    
+    private Object myPreserializedPingMessage;
     
     
     private EventImpl<DuplexChannelMessageEventArgs> myMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
@@ -512,6 +623,15 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         public void onEvent(Object x, ResponseReceiverEventArgs y)
         {
             onResponseReceiverConnected(x, y);
+        }
+    };
+    
+    private EventHandler<ResponseReceiverEventArgs> myOnResponseReceiverDisconnected = new EventHandler<ResponseReceiverEventArgs>()
+    {
+        @Override
+        public void onEvent(Object x, ResponseReceiverEventArgs y)
+        {
+            onResponseReceiverDisconnected(x, y);
         }
     };
     

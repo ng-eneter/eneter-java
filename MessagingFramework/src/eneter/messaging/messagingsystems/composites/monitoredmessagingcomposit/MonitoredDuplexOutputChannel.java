@@ -8,7 +8,8 @@
 
 package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 
-import java.lang.Thread.State;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
@@ -18,11 +19,14 @@ import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.i
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
-import eneter.net.system.threading.internal.*;
+
 
 class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
 {
-    public MonitoredDuplexOutputChannel(IDuplexOutputChannel underlyingOutputChannel, ISerializer serializer, long pingFrequency, long pingResponseTimeout)
+    public MonitoredDuplexOutputChannel(IDuplexOutputChannel underlyingOutputChannel, ISerializer serializer,
+            long pingFrequency,
+            long receiveTimeout)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -31,7 +35,17 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
 
             mySerializer = serializer;
             myPingFrequency = pingFrequency;
-            myPingResponseTimeout = pingResponseTimeout;
+            myReceiveTimeout = receiveTimeout;
+            
+            MonitorChannelMessage aPingMessage = new MonitorChannelMessage(MonitorChannelMessageType.Ping, null);
+            myPreserializedPingMessage = mySerializer.serialize(aPingMessage, MonitorChannelMessage.class);
+            
+            myPingingTimer = new Timer(true);
+            myReceiveTimer = new Timer(true);
+            
+            myUnderlyingOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
+            myUnderlyingOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);
+            myUnderlyingOutputChannel.connectionClosed().subscribe(myOnConnectionClosed);
         }
         finally
         {
@@ -90,45 +104,23 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     throw new IllegalStateException(aMessage);
                 }
 
-                myUnderlyingOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
-                myUnderlyingOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);
-
                 try
                 {
+                    // Start timers.
+                    myPingingTimerTask = getPingingTimerTask();
+                    myReceiveTimerTask = getReceiveTimerTask();
+                    myPingingTimer.schedule(myPingingTimerTask, myPingFrequency);
+                    myReceiveTimer.schedule(myReceiveTimerTask, myReceiveTimeout);
+
                     // Open connection in the underlying channel.
                     myUnderlyingOutputChannel.openConnection();
                 }
                 catch (Exception err)
                 {
-                    myUnderlyingOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
-                    myUnderlyingOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
-
                     EneterTrace.error(TracedObject() + ErrorHandler.FailedToOpenConnection, err);
-
+                    closeConnection();
                     throw err;
                 }
-
-                // Indicate, the pinging shall run.
-                myPingingRequestedToStopFlag = false;
-                myPingFrequencyWaiting.reset();
-                myResponseReceivedEvent.reset();
-
-                myPingingThread = new Thread(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            doPinging();
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
-                    }
-                });
-                myPingingThread.start();
             }
         }
         finally
@@ -143,46 +135,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
-            {
-                // Indicate, the pinging thread shall stop.
-                // Note: when pinging thread stops, it also closes the underlying duplex output channel.
-                myPingingRequestedToStopFlag = true;
-
-                // Interrupt waiting for the frequency time.
-                myPingFrequencyWaiting.set();
-
-                // Interrupt waiting for the response of the ping.
-                myResponseReceivedEvent.set();
-
-                // Wait until the pinging thread stopped.
-                if (myPingingThread != null && myPingingThread.getState() != State.NEW)
-                {
-                    try
-                    {
-                        myPingingThread.join(3000);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + "detected an exception during waiting for ending of the pinging thread. The thread id = " + myPingingThread.getId());
-                    }
-                    
-                    if (myPingingThread.getState() != State.TERMINATED)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToStopThreadId + myPingingThread.getId());
-
-                        try
-                        {
-                            myPingingThread.stop();
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.FailedToAbortThread, err);
-                        }
-                    }
-                }
-                myPingingThread = null;
-            }
+            cleanAfterConnection(true, false);
         }
         finally
         {
@@ -230,11 +183,19 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
     
                     // Send the message by using the underlying messaging system.
                     myUnderlyingOutputChannel.sendMessage(aSerializedMessage);
+                    
+                    // Reschedule the ping.
+                    myPingingTimerTask.cancel();
+                    myPingingTimerTask = getPingingTimerTask();
+                    myPingingTimer.schedule(myPingingTimerTask, myPingFrequency);
                 }
                 catch (Exception err)
                 {
                     String anErrorMessage = TracedObject() + ErrorHandler.FailedToSendMessage;
                     EneterTrace.error(anErrorMessage, err);
+                    
+                    cleanAfterConnection(true, true);
+                    
                     throw err;
                 }
             }
@@ -255,13 +216,18 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                 // Deserialize the message.
                 MonitorChannelMessage aMessage = mySerializer.deserialize(e.getMessage(), MonitorChannelMessage.class);
 
-                // If it is the response for the ping.
-                if (aMessage.MessageType == MonitorChannelMessageType.Ping)
+                // Note: timer setting is after deserialization.
+                //       reason: if deserialization fails the timer is not updated and the client will be disconnected.
+                synchronized (myConnectionManipulatorLock)
                 {
-                    // Release the pinging thread waiting for the response.
-                    myResponseReceivedEvent.set();
+                    // Cancel the current response timeout and set the new one.
+                    myReceiveTimerTask.cancel();
+                    myReceiveTimerTask = getReceiveTimerTask();
+                    myReceiveTimer.schedule(myReceiveTimerTask, myReceiveTimeout);
                 }
-                else
+                
+                // If it is the response for the ping.
+                if (aMessage.MessageType == MonitorChannelMessageType.Message)
                 {
                     // Notify the event to the subscriber.
                     DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
@@ -292,75 +258,12 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void doPinging() throws Exception
+    private void onConnectionClosed(Object sender, DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // While the flag indicates, the pinging shall run.
-            while (!myPingingRequestedToStopFlag)
-            {
-                try
-                {
-                    // Wait, before the next ping.
-                    myPingFrequencyWaiting.waitOne(myPingFrequency);
-
-                    if (!myPingingRequestedToStopFlag)
-                    {
-                        // Send the ping message.
-                        MonitorChannelMessage aPingMessage = new MonitorChannelMessage(MonitorChannelMessageType.Ping, null);
-                        Object aSerializedPingMessage = mySerializer.serialize(aPingMessage, MonitorChannelMessage.class);
-                        myUnderlyingOutputChannel.sendMessage(aSerializedPingMessage);
-                    }
-                }
-                catch (Exception err)
-                {
-                    // The sending of the ping message failed.
-                    // Therefore the connection is broken and the pinging will be stopped.
-                    break;
-                }
-
-                // If the response does not come in defined time, then it consider that as broken connection.
-                if (!myResponseReceivedEvent.waitOne(myPingResponseTimeout))
-                {
-                    break;
-                }
-            }
-
-            // Close the underlying channel.
-            if (myUnderlyingOutputChannel != null)
-            {
-                try
-                {
-                    // Close connection in the underlying channel.
-                    myUnderlyingOutputChannel.closeConnection();
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
-                }
-
-                myUnderlyingOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
-                myUnderlyingOutputChannel.connectionOpened().unsubscribe(myOnConnectionOpened);
-            }
-
-            // Notify, the connection is closed.
-            final DuplexChannelEventArgs aMsg = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), "");
-            ThreadPool.queueUserWorkItem(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    myUnderlyingOutputChannel.getDispatcher().invoke(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            notifyEvent(myConnectionClosedEventImpl, aMsg, false);
-                        }
-                    });
-                }
-            });
+            cleanAfterConnection(false, true);
         }
         finally
         {
@@ -368,6 +271,84 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
+    // The method is called if the inactivity (not sending messages) exceeded the pinging frequency time.
+    private void onPingingTimerTick()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                synchronized (myConnectionManipulatorLock)
+                {
+                    // Send the ping message.
+                    myUnderlyingOutputChannel.sendMessage(myPreserializedPingMessage);
+
+                    // Schedule the next ping.
+                    myPingingTimerTask = getPingingTimerTask();
+                    myPingingTimer.schedule(myPingingTimerTask, myPingFrequency);
+                }
+            }
+            catch (Exception err)
+            {
+                // The sending of the ping message failed - the connection is broken.
+                cleanAfterConnection(true, true);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    // The method is called if there is no message from the input channel within response timeout.
+    private void onResponseTimerTick()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            cleanAfterConnection(true, true);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void cleanAfterConnection(boolean sendCloseMessageFlag, boolean notifyConnectionClosedFlag)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionManipulatorLock)
+            {
+                // Stop timers.
+                myPingingTimerTask.cancel();
+                myReceiveTimerTask.cancel();
+                
+                if (sendCloseMessageFlag)
+                {
+                    myUnderlyingOutputChannel.closeConnection();
+                }
+            }
+
+            if (notifyConnectionClosedFlag)
+            {
+                getDispatcher().invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyEvent(myConnectionClosedEventImpl, new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), ""), false);
+                    }
+                });
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     private <T> void notifyEvent(EventImpl<T> handler, T event, boolean isNobodySubscribedWarning)
     {
@@ -398,16 +379,69 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
     
     
     
+    /*
+     * Helper method to get the new instance of the timer task.
+     * The problem is, the timer does not allow to reschedule the same instance of the TimerTask
+     * and the exception is thrown.
+     */
+    private TimerTask getPingingTimerTask()
+    {
+        TimerTask aTimerTask = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    onPingingTimerTick();
+                }
+                catch (Exception e)
+                {
+                }
+            }
+        };
+        
+        return aTimerTask;
+    }
+    
+    /*
+     * Helper method to get the new instance of the timer task.
+     * The problem is, the timer does not allow to reschedule the same instance of the TimerTask
+     * and the exception is thrown.
+     */
+    private TimerTask getReceiveTimerTask()
+    {
+        TimerTask aTimerTask = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    onResponseTimerTick();
+                }
+                catch (Exception e)
+                {
+                }
+            }
+        };
+        
+        return aTimerTask;
+    }
+    
     private IDuplexOutputChannel myUnderlyingOutputChannel;
     private Object myConnectionManipulatorLock = new Object();
+    
+    private Timer myPingingTimer;
+    private TimerTask myPingingTimerTask;
     private long myPingFrequency;
-    private AutoResetEvent myPingFrequencyWaiting = new AutoResetEvent(false);
-    private long myPingResponseTimeout;
-    private volatile boolean myPingingRequestedToStopFlag;
-    private AutoResetEvent myResponseReceivedEvent = new AutoResetEvent(false);
-    private Thread myPingingThread;
-
+    
+    private Timer myReceiveTimer;
+    private TimerTask myReceiveTimerTask;
+    private long myReceiveTimeout;
+    
     private ISerializer mySerializer;
+    private Object myPreserializedPingMessage;
 
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
@@ -433,11 +467,19 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         }
     };
     
+    private EventHandler<DuplexChannelEventArgs> myOnConnectionClosed = new EventHandler<DuplexChannelEventArgs>()
+    {
+        @Override
+        public void onEvent(Object x, DuplexChannelEventArgs y)
+        {
+            onConnectionClosed(x, y);
+        }
+    };
+    
     
     private String TracedObject()
     {
         String aChannelId = (myUnderlyingOutputChannel != null) ? myUnderlyingOutputChannel.getChannelId() : "";
         return getClass().getSimpleName() + " '" + aChannelId + "' ";
     }
-
 }

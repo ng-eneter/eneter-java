@@ -29,15 +29,8 @@ public class Test_MonitoredMessaging_Tcp extends MonitoredMessagingTesterBase
         ChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
         
         myUnderlyingMessaging = new TcpMessagingSystemFactory();
-        MessagingSystemFactory = new MonitoredMessagingFactory(myUnderlyingMessaging, 1000, 2000);
+        MessagingSystemFactory = new MonitoredMessagingFactory(myUnderlyingMessaging, 250, 750);
         
-    }
-    
-    @Ignore
-    @Test
-    @Override
-    public void Duplex_04_Send50000() throws Exception
-    {
     }
     
 }
