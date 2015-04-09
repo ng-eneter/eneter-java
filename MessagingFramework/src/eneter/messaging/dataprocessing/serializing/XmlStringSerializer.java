@@ -544,8 +544,12 @@ public class XmlStringSerializer implements ISerializer
             {
                 anElementName = "char";
             }
+            else if (clazz == Byte.class)
+            {
+                anElementName = "unsignedByte";
+            }
             else if (clazz == Boolean.class ||
-                     clazz == Byte.class || clazz == Long.class || clazz == Short.class ||
+                     clazz == Long.class || clazz == Short.class ||
                      clazz == Double.class || clazz == Float.class ||
                      clazz == String.class)
             {

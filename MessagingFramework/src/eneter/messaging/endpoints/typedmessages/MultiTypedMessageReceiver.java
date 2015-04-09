@@ -126,11 +126,13 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
 
             synchronized (myMessageHandlers)
             {
-                TMessageHandler aMessageHandler = myMessageHandlers.get(clazz.getSimpleName());
+                String aNetTypeName = MultiTypeNameProvider.getNetName(clazz);
+                
+                TMessageHandler aMessageHandler = myMessageHandlers.get(aNetTypeName);
 
                 if (aMessageHandler != null)
                 {
-                    String anError = TracedObject() + "failed to register handler for message " + clazz.getSimpleName() + " because the handler for such class name is already registered.";
+                    String anError = TracedObject() + "failed to register handler for message " + aNetTypeName + " because the handler for such class name is already registered.";
                     EneterTrace.error(anError);
                     throw new IllegalStateException(anError);
                 }
@@ -159,7 +161,7 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
                     }
                 }; 
 
-                myMessageHandlers.put(clazz.getSimpleName(), new TMessageHandler(clazz, anEventInvoker));
+                myMessageHandlers.put(aNetTypeName, new TMessageHandler(clazz, anEventInvoker));
             }
         }
         finally
@@ -176,7 +178,7 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
         {
             synchronized (myMessageHandlers)
             {
-                myMessageHandlers.remove(clazz.getSimpleName());
+                myMessageHandlers.remove(MultiTypeNameProvider.getNetName(clazz));
             }
         }
         finally
@@ -207,7 +209,7 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
         try
         {
             MultiTypedMessage aMessage = new MultiTypedMessage();
-            aMessage.TypeName = clazz.getSimpleName();
+            aMessage.TypeName = MultiTypeNameProvider.getNetName(clazz);
             aMessage.MessageData = mySerializer.serialize(responseMessage, clazz);
 
             myReceiver.sendResponseMessage(responseReceiverId, aMessage);

@@ -125,11 +125,13 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
             
             synchronized (myMessageHandlers)
             {
-                TMessageHandler aMessageHandler = myMessageHandlers.get(clazz.getSimpleName());
+                String aNetTypeName = MultiTypeNameProvider.getNetName(clazz);
+                
+                TMessageHandler aMessageHandler = myMessageHandlers.get(aNetTypeName);
 
                 if (aMessageHandler != null)
                 {
-                    String anError = TracedObject() + "failed to register handler for message " + clazz.getSimpleName() + " because the handler for such class name is already registered.";
+                    String anError = TracedObject() + "failed to register handler for message " + aNetTypeName + " because the handler for such class name is already registered.";
                     EneterTrace.error(anError);
                     throw new IllegalStateException(anError);
                 }
@@ -158,7 +160,7 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
                     }
                 }; 
 
-                myMessageHandlers.put(clazz.getSimpleName(), new TMessageHandler(clazz, anEventInvoker));
+                myMessageHandlers.put(aNetTypeName, new TMessageHandler(clazz, anEventInvoker));
             }
         }
         finally
@@ -175,7 +177,7 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
         {
             synchronized (myMessageHandlers)
             {
-                myMessageHandlers.remove(clazz.getSimpleName());
+                myMessageHandlers.remove(MultiTypeNameProvider.getNetName(clazz));
             }
         }
         finally
@@ -207,7 +209,7 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
             try
             {
                 MultiTypedMessage aMessage = new MultiTypedMessage();
-                aMessage.TypeName = clazz.getSimpleName();
+                aMessage.TypeName = MultiTypeNameProvider.getNetName(clazz);
                 aMessage.MessageData = mySerializer.serialize(message, clazz);
 
                 mySender.sendRequestMessage(aMessage);
