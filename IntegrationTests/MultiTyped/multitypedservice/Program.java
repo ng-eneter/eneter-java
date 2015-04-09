@@ -17,7 +17,6 @@ public class Program
         public double Number2;
     }
     
-
     /**
      * @param args
      */
@@ -36,6 +35,11 @@ public class Program
             // Register message types which can be processed.
             aReceiver.registerRequestMessageReceiver(myStringHandler, String.class);
             aReceiver.registerRequestMessageReceiver(myMyRequestMessageHandler, MyRequestMessage.class);
+            
+            for (Class<?> aClazz : aReceiver.getRegisteredRequestMessageTypes())
+            {
+                System.out.println(aClazz.getSimpleName());
+            }
             
             // Attach input channel and start listening.
             aReceiver.attachDuplexInputChannel(anInputChannel);
