@@ -137,6 +137,7 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
                 // Note: the invoking method must be cached for particular types because
                 //       during deserialization the generic argument is not available and so it would not be possible
                 //       to instantiate TypedRequestReceivedEventArgs<T>.
+                final Object anEventSender = this;
                 IMethod2<Object, Exception> anEventInvoker = new IMethod2<Object, Exception>()
                 {
                     @SuppressWarnings("unchecked")
@@ -153,7 +154,7 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
                         {
                             anEvent = new TypedResponseReceivedEventArgs<T>(receivingError);
                         }
-                        handler.onEvent(this, anEvent);
+                        handler.onEvent(anEventSender, anEvent);
                     }
                 }; 
 
