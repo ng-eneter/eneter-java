@@ -11,6 +11,7 @@
 	<classpathentry kind="src" path="AuthenticatedConnection"/>
 	<classpathentry kind="src" path="MessageBus"/>
 	<classpathentry kind="src" path="TcpPerformance"/>
+	<classpathentry kind="src" path="MultiTyped"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/eneter-messaging-6.5.0"/>
 	<classpathentry kind="output" path="bin"/>
