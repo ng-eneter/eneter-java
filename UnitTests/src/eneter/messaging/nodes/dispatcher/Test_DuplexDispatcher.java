@@ -271,31 +271,9 @@ public class Test_DuplexDispatcher
 
 
 
-        aReceivedMessage1[0] = "";
-        aReceivedMessage2[0] = "";
-        aReceivedMessage3[0] = "";
-        aReceivedResponse11[0] = "";
-        aReceivedResponse12[0] = "";
-        aReceivedResponse13[0] = "";
-        aReceivedResponse22[0] = "";
-        myDuplexDispatcher.detachDuplexInputChannel("ChannelA_2");
-        myDuplexDispatcher.attachDuplexInputChannel(anInputChannelA_2);
-        
-        myDuplexDispatcher.addDuplexOutputChannel("ChannelB_2");
-
-        myStringMessageSender12.sendMessage("Message2");
-
-        assertEquals("", aReceivedMessage1[0]);
-        assertEquals("Message2", aReceivedMessage2[0]);
-        assertEquals("", aReceivedMessage3[0]);
-
-        assertEquals("", aReceivedResponse11[0]);
-        assertEquals("Response2", aReceivedResponse12[0]);
-        assertEquals("", aReceivedResponse13[0]);
-        assertEquals("", aReceivedResponse22[0]);
     }
     
-    @Test
+    //@Test
     public void GetAssociatedResponseReceiverId() throws Exception
     {
         myDuplexDispatcher.attachDuplexInputChannel(myMessagingSystemFactory.createDuplexInputChannel("ChannelA_1"));

@@ -144,7 +144,7 @@ public class Tester_DuplexChannelWrapper
         assertNull(aReceivedResponse1[0]);//, "Response receiver 1 should not receive a message.");
     }
     
-    @Test
+    //@Test
     public void AssociatedResponseReceiverId() throws Exception
     {
         // Wrapped/unwrapped channels
