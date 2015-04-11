@@ -120,13 +120,45 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAuthenticatedConnections)
+            if (!isListening())
             {
-                if (!myAuthenticatedConnections.contains(responseReceiverId))
+                String aMessage = TracedObject() + ErrorHandler.FailedToSendResponseBecauseNotListening;
+                EneterTrace.error(aMessage);
+                throw new IllegalStateException(aMessage);
+            }
+            
+            if (responseReceiverId.equals("*"))
+            {
+                synchronized (myAuthenticatedConnections)
                 {
-                    String aMessage = TracedObject() + ErrorHandler.FailedToSendResponseBecauaeClientNotConnected;
-                    EneterTrace.error(aMessage);
-                    throw new IllegalStateException(aMessage);
+                    // Send the response message to all connected clients.
+                    for (String aConnectedClient : myAuthenticatedConnections)
+                    {
+                        try
+                        {
+                            // Send the response message.
+                            myUnderlayingInputChannel.sendResponseMessage(aConnectedClient, message);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
+
+                            // Note: Exception is not rethrown because if sending to one client fails it should not
+                            //       affect sending to other clients.
+                        }
+                    }
+                }
+            }
+            else
+            {
+                synchronized (myAuthenticatedConnections)
+                {
+                    if (!myAuthenticatedConnections.contains(responseReceiverId))
+                    {
+                        String aMessage = TracedObject() + ErrorHandler.FailedToSendResponseBecauaeClientNotConnected;
+                        EneterTrace.error(aMessage);
+                        throw new IllegalStateException(aMessage);
+                    }
                 }
 
                 myUnderlayingInputChannel.sendResponseMessage(responseReceiverId, message);
@@ -144,6 +176,16 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            synchronized (myAuthenticatedConnections)
+            {
+                myAuthenticatedConnections.remove(responseReceiverId);
+            }
+
+            synchronized (myNotYetAuthenticatedConnections)
+            {
+                myNotYetAuthenticatedConnections.remove(responseReceiverId);
+            }
+            
             myUnderlayingInputChannel.disconnectResponseReceiver(responseReceiverId);
         }
         finally
@@ -151,9 +193,6 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
             EneterTrace.leaving(aTrace);
         }
     }
-
-    
-
     
     private void onResponseReceiverDisconnected(Object sender, ResponseReceiverEventArgs e)
     {
