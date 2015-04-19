@@ -137,14 +137,18 @@ class WebSocketClientContext implements IWebSocketClientContext
                 myStopReceivingRequestedFlag = true;
                 myMessageInSendProgress = EMessageInSendProgress.None;
 
-                if (myTcpClient != null)
+                if (myTcpClient != null && !myTcpClient.isClosed() && myIsListeningToResponses)
                 {
                     // Try to send the frame closing the communication.
                     try
                     {
-                        // Generate the masking key.
-                        byte[] aCloseFrame = WebSocketFormatter.encodeCloseFrame(null, (short)1000);
-                        myStreamWriter.write(myTcpClient.getOutputStream(), aCloseFrame, mySendTimeout);
+                        // If it was not disconnected by the client then try to send the message the connection was closed.
+                        if (myIsListeningToResponses)
+                        {
+                            // Generate the masking key.
+                            byte[] aCloseFrame = WebSocketFormatter.encodeCloseFrame(null, (short)1000);
+                            myStreamWriter.write(myTcpClient.getOutputStream(), aCloseFrame, mySendTimeout);
+                        }
                     }
                     catch (Exception err)
                     {
