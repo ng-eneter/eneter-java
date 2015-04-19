@@ -253,8 +253,7 @@ class WebSocketInputConnector implements IInputConnector
                     myMessageHandler.invoke(aMessageContext);
                 }
                 
-                boolean isConnectionOpen = true;
-                while (isConnectionOpen)
+                while (true)
                 {
                     // Block until a message is received or the connection is closed.
                     WebSocketMessage aWebSocketMessage = client.receiveMessage();
@@ -313,10 +312,15 @@ class WebSocketInputConnector implements IInputConnector
                                 EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                             }
                         }
+                        else if (aProtocolMessage == null)
+                        {
+                            // Client disconnected. Or the client shall be disconnected because of incorrect message format.
+                            break;
+                        }
                     }
                     else
                     {
-                        isConnectionOpen = false;
+                        break;
                     }
                 }
             }
@@ -331,8 +335,9 @@ class WebSocketInputConnector implements IInputConnector
                     }
                 }
 
-                // If the disconnection comes from the client (and not from the service).
-                if (!aClientContext.isClosedFromService())
+                // If the disconnection does not come from the service
+                // and the client was successfuly connected then notify about the disconnection.
+                if (!aClientContext.isClosedFromService() && aClientId != null)
                 {
                     ProtocolMessage aCloseProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aClientId, null);
                     MessageContext aMessageContext = new MessageContext(aCloseProtocolMessage, aClientIp);
