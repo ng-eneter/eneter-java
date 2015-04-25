@@ -42,7 +42,11 @@ public class RpcMessage implements Serializable
     /**
      * If an error occurred in the service.
      */
-    public String Error;
+    public String ErrorType;
+    
+    public String ErrorMessage;
+    
+    public String ErrorDetails;
 
     private static final long serialVersionUID = 8365985506571587359L;
 }

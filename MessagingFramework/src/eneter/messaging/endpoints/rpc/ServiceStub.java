@@ -330,10 +330,12 @@ class ServiceStub<TServiceInterface>
                             String anErrorMessage = "failed to deserialize input parameters for '" + aRequestMessage.OperationName + "'.";
                             EneterTrace.error(anErrorMessage, err);
 
-                            aResponseMessage.Error = anErrorMessage + "\r\n" + exceptionToString(err);
+                            aResponseMessage.ErrorType = err.getClass().getSimpleName();
+                            aResponseMessage.ErrorMessage = anErrorMessage;
+                            aResponseMessage.ErrorDetails = exceptionToString(err);
                         }
 
-                        if (StringExt.isNullOrEmpty(aResponseMessage.Error))
+                        if (StringExt.isNullOrEmpty(aResponseMessage.ErrorType))
                         {
                             Object aResult = null;
                             try
@@ -343,13 +345,18 @@ class ServiceStub<TServiceInterface>
                             }
                             catch (Exception err)
                             {
+                                // Note: Use InnerException to skip the wrapping ReflexionException.
+                                Throwable ex = (err.getCause() != null) ? err.getCause() : err;
+                                
                                 EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
 
                                 // The exception will be responded to the client.
-                                aResponseMessage.Error = exceptionToString(err);
+                                aResponseMessage.ErrorType = ex.getClass().getSimpleName();
+                                aResponseMessage.ErrorMessage = ex.getMessage();
+                                aResponseMessage.ErrorDetails = exceptionToString(ex);
                             }
 
-                            if (StringExt.isNullOrEmpty(aResponseMessage.Error))
+                            if (StringExt.isNullOrEmpty(aResponseMessage.ErrorType))
                             {
                                 try
                                 {
@@ -368,21 +375,25 @@ class ServiceStub<TServiceInterface>
                                     String anErrorMessage = TracedObject() + "failed to serialize the result.";
                                     EneterTrace.error(anErrorMessage, err);
 
-                                    aResponseMessage.Error = anErrorMessage + "\r\n" + exceptionToString(err);
+                                    aResponseMessage.ErrorType = err.getClass().getSimpleName();
+                                    aResponseMessage.ErrorMessage = anErrorMessage;
+                                    aResponseMessage.ErrorDetails = exceptionToString(err);
                                 }
                             }
                         }
                     }
                     else
                     {
-                        aRequestMessage.Error = TracedObject() + "failed to process '" + aRequestMessage.OperationName + "' because it has incorrect number of input parameters.";
-                        EneterTrace.error(aRequestMessage.Error);
+                        aRequestMessage.ErrorType = IllegalStateException.class.getSimpleName();
+                        aRequestMessage.ErrorMessage = TracedObject() + "failed to process '" + aRequestMessage.OperationName + "' because it has incorrect number of input parameters.";
+                        EneterTrace.error(aRequestMessage.ErrorMessage);
                     }
                 }
                 else
                 {
-                    aResponseMessage.Error = "Method '" + aRequestMessage.OperationName + "' does not exist in the service.";
-                    EneterTrace.error(TracedObject() + "failed to invoke the service method because the method '" + aRequestMessage.OperationName + "' was not found in the service.");
+                    aRequestMessage.ErrorType = IllegalStateException.class.getSimpleName();
+                    aResponseMessage.ErrorMessage = "Method '" + aRequestMessage.OperationName + "' does not exist in the service.";
+                    EneterTrace.error(aResponseMessage.ErrorMessage);
                 }
             }
             // If it is a request to subscribe/unsubcribe an event.
@@ -422,14 +433,16 @@ class ServiceStub<TServiceInterface>
 
                 if (anEventContext == null)
                 {
-                    aResponseMessage.Error = TracedObject() + "Event '" + aRequestMessage.OperationName + "' does not exist in the service.";
-                    EneterTrace.error(aResponseMessage.Error);
+                    aResponseMessage.ErrorType = IllegalStateException.class.getSimpleName();
+                    aResponseMessage.ErrorMessage = TracedObject() + "Event '" + aRequestMessage.OperationName + "' does not exist in the service.";
+                    EneterTrace.error(aResponseMessage.ErrorMessage);
                 }
             }
             else
             {
-                aResponseMessage.Error = TracedObject() + "could not recognize the incoming request. If it is RPC, Subscribing or Unsubscribfing.";
-                EneterTrace.error(aResponseMessage.Error);
+                aResponseMessage.ErrorType = IllegalStateException.class.getSimpleName();
+                aResponseMessage.ErrorMessage = TracedObject() + "could not recognize the incoming request. If it is RPC, Subscribing or Unsubscribfing.";
+                EneterTrace.error(aResponseMessage.ErrorMessage);
             }
             
 
@@ -473,7 +486,7 @@ class ServiceStub<TServiceInterface>
         }
     }
     
-    private static String exceptionToString(Exception err)
+    private static String exceptionToString(Throwable err)
     {
         StringBuilder aResult = new StringBuilder();
 

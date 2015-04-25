@@ -234,13 +234,17 @@ public abstract class RpcBaseTester
         }
     }
     
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void rpcCallError() throws Exception
     {
         RpcFactory anRpcFactory = new RpcFactory(mySerializer);
         IRpcService<IHello> anRpcService = anRpcFactory.createSingleInstanceService(new HelloService(), IHello.class);
         IRpcClient<IHello> anRpcClient = anRpcFactory.createClient(IHello.class);
 
+        String anExceptionType = null;
+        String anExceptionMessage = null;
+        String anExceptionDetails = null;
+        
         try
         {
             anRpcService.attachDuplexInputChannel(myMessaging.createDuplexInputChannel(myChannelId));
@@ -249,6 +253,12 @@ public abstract class RpcBaseTester
 
             IHello aServiceProxy = anRpcClient.getProxy();
             aServiceProxy.Fail();
+        }
+        catch (RpcException err)
+        {
+            anExceptionMessage = err.getMessage();
+            anExceptionType = err.getServiceExceptionType();
+            anExceptionDetails = err.getServiceExceptionDetails();
         }
         finally
         {
@@ -262,6 +272,10 @@ public abstract class RpcBaseTester
                 anRpcService.detachDuplexInputChannel();
             }
         }
+        
+        assertEquals("IllegalStateException", anExceptionType);
+        assertNotNull(anExceptionMessage);
+        assertNotNull(anExceptionDetails);
     }
     
     // Note: This test is not applicable for the synchronous messaging
@@ -984,6 +998,7 @@ public abstract class RpcBaseTester
 
         try
         {
+            final ManualResetEvent anEvent1Received = new ManualResetEvent(false);
             final String[] aService1IdFromEvent = { null };
             anRpcClient1.getProxy().Open().subscribe(new EventHandler<String>()
             {
@@ -991,10 +1006,11 @@ public abstract class RpcBaseTester
                 public void onEvent(Object sender, String e)
                 {
                     aService1IdFromEvent[0] = e;
+                    anEvent1Received.set();
                 }
             });
 
-            final ManualResetEvent anEvent1Received = new ManualResetEvent(false);
+            final ManualResetEvent anEvent2Received = new ManualResetEvent(false);
             final String[]  aService2IdFromEvent = { null };
             anRpcClient2.getProxy().Open().subscribe(new EventHandler<String>()
             {
@@ -1002,7 +1018,7 @@ public abstract class RpcBaseTester
                 public void onEvent(Object sender, String e)
                 {
                     aService2IdFromEvent[0] = e;
-                    anEvent1Received.set();
+                    anEvent2Received.set();
                 }
             });
 
@@ -1010,11 +1026,16 @@ public abstract class RpcBaseTester
             anRpcClient1.attachDuplexOutputChannel(myMessaging.createDuplexOutputChannel(myChannelId));
             anRpcClient2.attachDuplexOutputChannel(myMessaging.createDuplexOutputChannel(myChannelId));
 
+            // Note: open connection runs async, because it subscribes events at service and the thread cannot be blocked.
+            //       So provide some time the connection can be open.
+            Thread.sleep(200);
 
+            EneterTrace.debug("Invoking starts.");
             String aServiceId1 = anRpcClient1.getProxy().GetInstanceId();
             String aServiceId2 = anRpcClient2.getProxy().GetInstanceId();
             
             anEvent1Received.waitOne();
+            anEvent2Received.waitOne();
 
             assertFalse(StringExt.isNullOrEmpty(aServiceId1));
             assertFalse(StringExt.isNullOrEmpty(aService1IdFromEvent[0]));

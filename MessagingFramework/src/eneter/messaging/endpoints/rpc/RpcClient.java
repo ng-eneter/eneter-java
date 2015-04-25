@@ -495,7 +495,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
 
                 if (anRpcContext != null)
                 {
-                    if (StringExt.isNullOrEmpty(aMessage.Error))
+                    if (StringExt.isNullOrEmpty(aMessage.ErrorType))
                     {
                         if (aMessage.SerializedData != null && aMessage.SerializedData.length > 0)
                         {
@@ -508,7 +508,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                     }
                     else
                     {
-                        IllegalStateException anException = new IllegalStateException("Detected exception from the service:\n" + aMessage.Error);
+                        RpcException anException = new RpcException(aMessage.ErrorMessage, aMessage.ErrorType, aMessage.ErrorDetails);
                         anRpcContext.setError(anException);
                     }
 

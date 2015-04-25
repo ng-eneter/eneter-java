@@ -1,5 +1,7 @@
 package eneter.messaging.endpoints.rpc;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Before;
@@ -7,13 +9,18 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import eneter.messaging.dataprocessing.serializing.*;
+import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.synchronousmessagingsystem.SynchronousMessagingSystemFactory;
 
 public class Test_Rpc_Sync_Bin extends RpcBaseTester
 {
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
+        //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
+        //EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        
         mySerializer = new JavaBinarySerializer();
         myChannelId = "channel_1";
         myMessaging = new SynchronousMessagingSystemFactory();
