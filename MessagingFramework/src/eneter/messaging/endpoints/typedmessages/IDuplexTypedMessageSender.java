@@ -13,33 +13,38 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.Event;
 
 /**
- * Sender of typed messages.
+ * Sender for one specified message type.
+ * 
+ * This is a client component which send request messages and receive response messages.
+ * It can send messages to DuplextTypedMessageReceiver.
  *
- * @param <TResponse> receives response messages of this type.
- * @param <TRequest> sends messages of this type.
+ * @param <TResponse> Type of the response message which can be received.
+ * @param <TRequest> Type of the request message which can be sent.
  */
 public interface IDuplexTypedMessageSender<TResponse, TRequest> extends IAttachableDuplexOutputChannel
 {
     /**
-     * The event is raised when the connection with receiver is opened.
+     * Raised when the connection with the receiver is open.
      * @return
      */
     Event<DuplexChannelEventArgs> connectionOpened();
     
     /**
-     * The event is raised when the connection with receiver is closed.
+     * Raised when the service closed the connection with the client.
+     * The event is raised only if the service closes the connection with the client.
+     * It is not raised if the client closed the connection by IDuplexOutputChannel.closeConnection().
      * @return
      */
     Event<DuplexChannelEventArgs> connectionClosed();
     
     /**
-     * The event is invoked when a response message was received.
+     * Raised when a response message is received.
      * @return
      */
     Event<TypedResponseReceivedEventArgs<TResponse>> responseReceived();
     
     /**
-     * Sends message of specified type.
+     * Sends message to the service.
      * @param message
      * @throws Exception 
      */

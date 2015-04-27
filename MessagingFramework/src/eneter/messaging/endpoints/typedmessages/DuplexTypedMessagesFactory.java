@@ -18,10 +18,10 @@ import eneter.messaging.threading.dispatching.SyncDispatching;
 /**
  * Factory to create typed message senders and receivers.
  * <br/>
- * The following example shows how to send a receive messages:
+ * The following example shows how to send and receive messages:
  * <br/>
  * <br/>
- * Implementation of receiver:
+ * Implementation of receiver (service):
  * <pre>
  * {@code
  * class MyReceiver
@@ -80,7 +80,7 @@ import eneter.messaging.threading.dispatching.SyncDispatching;
  * }
  * </pre>
  * <br/>
- * Implementation of sender:
+ * Implementation of sender (client):
  * <pre>
  * {@code
  * // Message to be sent and received.
@@ -144,7 +144,8 @@ import eneter.messaging.threading.dispatching.SyncDispatching;
  * }
  * }
  * </pre>
- * Implementation of synchronous sender (after sending it waits for the response):
+ * In case you need a synchronous communication where client needs to wait for the response
+ * you can use synchronous sender:
  * <pre>
  * {@code
  * // Message to be sent and received.
@@ -195,9 +196,7 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
     /**
      * Constructs the factory with XmlStringSerializer.
      * 
-     * The factory will create senders and receivers with the default XmlStringSerializer
-     * and the factory will create ISyncDuplexTypedMessageSender that waits infinite
-     * time for the response message from the service.
+     * The factory will create senders and receivers with the default XmlStringSerializer.
      */
     public DuplexTypedMessagesFactory()
     {
@@ -207,9 +206,8 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
     /**
      * Constructs the factory with specified serializer.
      * 
-     * The factory will create senders and receivers with the specified serializer
-     * and the factory will create ISyncDuplexTypedMessageSender that can wait infinite
-     * time for the response message from the service.<br/>
+     * The factory will create senders and receivers with the specified serializer which
+     * will be used to serialize/deserialize messages.
      * <br/>
      * For possible serializers you can refer to {@link eneter.messaging.dataprocessing.serializing}
      * @param serializer serializer that will be used to serialize/deserialize messages.

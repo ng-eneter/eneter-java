@@ -18,8 +18,8 @@ import eneter.net.system.Event;
 /**
  * Synchronized sender of typed messages (it waits until the response is received).
  * 
- * Declares message sender that sends request messages of specified type and receive response messages of specified type.
- * Synchronous means it when the message is sent it waits until the response message is received.
+ * Message sender which sends request messages of specified type and receive response messages of specified type.
+ * Synchronous means when the message is sent it waits until the response message is received.
  * If the waiting for the response message exceeds the specified timeout the TimeoutException is thrown.
  *
  * @param <TResponse> Response message type.
@@ -28,13 +28,15 @@ import eneter.net.system.Event;
 public interface ISyncDuplexTypedMessageSender<TResponse, TRequest> extends IAttachableDuplexOutputChannel
 {
     /**
-     * The event is raised when the connection with receiver is opened.
+     * Raised when the connection with the receiver is open.
      * @return
      */
     Event<DuplexChannelEventArgs> connectionOpened();
     
     /**
-     * The event is raised when the connection with receiver is closed.
+     * Raised when the service closed the connection with the client.
+     * The event is raised only if the service closes the connection with the client.
+     * It is not raised if the client closed the connection by IDuplexOutputChannel.closeConnection().
      * @return
      */
     Event<DuplexChannelEventArgs> connectionClosed();

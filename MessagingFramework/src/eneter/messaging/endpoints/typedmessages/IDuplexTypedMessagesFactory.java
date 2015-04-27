@@ -15,7 +15,7 @@ package eneter.messaging.endpoints.typedmessages;
 public interface IDuplexTypedMessagesFactory
 {
     /**
-     * Creates duplex typed message sender that can send request messages and receive response messages of specified type.
+     * Creates message sender (client) which can send messages and receive response messages.
      * @param responseMessageClazz type of response messages
      * @param requestMessageClazz type of request messages
      * @return duplex typed message sender
@@ -23,8 +23,7 @@ public interface IDuplexTypedMessagesFactory
     <TResponse, TRequest> IDuplexTypedMessageSender<TResponse, TRequest> createDuplexTypedMessageSender(Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz);
     
     /**
-     * Creates synchronous duplex typed message sender that sends a request message and then
-     * waits until the response message is received.
+     * Creates message sender (client) which sends a request message and then waits for the response.
      * @param responseMessageClazz type of response messages
      * @param requestMessageClazz type of request messages
      * @return synchronous duplex typed message sender
@@ -32,8 +31,7 @@ public interface IDuplexTypedMessagesFactory
     <TResponse, TRequest> ISyncDuplexTypedMessageSender<TResponse, TRequest> createSyncDuplexTypedMessageSender(Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz);
     
     /**
-     * Creates duplex typed message receiver that can receive request messages and
-     * send back response messages of specified type.
+     * Creates message receiver (service) which can receive messages and send back response messages.
      * @param responseMessageClazz type of response messages
      * @param requestMessageClazz type of request messages
      * @return duplex typed message receiver

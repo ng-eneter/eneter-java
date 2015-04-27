@@ -13,34 +13,40 @@ import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEve
 import eneter.net.system.Event;
 
 /**
- * Receiver of typed messages.
+ * Receiver for one specified message type.
+ * 
+ * This is a service component which can receive request messages and send back response messages.
+ * It can receive messages only from DuplexTypedMessageSender or SyncDuplexTypedMessageSender.
  *
- * @param <TResponse> sends response messages of this type.
- * @param <TRequest> receives messages of this type.
+ * @param <TResponse> Type of the response message which can be sent back.
+ * @param <TRequest> Type of the request message which can be received.
  */
 public interface IDuplexTypedMessageReceiver<TResponse, TRequest> extends IAttachableDuplexInputChannel
 {
     /**
-     * The event is invoked when the message from a duplex typed message sender was received.
+     * Raised when a message is received.
      * @return
      */
     Event<TypedRequestReceivedEventArgs<TRequest>> messageReceived();
     
     /**
-     * The event is invoked when a duplex typed message sender opened the connection via its duplex output channel.
+     * Raised when a new client is connected.
      * @return
      */
     Event<ResponseReceiverEventArgs> responseReceiverConnected();
 
     /**
-     * The event is invoked when a duplex typed message sender closed the connection via its duplex output channel.
+     * Raised when a client closed the connection.
+     * The event is raised only if the connection was closed by the client.
+     * It is not raised if the client was disconnected by IDuplexInputChannel.disconnectResponseReceiver(...). 
      * @return
      */
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
 
     /**
-     * Sends the response message back to the duplex typed message sender via the attached duplex input channel.
-     * @param responseReceiverId identifies the duplex typed message sender that will receive the response
+     * Sends message to the client.
+     * If the parameter responseReceiverId is * then it sends the broadcast message to all connected clients.
+     * @param responseReceiverId identifies the client
      * @param responseMessage response message
      * @throws Exception 
      */

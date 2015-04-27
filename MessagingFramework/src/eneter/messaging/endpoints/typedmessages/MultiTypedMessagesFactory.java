@@ -14,6 +14,20 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 import eneter.messaging.threading.dispatching.SyncDispatching;
 
+/**
+ * Factory to create multi-typed message senders and receivers.
+ * 
+ * The following eample shows how to send and receive messages:
+ * <br/>
+ * Implementation of receiver (service):
+ * <pre>
+ * {@code
+ * 
+ * }
+ * </pre>
+ * 
+ *
+ */
 public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
 {
     public MultiTypedMessagesFactory()
