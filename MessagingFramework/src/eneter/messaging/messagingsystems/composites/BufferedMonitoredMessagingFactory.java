@@ -64,8 +64,8 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            IMessagingSystemFactory aMonitoredMessaging = new MonitoredMessagingFactory(underlyingMessaging, pingFrequency, pingResponseTimeout);
-            myBufferedMessaging = new BufferedMessagingFactory(aMonitoredMessaging, maxOfflineTime);
+            myMonitoredMessaging = new MonitoredMessagingFactory(underlyingMessaging, pingFrequency, pingResponseTimeout);
+            myBufferedMessaging = new BufferedMessagingFactory(myMonitoredMessaging, maxOfflineTime);
         }
         finally
         {
@@ -156,6 +156,12 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
         }
     }
 
+    public MonitoredMessagingFactory getMonitoredMessaging()
+    {
+        return myMonitoredMessaging;
+    }
+    
     
     private IMessagingSystemFactory myBufferedMessaging;
+    private MonitoredMessagingFactory myMonitoredMessaging;
 }
