@@ -6,8 +6,6 @@
  * 
  */
 
-
-
 /**
  * Extensions for messaging systems.
  * 
@@ -17,19 +15,21 @@
  * <br/>
  * The following example shows how to add the connection monitoring and the authentication into the communication via TCP.
  * <pre>
+ * {@code
  * // Create TCP messaging system.
  * IMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
- * <br/>
+ * 
  * // Create monitored messaging which takes TCP as underlying messaging.
- * IMessagingSystemFactory aMonitoredMessaging = new MonitoredMessagingFactory(aTcpMessaging);
- * <br/>
+ * IMessagingSystemFactory aMonitoredMessaging = new MonitoredMessagingFactory(anUnderlyingMessaging);
+ * 
  * // Create messaging with authenticated connection.
  * // It takes monitored messaging as the underlying messaging.
  * IMessagingSystemFactory aMessaging = new AuthenticatedMessagingFactory(aMonitoredMessaging, ...);
- * <br/>
+ * 
  * // Then creating channels.
  * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8095/");
  * IDuplexInputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8095/");
+ * }
  * </pre>
  * 
  */

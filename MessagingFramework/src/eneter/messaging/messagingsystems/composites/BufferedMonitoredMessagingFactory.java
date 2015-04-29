@@ -27,7 +27,20 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  * <li><i>MonitoredMessaging</i> is in the middle and is responsible for continuous monitoring of the connection.</li>
  * <li><i>UnderlyingMessaging</i> (e.g. TCP) is on the bottom and is responsible for sending and receiving messages.</li>
  * </ul>
+ * The following example shows how to create BufferedMonitoredMessaging:
+ * <pre>
+ * {@code
+ * // Create TCP messaging system.
+ * IMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
  * 
+ * // Create buffered monitored messaging which takes TCP as underlying messaging.
+ * IMessagingSystemFactory aMessaging = new BufferedMonitoredMessagingFactory(anUnderlyingMessaging);
+ * 
+ * // Then creating channels which can be then attached to sending communication components.
+ * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8095/");
+ * IDuplexInputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8095/");
+ * }
+ * </pre>
  */
 public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactory
 {
