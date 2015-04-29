@@ -14,11 +14,19 @@ import eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit.M
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
- * Combines buffered messaging and the connection monitoring.
+ * This messaging combines buffered and monitored messaging.
  * 
- * Monitored messaging constantly monitors the connection. If the monitoring detects the connection is interrupted
- * sent messages are stored in the buffer. Then when the connection is recovered the messages stored in the buffer
- * are sent.
+ * Monitored messaging constantly monitors the connection and if the disconnection is detected the buffered messaging
+ * is notified. Buffered messaging then tries to reconnect and meanwhile stores all sent messages into a buffer.
+ * Once the connection is recovered the messages stored in the buffer are sent.<br/>
+ * <br/>
+ * The buffered monitored messaging is composed from following messagings:
+ * <ul>
+ * <li><i>BufferedMessaging</i> is on the top and is responsible for storing of messages during the disconnection (offline time)
+ * and automatic reconnect.</li>
+ * <li><i>MonitoredMessaging</i> is in the middle and is responsible for continuous monitoring of the connection.</li>
+ * <li><i>UnderlyingMessaging</i> (e.g. TCP) is on the bottom and is responsible for sending and receiving messages.</li>
+ * </ul>
  * 
  */
 public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactory
@@ -26,14 +34,11 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
     /**
      * Constructs the factory with default settings.
      * 
-     * The serializer for the 'ping' messages checking the connection is set to XmlStringSerializer.
-     * The maximum offline time is set to 10 seconds.
-     * The duplex output channel will check the connection with the 'ping' once per second and the response must be received within 2 seconds.
-     * Otherwise the connection is closed.<br/>
-     * The duplex input channel expects the 'ping' request at least once per 2 seconds. Otherwise the duplex output
-     * channel is disconnected.
+     * The maximum offline time for buffered messaging is set to 10 seconds.
+     * The ping frequency for monitored messaging is set to 1 second and the receive timeout for monitored messaging
+     * is set to 2 seconds.
      * 
-     * @param underlyingMessaging underlying messaging system e.g. HTTP, TCP, ...
+     * @param underlyingMessaging underlying messaging system e.g. TCP, ...
      */
     public BufferedMonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging)
     {
@@ -46,7 +51,7 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
      * Constructs the factory with the specified parameters.
      * 
      * 
-     * @param underlyingMessaging underlying messaging system
+     * @param underlyingMessaging underlying messaging system e.g. TCP, ...
      * @param maxOfflineTime the maximum time, the messaging can work offline. When the messaging works offline,
      *      the sent messages are buffered and the connection is being reopened. If the connection is
      *      not reopen within maxOfflineTime, the connection is closed.
@@ -75,16 +80,15 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
     
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
+     * Creates the output channel which can send and receive messages.
      * 
      * This duplex output channel provides the buffered messaging and the connection monitoring.
-     * The channel regularly checks if the connection is available. It sends 'ping' requests and expects 'ping' responses
-     * within the specified time. If the 'ping' response does not come, the buffered messaging layer is notified,
-     * that the connection was interrupted.
-     * The buffered messaging then tries to reconnect and stores sent messages to the buffer.
-     * If the connection is open, the buffered messages are sent.
-     * If the reconnection was not successful, it notifies IDuplexOutputChannel.connectionClosed()
-     * and deletes messages from the buffer.
+     * It regularly checks if the connection is available. It sends 'ping' requests and expects 'ping' responses
+     * within the specified time. If the 'ping' response does not come the disconnection is notified to the buffered messaging.
+     * The buffered messaging then tries to reconnect and meanwhile stores the sent messages to the buffer.
+     * Once the connection is recovered the messages stored in the buffer are sent.
+     * If the connection recovery was not possible the event IDuplexOutputChannel.connectionClosed()
+     * is raised the message buffer is deleted.
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId)
@@ -102,16 +106,15 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
     }
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
+     * Creates the output channel which can send and receive messages.
      * 
      * This duplex output channel provides the buffered messaging and the connection monitoring.
-     * The channel regularly checks if the connection is available. It sends 'ping' requests and expects 'ping' responses
-     * within the specified time. If the 'ping' response does not come, the buffered messaging layer is notified,
-     * that the connection was interrupted.
-     * The buffered messaging then tries to reconnect and stores sent messages to the buffer.
-     * If the connection is open, the buffered messages are sent.
-     * If the reconnection was not successful, it notifies IDuplexOutputChannel.connectionClosed()
-     * and deletes messages from the buffer.
+     * It regularly checks if the connection is available. It sends 'ping' requests and expects 'ping' responses
+     * within the specified time. If the 'ping' response does not come the disconnection is notified to the buffered messaging.
+     * The buffered messaging then tries to reconnect and meanwhile stores the sent messages to the buffer.
+     * Once the connection is recovered the messages stored in the buffer are sent.
+     * If the connection recovery was not possible the event IDuplexOutputChannel.connectionClosed()
+     * is raised the message buffer is deleted.
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
@@ -129,17 +132,16 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
     }
 
     /**
-     * Creates the duplex input channel receiving messages from the duplex output channel and sending the response messages.
+     * Creates the input channel which can receive and send messages.
      * 
      * This duplex input channel provides the buffered messaging and the connection monitoring.
-     * The channel regularly checks if the duplex output channel is still connected. It expect, that every connected duplex output channel
+     * It regularly checks if the duplex output channel is still connected. It expect, that every connected duplex output channel
      * sends regularly 'ping' messages. If the 'ping' message from the duplex output channel is not received within the specified
-     * time, the duplex output channel is disconnected and the buffered messaging (as the layer above) is notified about the
-     * disconnection.
+     * time the duplex output channel is disconnected and the buffered messaging is notified about the disconnection.
      * The buffered messaging then puts all sent response messages to the buffer and waits whether the duplex output channel reconnects.
-     * If the duplex output channel reopens the connection, the buffered response messages are sent.
-     * If the duplex output channel does not reconnect, the event
-     * IDuplexInputChannel.responseReceiverDisconnected() is invoked and response messages are deleted from the buffer.
+     * If the duplex output channel reopens the connection the messages stored in the buffer are sent.
+     * If the duplex output channel does not reconnect the event
+     * IDuplexInputChannel.responseReceiverDisconnected() is raised and response messages are deleted from the buffer.
      */
     @Override
     public IDuplexInputChannel createDuplexInputChannel(String channelId)
@@ -156,12 +158,25 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
         }
     }
 
+    /**
+     * Returns underlying buffered messaging. 
+     * @return buffered messaging
+     */
+    public BufferedMessagingFactory getBufferedMessaging()
+    {
+        return myBufferedMessaging;
+    }
+    
+    /**
+     * Returns underlying monitored messaging.
+     * @return monitored messaging
+     */
     public MonitoredMessagingFactory getMonitoredMessaging()
     {
         return myMonitoredMessaging;
     }
     
     
-    private IMessagingSystemFactory myBufferedMessaging;
+    private BufferedMessagingFactory myBufferedMessaging;
     private MonitoredMessagingFactory myMonitoredMessaging;
 }
