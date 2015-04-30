@@ -36,7 +36,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  * // Create buffered monitored messaging which takes TCP as underlying messaging.
  * IMessagingSystemFactory aMessaging = new BufferedMonitoredMessagingFactory(anUnderlyingMessaging);
  * 
- * // Then creating channels which can be then attached to sending communication components.
+ * // Then creating channels which can be then attached to communication components.
  * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8095/");
  * IDuplexInputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8095/");
  * }
