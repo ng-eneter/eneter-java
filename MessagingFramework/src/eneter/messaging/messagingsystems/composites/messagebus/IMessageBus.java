@@ -13,42 +13,34 @@ import eneter.net.system.Event;
 /**
  * Message bus.
  * 
- * The message bus is the component that allows to dynamically expose various services.
- * Services that want to be exposed via the message bus connect the message bus and register their service ids.
- * Then, if a client wants to use the service it connects the message bus and asks for the particular service id.
- * If such service id exists the message bus mediates the communication between the client and the service.<br/>
- * <br/>
- * The presence of the message bus is transparent for logic of services and their clients. The whole communication
- * is realized via {@link MessageBusMessagingFactory} which ensures the interaction with the message bus.
+ * The message bus is the component that allows to expose various services.
+ * Services connect the message bus and register their service id.
+ * Then if a client wants to use the service it connects the message bus and asks for the service id.
+ * The message bus then establishes the connection between the client and the service.<br/>
  *  
  */
 public interface IMessageBus
 {
     /**
      * The event is raised when a new service is registered. 
-     * @return
+     * @return event
      */
     Event<MessageBusServiceEventArgs> serviceRegistered();
     
     /**
      * The event is raised when a service is unregistered.
-     * @return
+     * @return event
      */
     Event<MessageBusServiceEventArgs> serviceUnregistered();
     
     /**
-     * Attaches duplex input channels that are used by clients and services to connect the message bus.
+     * Attaches input channels which are used for the communication with the message bus.
      * 
      * Once input channels are attached the message bus is listening and can be contacted by services and
-     * clients. <br/>
-     * <br/>
-     * To connect the message bus services must use 'Message Bus Duplex Input Channel' and clients must use
-     * 'Message Bus Duplex Output Channel'.<br/>
-     * <br/>
-     * IMPORTANT: Both duplex input channels must use the same protocol formatter!
+     * clients.
      * 
-     * @param serviceInputChannel input channel used by services to register in the message bus.
-     * @param clientInputChannel input channel used by clients to connect a service via the message bus.
+     * @param serviceInputChannel input channel used by services.
+     * @param clientInputChannel input channel used by clients.
      * @throws Exception
      */
     void attachDuplexInputChannels(IDuplexInputChannel serviceInputChannel, IDuplexInputChannel clientInputChannel) throws Exception;
@@ -60,7 +52,7 @@ public interface IMessageBus
     
     /**
      * Returns list of all connected services.
-     * @return
+     * @return ids of all services which are registered in the message bus.
      */
     String[] getConnectedServices();
 

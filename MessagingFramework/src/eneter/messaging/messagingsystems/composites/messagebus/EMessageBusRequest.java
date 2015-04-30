@@ -43,7 +43,7 @@ public enum EMessageBusRequest
     SendResponseMessage(60);
           
     /**
-     * Returns value of the enumeration type.
+     * Converts enum to the integer value.
      * @return
      */
     public int geValue()
@@ -51,6 +51,11 @@ public enum EMessageBusRequest
         return myValue;
     }
     
+    /**
+     * Converts integer value to the enum.
+     * @param i value
+     * @return enum
+     */
     public static EMessageBusRequest fromInt(int i)
     {
         switch (i)
