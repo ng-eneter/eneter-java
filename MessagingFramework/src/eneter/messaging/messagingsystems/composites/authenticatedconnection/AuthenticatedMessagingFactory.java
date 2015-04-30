@@ -14,7 +14,7 @@ import eneter.messaging.threading.dispatching.*;
 
 
 /**
- * Extension performing the authentication during connecting.
+ * Extension for authentication during connecting.
  * 
  * Here is how the authentication procedure works:
  * <ol>
