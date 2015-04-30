@@ -15,14 +15,10 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  * Extension allowing to work offline until the connection is available.
  * 
  * The buffered messaging is intended to overcome relatively short time intervals when the connection is not available.
- * It means, the buffered messaging is able to hide the connection is not available and work offline while
+ * It means the buffered messaging is able to hide unavailable connection and work offline while
  * trying to reconnect.<br/>
  * If the connection is not available, the buffered messaging stores sent messages (and sent response messages)
  * in the buffer and sends them when the connection is established.<br/>
- * Buffered messaging also checks if the between duplex output channel and duplex input channel is active.
- * If the connection is not used (messages do not flow) the buffered messaging
- * waits the specified maxOfflineTime and then disconnects the client.<br/> 
- * <br/>
  * <b>Note:</b><br/>
  * The buffered messaging does not require that both communicating parts create channels with buffered messaging factory.
  * It means, e.g. the duplex output channel created with buffered messaging with underlying TCP, can send messages
@@ -93,11 +89,11 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
+     * Creates the output channel which can send messages to the input channel and receive response messages.
      * 
-     * If the connection is not established, it puts sent messages to the buffer while trying to reconnect.
-     * Then when the connection is established, the messages are sent from the buffer.
-     * If the reconnect is not successful within the maximum offline time, it notifies
+     * If the connection is not available it puts sent messages to the buffer while trying to reconnect.
+     * Then when the connection is established the messages are sent from the buffer.
+     * If the reconnect is not successful within the maximum offline time it notifies
      * IDuplexOutputChannel.connectionClosed()
      * and messages are deleted from the buffer.
      */
@@ -118,11 +114,11 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
+     * Creates the output channel which can send messages to the input channel and receive response messages.
      * 
-     * If the connection is not established, it puts sent messages to the buffer while trying to reconnect.
-     * Then when the connection is established, the messages are sent from the buffer.
-     * If the reconnect is not successful within the maximum offline time, it notifies
+     * If the connection is not available it puts sent messages to the buffer while trying to reconnect.
+     * Then when the connection is established the messages are sent from the buffer.
+     * If the reconnect is not successful within the maximum offline time it notifies
      * IDuplexOutputChannel.connectionClosed()
      * and messages are deleted from the buffer.
      */
@@ -143,7 +139,7 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex input channel receiving messages from the duplex output channel and sending the response messages.
+     * Creates the input channel which can receive messages from the output channel and send response messages.
      * 
      * If the connection with the duplex output channel is not established, it puts sent response messages to the buffer.
      * Then, when the duplex input channel is connected, the response messages are sent.
