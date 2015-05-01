@@ -14,7 +14,7 @@ import java.net.ServerSocket;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Implements factory for the server socket that does not use any security.
+ * Creates the server socket which does not use any security.
  *
  */
 public class NoneSecurityServerFactory implements IServerSecurityFactory

@@ -16,7 +16,7 @@ import javax.net.ssl.*;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Implements factory that creates SSL client socket.
+ * Creates SSL client socket.
  *
  */
 public class SslClientFactory implements IClientSecurityFactory

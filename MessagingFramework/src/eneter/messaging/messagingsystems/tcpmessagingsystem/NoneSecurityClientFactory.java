@@ -14,7 +14,7 @@ import java.net.Socket;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Implements factory for the client socket that does not use any security.
+ * Creates the client socket which does not use any security.
  * 
  *
  */

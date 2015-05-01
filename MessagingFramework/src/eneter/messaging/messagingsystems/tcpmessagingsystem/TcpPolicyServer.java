@@ -69,7 +69,7 @@ public class TcpPolicyServer
     
     /**
      * Gets policy xml.
-     * @return
+     * @return policy xml
      */
     public String getPolicyXml()
     {
@@ -87,7 +87,7 @@ public class TcpPolicyServer
  
     /**
      * Returns true, if this instance of policy server is listening to requests.
-     * @return
+     * @return true, if this instance of policy server is listening to requests.
      */
     public boolean isListening()
     {

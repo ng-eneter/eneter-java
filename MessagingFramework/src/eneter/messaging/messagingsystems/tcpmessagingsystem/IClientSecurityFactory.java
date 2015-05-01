@@ -35,7 +35,7 @@ public interface IClientSecurityFactory
     
     /**
      * Returns open connection timeout.
-     * @return
+     * @return connection timeout in milliseconds.
      */
     int getConnectionTimeout();
     
@@ -47,7 +47,7 @@ public interface IClientSecurityFactory
     
     /**
      * Returns timeout setup for sending a message.
-     * @return
+     * @return sending timeout in milliseconds
      */
     int getSendTimeout();
     
@@ -59,7 +59,7 @@ public interface IClientSecurityFactory
     
     /**
      * Returns timeout setup for receiving a message.
-     * @return
+     * @return receiving timeout in milliseconds
      */
     int getReceiveTimeout();
     
@@ -71,7 +71,7 @@ public interface IClientSecurityFactory
     
     /**
      * Returns the size of the sending buffer in bytes. 
-     * @return
+     * @return size of the sending buffer
      */
     int getSendBufferSize();
     
@@ -83,7 +83,7 @@ public interface IClientSecurityFactory
     
     /**
      * Returns the size of the receiving buffer in bytes.
-     * @return
+     * @return size of the receiving buffer
      */
     int getReceiveBufferSize();
 }

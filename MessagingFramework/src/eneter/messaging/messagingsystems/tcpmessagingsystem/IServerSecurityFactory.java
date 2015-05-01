@@ -34,7 +34,7 @@ public interface IServerSecurityFactory
     
     /**
      * Returns timeout setup for sending a response message.
-     * @return
+     * @return sending timeout in milliseconds
      */
     int getSendTimeout();
     
@@ -46,7 +46,7 @@ public interface IServerSecurityFactory
     
     /**
      * Returns timeout setup for receiving a message.
-     * @return
+     * @return receiving timeout in milliseconds
      */
     int getReceiveTimeout();
     
@@ -58,7 +58,7 @@ public interface IServerSecurityFactory
     
     /**
      * Returns the size of the sending buffer in bytes. 
-     * @return
+     * @return size of the sending buffer
      */
     int getSendBufferSize();
     
@@ -70,7 +70,7 @@ public interface IServerSecurityFactory
     
     /**
      * Returns the size of the receiving buffer in bytes.
-     * @return
+     * @return size of the receiving buffer 
      */
     int getReceiveBufferSize();
 }

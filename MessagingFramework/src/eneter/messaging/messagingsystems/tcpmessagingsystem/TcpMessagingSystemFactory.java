@@ -247,7 +247,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets the factory that is used for creation of client sockets.
-     * @return
+     * @return client socket factory
      */
     public IClientSecurityFactory getClientSecurity()
     {
@@ -257,7 +257,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Sets threading mode for input channels.
      * @param inputChannelThreading threading model
-     * @return
+     * @return this TcpMessagingSystemFactory
      */
     public TcpMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
@@ -267,7 +267,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets threading mode used for input channels.
-     * @return
+     * @return thread dispatcher 
      */
     public IThreadDispatcherProvider getInputChannelThreading()
     {
@@ -277,7 +277,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Sets threading mode for output channels.
      * @param outputChannelThreading
-     * @return
+     * @return this TcpMessagingSystemFactory
      */
     public TcpMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
@@ -287,7 +287,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets threading mode used for output channels.
-     * @return
+     * @return thread dispatcher
      */
     public IThreadDispatcherProvider getOutputChannelThreading()
     {
