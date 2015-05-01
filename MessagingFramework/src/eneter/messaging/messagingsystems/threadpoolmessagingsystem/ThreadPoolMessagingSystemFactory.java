@@ -19,9 +19,8 @@ import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 /**
  * Messaging system delivering messages asynchronously (when a message is received a separate thread is invoked to process it).
  * 
- * The incoming messages are processed by multiple threads from the pool. When a message is received the thread
+ * Each incoming message is routed into its own thread from the pool. It means when a message is received the thread
  * from the pool is taken and the message is notified.
- * Therefore messages come asynchronously in various threads.
  * 
  */
 public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
@@ -100,7 +99,7 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Sets threading mode for input channels.
      * @param inputChannelThreading threading model
-     * @return
+     * @return this ThreadPoolMessagingSystemFactory
      */
     public ThreadPoolMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
@@ -110,7 +109,7 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets threading mode used for input channels.
-     * @return
+     * @return thread dispatcher
      */
     public IThreadDispatcherProvider getInputChannelThreading()
     {
@@ -120,7 +119,7 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Sets threading mode for output channels.
      * @param outputChannelThreading
-     * @return
+     * @return ThreadPoolMessagingSystemFactory
      */
     public ThreadPoolMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
@@ -130,7 +129,7 @@ public class ThreadPoolMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets threading mode used for output channels.
-     * @return
+     * @return thread dispatcher
      */
     public IThreadDispatcherProvider getOutputChannelThreading()
     {
