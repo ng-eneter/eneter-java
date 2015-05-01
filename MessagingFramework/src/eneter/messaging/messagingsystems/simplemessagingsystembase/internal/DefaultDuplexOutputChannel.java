@@ -138,17 +138,17 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
 
                     throw err;
                 }
-                
-                // Invoke the event notifying, the connection was opened.
-                myDispatcher.invoke(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        notifyEvent(myConnectionOpened);
-                    }
-                });
             }
+            
+            // Invoke the event notifying, the connection was opened.
+            myDispatcher.invoke(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    notifyEvent(myConnectionOpened);
+                }
+            });
         }
         finally
         {
