@@ -14,8 +14,12 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
 
 /**
  * Extension providing the connection monitoring.
- *
- *
+ * 
+ * The monitored messaging regularly monitors if the connection is still available.
+ * It sends ping messages and receives ping messages in a defined frequency. If sending of the ping message fails
+ * or the ping message is not received within the specified time the connection is considered broken.<br/>
+ * The advantage of the monitored messaging is that the disconnection can be detected very early. 
+ *  
  * When the connection is monitored, the duplex output channel periodically sends 'ping' messages
  * to the duplex input channel and waits for responses.
  * If the response comes within the specified timeout, the connection is open.
@@ -24,15 +28,42 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  * duplex output channel is still alive. If the 'ping' message does not come within the specified timeout,
  * the particular duplex output channel is disconnected.
  * <br/><br/>
- * Notice, the output channel and the input channel do not maintain an open connection.
- * Therefore, the monitored messaging is not applicable for them. The implementation of this factory just uses
- * the underlying messaging to create them.
- * <br/><br/>
  * <b>Note</b>
  * Channels created by monitored messaging factory cannot communicate with channels, that were not created
  * by monitored factory. E.g. the channel created with the monitored messaging factory with underlying TCP
  * will not communicate with channels created directly with TCP messaging factory. The reason is, the
- * communicating channels must understand the 'ping' communication.
+ * communicating channels must understand the 'ping' communication.<br/>
+ * 
+ * <br/>
+ * The following example shows how to use monitored messaging:
+ * <pre>
+ * // Create TCP messaging.
+ * IMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
+ * <br/>
+ * // Create monitored messaging which internally uses TCP.
+ * IMessagingSystemFactory aMessaging = new MonitoredMessagingSystemFactory(anUnderlyingMessaging);
+ * <br/>
+ * // Create the output channel.
+ * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8045/");
+ * <br/>
+ * // Create message sender to send simple string messages.
+ * IDuplexStringMessagesFactory aSenderFactory = new DuplexStringMessagesFactory();
+ * IDuplexStringMessageSender aSender = aSenderFactory.CreateDuplexStringMessageSender();
+ * <br/>
+ * // Subscribe to detect the disconnection.
+ * aSender.connectionClosed().subscribe(myOnConnectionClosed);
+ * <br/>
+ * // Subscribe to receive responses.
+ * aSender.responseReceived().subscribe(myOnResponseReceived);
+ * <br/>
+ * // Attach output channel an be able to send messages and receive responses.
+ * aSender.attachDuplexOutputChannel(anOutputChannel);
+ * <br/>
+ * ...
+ * <br/>
+ * // Send a message.
+ * aSender.SendMessage("Hello.");
+ * </pre>
  *
  */
 public class MonitoredMessagingFactory implements IMessagingSystemFactory
@@ -40,11 +71,9 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
     /**
      * Constructs the factory with default settings.
      * 
-     * It uses XmlStringSerializer.
-     * The duplex output channel will check the connection with the 'ping' once per second and the response must be received within 2 seconds.
-     * Otherwise the connection is closed.<br/>
-     * The duplex input channel expects the 'ping' request at least once per 2s. Otherwise the duplex output
-     * channel is disconnected.
+     * It uses optimized custom serializer which is optimized to serialize/deserialize MonitorChannelMessage which is
+     * used for the internal communication between output and input channels.
+     * The ping message is sent once per second and it is expected the ping message is received at least once per two seconds.
      * 
      * @param underlyingMessaging underlying messaging system e.g. Websocket, TCP, ...
      */
@@ -57,10 +86,8 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
      * Constructs the factory from specified parameters.
      * 
      * @param underlyingMessaging underlying messaging system e.g. Websocket, TCP, ...
-     * @param pingFrequency how often the duplex output channel pings the connection
-     * @param pingReceiveTimeout For the duplex output channel: the maximum time, the response for the ping must be received
-     *           For the duplex input channel: the maximum time within the ping for the connected duplex output channel
-     *           must be received.
+     * @param pingFrequency how often the ping message is sent.
+     * @param pingReceiveTimeout the maximum time within it the ping message must be received.
      */
     public MonitoredMessagingFactory(IMessagingSystemFactory underlyingMessaging,
             long pingFrequency,
@@ -81,11 +108,11 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
+     * Creates the output channel which can send messages to the input channel and receive response messages.
      * 
-     * The channel also regularly checks if the connection is available. It sends 'ping' messages and expect 'ping' responses
-     * within the specified timeout. If the 'ping' response does not come within the specified timeout, the event
-     * IDuplexOutputChannel.connectionClosed is invoked.
+     * In addition the output channel monitors the connection availability. It sends ping messages in a specified frequency to the input channel
+     * and expects receiving ping messages within a specified time.
+     * 
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId)
@@ -104,11 +131,10 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages.
+     * Creates the output channel which can send messages to the input channel and receive response messages.
      * 
-     * The channel also regularly checks if the connection is available. It sends 'ping' messages and expect 'ping' responses
-     * within the specified timeout. If the 'ping' response does not come within the specified timeout, the event
-     * IDuplexOutputChannel.connectionClosed" is invoked.
+     * In addition the output channel monitors the connection availability. It sends ping messages in a specified frequency to the input channel
+     * and expects receiving ping messages within a specified time.
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
@@ -127,12 +153,10 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex input channel receiving messages from the duplex output channel and sending the response messages.
+     * Creates the input channel which can receive messages from the output channel and send response messages.
      * 
-     * It also checks if the duplex output channel is still connected. It expect, that every connected duplex output channel
-     * sends regularly 'ping' messages. If the 'ping' message from the duplex output channel is not received within the specified
-     * timeout, the duplex output channel is disconnected. The event IDuplexInputChannel.responseReceiverDisconnected
-     * is invoked.
+     * In addition it expects receiving ping messages from each connected client within a specified time and sends
+     * ping messages to each connected client in a specified frequency.
      */
     @Override
     public IDuplexInputChannel createDuplexInputChannel(String channelId)
@@ -150,34 +174,61 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Sets how often the ping message shall be sent.
+     * @param milliseconds time in milliseconds
+     * @return this MonitoredMessagingFactory
+     */
     public MonitoredMessagingFactory setPingFrequency(long milliseconds)
     {
         myPingFrequency = milliseconds;
         return this;
     }
     
+    /**
+     * Gets the ping frequency.
+     * @return time in milliseconds.
+     */
     public long getPingFrequency()
     {
         return myPingFrequency;
     }
     
+    /**
+     * Sets the time within it the ping message must be received.
+     * @param milliseconds time in milliseconds
+     * @return this MonitoredMessagingFactory
+     */
     public MonitoredMessagingFactory setReceiveTimeout(long milliseconds)
     {
         myReceiveTimeout = milliseconds;
         return this;
     }
     
+    /**
+     * Gets the time within it the ping message must be received.
+     * @return time in milliseconds.
+     */
     public long getReceiveTimeout()
     {
         return myReceiveTimeout;
     }
     
+    /**
+     * Sets the serializer which shall be used to serialize MonitorChannelMessage.
+     * @param pingSerializer serializer.
+     * @return this MonitoredMessagingFactory
+     */
     public MonitoredMessagingFactory setSerializer(ISerializer pingSerializer)
     {
         mySerializer = pingSerializer;
         return this;
     }
     
+    /**
+     * Gets the serializer which is used to serialize/deserialize MonitorChannelMessage.
+     * @return serializer
+     */
     public ISerializer getSerializer()
     {
         return mySerializer;

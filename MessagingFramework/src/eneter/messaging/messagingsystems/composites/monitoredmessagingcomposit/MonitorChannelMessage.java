@@ -14,7 +14,7 @@ import java.io.Serializable;
 
 
 /**
- * The message internally used to monitor the connection and also to transfer message data.
+ * Internal message used for the communication between output and input channels in monitored messaging.
  */
 public class MonitorChannelMessage implements Serializable
 
@@ -44,7 +44,7 @@ public class MonitorChannelMessage implements Serializable
     public MonitorChannelMessageType MessageType;
     
     /**
-     * Message. In case of the 'ping', this property is null.
+     * Serialized data message. In case of 'ping', this property is null.
      */
     public Object MessageContent;
     
