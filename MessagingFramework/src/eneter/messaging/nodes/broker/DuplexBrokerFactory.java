@@ -12,13 +12,15 @@ import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Implents the factory creating broker and broker client.
- * The broker is the component that provides functionality for publish-subscribe scenarios.
- * IDuplexBrokerClient provides functionality to send notification messages to the broker
+ * Creates broker and broker client.
+ * The broker is the component for publish-subscribe scenarios. It maintains the list of subscribers.
+ * When it receives a notification message it forwards it to subscribed clients. 
+ *   
+ * IDuplexBrokerClient can send notification messages to the broker
  * and also to subscribe for desired messages.
  * <br/>
  * <br/>
- * The example shows how to create and use the broker communicating via TCP.
+ * The example shows how to create and use the broker via TCP.
  * <pre>
  * {@code
  * // Create Tcp based messaging.
@@ -80,7 +82,8 @@ import eneter.messaging.diagnostic.EneterTrace;
 public class DuplexBrokerFactory implements IDuplexBrokerFactory
 {
     /**
-     * Constructs the broker factory with XmlStringSerializer.
+     * Constructs the broker factory with optimized custom serializer.
+     * 
      */
     public DuplexBrokerFactory()
     {
@@ -133,23 +136,56 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
         }
     }
     
+    /**
+     * Sets the serializer to serialize/deserialize {@link BrokerMessate}.
+     * {@link BrokerMessate} is used for the communication with the broker.
+     * @param serializer serializer
+     * @return this DuplexBrokerFactory
+     */
     public DuplexBrokerFactory setSerializer(ISerializer serializer)
     {
         mySerializer = serializer;
         return this;
     }
     
+    /**
+     * Returns the serializer which is used to serialize/deserialize {@link BrokerMessate}.
+     * @return
+     */
     public ISerializer getSerializer()
     {
         return mySerializer;
     }
     
+    /**
+     * Sets the flag whether the publisher which sent a message shall be notified in case it is subscribed to the same message.
+     * 
+     * When a DuplexBrokerClient sent a message the broker forwards the message to all subscribed DuplexBrokerClients.
+     * In case the DuplexBrokerClient is subscribed to the same message the broker will notify it if the flag
+     * IsBublisherNotified is set to true.
+     * If it is set to false then the broker will not forward the message to the DuplexBrokerClient which
+     * published the message.
+     * 
+     * @param isPublisherNotified true if the DuplexBrokerClient which sent the message shall be notified too.
+     * @return this DuplexBrokerFactory
+     */
     public DuplexBrokerFactory setIsPublisherNotified(boolean isPublisherNotified)
     {
         myIsPublisherNotified = isPublisherNotified;
         return this;
     }
     
+    /**
+     * Gets the flag whether the publisher which sent a message shall be notified in case it is subscribed to the same message.
+     * 
+     * When a DuplexBrokerClient sent a message the broker forwards the message to all subscribed DuplexBrokerClients.
+     * In case the DuplexBrokerClient is subscribed to the same message the broker will notify it if the flag
+     * IsBublisherNotified is set to true.
+     * If it is set to false then the broker will not forward the message to the DuplexBrokerClient which
+     * published the message.
+     * 
+     * @return
+     */
     public boolean getIsPublisherNotified()
     {
         return myIsPublisherNotified;

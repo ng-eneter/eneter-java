@@ -9,7 +9,7 @@
 package eneter.messaging.nodes.broker;
 
 /**
- * Specifies the broker request.
+ * Specifies the internal broker request inside the {@link BrokerMessage}.
  * The request for the broker is the message that is intended for the broker and not for the subscribers.
  * This message is used by the broker client to subscribe and unsubscribe.
  *

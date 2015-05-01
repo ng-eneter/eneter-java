@@ -20,55 +20,54 @@ public interface IDuplexBroker extends IAttachableDuplexInputChannel
 {
     /**
      * The event is invoked when the observed message is received.
-     * @return
+     * @return event
      */
     Event<BrokerMessageReceivedEventArgs> brokerMessageReceived();
     
     /**
-     * Publishes the event.
+     * Publishes the message.
      * 
-     * @param eventId identification of published event.
-     * @param serializedMessage message content. If the message is not a primitive type or String then the input parameter expects the message is already serialized!
+     * @param messageType identifies the type of the published message. The broker will forward the message
+     * to all subscribers subscribed to this message type.
+     * @param serializedMessage message content.
      * @throws Exception
      */
-    void sendMessage(String eventId, Object serializedMessage) throws Exception;
+    void sendMessage(String messageType, Object serializedMessage) throws Exception;
     
     /**
-     * Subscribes for the event.
-     * 
-     * If you can call this method multiple times to subscribe for multiple events.
-     * 
-     * @param eventId identification of event that shall be observed
-     * @throws Exception
-     */
-    void subscribe(String eventId) throws Exception;
-    
-    /**
-     * Subscribes for list of events.
+     * Subscribes for the message type.
      * 
      * If you can call this method multiple times to subscribe for multiple events.
      * 
-     * @param eventIds list of message types the client wants to observe
+     * @param messageType identifies the type of the message which shall be subscribed.
      * @throws Exception
      */
-    void subscribe(String[] eventIds) throws Exception;
+    void subscribe(String messageType) throws Exception;
     
     /**
-     * Unsubscribes from the specified event.
-     * @param eventId event the client does not want to observe anymore
+     * Subscribes for list of message types.
+     * 
+     * @param messageType list of message types which shall be subscribed.
      * @throws Exception
      */
-    void unsubscribe(String eventId) throws Exception;
+    void subscribe(String[] messageType) throws Exception;
     
     /**
-     * Unsubscribes from specified events.
-     * @param eventIds list of message types the client does not want to observe anymore
+     * Unsubscribes from the specified message type.
+     * @param messageType message type the client does not want to receive anymore.
      * @throws Exception
      */
-    void unsubscribe(String[] eventIds) throws Exception;
+    void unsubscribe(String messageType) throws Exception;
     
     /**
-     * Completely unsubscribes the client from all messages (including all regular expressions).
+     * Unsubscribes from specified message types.
+     * @param messageTypes list of message types the client does not want to receive anymore.
+     * @throws Exception
+     */
+    void unsubscribe(String[] messageTypes) throws Exception;
+    
+    /**
+     * Unsubscribe all messages.
      * @throws Exception
      */
     void unsubscribe() throws Exception;
