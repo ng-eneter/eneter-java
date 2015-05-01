@@ -9,7 +9,7 @@
 package eneter.messaging.messagingsystems.messagingsystembase;
 
 /**
- * Event argument containing parameters of the communication.
+ * Event argument used by output channel to indicate connection open or connection closed.
  * 
  */
 public class DuplexChannelEventArgs
@@ -47,7 +47,7 @@ public class DuplexChannelEventArgs
     /**
      * Returns the address where the sender of the message is located. (e.g. IP address of the client).
      * It can be empty string if not applicable for used messaging.
-     * @return
+     * @return sender address
      */
     public String getSenderAddress()
     {

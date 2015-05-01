@@ -12,29 +12,29 @@ import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.Event;
 
 /**
- * Duplex input channel that can receive messages from the duplex output channel and send response messages.
+ * Accepts connections from output channels and receives/sends messages from/to connected output channels.
  * 
  */
 public interface IDuplexInputChannel
 {
     /**
-     * The event is invoked when a duplex output channel opened the connection.
+     * The event is raised when an output channel opened the connection.
      */
     Event<ResponseReceiverEventArgs> responseReceiverConnected();
 
     /**
-     * The event is invoked when a duplex output channel closed the connection.
+     * The event is raised when an output channel closed the connection.
+     * The event is not raised when the connection was closed by the input channel.
      */
     Event<ResponseReceiverEventArgs> responseReceiverDisconnected();
 
     /**
-     * The event is invoked when a message is received.
+     * The event is raised when a message is received.
      */
     Event<DuplexChannelMessageEventArgs> messageReceived();
     
     /**
-     * Returns id of this duplex input channel.
-     * The id represents the 'address' the duplex input channel is listening to.
+     * Returns address of the input channel.
      */
     String getChannelId();
 
@@ -50,15 +50,28 @@ public interface IDuplexInputChannel
     void stopListening();
 
     /**
-     * Returns true if the duplex input channel is listening.
+     * Returns true if the input channel is listening.
      */
     boolean isListening();
 
     /**
-     * Sends the response message back to the connected IDuplexOutputChannel.
+     * Sends the message back to the connected IDuplexOutputChannel.
+     * 
+     * The following example shows how to send a broadcast message to all connected output channels:
+     * <pre>
+     * {@code
+     * ...
+     * anInputChannel.sendResponseMessage("*", "Hello.");
+     * ...
+     * }
+     * </pre>
+     * 
      * @param responseReceiverId Identifies the response receiver. The identifier comes with received messages.
+     *                           If the identifier is * then the broadcast message to all connected output channels is sent. 
      * @param message response message
-     * @throws Exception The implementation should catch and trace all problems and then rethrow them.
+     * @throws Exception
+     * 
+     * 
      */
     void sendResponseMessage(String responseReceiverId, Object message) throws Exception;
 
@@ -70,11 +83,10 @@ public interface IDuplexInputChannel
     void disconnectResponseReceiver(String responseReceiverId);
     
     /**
-     * Returns dispatcher that defines the threading model for raising events.
+     * Returns dispatcher that defines the threading model for received messages and raised events.
      * 
-     * Dispatcher is responsible for raising ResponseReceiverConnected, ResponseReceiverDisconnected and MessageReceived events
-     * according to desired thread model.
-     * E.g. events are queued and raised by one particular thread.
+     * Dispatcher provides the threading model for responseReceiverConnected, responseReceiverDisconnected and messageReceived events.
+     * E.g. you can specify that received messages and raised events invoked always in one particular thread. 
      */
     IThreadDispatcher getDispatcher();
 }

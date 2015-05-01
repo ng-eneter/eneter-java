@@ -10,7 +10,7 @@ package eneter.messaging.messagingsystems.messagingsystembase;
 
 
 /**
- * The event data representing the response receiver id.
+ * Event argument used by the input channel to indicate the output channel was connected or disconnected.
  * The event is used for the communication between the duplex output channel and duplex input channel
  * to identify where to send response messages.
  * 
@@ -41,7 +41,7 @@ public final class ResponseReceiverEventArgs
     /**
      * Returns the address where the sender of the message is located. (e.g. IP address of the client).
      * It can be empty string if not applicable for used messaging.
-     * @return
+     * @return sender address
      */
     public String getSenderAddress()
     {

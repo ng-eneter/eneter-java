@@ -9,7 +9,7 @@
 package eneter.messaging.messagingsystems.messagingsystembase;
 
 /**
- * The event data available when the duplex input channel receives a message.
+ * Event argument used by output and input channel to indicate a message was received.
  * 
  */
 public final class DuplexChannelMessageEventArgs extends DuplexChannelEventArgs
