@@ -64,15 +64,8 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using the working thread.
-     * The duplex output channel is intended for the bidirectional communication.
-     * Therefore, it can send messages to the duplex input channel and receive response messages.
-     * <br/><br/>
-     * The duplex input channel distinguishes duplex output channels according to the response receiver id.
-     * This method generates the unique response receiver id automatically.
-     * <br/><br/>
-     * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
-     * @throws Exception 
+     * Creates the output channel sending messages to the input channel and receiving response messages by using the working thread.
+     * 
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId) throws Exception
@@ -89,16 +82,8 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using the working thread.
-     * The duplex output channel is intended for the bidirectional communication.
-     * Therefore, it can send messages to the duplex input channel and receive response messages.
-     * <br/><br/>
-     * The duplex input channel distinguishes duplex output channels according to the response receiver id.
-     * This method allows to specified a desired response receiver id. Please notice, the response receiver
-     * id is supposed to be unique.
-     * <br/><br/>
-     * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
-     * @throws Exception 
+     * Creates the output channel sending messages to the input channel and receiving response messages by using the working thread.
+     * 
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
@@ -116,12 +101,8 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex input channel receiving messages from the duplex output channel and sending back response messages by using the working thread.
-     * The duplex input channel is intended for the bidirectional communication.
-     * It can receive messages from the duplex output channel and send back response messages.
-     * <br/><br/>
-     * The duplex input channel can communicate only with the duplex output channel and not with the output channel.
-     * @throws Exception 
+     * Creates the input channel receiving messages from the output channel and sending back response messages by using the working thread.
+     *  
      */
     @Override
     public IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception
@@ -140,7 +121,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Sets threading mode for input channels.
      * @param inputChannelThreading threading model
-     * @return
+     * @return this ThreadMessagingSystemFactory
      */
     public ThreadMessagingSystemFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
@@ -150,7 +131,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets threading mode used for input channels.
-     * @return
+     * @return thread dispatcher
      */
     public IThreadDispatcherProvider getInputChannelThreading()
     {
@@ -160,7 +141,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Sets threading mode for output channels.
      * @param outputChannelThreading
-     * @return
+     * @return ThreadMessagingSystemFactory
      */
     public ThreadMessagingSystemFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
@@ -170,7 +151,7 @@ public class ThreadMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets threading mode used for output channels.
-     * @return
+     * @return thread dispatcher
      */
     public IThreadDispatcherProvider getOutputChannelThreading()
     {
