@@ -15,40 +15,40 @@ import java.util.Map;
 import eneter.net.system.Event;
 
 /**
- * Represents the client context on the server side.
- * The client context is obtained when a client opened the connection with the server and
- * it provides functionality to receive messages from the client and send back response messages.
+ * Represents the client on the server side.
+ * The client context is obtained when a client opened the connection with the server.
+ * It provides functionality to receive messages from the client and send back response messages.
  * To see the example refer to {@link WebSocketListener}.
  */
 public interface IWebSocketClientContext
 {
     /**
      * The event is invoked when the connection with the client was closed.
-     * @return
+     * @return event
      */
     Event<Object> connectionClosed();
     
     /**
      * The event is invoked when the pong message was received.
-     * @return
+     * @return event
      */
     Event<Object> pongReceived();
     
     /**
      * Returns the IP address and port of the connected client.
-     * @return
+     * @return IP address
      */
     InetSocketAddress getClientEndPoint();
     
     /**
      * Returns true if the client is connected.
-     * @return
+     * @return true if the client is connected.
      */
     boolean isConnected();
     
     /**
      * Returns URI of this connection including query parameters sent from by the client.
-     * @return
+     * @return URI
      */
     URI getUri();
     
@@ -59,27 +59,27 @@ public interface IWebSocketClientContext
     Map<String, String> getHeaderFields();
     
     /**
-     * Sets the send timeout in miliseconds. Default value is 0 what is infinite time.
+     * Sets the send timeout in milliseconds. Default value is 0 what is infinite time.
      * @param sendTimeout
      */
     void setSendTimeout(int sendTimeout);
     
     /**
-     * Gets the send timeout in miliseconds. Default value is 0 what is infinite time.
-     * @return
+     * Gets the send timeout in milliseconds. Default value is 0 what is infinite time.
+     * @return sending timeout in milliseconds
      */
     int getSendTimeout();
     
     /**
-     * Sets the receive timeout in miliseconds. Default value is 0 what is infinite time.
+     * Sets the receive timeout in milliseconds. Default value is 0 what is infinite time.
      * @param receiveTimeout
      * @throws Exception 
      */
     void setReceiveTimeout(int receiveTimeout) throws Exception;
     
     /**
-     * Gets the receive timeout in miliseconds. Default value is 0 what is infinite time.
-     * @return
+     * Gets the receive timeout in milliseconds. Default value is 0 what is infinite time.
+     * @return receiving timeout in milliseconds
      * @throws Exception 
      */
     int getReceiveTimeout() throws Exception;

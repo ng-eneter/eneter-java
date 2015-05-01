@@ -131,18 +131,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using WebSocket.
-     * The duplex output channel is intended for the bidirectional communication.
-     * Therefore, it can send messages to the duplex input channel and receive response messages.
-     * <br/><br/>
-     * The duplex input channel distinguishes duplex output channels according to the response receiver id.
-     * This method generates the unique response receiver id automatically.
-     * <br/><br/>
-     * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
-     * 
-     * @param channelId Identifies the receiving duplex input channel. The channel id must be a valid URI address e.g. ws://127.0.0.1:8090/MyService/ 
-     */
+ 
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId) throws Exception
     {
@@ -160,19 +149,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using WebSocket.
-     * The duplex output channel is intended for the bidirectional communication.
-     * Therefore, it can send messages to the duplex input channel and receive response messages.
-     * <br/><br/>
-     * The duplex input channel distinguishes duplex output channels according to the response receiver id.
-     * This method allows to specified a desired response receiver id. Please notice, the response receiver
-     * id is supposed to be unique.
-     * <br/><br/>
-     * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
-     * 
-     * @param channelId Identifies the receiving duplex input channel. The channel id must be a valid URI address e.g. ws://127.0.0.1:8090/MyService/ 
-     */
+
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
             String responseReceiverId) throws Exception
@@ -191,15 +168,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
-    /**
-     * Creates the duplex input channel receiving messages from the duplex output channel and sending back response messages by using WebSocket.
-     * The duplex input channel is intended for the bidirectional communication.
-     * It can receive messages from the duplex output channel and send back response messages.
-     * <br/><br/>
-     * The duplex input channel can communicate only with the duplex output channel and not with the output channel.
-     * 
-     * @param channelId Identifies this duplex input channel. The channel id must be a valid URI address (e.g. ws://127.0.0.1:8090/MyService/) the input channel will listen to.
-     */
+
     @Override
     public IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception
     {
@@ -298,12 +267,21 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         return myOutputChannelThreading;
     }
     
+    /**
+     * Sets frequency to send the websocket ping message.
+     * @param milliseconds frequency in milliseconds
+     * @return this WebSocketMessagingSystemFactory
+     */
     public WebSocketMessagingSystemFactory setPingFrequency(int milliseconds)
     {
         myPingFrequency = milliseconds;
         return this;
     }
     
+    /**
+     * Returns the ping frequency in milliseconds.
+     * @return ping frequency in milliseconds.
+     */
     public int getPingFrequency()
     {
         return myPingFrequency;
