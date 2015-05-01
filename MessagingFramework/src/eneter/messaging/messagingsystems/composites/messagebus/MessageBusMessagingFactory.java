@@ -16,7 +16,9 @@ import eneter.messaging.threading.dispatching.*;
 /**
  * Extension providing the communication via the message bus.
  * 
- * This messaging wraps the communication with the message bus.
+ * This messaging provides the client-service communication via the message bus.
+ * It ensures the communication via the message bus is transparent and for communicating parts it looks like a normal
+ * communication via output and input channel.<br/>
  * The duplex input channel created by this messaging will automatically connect the message bus and register the service
  * when the startListening() is called.<br/>
  * The duplex output channel created by this messaging will automatically connect the message bus and ask for the service
@@ -220,8 +222,10 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
     /**
      * Constructs the factory.
      * 
-     * @param serviceConnctingAddress message bus address for registered services.
-     * @param clientConnectingAddress message bus address for clients that want to connect a registered service.
+     * @param serviceConnctingAddress message bus address intended for services which want to register in the message bus.
+     * It can be null if the message bus factory is intended to create only duplex output channels.
+     * @param clientConnectingAddress message bus address intended for clients which want to connect a registered service.
+     * It can be null if the message bus factory is intended to create only duplex input channels.
      * @param underlyingMessaging messaging system used by the message bus.
      */
     public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory underlyingMessaging)
@@ -232,10 +236,13 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
     /**
      * Constructs the factory.
      * 
-     * @param serviceConnctingAddress message bus address for registered services.
-     * @param clientConnectingAddress message bus address for clients that want to connect a registered service.
+     * @param serviceConnctingAddress message bus address intended for services which want to register in the message bus.
+     * It can be null if the message bus factory is intended to create only duplex output channels.
+     * @param clientConnectingAddress message bus address intended for clients which want to connect a registered service.
+     * It can be null if the message bus factory is intended to create only duplex input channels.
      * @param underlyingMessaging messaging system used by the message bus.
-     * @param protocolFormatter protocol formatter used for the communication between channels.
+     * @param serializer serializer which is used to serialize {@link MessageBusMessage} which is internally used for the communication with
+     * the message bus.
      */
     public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory underlyingMessaging, ISerializer serializer)
     {
@@ -309,7 +316,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
     /**
      * Sets threading mode for input channels.
      * @param inputChannelThreading threading model
-     * @return
+     * @return this instance of MessageBusMessagingFactory
      */
     public MessageBusMessagingFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
     {
@@ -319,7 +326,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
     
     /**
      * Gets threading mode used for input channels.
-     * @return
+     * @return thread dispatcher which is used for input channels.
      */
     public IThreadDispatcherProvider getInputChannelThreading()
     {
@@ -329,7 +336,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
     /**
      * Sets threading mode for output channels.
      * @param outputChannelThreading
-     * @return
+     * @return this instance of MessageBusMessagingFactory
      */
     public MessageBusMessagingFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
@@ -339,7 +346,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
     
     /**
      * Gets threading mode used for output channels.
-     * @return
+     * @return thread dispatcher which is used for output channels.
      */
     public IThreadDispatcherProvider getOutputChannelThreading()
     {
@@ -349,22 +356,24 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
     /**
      * Sets maximum time for opening connection with the service via the message bus. Default value is 30 seconds.
      * 
-     * When the client opens the connection with a service via message bus it requests message bus to open connection
+     * When the client opens the connection with a service via the message bus it requests message bus to open the connection
      * with a desired service. The message checks if the requested service exists and if yes it forwards the open connection request.
      * Then when the service receives the open connection request it sends back the confirmation message that the client is connected.
      * This timeout specifies the maximum time which is allowed for sending the open connection request and receiving the confirmation from the service.
      * 
      * @param milliseconds
+     * @return this instance of MessageBusMessagingFactory
      */
-    public void setConnectTimeout(int milliseconds)
+    public MessageBusMessagingFactory setConnectTimeout(int milliseconds)
     {
         myConnectorFactory.setOpenConnectionTimeout(milliseconds);
+        return this;
     }
     
     /**
      * Returns maximum time for opening connection with the service via the message bus. Default value is 30 seconds.
      * 
-     * When the client opens the connection with a service via message bus it requests message bus to open connection
+     * When the client opens the connection with a service via the message bus it requests message bus to open the connection
      * with a desired service. The message checks if the requested service exists and if yes it forwards the open connection request.
      * Then when the service receives the open connection request it sends back the confirmation message that the client is connected.
      * This timeout specifies the maximum time which is allowed for sending the open connection request and receiving the confirmation from the service.

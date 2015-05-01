@@ -18,7 +18,7 @@ public class MessageBusMessage implements Serializable
     /**
      * Constructs the message.
      * @param request Requested from the message bus.
-     * @param id Depending on the request it is client id or service id.
+     * @param id Depending on type of the request it is either client id or service id.
      * @param messageData If the request is SendRequestMessage or SendResponseMessage it is the serialized message data.
      */
     public MessageBusMessage(EMessageBusRequest request, String id, Object messageData)
@@ -34,12 +34,13 @@ public class MessageBusMessage implements Serializable
     public EMessageBusRequest Request;
 
     /**
-     * Depending on the request it is client id or service id.
+     * Depending on the request it is either client id or service id.
      */
     public String Id;
     
     /**
-     * If the request is SendRequestMessage or SendResponseMessage it is the serialized message data. 
+     * If the request is SendRequestMessage or SendResponseMessage it contains the serialized message data
+     * which is sent between client and service. 
      * Otherwise it is null.
      */
     public Object MessageData;

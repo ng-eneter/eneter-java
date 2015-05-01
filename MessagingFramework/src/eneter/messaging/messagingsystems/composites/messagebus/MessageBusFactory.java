@@ -20,7 +20,7 @@ public class MessageBusFactory implements IMessageBusFactory
     /**
      * Constructs the factory with default parameters.
      * 
-     * It uses internal MessageBusCustomSerializer which is optimazed to serialize/deserialze only the MessageBusMessage.
+     * It uses internal MessageBusCustomSerializer which is optimized to serialize/deserialze only the MessageBusMessage.
      */
     public MessageBusFactory()
     {
@@ -28,7 +28,7 @@ public class MessageBusFactory implements IMessageBusFactory
     }
 
     /**
-     * Construct the factory.
+     * Constructs the factory.
      * @param protocolFormatter Serializer which will be used to serialize/deserialize MessageBusMessage.
      */
     public MessageBusFactory(ISerializer serializer)
