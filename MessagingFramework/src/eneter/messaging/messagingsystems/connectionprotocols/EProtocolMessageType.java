@@ -9,23 +9,23 @@
 package eneter.messaging.messagingsystems.connectionprotocols;
 
 /**
- * Indicates the type of the low-level protocol message.
+ * Type of the message sent between channels.
  * 
  */
 public enum EProtocolMessageType
 {
     /**
-     * Open connection request message.
+     * Open connection message.
      */
     OpenConnectionRequest,
     
     /**
-     * Close connection request message.
+     * Close connection message.
      */
     CloseConnectionRequest,
     
     /**
-     * Message or reaponse message.
+     * Request message or response message.
      */
     MessageReceived
 }
