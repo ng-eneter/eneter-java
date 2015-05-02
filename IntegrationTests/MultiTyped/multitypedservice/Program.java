@@ -24,24 +24,17 @@ public class Program
     {
         try
         {
-            IProtocolFormatter aProtocol = new EasyProtocolFormatter();
-            IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory(aProtocol);
-            
-            IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8033/");
-        
+            // Create multi-typed receiver.
             IMultiTypedMessagesFactory aFactory = new MultiTypedMessagesFactory();
             IMultiTypedMessageReceiver aReceiver = aFactory.createMultiTypedMessageReceiver();
             
             // Register message types which can be processed.
-            aReceiver.registerRequestMessageReceiver(myStringHandler, String.class);
+            aReceiver.registerRequestMessageReceiver(myIntegerHandler, Integer.class);
             aReceiver.registerRequestMessageReceiver(myMyRequestMessageHandler, MyRequestMessage.class);
             
-            for (Class<?> aClazz : aReceiver.getRegisteredRequestMessageTypes())
-            {
-                System.out.println(aClazz.getSimpleName());
-            }
-            
-            // Attach input channel and start listening.
+            // Attach input channel and start listening e.g. using TCP.
+            IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+            IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8033/");
             aReceiver.attachDuplexInputChannel(anInputChannel);
             
             System.out.println("Service is running. Press ENTER to stop.");
@@ -49,10 +42,6 @@ public class Program
             
             // Detach input channel to stop the listening thread.
             aReceiver.detachDuplexInputChannel();
-            
-            // Unregister message handlers.
-            aReceiver.unregisterRequestMessageReceiver(String.class);
-            aReceiver.unregisterRequestMessageReceiver(MyRequestMessage.class);
         }
         catch (Exception err)
         {
@@ -60,18 +49,24 @@ public class Program
         }
     }
     
-    private static void onStringMessage(Object eventSender, TypedRequestReceivedEventArgs<String> e)
+    private static void onIntegerMessage(Object eventSender, TypedRequestReceivedEventArgs<Integer> e)
     {
-        String aRequestMessage = e.getRequestMessage();
-        System.out.println(aRequestMessage);
+        int aNumber = e.getRequestMessage();
         
-        // Send back the message.
-        String aResponse = "Thanks for " + aRequestMessage;
+        // Calculate factorial.
+        int aResult = 1;
+        for (int i = 1; i <= aNumber; ++i)
+        {
+            aResult *= i;
+        }
+        
+        System.out.println(aNumber + "! =" + aResult);
+        
+        // Send back the result.
         IMultiTypedMessageReceiver aReceiver = (IMultiTypedMessageReceiver)eventSender;
-        
         try
         {
-            aReceiver.sendResponseMessage(e.getResponseReceiverId(), aResponse, String.class);
+            aReceiver.sendResponseMessage(e.getResponseReceiverId(), aResult, Integer.class);
         }
         catch (Exception err)
         {
@@ -101,13 +96,13 @@ public class Program
     
     
     
-    private static EventHandler<TypedRequestReceivedEventArgs<String>> myStringHandler =
-            new EventHandler<TypedRequestReceivedEventArgs<String>>()
+    private static EventHandler<TypedRequestReceivedEventArgs<Integer>> myIntegerHandler =
+            new EventHandler<TypedRequestReceivedEventArgs<Integer>>()
     {
         @Override
-        public void onEvent(Object sender, TypedRequestReceivedEventArgs<String> e)
+        public void onEvent(Object sender, TypedRequestReceivedEventArgs<Integer> e)
         {
-            onStringMessage(sender, e);
+            onIntegerMessage(sender, e);
         }
     };
     
