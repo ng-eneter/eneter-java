@@ -100,7 +100,7 @@ class SyncMultiTypedMessageSender implements ISyncMultitypedMessageSender
             try
             {
                 MultiTypedMessage aRequest = new MultiTypedMessage();
-                aRequest.TypeName = requestClazz.getSimpleName();
+                aRequest.TypeName = MultiTypeNameProvider.getNetName(requestClazz);
                 aRequest.MessageData = mySerializer.serialize(message, requestClazz);
 
                 MultiTypedMessage aResponse = mySender.sendRequestMessage(aRequest);
