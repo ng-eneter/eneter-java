@@ -16,7 +16,7 @@ import eneter.net.system.Event;
 
 
 /**
- * Synchronized sender of typed messages (it waits until the response is received).
+ * Synchronized sender for one specified message type (it waits until the response is received).
  * 
  * Message sender which sends request messages of specified type and receive response messages of specified type.
  * Synchronous means when the message is sent it waits until the response message is received.

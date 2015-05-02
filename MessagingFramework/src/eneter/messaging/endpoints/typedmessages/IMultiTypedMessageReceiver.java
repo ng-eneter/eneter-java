@@ -17,15 +17,84 @@ import eneter.net.system.*;
 /**
  * Receiver for multiple message types.
  * 
- * This is a service component which can receive request messages and send response messages.
- * In comparition with DuplexTypedMessageReceiver it can receive and send multiple types of messages. 
+ * It is a service component which can receive and send messages of multiple types.<br/>
+ * The following example shows how to create a service which can receive messages of various types:
+ * <pre>
+ * {@code
+ * // Create multityped receiver
+ * IMultiTypedMessagesFactory aFactory = new MultiTypedMessagesFactory();
+ * IMultiTypedMessageReceiver aReceiver = aFactory.createMultiTypedMessageReceiver();
+ * 
+ * // Register handlers for message types which can be received.
+ * aReceiver.registerRequestMessageReceiver(myAlarmHandler, Alarm.class);
+ * aReceiver.registerRequestMessageReceiver(myImageHandler, Image.class);
+ * 
+ * // Attach input channel and start listening. E.g. using TCP.
+ * IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+ * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:9043/");
+ * aReceiver.attachDuplexInputChannel(anInputChannel);
+ * 
+ * System.out.println("Service is running. Press ENTER to stop.");
+ * new BufferedReader(new InputStreamReader(System.in)).readLine();
+ * 
+ * // Detach input channel and stop listening.
+ * aReceiver.detachInputChannel();
+ * 
+ * }
+ * </pre>
+ * 
+ * The following code demonstrates how to implement handlers:
+ * <pre>
+ * {@code
+ * private void onAlarmMessage(object sender, TypedRequestReceivedEventArgs<Alarm> e)
+ * {
+ *    // Get alarm message data.
+ *    Alarm anAlarm = e.getRequestMessage();
+ *    
+ *     ....
+ *     
+ *    // Send response message.
+ *    aReceiver.sendResponseMessage(e.getResponseReceiverId(), aResponseMessage, ResponseMessage.class);
+ * }
+ * 
+ * private void onImageMessage(object sender, TypedRequestReceivedEventArgs<Image> e)
+ * {
+ *    // Get image message data.
+ *    Image anImage = e.getRequestMessage();
+ *    
+ *     ....
+ *     
+ *    // Send response message.
+ *    aReceiver.sendResponseMessage(e.getResponseReceiverId(), aResponseMessage, ResponseMessage.class);
+ * }
+ * 
+ * 
+ * private EventHandler<TypedRequestReceivedEventArgs<Alarm>> myAlarmHandler =
+ *     new EventHandler<TypedRequestReceivedEventArgs<Alarm>>()
+ *     {
+ *         public void onEvent(Object sender, TypedRequestReceivedEventArgs<Alarm> e)
+ *         {
+ *             onAlarmMessage(sender, e);
+ *         }
+ *     };
+ *     
+ * private EventHandler<TypedRequestReceivedEventArgs<Image>> myImageHandler =
+ *     new EventHandler<TypedRequestReceivedEventArgs<Image>>()
+ *     {
+ *         public void onEvent(Object sender, TypedRequestReceivedEventArgs<Image> e)
+ *         {
+ *             onImageMessage(sender, e);
+ *         }
+ *     };
+ *   
+ * }
+ * </pre>
  *
  */
 public interface IMultiTypedMessageReceiver extends IAttachableDuplexInputChannel
 {
     /**
      * Raised when a new client is connected.
-     * @return
      */
     Event<ResponseReceiverEventArgs> responseReceiverConnected();
     
@@ -54,18 +123,25 @@ public interface IMultiTypedMessageReceiver extends IAttachableDuplexInputChanne
     
     /**
      * Returns the list of registered message types which can be received. 
-     * @return
+     * @return registered message types
      */
     ArrayList<Class<?>> getRegisteredRequestMessageTypes();
     
     /**
-     * Sends response message.
+     * Sends the response message.
      * 
      * 
-     * @param responseReceiverId identifies the client
+     * @param responseReceiverId identifies the client. If responseReceiverId is * then the broadcast message
+     * to all connected clients is sent.
+     * <pre>
+     * // Send broadcast to all connected clients.
+     * aReceiver.sendResponseMessage("*", aBroadcastMessage, YourBroadcast.class);
+     * </pre>
      * @param responseMessage response message
      * @param clazz type of the response message
      * @throws Exception
+     * 
+     * 
      */
     <TResponseMessage> void sendResponseMessage(String responseReceiverId, TResponseMessage responseMessage, Class<TResponseMessage> clazz) throws Exception;
 }

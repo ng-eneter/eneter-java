@@ -9,26 +9,26 @@
 package eneter.messaging.endpoints.typedmessages;
 
 /**
- * Creates multi-typed senders and receivers.
+ * Creates multi-typed message senders and receivers.
  *
  */
 public interface IMultiTypedMessagesFactory
 {
     /**
      * Creates multityped message sender which can send request messages and receive response messages.
-     * @return
+     * @return multityped sender
      */
     IMultiTypedMessageSender createMultiTypedMessageSender();
     
     /**
      * Creates mulityped message sender which sends a request message and then waits for the response.
-     * @return
+     * @return synchronous multityped sender
      */
     ISyncMultitypedMessageSender createSyncMultiTypedMessageSender();
     
     /**
      * Creates multityped message receiver which can receive request messages and send response messages.
-     * @return
+     * @return multityped receiver
      */
     IMultiTypedMessageReceiver createMultiTypedMessageReceiver();
 }

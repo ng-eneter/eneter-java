@@ -18,15 +18,14 @@ import eneter.net.system.*;
 /**
  * Sender for multiple message types.
  * 
- * This is a client component which can send request messages and receive response messages.
- * In comparition with DuplexTypedMessageSender it can send and receive multiple types of messages. 
+ * This is a client component which can send and receive messages of multiple types.<br/>
  *
  */
 public interface IMultiTypedMessageSender extends IAttachableDuplexOutputChannel
 {
     /**
      * Raised when the connection with the receiver is open.
-     * @return
+     * @return event
      */
     Event<DuplexChannelEventArgs> connectionOpened();
     
@@ -34,7 +33,7 @@ public interface IMultiTypedMessageSender extends IAttachableDuplexOutputChannel
      * Raised when the service closed the connection with the client.
      * The event is raised only if the service closes the connection with the client.
      * It is not raised if the client closed the connection by IDuplexOutputChannel.closeConnection().
-     * @return
+     * @return event
      */
     Event<DuplexChannelEventArgs> connectionClosed();
     
@@ -57,7 +56,7 @@ public interface IMultiTypedMessageSender extends IAttachableDuplexOutputChannel
     
     /**
      * Returns the list of registered response message types which can be received.
-     * @return
+     * @return registered message types
      */
     ArrayList<Class<?>> getRegisteredResponseMessageTypes();
     

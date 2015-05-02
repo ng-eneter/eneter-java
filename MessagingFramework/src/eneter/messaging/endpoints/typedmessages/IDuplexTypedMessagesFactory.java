@@ -9,7 +9,7 @@
 package eneter.messaging.endpoints.typedmessages;
 
 /**
- * Creates senders and receivers of typed messages.
+ * Creates typed message senders and receivers.
  *
  */
 public interface IDuplexTypedMessagesFactory

@@ -13,7 +13,7 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.Event;
 
 /**
- * Synchronized sender for multiple type of messages (it waits until the response is received).
+ * Synchronized sender for multiple message types (it waits until the response is received).
  * 
  * Message sender which sends request messages of specified type and receive response messages of specified type.
  * Synchronous means when the message is sent it waits until the response message is received.

@@ -21,8 +21,153 @@ import eneter.messaging.threading.dispatching.SyncDispatching;
  * <br/>
  * Implementation of receiver (service):
  * <pre>
- * {@code
- * 
+ * public class Program
+ * {
+ *     public static class MyRequestMessage
+ *     {
+ *         public double Number1;
+ *         public double Number2;
+ *     }
+ *  <br/>
+ *     public static void main(String[] args)
+ *     {
+ *         try
+ *         {
+ *             // Create multi-typed receiver.
+ *             IMultiTypedMessagesFactory aFactory = new MultiTypedMessagesFactory();
+ *             IMultiTypedMessageReceiver aReceiver = aFactory.createMultiTypedMessageReceiver();
+ *  <br/>
+ *             // Register message types which can be processed.
+ *             aReceiver.registerRequestMessageReceiver(myIntegerHandler, Integer.class);
+ *             aReceiver.registerRequestMessageReceiver(myMyRequestMessageHandler, MyRequestMessage.class);
+ *  <br/>
+ *             // Attach input channel and start listening e.g. using TCP.
+ *             IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+ *             IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8033/");
+ *             aReceiver.attachDuplexInputChannel(anInputChannel);
+ *  <br/>
+ *             System.out.println("Service is running. Press ENTER to stop.");
+ *             new BufferedReader(new InputStreamReader(System.in)).readLine();
+ *  <br/>
+ *             // Detach input channel to stop the listening thread.
+ *             aReceiver.detachDuplexInputChannel();
+ *         }
+ *         catch (Exception err)
+ *         {
+ *             EneterTrace.error("Service failed.", err);
+ *         }
+ *     }
+ *  <br/>
+ *     private static void onIntegerMessage(Object eventSender, TypedRequestReceivedEventArgs&lt;String&gt; e)
+ *     {
+ *         int aNumber = e.getRequestMessage();
+ *  <br/>
+ *         // Calculate factorial.
+ *         int aResult = 1;
+ *         for (int i = 1; i &lt;= aNumber; ++i)
+ *         {
+ *             aResult *= i;
+ *         }
+ *  <br/>
+ *         System.out.println(aNumber + "! =" + aResult);
+ *  <br/>
+ *         // Send back the result.
+ *         IMultiTypedMessageReceiver aReceiver = (IMultiTypedMessageReceiver)eventSender;
+ *         try
+ *         {
+ *             aReceiver.sendResponseMessage(e.getResponseReceiverId(), aResult, Integer.class);
+ *         }
+ *         catch (Exception err)
+ *         {
+ *             EneterTrace.error("Failed to send the response message.", err);
+ *         }
+ *     }
+ *  <br/>
+ *     private static void onMyReqestMessage(Object eventSender, TypedRequestReceivedEventArgs&lt;MyRequestMessage&gt; e)
+ *     {
+ *         MyRequestMessage aRequestMessage = e.getRequestMessage();
+ *  <br/>
+ *         double aResult = aRequestMessage.Number1 + aRequestMessage.Number2;
+ *  <br/>
+ *         System.out.println(aRequestMessage.Number1 + " + " + aRequestMessage.Number2 + " = " + aResult);
+ *  <br/>
+ *         // Send back the message.
+ *         IMultiTypedMessageReceiver aReceiver = (IMultiTypedMessageReceiver)eventSender;
+ *         try
+ *         {
+ *             aReceiver.sendResponseMessage(e.getResponseReceiverId(), aResult, Double.class);
+ *         }
+ *         catch (Exception err)
+ *         {
+ *             EneterTrace.error("Failed to send the response message.", err);
+ *         }
+ *     }
+ *  <br/>
+ *     private static EventHandler&lt;TypedRequestReceivedEventArgs&lt;Integer&gt;&gt; myIntegerHandler =
+ *             new EventHandler&lt;TypedRequestReceivedEventArgs&lt;Integer&gt;&gt;()
+ *     {
+ *         {@literal @}Override
+ *         public void onEvent(Object sender, TypedRequestReceivedEventArgs&lt;Integer&gt; e)
+ *         {
+ *             onStringMessage(sender, e);
+ *         }
+ *     };
+ *  <br/>
+ *     private static EventHandler&lt;TypedRequestReceivedEventArgs&lt;MyRequestMessage&gt;&gt; myMyRequestMessageHandler =
+ *             new EventHandler&lt;TypedRequestReceivedEventArgs&lt;MyRequestMessage&gt;&gt;()
+ *     {
+ *         {@literal @}Override
+ *         public void onEvent(Object sender, TypedRequestReceivedEventArgs&lt;MyRequestMessage&gt; e)
+ *         {
+ *             onMyReqestMessage(sender, e);
+ *         }
+ *     };
+ *  <br/>
+ * }
+ * </pre>
+ * Implementation of sender (client):
+ * <pre>
+ * public class Program
+ * {
+ *     public static class MyRequestMessage
+ *     {
+ *         public double Number1;
+ *         public double Number2;
+ *     }
+ *  <br/>
+ *     public static void main(String[] args)
+ *     {
+ *         // Create multi-typed sender.
+ *         IMultiTypedMessagesFactory aFactory = new MultiTypedMessagesFactory();
+ *         ISyncMultitypedMessageSender aSender = aFactory.createSyncMultiTypedMessageSender();
+ *  <br/>
+ *         try
+ *         {
+ *             // Attach output channel and be able to communicate with the service.
+ *             IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+ *             IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8033/");
+ *             aSender.attachDuplexOutputChannel(anOutputChannel);
+ *  <br/>
+ *             // Request to caltulate two numbers.
+ *             MyRequestMessage aRequestMessage = new MyRequestMessage();
+ *             aRequestMessage.Number1 = 10;
+ *             aRequestMessage.Number2 = 20;
+ *             double aResult = aSender.sendRequestMessage(aRequestMessage, MyRequestMessage.class, Double.class);
+ *             System.out.println(aRequestMessage.Number1 + " + " + aRequestMessage.Number2 + " = " + aResult);
+ *  <br/>
+ *             // Request to calculate factorial.
+ *             int aFactorial = aSender.sendRequestMessage((int)6, Integer.class, Integer.class);
+ *             System.out.println("6! = " + aFactorial);
+ *         }
+ *         catch (Exception err)
+ *         {
+ *             EneterTrace.error("Calculating failed.", err);
+ *         }
+ *  <br/>
+ *         // Detach input channel and stop listening to responses.
+ *         aSender.detachDuplexOutputChannel();
+ *     }
+ *  <br/>
  * }
  * </pre>
  * 
@@ -30,11 +175,18 @@ import eneter.messaging.threading.dispatching.SyncDispatching;
  */
 public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
 {
+    /**
+     * Constructs the factory with default XmlSerializer.
+     */
     public MultiTypedMessagesFactory()
     {
         this(new XmlStringSerializer());
     }
     
+    /**
+     * Constructs the factory.
+     * @param serializer serializer which will serialize messages.
+     */
     public MultiTypedMessagesFactory(ISerializer serializer)
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -98,7 +250,7 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
      * Sets the threading mode for receiving connectionOpened and connectionClosed events for SyncDuplexTypedMessageSender.
      * 
      * E.g. you use SyncDuplexTypedMessageSender and you want to route ConnectionOpened and ConnectionClosed events
-     * to the main UI thread of your WPF based application. Therefore you specify WindowsDispatching when you create your
+     * to the main UI thread of your application. Therefore you specify WindowsDispatching when you create your
      * TCP duplex output channel which you then attach to the SyncDuplexTypedMessageSender.<br/>
      * Later when the application is running you call SyncDuplexTypedMessageSender.SendRequestMessage(..).<br/>
      * However if you call it from the main UI thread the deadlock occurs.
@@ -129,23 +281,45 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
         return mySyncDuplexTypedSenderThreadMode;
     }
     
+    /**
+     * Sets serializer for messages.
+     * @param serializer serializer
+     * @return this MultiTypedMessagesFactory
+     */
     public MultiTypedMessagesFactory setSerializer(ISerializer serializer)
     {
         mySerializer = serializer;
         return this;
     }
     
+    /**
+     * Gets serializer for messages.
+     * @return serializer
+     */
     public ISerializer getSerializer()
     {
         return mySerializer;
     }
     
+    /**
+     * Sets the timeout which is used for SyncMultitypedMessageSender.
+     * When SyncMultitypedMessageSender calls sendRequestMessage(..) then it waits until the response is received.
+     * This timeout specifies the maximum wating time. The default value is 0 and it means infinite time.
+     * @param milliseconds timout in milliseconds
+     * @return this MultiTypedMessagesFactory
+     */
     public MultiTypedMessagesFactory setSyncResponseReceiveTimeout(int milliseconds)
     {
         mySyncResponseReceiveTimeout = milliseconds;
         return this;
     }
     
+    /**
+     * Gets the timeout which is used for SyncMultitypedMessageSender.
+     * When SyncMultitypedMessageSender calls sendRequestMessage(..) then it waits until the response is received.
+     * This timeout specifies the maximum wating time. The default value is 0 and it means infinite time.
+     * @return timeout in milliseconds
+     */
     public int getSyncResponseReceiveTimeout()
     {
         return mySyncResponseReceiveTimeout;
