@@ -7,13 +7,12 @@
  */
 
 /**
- * Publish-subscribe scenarios (clients can subscribe for notification messages).
- * 
- * 
- * The broker is intended for publish-subscribe scenarios. Clients can use the broker to subscribe for messages
- * or for sending of notification messages.<br/>
- * The broker works like this:<br/>
- * The client has some event that wants to notify to everybody who is interested. It sends the message to the broker.
- * The broker receives the message and forwards it to everybody who is subscribed for such event.
+ * Publish-subscribe scenarios.
+ * The broker is the communication component intended for publish-subscribe scenario.
+ * It is the component which allows consumers to subscribe for desired message types
+ * and allows publishers to send a message to subscribed consumers.<br/>
+ * <br/>
+ * When the broker receives a message from a publisher it finds all consumers subscribed to that
+ * message and forwards them the message.
  */
 package eneter.messaging.nodes.broker;

@@ -16,8 +16,8 @@ import eneter.messaging.diagnostic.EneterTrace;
  * The broker is the component for publish-subscribe scenarios. It maintains the list of subscribers.
  * When it receives a notification message it forwards it to subscribed clients. 
  *   
- * IDuplexBrokerClient can send notification messages to the broker
- * and also to subscribe for desired messages.
+ * IDuplexBrokerClient can publish messages via the broker
+ * and also can subscribe for desired messages.
  * <br/>
  * <br/>
  * The example shows how to create and use the broker via TCP.

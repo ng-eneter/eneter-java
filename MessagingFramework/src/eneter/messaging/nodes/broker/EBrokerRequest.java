@@ -37,14 +37,19 @@ public enum EBrokerRequest
     Publish(40);
     
     /**
-     * Returns value of the enumeration type.
-     * @return
+     * Converts enum to the integer value.
+     * @return value
      */
     public int geValue()
     {
         return myValue;
     }
     
+    /**
+     * Converts integer value to the enum.
+     * @param i value
+     * @return enum
+     */
     public static EBrokerRequest fromInt(int i)
     {
         switch (i)

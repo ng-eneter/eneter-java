@@ -13,9 +13,54 @@ import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventA
 import eneter.net.system.*;
 
 /**
- * Broker client to publish and subscribe messages in the broker.
- * The broker client allows to publish events via the broker, so that broker will forward them to all subscribers.<br/>
- * BrokerClient also allows to subscribe for events of interest.
+ * Publishes and subscribes messages in the broker.
+ * The broker client is the component which interacts with the broker.
+ * It allows to publish messages via the broker and to subscribe for desired messages in the broker.<br/>
+ * <br/>
+ * The following example shows how to subscribe a message in the broker:
+ * <pre>
+ * {@code
+ * // Create the broker client.
+ * IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory();
+ * IDuplexBrokerClient aBrokerClient = aBrokerFactory.createBrokerClient();
+ * 
+ * // Register handler to process subscribed messages from the broker.
+ * aBrokerClient.brokerMessageReceived().subscribe(myMessageHandler);
+ * 
+ * // Attach output channel and be able to communicate with the broker.
+ * // E.g. if the broker communicates via TCP. 
+ * IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+ * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:9843/");
+ * aBrokerClient.attachDuplexOutputChannel(anOutputChannel);
+ * 
+ * // Now when the connection with the broker is establish so we can subscribe for
+ * // messages in the broker.
+ * // After this call whenever somebody sends the message type 'MyMessageType' into the broker
+ * // the broker will forward it to this broker client and the message handler
+ * // myMessageHandler will be called.
+ * aBrokerClient.subscribe("MyMessageType");
+ *  
+ * }
+ * </pre>
+ * <br/>
+ * The following example shows how to publish a message via the broker:
+ * <pre>
+ * {@code
+ * // Create the broker client.
+ * IDuplexBrokerFactory aBrokerFactory = new DuplexBrokerFactory();
+ * IDuplexBrokerClient aBrokerClient = aBrokerFactory.createBrokerClient();
+ * 
+ * // Attach output channel and be able to communicate with the broker.
+ * // E.g. if the broker communicates via TCP. 
+ * IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+ * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:9843/");
+ * aBrokerClient.attachDuplexOutputChannel(anOutputChannel);
+ * 
+ * // Now when the connection with the broker is establish so we can publish messages:
+ * aBrokerClient.sendMessage("MyMessageType", "Hello world.");
+ *  
+ * }
+ * </pre>
  *
  */
 public interface IDuplexBrokerClient extends IAttachableDuplexOutputChannel
@@ -33,55 +78,53 @@ public interface IDuplexBrokerClient extends IAttachableDuplexOutputChannel
     Event<DuplexChannelEventArgs> connectionClosed();
     
     /**
-     * The event is invoked when the observed message is received from the broker.
+     * Event raised when a subscribed message type is received from the broker.
      * @return
      */
     Event<BrokerMessageReceivedEventArgs> brokerMessageReceived();
     
     /**
-     * Publishes the event via the broker.
-     * @param eventId event identifier
-     * @param serializedMessage message content. If the message is not a primitive type or String then the input parameter expects the message is already serialized!
+     * Publishes the message via the broker.
+     * @param messageType event identifier
+     * @param serializedMessage message content.
      * @throws Exception
      */
-    void sendMessage(String eventId, Object serializedMessage) throws Exception;
+    void sendMessage(String messageType, Object serializedMessage) throws Exception;
     
     /**
-     * Subscribes the client for the event.
+     * Subscribes for the message type.
      * 
      * If you can call this method multiple times to subscribe for multiple events.
      * 
-     * @param eventId message type the client wants to observe
+     * @param messageType identifies the type of the message which shall be subscribed.
      * @throws Exception
      */
-    void subscribe(String eventId) throws Exception;
+    void subscribe(String messageType) throws Exception;
     
     /**
-     * Subscribes the client for list of events.
+     * Subscribes for list of message types.
      * 
-     * If you can call this method multiple times to subscribe for multiple events.
-     * 
-     * @param eventIds list of events the client wants to observe
+     * @param messageType list of message types which shall be subscribed.
      * @throws Exception
      */
-    void subscribe(String[] eventIds) throws Exception;
+    void subscribe(String[] messageType) throws Exception;
     
     /**
-     * Unsubscribes the client from the specified event.
-     * @param eventId message type the client does not want to observe anymore
+     * Unsubscribes from the specified message type.
+     * @param messageType message type the client does not want to receive anymore.
      * @throws Exception
      */
-    void unsubscribe(String eventId) throws Exception;
+    void unsubscribe(String messageType) throws Exception;
     
     /**
-     * Unsubscribes the client from specified events.
-     * @param eventIds list of message types the client does not want to observe anymore
+     * Unsubscribes from specified message types.
+     * @param messageTypes list of message types the client does not want to receive anymore.
      * @throws Exception
      */
-    void unsubscribe(String[] eventIds) throws Exception;
+    void unsubscribe(String[] messageTypes) throws Exception;
     
     /**
-     * Completely unsubscribes the client from all messages (including all regular expressions).
+     * Unsubscribe all messages.
      * @throws Exception
      */
     void unsubscribe() throws Exception;
