@@ -12,7 +12,7 @@ package eneter.net.system;
 import java.io.Serializable;
 
 /**
- * Emulates EventArgs from .NET.
+ * Default EventArgs like in .NET.
  * 
  * This is used e.g. in RPC communication for remote events.
  *

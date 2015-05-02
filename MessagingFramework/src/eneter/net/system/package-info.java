@@ -7,6 +7,6 @@
  */
 
 /**
- * Helpers simulating some functionality from .NET.
+ * Helpers used by Eneter and which need to be API.
  */
 package eneter.net.system;
