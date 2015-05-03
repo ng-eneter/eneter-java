@@ -29,7 +29,7 @@ public class MessageBusFactory implements IMessageBusFactory
 
     /**
      * Constructs the factory.
-     * @param protocolFormatter Serializer which will be used to serialize/deserialize MessageBusMessage.
+     * @param serializer Serializer which will be used to serialize/deserialize MessageBusMessage.
      */
     public MessageBusFactory(ISerializer serializer)
     {

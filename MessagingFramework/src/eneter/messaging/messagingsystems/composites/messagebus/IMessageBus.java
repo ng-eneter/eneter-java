@@ -16,7 +16,10 @@ import eneter.net.system.Event;
  * The message bus is the component which can expose services.
  * The service connects the message bus and registers its service id.
  * When a client needs to use the service it connects the message bus and specifies the service id.
- * If the service id exists the message bus establishes the connection between the client and the service.
+ * If the service id exists the message bus establishes the connection between the client and the service.<br/>
+ * <br/>
+ * The presence of the message bus is transparent for logic of services and their clients. The whole communication
+ * is realized via {@link MessageBusMessagingFactory} which ensures the interaction with the message bus.
  *  
  */
 public interface IMessageBus

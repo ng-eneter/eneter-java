@@ -14,7 +14,11 @@
  * Then when a client wants to use the service it connects the message bus and asks for the service using the service id.
  * Message bus is then responsible to establish the connection between the client and the service.<br/>
  * This extension hides the communication is running via the message bus. For communicating parts it looks as if they
- * communicate directly.
+ * communicate directly.<br/>
+ * For more details see examples:
+ * <ul>
+ * <li>{@link eneter.messaging.messagingsystems.composites.messagebus.MessageBusMessagingFactory} - exposing a simple service via the message bus.</li>
+ * </ul>
  * 
  *
  */
