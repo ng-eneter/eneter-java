@@ -305,7 +305,7 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
      * Sets the timeout which is used for SyncMultitypedMessageSender.
      * When SyncMultitypedMessageSender calls sendRequestMessage(..) then it waits until the response is received.
      * This timeout specifies the maximum wating time. The default value is 0 and it means infinite time.
-     * @param milliseconds timout in milliseconds
+     * @param milliseconds timeout in milliseconds
      * @return this MultiTypedMessagesFactory
      */
     public MultiTypedMessagesFactory setSyncResponseReceiveTimeout(int milliseconds)

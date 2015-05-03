@@ -307,23 +307,45 @@ public class DuplexTypedMessagesFactory implements IDuplexTypedMessagesFactory
         return mySyncDuplexTypedSenderThreadMode;
     }
     
+    /**
+     * Sets serializer for messages.
+     * @param serializer serializer
+     * @return this DuplexTypedMessagesFactory
+     */
     public DuplexTypedMessagesFactory setSerializer(ISerializer serializer)
     {
         mySerializer = serializer;
         return this;
     }
     
+    /**
+     * Gets serializer for messages.
+     * @return serializer
+     */
     public ISerializer getSerializer()
     {
         return mySerializer;
     }
     
+    /**
+     * Sets the timeout which is used for SyncDuplexTypedMessageSender.
+     * When SyncDuplexTypedMessageSender calls sendRequestMessage(..) then it waits until the response is received.
+     * This timeout specifies the maximum wating time. The default value is 0 and it means infinite time.
+     * @param milliseconds timeout in milliseconds
+     * @return this DuplexTypedMessagesFactory
+     */
     public DuplexTypedMessagesFactory setSyncResponseReceiveTimeout(int milliseconds)
     {
         mySyncResponseReceiveTimeout = milliseconds;
         return this;
     }
     
+    /**
+     * Gets the timeout which is used for SyncDuplexTypedMessageSender.
+     * When SyncDuplexTypedMessageSender calls sendRequestMessage(..) then it waits until the response is received.
+     * This timeout specifies the maximum wating time. The default value is 0 and it means infinite time.
+     * @return timeout in milliseconds
+     */
     public int getSyncResponseReceiveTimeout()
     {
         return mySyncResponseReceiveTimeout;
