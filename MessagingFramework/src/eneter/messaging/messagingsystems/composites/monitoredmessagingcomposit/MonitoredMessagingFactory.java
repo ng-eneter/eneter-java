@@ -18,8 +18,8 @@ import eneter.messaging.messagingsystems.messagingsystembase.*;
  * The monitored messaging regularly monitors if the connection is still available.
  * It sends ping messages and receives ping messages in a defined frequency. If sending of the ping message fails
  * or the ping message is not received within the specified time the connection is considered broken.<br/>
- * The advantage of the monitored messaging is that the disconnection can be detected very early. 
- *  
+ * The advantage of the monitored messaging is that the disconnection can be detected very early.<br/>
+ *  <br/>
  * When the connection is monitored, the duplex output channel periodically sends 'ping' messages
  * to the duplex input channel and waits for responses.
  * If the response comes within the specified timeout, the connection is open.
