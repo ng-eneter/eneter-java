@@ -29,7 +29,7 @@ public interface ISyncDuplexTypedMessageSender<TResponse, TRequest> extends IAtt
 {
     /**
      * Raised when the connection with the receiver is open.
-     * @return
+     * @return event
      */
     Event<DuplexChannelEventArgs> connectionOpened();
     
@@ -37,7 +37,7 @@ public interface ISyncDuplexTypedMessageSender<TResponse, TRequest> extends IAtt
      * Raised when the service closed the connection with the client.
      * The event is raised only if the service closes the connection with the client.
      * It is not raised if the client closed the connection by IDuplexOutputChannel.closeConnection().
-     * @return
+     * @return event
      */
     Event<DuplexChannelEventArgs> connectionClosed();
     
@@ -45,7 +45,7 @@ public interface ISyncDuplexTypedMessageSender<TResponse, TRequest> extends IAtt
      * Sends the request message and returns the response.
      * 
      * It waits until the response message is received. If waiting for the response exceeds the specified timeout
-     * {@link TimeoutException} is thrown.
+     * TimeoutException is thrown.
      * 
      * @param message request message
      * @return response message
