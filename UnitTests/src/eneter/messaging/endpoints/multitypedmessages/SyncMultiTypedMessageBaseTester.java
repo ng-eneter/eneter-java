@@ -54,10 +54,10 @@ public abstract class SyncMultiTypedMessageBaseTester
             aReceiver.attachDuplexInputChannel(InputChannel);
             aSender.attachDuplexOutputChannel(OutputChannel);
 
-            String aResult1 = aSender.sendRequestMessage(100, int.class, String.class);
+            String aResult1 = aSender.sendRequestMessage(100, String.class, int.class);
             assertEquals("100", aResult1);
 
-            int aResult2 = aSender.sendRequestMessage("Hello", String.class, int.class);
+            int aResult2 = aSender.sendRequestMessage("Hello", int.class, String.class);
             assertEquals(5, aResult2);
         }
         finally
