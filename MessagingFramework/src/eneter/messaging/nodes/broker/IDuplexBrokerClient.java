@@ -14,6 +14,7 @@ import eneter.net.system.*;
 
 /**
  * Publishes and subscribes messages in the broker.
+ * 
  * The broker client is the component which interacts with the broker.
  * It allows to publish messages via the broker and to subscribe for desired messages in the broker.<br/>
  * <br/>
@@ -56,7 +57,8 @@ import eneter.net.system.*;
  * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:9843/");
  * aBrokerClient.attachDuplexOutputChannel(anOutputChannel);
  * 
- * // Now when the connection with the broker is establish so we can publish messages:
+ * // Now when the connection with the broker is establish so we can publish the message.
+ * // Note: the broker will receive the message and will forward it to everybody who is subscribed for MyMessageType.
  * aBrokerClient.sendMessage("MyMessageType", "Hello world.");
  *  
  * }

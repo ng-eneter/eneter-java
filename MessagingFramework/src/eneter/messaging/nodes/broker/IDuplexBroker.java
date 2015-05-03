@@ -42,8 +42,6 @@ public interface IDuplexBroker extends IAttachableDuplexInputChannel
     /**
      * Subscribes for the message type.
      * 
-     * If you can call this method multiple times to subscribe for multiple events.
-     * 
      * @param messageType identifies the type of the message which shall be subscribed.
      * @throws Exception
      */
@@ -52,10 +50,10 @@ public interface IDuplexBroker extends IAttachableDuplexInputChannel
     /**
      * Subscribes for list of message types.
      * 
-     * @param messageType list of message types which shall be subscribed.
+     * @param messageTypes list of message types which shall be subscribed.
      * @throws Exception
      */
-    void subscribe(String[] messageType) throws Exception;
+    void subscribe(String[] messageTypes) throws Exception;
     
     /**
      * Unsubscribes from the specified message type.

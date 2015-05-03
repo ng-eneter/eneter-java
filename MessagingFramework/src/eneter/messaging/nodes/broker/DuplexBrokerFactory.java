@@ -137,8 +137,8 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
     }
     
     /**
-     * Sets the serializer to serialize/deserialize {@link BrokerMessate}.
-     * {@link BrokerMessate} is used for the communication with the broker.
+     * Sets the serializer to serialize/deserialize {@link BrokerMessage}.
+     * {@link BrokerMessage} is used for the communication with the broker.
      * @param serializer serializer
      * @return this DuplexBrokerFactory
      */
