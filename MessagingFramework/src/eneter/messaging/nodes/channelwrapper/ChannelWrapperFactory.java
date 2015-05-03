@@ -72,12 +72,21 @@ public class ChannelWrapperFactory implements IChannelWrapperFactory
         }
     }
     
+    /**
+     * Sets serializer which shall be used to serialize/deserialize DataWrapper.
+     * @param serializer serializer
+     * @return this ChannelWrapperFactory
+     */
     public ChannelWrapperFactory setSerializer(ISerializer serializer)
     {
         mySerializer = serializer;
         return this;
     }
     
+    /**
+     * Gets serializer which is used to serialize/deserialize DataWrapper.
+     * @return serializer
+     */
     public ISerializer getSerializer()
     {
         return mySerializer;
