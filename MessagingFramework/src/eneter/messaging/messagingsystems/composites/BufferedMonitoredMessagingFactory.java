@@ -172,7 +172,7 @@ public class BufferedMonitoredMessagingFactory implements IMessagingSystemFactor
     }
 
     /**
-     * Returns underlying buffered messaging. 
+     * Returns underlying buffered messaging.
      * @return buffered messaging
      */
     public BufferedMessagingFactory getBufferedMessaging()

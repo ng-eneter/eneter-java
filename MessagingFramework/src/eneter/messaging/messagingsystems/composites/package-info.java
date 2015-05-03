@@ -26,7 +26,7 @@
  * // It takes monitored messaging as the underlying messaging.
  * IMessagingSystemFactory aMessaging = new AuthenticatedMessagingFactory(aMonitoredMessaging, ...);
  * 
- * // Then creating channels.
+ * // Creating channels.
  * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8095/");
  * IDuplexInputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8095/");
  * }
