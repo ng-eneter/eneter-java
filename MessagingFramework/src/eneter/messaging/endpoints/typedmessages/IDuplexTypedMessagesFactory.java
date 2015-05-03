@@ -18,7 +18,7 @@ public interface IDuplexTypedMessagesFactory
      * Creates message sender (client) which can send messages and receive response messages.
      * @param responseMessageClazz type of response messages
      * @param requestMessageClazz type of request messages
-     * @return duplex typed message sender
+     * @return message sender
      */
     <TResponse, TRequest> IDuplexTypedMessageSender<TResponse, TRequest> createDuplexTypedMessageSender(Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz);
     
@@ -26,7 +26,7 @@ public interface IDuplexTypedMessagesFactory
      * Creates message sender (client) which sends a request message and then waits for the response.
      * @param responseMessageClazz type of response messages
      * @param requestMessageClazz type of request messages
-     * @return synchronous duplex typed message sender
+     * @return synchronous message sender
      */
     <TResponse, TRequest> ISyncDuplexTypedMessageSender<TResponse, TRequest> createSyncDuplexTypedMessageSender(Class<TResponse> responseMessageClazz, Class<TRequest> requestMessageClazz);
     

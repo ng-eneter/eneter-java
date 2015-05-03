@@ -17,7 +17,7 @@ import eneter.messaging.threading.dispatching.SyncDispatching;
 /**
  * Factory to create multi-typed message senders and receivers.
  * 
- * The following eample shows how to send and receive messages:
+ * The following example shows how to send and receive messages:
  * <br/>
  * Implementation of receiver (service):
  * <pre>
@@ -148,11 +148,11 @@ import eneter.messaging.threading.dispatching.SyncDispatching;
  *             IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8033/");
  *             aSender.attachDuplexOutputChannel(anOutputChannel);
  *  <br/>
- *             // Request to caltulate two numbers.
+ *             // Request to calculate two numbers.
  *             MyRequestMessage aRequestMessage = new MyRequestMessage();
  *             aRequestMessage.Number1 = 10;
  *             aRequestMessage.Number2 = 20;
- *             double aResult = aSender.sendRequestMessage(aRequestMessage, MyRequestMessage.class, Double.class);
+ *             double aResult = aSender.sendRequestMessage(aRequestMessage, Double.class, MyRequestMessage.class);
  *             System.out.println(aRequestMessage.Number1 + " + " + aRequestMessage.Number2 + " = " + aResult);
  *  <br/>
  *             // Request to calculate factorial.

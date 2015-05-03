@@ -18,7 +18,7 @@ import eneter.net.system.*;
 /**
  * Sender for multiple message types.
  * 
- * This is a client component which can send and receive messages of multiple types.<br/>
+ * This is a client component which can send and receive messages of multiple types.
  *
  */
 public interface IMultiTypedMessageSender extends IAttachableDuplexOutputChannel
@@ -62,6 +62,9 @@ public interface IMultiTypedMessageSender extends IAttachableDuplexOutputChannel
     
     /**
      * Sends request message.
+     * 
+     * The message of the specified type will be serialized and sent to the receiver.
+     * If the receiver has registered a handler for this message type then the handler will be called to process the message.
      * 
      * @param message request message
      * @param clazz type of the message

@@ -130,6 +130,8 @@ public interface IMultiTypedMessageReceiver extends IAttachableDuplexInputChanne
     /**
      * Sends the response message.
      * 
+     * The message of the specified type will be serialized and sent back to the response receiver.
+     * If the response receiver has registered a handler for this message type then the handler will be called to process the message.
      * 
      * @param responseReceiverId identifies the client. If responseReceiverId is * then the broadcast message
      * to all connected clients is sent.

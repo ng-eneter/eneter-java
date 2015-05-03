@@ -13,6 +13,7 @@
  * For more details see examples:
  * <ul>
  *  <li>{@link eneter.messaging.endpoints.typedmessages.DuplexTypedMessagesFactory} - sending and receiving messages of declared type.</li>
+ *  <li>{@link eneter.messaging.endpoints.typedmessages.MultiTypedMessagesFactory} - sending and receiving multiple types of messages.</li>
  * </ul>
  * 
  * 

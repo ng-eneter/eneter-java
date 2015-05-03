@@ -18,6 +18,9 @@ public class MultiTypedMessage implements Serializable
 {
     /**
      * Name of the message type (without namespace).
+     * 
+     * In order to ensure better portability between .NET and Java the type name does not include the whole namespace
+     * but only the name.
      */
     public String TypeName;
     
