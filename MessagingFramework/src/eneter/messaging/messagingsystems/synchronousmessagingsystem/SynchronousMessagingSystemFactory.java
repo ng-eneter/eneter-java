@@ -16,7 +16,7 @@ import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 
 /**
- * Messaging system delivering messages synchronously within the calling thread (like a synchronous local call).
+ * Messaging system delivering messages synchronously within the calling thread (like a method call).
  * It creates output and input channels using the caller thread to deliver messages.
  * It means e.g. if the output channel calls sendMessage(...) then when the input channel receives the message
  * in the same thread.   
