@@ -24,7 +24,7 @@ public interface ISyncMultitypedMessageSender extends IAttachableDuplexOutputCha
 {
     /**
      * Raised when the connection with the receiver is open.
-     * @return
+     * @return event
      */
     Event<DuplexChannelEventArgs> connectionOpened();
     
@@ -32,7 +32,7 @@ public interface ISyncMultitypedMessageSender extends IAttachableDuplexOutputCha
      * Raised when the service closed the connection with the client.
      * The event is raised only if the service closes the connection with the client.
      * It is not raised if the client closed the connection by IDuplexOutputChannel.closeConnection().
-     * @return
+     * @return event
      */
     Event<DuplexChannelEventArgs> connectionClosed();
     
@@ -40,10 +40,10 @@ public interface ISyncMultitypedMessageSender extends IAttachableDuplexOutputCha
      * Sends request message and returns the response.
      * 
      * @param message request message.
-     * @param requestClazz type of the request message.
      * @param responseClazz type of the expected response message.
+     * @param requestClazz type of the request message.
      * @return response message.
      * @throws Exception
      */
-    <TRequest, TResponse> TResponse sendRequestMessage(TRequest message, Class<TRequest> requestClazz, Class<TResponse> responseClazz) throws Exception;
+    <TRequest, TResponse> TResponse sendRequestMessage(TRequest message, Class<TResponse> responseClazz, Class<TRequest> requestClazz) throws Exception;
 }
