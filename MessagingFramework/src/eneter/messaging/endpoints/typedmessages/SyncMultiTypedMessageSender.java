@@ -91,7 +91,7 @@ class SyncMultiTypedMessageSender implements ISyncMultitypedMessageSender
     }
 
     @Override
-    public <TRequest, TResponse> TResponse sendRequestMessage(TRequest message, Class<TResponse> responseClazz, Class<TRequest> requestClazz)
+    public <TRequest, TResponse> TResponse sendRequestMessage(TRequest message, Class<TRequest> requestClazz, Class<TResponse> responseClazz)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();

@@ -30,7 +30,7 @@ public class Program
             MyRequestMessage aRequestMessage = new MyRequestMessage();
             aRequestMessage.Number1 = 10;
             aRequestMessage.Number2 = 20;
-            double aResult = aSender.sendRequestMessage(aRequestMessage, Double.class, MyRequestMessage.class);
+            double aResult = aSender.sendRequestMessage(aRequestMessage, MyRequestMessage.class, Double.class);
             System.out.println(aRequestMessage.Number1 + " + " + aRequestMessage.Number2 + " = " + aResult);
             
             // Request to calculate factorial.

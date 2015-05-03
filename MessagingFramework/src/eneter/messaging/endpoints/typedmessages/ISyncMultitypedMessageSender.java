@@ -40,10 +40,10 @@ public interface ISyncMultitypedMessageSender extends IAttachableDuplexOutputCha
      * Sends request message and returns the response.
      * 
      * @param message request message.
-     * @param responseClazz type of the expected response message.
      * @param requestClazz type of the request message.
+     * @param responseClazz type of the expected response message.
      * @return response message.
      * @throws Exception
      */
-    <TRequest, TResponse> TResponse sendRequestMessage(TRequest message, Class<TResponse> responseClazz, Class<TRequest> requestClazz) throws Exception;
+    <TRequest, TResponse> TResponse sendRequestMessage(TRequest message, Class<TRequest> requestClazz, Class<TResponse> responseClazz) throws Exception;
 }
