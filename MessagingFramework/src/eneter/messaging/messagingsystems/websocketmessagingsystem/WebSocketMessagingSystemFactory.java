@@ -112,7 +112,7 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Constructs the websocket messaging factory.
-     * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
+     * @param protocolFormatter formatter used for low-level messages between output and input channels.
      */
     public WebSocketMessagingSystemFactory(IProtocolFormatter protocolFormatter)
     {
@@ -269,6 +269,8 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Sets frequency to send the websocket ping message.
+     * The pinging is intended to keep the connection alive in
+     * environments that would drop the connection if not active for some time.
      * @param milliseconds frequency in milliseconds
      * @return this WebSocketMessagingSystemFactory
      */
@@ -280,6 +282,8 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Returns the ping frequency in milliseconds.
+     * The pinging is intended to keep the connection alive in
+     * environments that would drop the connection if not active for some time.
      * @return ping frequency in milliseconds.
      */
     public int getPingFrequency()
