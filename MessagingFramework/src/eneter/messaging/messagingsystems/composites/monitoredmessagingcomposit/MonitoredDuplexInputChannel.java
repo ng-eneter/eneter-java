@@ -81,7 +81,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             
             myPingFrequency = pingFrequency;
             myReceiveTimeout = receiveTimeout;
-            myCheckTimer = new Timer(true);
+            myCheckTimer = new Timer("Eneter.ServiceMonitorReceiveTimer", true);
 
             MonitorChannelMessage aPingMessage = new MonitorChannelMessage(MonitorChannelMessageType.Ping, null);
             myPreserializedPingMessage = mySerializer.serialize(aPingMessage, MonitorChannelMessage.class);

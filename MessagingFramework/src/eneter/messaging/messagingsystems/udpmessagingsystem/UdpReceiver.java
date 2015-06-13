@@ -79,7 +79,7 @@ class UdpReceiver
                         {
                             doListening();
                         }
-                    });
+                    }, (myIsService) ? "Eneter.UdpServiceListener" : "Eneter.UdpClientListener");
                     myListeningThread.start();
 
                     // Wait until the listening thread is ready.

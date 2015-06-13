@@ -34,7 +34,7 @@ public class SyncDispatcher implements IThreadDispatcher
         @Override
         public Thread newThread(Runnable r)
         {
-            Thread aNewThread = new Thread(r);
+            Thread aNewThread = new Thread(r, "Eneter.SyncDispatcher");
             
             // Thread shall not block the application to shutdown.
             aNewThread.setDaemon(true);

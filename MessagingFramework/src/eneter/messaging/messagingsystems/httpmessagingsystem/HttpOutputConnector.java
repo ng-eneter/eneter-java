@@ -72,7 +72,7 @@ class HttpOutputConnector implements IOutputConnector
                     myResponseMessageHandler = responseMessageHandler;
     
                     myStopPollingWaitingEvent.reset();
-                    myResponseReceiverThread = new Thread(myDoPolling);
+                    myResponseReceiverThread = new Thread(myDoPolling, "Eneter.HttpPolling");
                     myResponseReceiverThread.start();
     
                     // Wait until thread listening to response messages is running.

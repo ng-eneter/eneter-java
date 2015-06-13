@@ -812,7 +812,7 @@ public class WebSocketClient
                     {
                         doResponseListening();
                     }
-                });
+                }, "Eneter.WebSocketClientListener");
                 myResponseReceiverThread.start();
 
                 // Wait until the listening thread is running.

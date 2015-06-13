@@ -121,7 +121,7 @@ public class TcpListenerProvider
                     myServerSocket = myServerSecurityFactory.createServerSocket(mySocketAddress);
                     
                     // Listen in another thread.
-                    myTcpListeningThread = new Thread(myDoTcpListeningRunnable);
+                    myTcpListeningThread = new Thread(myDoTcpListeningRunnable, "Eneter.TcpServiceListener");
                     myTcpListeningThread.start();
                     
                     // Wait until the thread really started the listening.

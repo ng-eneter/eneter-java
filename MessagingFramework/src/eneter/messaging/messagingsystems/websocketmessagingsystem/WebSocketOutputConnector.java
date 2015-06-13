@@ -47,7 +47,7 @@ class WebSocketOutputConnector implements IOutputConnector
             myProtocolFormatter = protocolFormatter;
             
             myPingFrequency = pingFrequency;
-            myTimer = new Timer("WebSocketOutputConnectorPinging", true);
+            myTimer = new Timer("Eneter.WebSocketProtocolPingTimer", true);
         }
         finally
         {

@@ -154,7 +154,7 @@ class HttpInputConnector implements IInputConnector
             // If the duplex output channel did not poll within the timeout then the connection
             // is closed and removed from the list.
             // Note: The timer is set here but not executed.
-            myResponseReceiverInactivityTimer = new Timer(true);
+            myResponseReceiverInactivityTimer = new Timer("Eneter.HttpPollingInactivityTimer", true);
         }
         finally
         {

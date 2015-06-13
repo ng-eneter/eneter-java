@@ -38,8 +38,8 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
             MonitorChannelMessage aPingMessage = new MonitorChannelMessage(MonitorChannelMessageType.Ping, null);
             myPreserializedPingMessage = mySerializer.serialize(aPingMessage, MonitorChannelMessage.class);
             
-            myPingingTimer = new Timer(true);
-            myReceiveTimer = new Timer(true);
+            myPingingTimer = new Timer("Eneter.ClientPingTimer", true);
+            myReceiveTimer = new Timer("Eneter.ClientMonitorReceiveTimer", true);
             
             myUnderlyingOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
             myUnderlyingOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);

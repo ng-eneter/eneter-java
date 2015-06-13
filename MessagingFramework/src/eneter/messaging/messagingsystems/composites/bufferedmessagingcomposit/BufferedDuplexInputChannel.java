@@ -149,7 +149,7 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
             myInputChannel = underlyingDuplexInputChannel;
             myMaxOfflineTime = maxOfflineTime;
 
-            myMaxOfflineChecker = new Timer("MaxOfflineChecker",true);
+            myMaxOfflineChecker = new Timer("Eneter.MaxOfflineTimer",true);
         }
         finally
         {

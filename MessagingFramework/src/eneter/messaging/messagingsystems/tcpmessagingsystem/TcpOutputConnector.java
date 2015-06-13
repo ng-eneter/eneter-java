@@ -74,7 +74,7 @@ class TcpOutputConnector implements IOutputConnector
 
                     myResponseMessageHandler = responseMessageHandler;
 
-                    myResponseReceiverThread = new Thread(myDoResponseListening);
+                    myResponseReceiverThread = new Thread(myDoResponseListening, "Eneter.TcpClientListener");
                     myResponseReceiverThread.start();
 
                     // Wait until thread listening to response messages is running.
