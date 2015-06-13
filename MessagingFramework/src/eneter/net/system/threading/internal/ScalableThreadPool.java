@@ -9,20 +9,22 @@
 package eneter.net.system.threading.internal;
 
 import java.util.ArrayDeque;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.*;
 
 
-class ScalableThreadPool
+public class ScalableThreadPool
 {
-    public static class TaskQueue
+    // Synchronized queue for tasks.
+    private static class TaskQueue
     {
         public void enqueue(Runnable task)
         {
             myLock.lock();
             try
             {
-                myMessageQueue.add(task);
+                myTasks.add(task);
                 myTaskEnqued.signal();
             }
             finally
@@ -36,14 +38,14 @@ class ScalableThreadPool
             myLock.lock();
             try
             {
-                if (!myMessageQueue.isEmpty())
+                if (!myTasks.isEmpty())
                 {
-                    return myMessageQueue.poll();
+                    return myTasks.poll();
                 }
                 
                 if (myTaskEnqued.await(timeout, TimeUnit.MILLISECONDS))
                 {
-                    return myMessageQueue.poll();
+                    return myTasks.poll();
                 }
                 
                 return null;
@@ -57,11 +59,13 @@ class ScalableThreadPool
         
         private ReentrantLock myLock = new ReentrantLock();
         private Condition myTaskEnqued = myLock.newCondition();
-        private ArrayDeque<Runnable> myMessageQueue = new ArrayDeque<Runnable>();
+        private ArrayDeque<Runnable> myTasks = new ArrayDeque<Runnable>();
     }
     
-    private class WorkingThread
+    // Thread living in the pool.
+    private class PoolThread
     {
+        // Handler processing tasks from the queue.
         private class TaskHandler implements Runnable
         {
             @Override
@@ -69,8 +73,8 @@ class ScalableThreadPool
             {
                 synchronized (myNumberOfThreadsManipulator)
                 {
-                    ++myCurrentNumberOfThreads;
-                    ++myNumberOfIdleThreds;
+                    ++myNumberOfThreads;
+                    ++myNumberOfIdleThreads;
                 }
                 
                 while(true)
@@ -84,8 +88,8 @@ class ScalableThreadPool
                     {
                         synchronized (myNumberOfThreadsManipulator)
                         {
-                            --myCurrentNumberOfThreads;
-                            --myNumberOfIdleThreds;
+                            --myNumberOfThreads;
+                            --myNumberOfIdleThreads;
                         }
                         
                         break;
@@ -95,7 +99,7 @@ class ScalableThreadPool
                     {
                         synchronized (myNumberOfThreadsManipulator)
                         {
-                            --myNumberOfIdleThreds;
+                            --myNumberOfIdleThreads;
                         }
                         
                         try
@@ -110,7 +114,7 @@ class ScalableThreadPool
                         
                         synchronized (myNumberOfThreadsManipulator)
                         {
-                            ++myNumberOfIdleThreds;
+                            ++myNumberOfIdleThreads;
                         }
                     }
                     else
@@ -121,12 +125,16 @@ class ScalableThreadPool
                         {
                             synchronized (myNumberOfThreadsManipulator)
                             {
-                                if (myCurrentNumberOfThreads > myMinNumberOfThreads)
+                                if (myNumberOfThreads > myMinNumberOfThreads)
                                 {
-                                    --myCurrentNumberOfThreads;
-                                    --myNumberOfIdleThreds;
+                                    --myNumberOfThreads;
+                                    --myNumberOfIdleThreads;
                                     
                                     break;
+                                }
+                                else
+                                {
+                                    myIdleTime = 0;
                                 }
                             }
                         }
@@ -135,13 +143,12 @@ class ScalableThreadPool
             }
         }
         
-        public WorkingThread()
+        public PoolThread()
         {
-            myThread = new Thread(new TaskHandler(), "Eneter.ThreadPool");
-            myThread.setDaemon(true);
+            myThread = mythreadFactory.newThread(new TaskHandler());
         }
         
-        public void run()
+        public void start()
         {
             myThread.start();
         }
@@ -152,11 +159,12 @@ class ScalableThreadPool
     }
 
     
-    public ScalableThreadPool(int minThreads, int maxThreads, int maxIdleTime)
+    public ScalableThreadPool(int minThreads, int maxThreads, int maxIdleTime, ThreadFactory threadFactory)
     {
         myMinNumberOfThreads = minThreads;
         myMaxNumberOfThreads = maxThreads;
         myMaxIdleTime = maxIdleTime;
+        mythreadFactory = threadFactory;
     }
     
     public void execute(Runnable task)
@@ -165,23 +173,24 @@ class ScalableThreadPool
         
         synchronized (myNumberOfThreadsManipulator)
         {
-            if (myCurrentNumberOfThreads < myMaxNumberOfThreads &&
-                myNumberOfIdleThreds == 0)
+            if (myNumberOfThreads < myMaxNumberOfThreads &&
+                myNumberOfIdleThreads == 0)
             {
-                WorkingThread aThread = new WorkingThread();
-                aThread.run();
+                PoolThread aThread = new PoolThread();
+                aThread.start();
             }
         }
     }
     
     
+    private ThreadFactory mythreadFactory;
     private int myMinNumberOfThreads;
     private int myMaxNumberOfThreads;
     private int myMaxIdleTime;
     
     private Object myNumberOfThreadsManipulator = new Object();
-    private int myCurrentNumberOfThreads;
-    private int myNumberOfIdleThreds;
+    private int myNumberOfThreads;
+    private int myNumberOfIdleThreads;
     
     private TaskQueue myTaskQueue = new TaskQueue();
 }

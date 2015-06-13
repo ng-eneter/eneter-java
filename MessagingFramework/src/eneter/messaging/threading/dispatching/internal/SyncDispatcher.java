@@ -8,12 +8,11 @@
 
 package eneter.messaging.threading.dispatching.internal;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
+import eneter.net.system.threading.internal.ScalableThreadPool;
 
 public class SyncDispatcher implements IThreadDispatcher
 {
@@ -29,7 +28,7 @@ public class SyncDispatcher implements IThreadDispatcher
 
     
     // Ensures sequential processing of work-items by one thread.
-    private ExecutorService myWorkingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
+    private ScalableThreadPool myWorkingThread = new ScalableThreadPool(0, 1, 5000, new ThreadFactory()
     {
         @Override
         public Thread newThread(Runnable r)

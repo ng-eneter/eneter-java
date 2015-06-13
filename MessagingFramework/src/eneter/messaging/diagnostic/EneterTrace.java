@@ -18,6 +18,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.regex.Pattern;
 
+import eneter.net.system.threading.internal.ScalableThreadPool;
+
 
 /**
  * Super duper trace.
@@ -617,7 +619,7 @@ public class EneterTrace
     private static Timer myTraceBufferFlushTimer = new Timer("Eneter.TraceFlushTimer", true);
     
     // Ensures sequential writing of messages. 
-    private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
+    private static ScalableThreadPool myWritingThread = new ScalableThreadPool(0, 1, 5000, new ThreadFactory()
     {
         @Override
         public Thread newThread(Runnable r)
