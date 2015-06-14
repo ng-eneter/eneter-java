@@ -26,7 +26,7 @@ public final class ThreadPool
         @Override
         public Thread newThread(Runnable r)
         {
-            Thread aThread = new Thread(r, "Eneter.ThreadPool");
+            Thread aThread = new Thread(r, "Eneter.Pool");
             aThread.setDaemon(true);
             return aThread;
         }

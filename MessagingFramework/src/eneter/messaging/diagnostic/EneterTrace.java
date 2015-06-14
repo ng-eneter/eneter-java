@@ -13,8 +13,6 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.io.PrintStream;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.regex.Pattern;
 
@@ -618,7 +616,8 @@ public class EneterTrace
     private static StringBuilder myTraceBuffer = new StringBuilder(myTraceBufferCapacity);
     private static Timer myTraceBufferFlushTimer = new Timer("Eneter.TraceFlushTimer", true);
     
-    // Ensures sequential writing of messages. 
+    // Ensures sequential writing of messages.
+    //private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
     private static ScalableThreadPool myWritingThread = new ScalableThreadPool(0, 1, 5000, new ThreadFactory()
     {
         @Override

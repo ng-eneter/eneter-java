@@ -10,8 +10,6 @@ package eneter.net.system.threading.internal;
 
 import java.util.ArrayDeque;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.*;
 
 
 public class ScalableThreadPool
@@ -19,46 +17,58 @@ public class ScalableThreadPool
     // Synchronized queue for tasks.
     private static class TaskQueue
     {
-        public void enqueue(Runnable task)
+        public boolean enqueue(Runnable task)
         {
-            myLock.lock();
-            try
+            // Wait until lock is acquired.
+            synchronized (myTasks)
             {
+                // Put task to the queue.
                 myTasks.add(task);
-                myTaskEnqued.signal();
-            }
-            finally
-            {
-                myLock.unlock();
+                
+                // Check if there is a thread(s) waiting until a new task is entered.
+                boolean anIdleThreadExist = myNumberOfIdleThreads > 0;
+
+                // Release the lock and signal the new task was entered.
+                myTasks.notify();
+                
+                return anIdleThreadExist;
             }
         }
         
         public Runnable dequeue(long timeout) throws InterruptedException
         {
-            myLock.lock();
-            try
+            // Wait until lock is acquired.
+            synchronized (myTasks)
             {
-                if (!myTasks.isEmpty())
+                // If the queue with task is not empty then remove the first one and process it.
+                if (myTasks.size() > 0)
                 {
                     return myTasks.poll();
                 }
                 
-                if (myTaskEnqued.await(timeout, TimeUnit.MILLISECONDS))
-                {
-                    return myTasks.poll();
-                }
+                // The queue with tasks is empty so return the lock and wait until
+                // a task is entered and the lock is acquired again or until timeout.
+                ++myNumberOfIdleThreads;
+                myTasks.wait(timeout);
                 
-                return null;
-            }
-            finally
-            {
-                myLock.unlock();
+                // We do not know if the waiting was interrupted by re-acquired lock or timeout.
+                // Therefore enforce lock acquire.
+                synchronized (myTasks)
+                {
+                    -- myNumberOfIdleThreads;
+                    
+                    if (myTasks.size() > 0)
+                    {
+                        return myTasks.poll();
+                    }
+                    
+                    return null;
+                }
             }
         }
         
         
-        private ReentrantLock myLock = new ReentrantLock();
-        private Condition myTaskEnqued = myLock.newCondition();
+        private int myNumberOfIdleThreads;
         private ArrayDeque<Runnable> myTasks = new ArrayDeque<Runnable>();
     }
     
@@ -71,25 +81,18 @@ public class ScalableThreadPool
             @Override
             public void run()
             {
-                synchronized (myNumberOfThreadsManipulator)
-                {
-                    ++myNumberOfThreads;
-                    ++myNumberOfIdleThreads;
-                }
-                
                 while(true)
                 {
                     Runnable aTask = null;
                     try
                     {
-                        aTask = myTaskQueue.dequeue(100);
+                        aTask = myTaskQueue.dequeue(myMaxIdleTime);
                     }
                     catch (Exception err)
                     {
                         synchronized (myNumberOfThreadsManipulator)
                         {
                             --myNumberOfThreads;
-                            --myNumberOfIdleThreads;
                         }
                         
                         break;
@@ -97,11 +100,6 @@ public class ScalableThreadPool
                     
                     if (aTask != null)
                     {
-                        synchronized (myNumberOfThreadsManipulator)
-                        {
-                            --myNumberOfIdleThreads;
-                        }
-                        
                         try
                         {
                             aTask.run();
@@ -109,43 +107,30 @@ public class ScalableThreadPool
                         catch (Exception err)
                         {
                         }
-                        
-                        myIdleTime = 0;
-                        
-                        synchronized (myNumberOfThreadsManipulator)
-                        {
-                            ++myNumberOfIdleThreads;
-                        }
                     }
                     else
                     {
-                        myIdleTime += 100;
-                        
-                        if (myIdleTime >= myMaxIdleTime)
+                        synchronized (myNumberOfThreadsManipulator)
                         {
-                            synchronized (myNumberOfThreadsManipulator)
+                            if (myNumberOfThreads > myMinNumberOfThreads)
                             {
-                                if (myNumberOfThreads > myMinNumberOfThreads)
-                                {
-                                    --myNumberOfThreads;
-                                    --myNumberOfIdleThreads;
-                                    
-                                    break;
-                                }
-                                else
-                                {
-                                    myIdleTime = 0;
-                                }
+                                --myNumberOfThreads;
+                                
+                                break;
                             }
                         }
                     }
                 }
+                
+                //System.out.println("Thread ended: " + Thread.currentThread().getId());
             }
         }
         
         public PoolThread()
         {
             myThread = mythreadFactory.newThread(new TaskHandler());
+            
+            //System.out.println("Thread started: " + myThread.getId());
         }
         
         public void start()
@@ -155,7 +140,6 @@ public class ScalableThreadPool
         
        
         private Thread myThread;
-        private int myIdleTime;
     }
 
     
@@ -169,15 +153,19 @@ public class ScalableThreadPool
     
     public void execute(Runnable task)
     {
-        myTaskQueue.enqueue(task);
+        boolean anIdleThreadExist = myTaskQueue.enqueue(task);
         
-        synchronized (myNumberOfThreadsManipulator)
+        if (!anIdleThreadExist)
         {
-            if (myNumberOfThreads < myMaxNumberOfThreads &&
-                myNumberOfIdleThreads == 0)
+            synchronized (myNumberOfThreadsManipulator)
             {
-                PoolThread aThread = new PoolThread();
-                aThread.start();
+                if (myNumberOfThreads < myMaxNumberOfThreads)
+                {
+                    ++myNumberOfThreads;
+                   
+                    PoolThread aThread = new PoolThread();
+                    aThread.start();
+                }
             }
         }
     }
@@ -190,7 +178,6 @@ public class ScalableThreadPool
     
     private Object myNumberOfThreadsManipulator = new Object();
     private int myNumberOfThreads;
-    private int myNumberOfIdleThreads;
     
     private TaskQueue myTaskQueue = new TaskQueue();
 }
