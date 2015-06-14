@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.regex.Pattern;
 
+import eneter.net.system.threading.internal.ScalableThreadPool;
 import android.util.Log;
 
 
@@ -449,12 +450,12 @@ public class EneterTrace
     private static String myTag = "EneterMessaging"; 
     
     // Ensures sequential writing of messages. 
-    private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
+    private static ScalableThreadPool myWritingThread = new ScalableThreadPool(0, 1, 5000, new ThreadFactory()
     {
         @Override
         public Thread newThread(Runnable r)
         {
-            Thread aNewThread = new Thread(r);
+        	Thread aNewThread = new Thread(r, "Eneter.TraceWriter");
             
             // Thread shall not block the application to shutdown.
             aNewThread.setDaemon(true);
