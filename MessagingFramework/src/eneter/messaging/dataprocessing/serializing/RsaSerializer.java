@@ -17,9 +17,9 @@ import eneter.messaging.diagnostic.EneterTrace;
  * The serialization:
  * <ol>
  * <li>Incoming data is serialized by underlying serializer (e.g. XmlStringSerializer)</li>
- * <li>The random key is generated and used with AES algorythm to encrypt the serialized data.</li>
+ * <li>The random key is generated and used with AES algorithm to encrypt the serialized data.</li>
  * <li>The random key for AES is encrypted by RSA using the public key.</li>
- * <li>The serialized data consits of AES encrypted data and RSA encrypted key for AES.</li>
+ * <li>The serialized data consist of AES encrypted data and RSA encrypted key for AES.</li>
  * </ol>
  * The deserialization:
  * <ol>
@@ -71,7 +71,7 @@ public class RsaSerializer implements ISerializer
      * 
      * @param publicKey publicKey public key used for serialization. It can be null if the serializer will be used only for deserialization.
      * @param privateKey private key used for deserialization. It can be null if the serializer will be used only for serialization.
-     * @param aesBitSize size of the random key generated for the AES encryption, 128, 256, ...
+     * @param aesBitSize size of the random key generated for the AES encryption, 128, 256, ... Default value is 128.
      * @param underlyingSerializer underlying serializer used to serialize/deserialize data e.g. XmlStringSerializer
      */
     public RsaSerializer(RSAPublicKey publicKey, RSAPrivateKey privateKey, int aesBitSize, ISerializer underlyingSerializer)
@@ -83,12 +83,36 @@ public class RsaSerializer implements ISerializer
             myPrivateKey = privateKey;
             myAesBitSize = aesBitSize;
             myUnderlyingSerializer = underlyingSerializer;
+            myCipherTransformationName = "RSA/ECB/PKCS1Padding";
         }
         finally
         {
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    /**
+     * Sets name of the cipher transformation.
+     * The default value is RSA/ECB/PKCS1Padding which is compatible with .NET platform.
+     * @param cipherTransformationName sets the transformation name in format algorithmName/algorithmMode/algorithmPadding
+     * The default value which is compatible with .NET is RSA/ECB/PKCS1Padding.
+     * @return instance of this serializer
+     */
+    public RsaSerializer setCipherTransformationSpecification(String cipherTransformationName)
+    {
+        myCipherTransformationName = cipherTransformationName;
+        return this;
+    }
+    
+    /**
+     * Gets name of used cipher transformation name.
+     * @return transformation name
+     */
+    public String getCipherTransformationSpecification()
+    {
+        return myCipherTransformationName;
+    }
+    
     
     /**
      * Serializes data.
@@ -116,7 +140,7 @@ public class RsaSerializer implements ISerializer
             
             // Encrypt the random key with RSA using the public key.
             // Note: Only guy having the private key can decrypt it.
-            Cipher aCryptoProvider = Cipher.getInstance("RSA");
+            Cipher aCryptoProvider = Cipher.getInstance(myCipherTransformationName);
             aCryptoProvider.init(Cipher.ENCRYPT_MODE, myPublicKey);
             aData[0] = aCryptoProvider.doFinal(aKey.getEncoded());
             aData[1] = aCryptoProvider.doFinal(anInitializationVector);
@@ -143,7 +167,7 @@ public class RsaSerializer implements ISerializer
             byte[][] aData = myUnderlyingSerializer.deserialize(serializedData, byte[][].class);
             
             // Use the private key to decrypt the key and iv for the AES.
-            Cipher aCryptoProvider = Cipher.getInstance("RSA");
+            Cipher aCryptoProvider = Cipher.getInstance(myCipherTransformationName);
             aCryptoProvider.init(Cipher.DECRYPT_MODE, myPrivateKey);
             byte[] aKeyBytes = aCryptoProvider.doFinal(aData[0]);
             byte[] anIvBytes = aCryptoProvider.doFinal(aData[1]);
@@ -168,4 +192,5 @@ public class RsaSerializer implements ISerializer
     private int myAesBitSize;
     private RSAPrivateKey myPrivateKey;
     private RSAPublicKey myPublicKey;
+    private String myCipherTransformationName;
 }
