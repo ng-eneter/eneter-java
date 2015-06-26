@@ -145,17 +145,15 @@ import eneter.messaging.threading.dispatching.*;
  */
 public class MessageBusMessagingFactory implements IMessagingSystemFactory
 {
-    private class MessageBusConnectorFactory implements IOutputConnectorFactory, IInputConnectorFactory
+    private class MessageBusOutputConnectorFactory implements IOutputConnectorFactory
     {
-        public MessageBusConnectorFactory(String serviceConnctingAddress, String clientConnectingAddress, ISerializer serializer, IMessagingSystemFactory messageBusMessaging)
+        public MessageBusOutputConnectorFactory(String clientConnectingAddress, ISerializer serializer)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
                 myClientConnectingAddress = clientConnectingAddress;
-                myServiceConnectingAddress = serviceConnctingAddress;
                 mySerializer = serializer;
-                myMessageBusMessaging = messageBusMessaging;
                 myOpenConnectionTimeout = 30000;
             }
             finally
@@ -164,8 +162,6 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
             }
         }
 
-        
-
         @Override
         public IOutputConnector createOutputConnector(String serviceConnectorAddress, String clientConnectorAddress)
                 throws Exception
@@ -173,26 +169,8 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                IDuplexOutputChannel aMessageBusOutputChannel = myMessageBusMessaging.createDuplexOutputChannel(myClientConnectingAddress, clientConnectorAddress);
+                IDuplexOutputChannel aMessageBusOutputChannel = myClientMessaging.createDuplexOutputChannel(myClientConnectingAddress, clientConnectorAddress);
                 return new MessageBusOutputConnector(serviceConnectorAddress, mySerializer, aMessageBusOutputChannel, myOpenConnectionTimeout);
-            }
-            finally
-            {
-                EneterTrace.leaving(aTrace);
-            }
-        }
-        
-        @Override
-        public IInputConnector createInputConnector(String inputConnectorAddress)
-                throws Exception
-        {
-            EneterTrace aTrace = EneterTrace.entering();
-            try
-            {
-                // Note: message bus service address is encoded in OpenConnectionMessage when the service connects the message bus.
-                //       Therefore receiverAddress (which is message bus service address) is used when creating output channel.
-                IDuplexOutputChannel aMessageBusOutputChannel = myMessageBusMessaging.createDuplexOutputChannel(myServiceConnectingAddress, inputConnectorAddress);
-                return new MessageBusInputConnector(mySerializer, aMessageBusOutputChannel);
             }
             finally
             {
@@ -209,13 +187,71 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         {
             myOpenConnectionTimeout = openConnectionTimeout;
         }
+        
+        public IMessagingSystemFactory getClientMessaging()
+        {
+            return myClientMessaging;
+        }
+        
+        public void setClientMessaging(IMessagingSystemFactory clientMessaging)
+        {
+            myClientMessaging = clientMessaging;
+        }
 
         private String myClientConnectingAddress;
-        private String myServiceConnectingAddress;
         private ISerializer mySerializer;
-        private IMessagingSystemFactory myMessageBusMessaging;
+        private IMessagingSystemFactory myClientMessaging;
         
         private int myOpenConnectionTimeout;
+    }
+    
+    private class MessageBusInputConnectorFactory implements IInputConnectorFactory
+    {
+        public MessageBusInputConnectorFactory(String serviceConnctingAddress, ISerializer serializer)
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                myServiceConnectingAddress = serviceConnctingAddress;
+                mySerializer = serializer;
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+        
+        @Override
+        public IInputConnector createInputConnector(String inputConnectorAddress)
+                throws Exception
+        {
+            EneterTrace aTrace = EneterTrace.entering();
+            try
+            {
+                // Note: message bus service address is encoded in OpenConnectionMessage when the service connects the message bus.
+                //       Therefore receiverAddress (which is message bus service address) is used when creating output channel.
+                IDuplexOutputChannel aMessageBusOutputChannel = myServiceMessaging.createDuplexOutputChannel(myServiceConnectingAddress, inputConnectorAddress);
+                return new MessageBusInputConnector(mySerializer, aMessageBusOutputChannel);
+            }
+            finally
+            {
+                EneterTrace.leaving(aTrace);
+            }
+        }
+
+        public IMessagingSystemFactory getServiceMessaging()
+        {
+            return myServiceMessaging;
+        }
+        
+        public void setServiceMessaging(IMessagingSystemFactory serviceMessaging)
+        {
+            myServiceMessaging = serviceMessaging;
+        }
+
+        private String myServiceConnectingAddress;
+        private ISerializer mySerializer;
+        private IMessagingSystemFactory myServiceMessaging;
     }
     
    
@@ -230,7 +266,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
      */
     public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory underlyingMessaging)
     {
-        this(serviceConnctingAddress, clientConnectingAddress, underlyingMessaging, new MessageBusCustomSerializer());
+        this(serviceConnctingAddress, clientConnectingAddress, underlyingMessaging, underlyingMessaging, new MessageBusCustomSerializer());
     }
     
     /**
@@ -246,10 +282,20 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
      */
     public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory underlyingMessaging, ISerializer serializer)
     {
+        this(serviceConnctingAddress, clientConnectingAddress, underlyingMessaging, underlyingMessaging, serializer);
+    }
+    
+    public MessageBusMessagingFactory(String serviceConnctingAddress, String clientConnectingAddress, IMessagingSystemFactory serviceUnderlyingMessaging, IMessagingSystemFactory clientUnderlyingMessaging, ISerializer serializer)
+    {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myConnectorFactory = new MessageBusConnectorFactory(serviceConnctingAddress, clientConnectingAddress, serializer, underlyingMessaging);
+            ISerializer aSerializer = (serializer == null) ? new MessageBusCustomSerializer() : serializer;
+            myOutputConnectorFactory = new MessageBusOutputConnectorFactory(clientConnectingAddress, aSerializer);
+            myInputConnectorFactory = new MessageBusInputConnectorFactory(serviceConnctingAddress, aSerializer);
+            
+            setClientMessaging(clientUnderlyingMessaging);
+            setServiceMessaging(serviceUnderlyingMessaging);
 
             // Dispatch events in the same thread as notified from the underlying messaging.
             myOutputChannelThreading = new NoDispatching();
@@ -270,7 +316,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
             IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aDispatcherAfterMessageDecoded, myConnectorFactory);
+            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, aDispatcherAfterMessageDecoded, myOutputConnectorFactory);
         }
         finally
         {
@@ -286,7 +332,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
             IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aDispatcherAfterMessageDecoded, myConnectorFactory);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, aDispatcherAfterMessageDecoded, myOutputConnectorFactory);
         }
         finally
         {
@@ -303,7 +349,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         {
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
             IThreadDispatcher aDispatcherAfterMessageDecoded = myDispatchingAfterMessageDecoded.getDispatcher();
-            IInputConnector anInputConnector = myConnectorFactory.createInputConnector(channelId);
+            IInputConnector anInputConnector = myInputConnectorFactory.createInputConnector(channelId);
             DefaultDuplexInputChannel anInputChannel = new DefaultDuplexInputChannel(channelId, aDispatcher, aDispatcherAfterMessageDecoded, anInputConnector);
             return anInputChannel;
         }
@@ -313,6 +359,46 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
         }
     }
 
+    /**
+     * Gets messaging used by clients to connect the message bus.
+     * @return
+     */
+    public IMessagingSystemFactory getClientMessaging()
+    {
+        return myOutputConnectorFactory.getClientMessaging();
+    }
+    
+    /**
+     * Sets messaging used by clients to connect the message bus.
+     * @param clientMessaging messaging which shall be used clients to connect the message bus.
+     * @return
+     */
+    public MessageBusMessagingFactory setClientMessaging(IMessagingSystemFactory clientMessaging)
+    {
+        myOutputConnectorFactory.setClientMessaging(clientMessaging);
+        return this;
+    }
+    
+    /**
+     * Gets messaging used by services to be exposed via the message bus.
+     * @return
+     */
+    public IMessagingSystemFactory getServiceMessaging()
+    {
+        return myInputConnectorFactory.getServiceMessaging();
+    }
+    
+    /**
+     * messaging used by services to be exposed via the message bus.
+     * @param serviceMessaging messaging which shall be used by services to expose their API via the message bus.
+     * @return
+     */
+    public MessageBusMessagingFactory setServiceMessaging(IMessagingSystemFactory serviceMessaging)
+    {
+        myInputConnectorFactory.setServiceMessaging(serviceMessaging);
+        return this;
+    }
+    
     /**
      * Sets threading mode for input channels.
      * @param inputChannelThreading threading model
@@ -366,7 +452,7 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
      */
     public MessageBusMessagingFactory setConnectTimeout(int milliseconds)
     {
-        myConnectorFactory.setOpenConnectionTimeout(milliseconds);
+        myOutputConnectorFactory.setOpenConnectionTimeout(milliseconds);
         return this;
     }
     
@@ -383,10 +469,11 @@ public class MessageBusMessagingFactory implements IMessagingSystemFactory
      */
     public int getConnectionTimeout()
     {
-        return myConnectorFactory.getOpenConnectionTimeout();
+        return myOutputConnectorFactory.getOpenConnectionTimeout();
     }
     
-    private MessageBusConnectorFactory myConnectorFactory;
+    private MessageBusOutputConnectorFactory myOutputConnectorFactory;
+    private MessageBusInputConnectorFactory myInputConnectorFactory;
     private IThreadDispatcherProvider myInputChannelThreading;
     private IThreadDispatcherProvider myOutputChannelThreading;
     private IThreadDispatcherProvider myDispatchingAfterMessageDecoded = new SyncDispatching();

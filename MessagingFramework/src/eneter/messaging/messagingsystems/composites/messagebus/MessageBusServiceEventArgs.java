@@ -17,9 +17,10 @@ public class MessageBusServiceEventArgs
      * Constructs the event arguments.
      * @param serviceAdddress service id.
      */
-    public MessageBusServiceEventArgs(String serviceAdddress)
+    public MessageBusServiceEventArgs(String serviceAdddress, String responseReceiverId)
     {
         myServiceAddress = serviceAdddress;
+        myResponseReceiverId = responseReceiverId;
     }
 
     /**
@@ -31,5 +32,15 @@ public class MessageBusServiceEventArgs
         return myServiceAddress;
     }
     
+    /**
+     * Returns response receiver id of the service.
+     * @return
+     */
+    public String getResponseReceiverId()
+    {
+        return myResponseReceiverId;
+    }
+    
     private String myServiceAddress;
+    private String myResponseReceiverId;
 }

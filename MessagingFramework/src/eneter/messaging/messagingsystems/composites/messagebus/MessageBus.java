@@ -656,7 +656,7 @@ class MessageBus implements IMessageBus
                 {
                     try
                     {
-                        MessageBusServiceEventArgs anEvent = new MessageBusServiceEventArgs(serviceId);
+                        MessageBusServiceEventArgs anEvent = new MessageBusServiceEventArgs(serviceId, serviceResponseReceiverId);
                         myServiceRegisteredEvent.raise(this, anEvent);
                     }
                     catch (Exception err)
@@ -778,7 +778,7 @@ class MessageBus implements IMessageBus
 
                 try
                 {
-                    MessageBusServiceEventArgs anEvent = new MessageBusServiceEventArgs(aServiceId[0]);
+                    MessageBusServiceEventArgs anEvent = new MessageBusServiceEventArgs(aServiceId[0], serviceResponseReceiverId);
                     myServiceUnregisteredEvent.raise(this, anEvent);
                 }
                 catch (Exception err)
