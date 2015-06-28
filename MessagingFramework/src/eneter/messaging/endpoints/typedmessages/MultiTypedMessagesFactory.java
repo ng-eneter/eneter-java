@@ -8,6 +8,7 @@
 
 package eneter.messaging.endpoints.typedmessages;
 
+import eneter.messaging.dataprocessing.serializing.GetSerializerCallback;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.dataprocessing.serializing.XmlStringSerializer;
 import eneter.messaging.diagnostic.EneterTrace;
@@ -194,6 +195,7 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
         {
             mySyncResponseReceiveTimeout = 0;
             mySerializer = serializer;
+            mySerializerProvider = null;
             mySyncDuplexTypedSenderThreadMode = new SyncDispatching();
         }
         finally
@@ -237,7 +239,7 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new MultiTypedMessageReceiver(mySerializer);
+            return new MultiTypedMessageReceiver(mySerializer, mySerializerProvider);
         }
         finally
         {
@@ -302,6 +304,38 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
     }
     
     /**
+     * Gets callback for retrieving serializer based on response receiver id.
+     * This callback is used by MultiTypedMessageReceiver when it needs to serialize/deserialize the communication with MultiTypedMessageSender.
+     * Providing this callback allows to use a different serializer for each connected client.
+     * This can be used e.g. if the communication with each client needs to be encrypted using a different password.<br/>
+     * <br/>
+     * The default value is null and it means SerializerProvider callback is not used and one serializer which specified in the Serializer property is used for all serialization/deserialization.<br/>
+     * If SerializerProvider is not null then the setting in the Serializer property is ignored.
+     * @return GetSerializerCallback
+     */
+    public GetSerializerCallback getSerializerProvider()
+    {
+        return mySerializerProvider;
+    }
+    
+    /**
+     * Sets callback for retrieving serializer based on response receiver id.
+     * This callback is used by MultiTypedMessageReceiver when it needs to serialize/deserialize the communication with MultiTypedMessageSender.
+     * Providing this callback allows to use a different serializer for each connected client.
+     * This can be used e.g. if the communication with each client needs to be encrypted using a different password.<br/>
+     * <br/>
+     * The default value is null and it means SerializerProvider callback is not used and one serializer which specified in the Serializer property is used for all serialization/deserialization.<br/>
+     * If SerializerProvider is not null then the setting in the Serializer property is ignored.
+     * @param serializerProvider
+     * @return GetSerializerCallback
+     */
+    public MultiTypedMessagesFactory setSerializerProvider(GetSerializerCallback serializerProvider)
+    {
+        mySerializerProvider = serializerProvider;
+        return this;
+    }
+    
+    /**
      * Sets the timeout which is used for SyncMultitypedMessageSender.
      * When SyncMultitypedMessageSender calls sendRequestMessage(..) then it waits until the response is received.
      * This timeout specifies the maximum wating time. The default value is 0 and it means infinite time.
@@ -327,6 +361,7 @@ public class MultiTypedMessagesFactory implements IMultiTypedMessagesFactory
     
     
     private ISerializer mySerializer;
+    private GetSerializerCallback mySerializerProvider;
     private int mySyncResponseReceiveTimeout;
     private IThreadDispatcherProvider mySyncDuplexTypedSenderThreadMode;
 }

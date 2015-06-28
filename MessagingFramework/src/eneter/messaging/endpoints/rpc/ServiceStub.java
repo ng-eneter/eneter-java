@@ -3,7 +3,7 @@ package eneter.messaging.endpoints.rpc;
 import java.lang.reflect.*;
 import java.util.*;
 
-import eneter.messaging.dataprocessing.serializing.ISerializer;
+import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -90,7 +90,7 @@ class ServiceStub<TServiceInterface>
     }
     
     
-    public ServiceStub(TServiceInterface service, ISerializer serializer, Class<TServiceInterface> serviceClazz)
+    public ServiceStub(TServiceInterface service, ISerializer serializer, GetSerializerCallback getSerializer, Class<TServiceInterface> serviceClazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -98,6 +98,7 @@ class ServiceStub<TServiceInterface>
             myService = service;
             mySerializer = serializer;
             myServiceClazz = serviceClazz;
+            myGetSerializer = getSerializer;
 
             for (Method aMethod : myServiceClazz.getMethods())
             {
@@ -171,25 +172,30 @@ class ServiceStub<TServiceInterface>
                                     if (aSubscribedClients != null && aSubscribedClients.length > 0)
                                     {
                                         Object aSerializedEvent = null;
-                                        try
+                                        
+                                        // If there is one serializer for all clients then pre-serialize the message to increase the performance.
+                                        if (myGetSerializer == null)
                                         {
-                                            // Serialize the event and send it to subscribed clients.
-                                            RpcMessage anEventMessage = new RpcMessage();
-                                            anEventMessage.Id = 0; // dummy - because we do not need to track it.
-                                            anEventMessage.Flag = RpcFlags.RaiseEvent;
-                                            anEventMessage.OperationName = aTmpEventInfo.getName();
-                                            anEventMessage.SerializedData = (anEventArgsType == EventArgs.class) ?
-                                                    null : // EventArgs is a known type without parameters - we do not need to serialize it.
-                                                    new Object[] { mySerializer.serialize(e, (Class<Object>)anEventArgsType) };
-    
-                                            aSerializedEvent = mySerializer.serialize(anEventMessage, RpcMessage.class);
-                                        }
-                                        catch (Exception err)
-                                        {
-                                            EneterTrace.error(TracedObject() + "failed to serialize the event '" + aTmpEventInfo.getName() + "'.", err);
-    
-                                            // Note: this exception will be thrown to the delegate that raised the event.
-                                            throw err;
+                                            try
+                                            {
+                                                // Serialize the event and send it to subscribed clients.
+                                                RpcMessage anEventMessage = new RpcMessage();
+                                                anEventMessage.Id = 0; // dummy - because we do not need to track it.
+                                                anEventMessage.Flag = RpcFlags.RaiseEvent;
+                                                anEventMessage.OperationName = aTmpEventInfo.getName();
+                                                anEventMessage.SerializedData = (anEventArgsType == EventArgs.class) ?
+                                                        null : // EventArgs is a known type without parameters - we do not need to serialize it.
+                                                        new Object[] { mySerializer.serialize(e, (Class<Object>)anEventArgsType) };
+        
+                                                aSerializedEvent = mySerializer.serialize(anEventMessage, RpcMessage.class);
+                                            }
+                                            catch (Exception err)
+                                            {
+                                                EneterTrace.error(TracedObject() + "failed to serialize the event '" + aTmpEventInfo.getName() + "'.", err);
+        
+                                                // Note: this exception will be thrown to the delegate that raised the event.
+                                                throw err;
+                                            }
                                         }
     
                                         // Iterate via subscribed clients and send them the event.
@@ -197,7 +203,30 @@ class ServiceStub<TServiceInterface>
                                         {
                                             try
                                             {
-                                                myInputChannel.sendResponseMessage(aClient, aSerializedEvent);
+                                                // If there is serializer per client then serialize the message for each client.
+                                                if (myGetSerializer != null)
+                                                {
+                                                    ISerializer aSerializer = myGetSerializer.invoke(aClient);
+                                                    
+                                                    RpcMessage anEventMessage = new RpcMessage();
+                                                    anEventMessage.Id = 0; // dummy - because we do not need to track it.
+                                                    anEventMessage.Flag = RpcFlags.RaiseEvent;
+                                                    anEventMessage.OperationName = aTmpEventInfo.getName();
+                                                    anEventMessage.SerializedData = (anEventArgsType == EventArgs.class) ?
+                                                            null : // EventArgs is a known type without parameters - we do not need to serialize it.
+                                                            new Object[] { aSerializer.serialize(e, (Class<Object>)anEventArgsType) };
+            
+                                                    // Note: do not store serialized data to aSerializedEvent because
+                                                    //       if SendResponseMessage works asynchronously then the reference to serialized
+                                                    //       data could be overridden.
+                                                    Object aSerializedEventForClient = aSerializer.serialize(anEventMessage, RpcMessage.class);
+                                                    
+                                                    myInputChannel.sendResponseMessage(aClient, aSerializedEventForClient);
+                                                }
+                                                else
+                                                {
+                                                    myInputChannel.sendResponseMessage(aClient, aSerializedEvent);
+                                                }
                                             }
                                             catch (Exception err)
                                             {
@@ -289,11 +318,13 @@ class ServiceStub<TServiceInterface>
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            ISerializer aSerializer = (myGetSerializer == null) ? mySerializer : myGetSerializer.invoke(e.getResponseReceiverId());
+            
             // Deserialize the incoming message.
             RpcMessage aRequestMessage = null;
             try
             {
-                aRequestMessage = mySerializer.deserialize(e.getMessage(), RpcMessage.class);
+                aRequestMessage = aSerializer.deserialize(e.getMessage(), RpcMessage.class);
             }
             catch (Exception err)
             {
@@ -322,7 +353,7 @@ class ServiceStub<TServiceInterface>
                         {
                             for (int i = 0; i < aServiceMethod.getInputParameterTypes().length; ++i)
                             {
-                                aDeserializedInputParameters[i] = mySerializer.deserialize(aRequestMessage.SerializedData[i], aServiceMethod.getInputParameterTypes()[i]);
+                                aDeserializedInputParameters[i] = aSerializer.deserialize(aRequestMessage.SerializedData[i], aServiceMethod.getInputParameterTypes()[i]);
                             }
                         }
                         catch (Exception err)
@@ -365,7 +396,7 @@ class ServiceStub<TServiceInterface>
                                     Object aSerializedReturnValue = (aServiceMethod.getMethod().getReturnType() != Void.class) ?
                                         // Note: aResult is of type aServiceMethod.getMethod().getReturnType().
                                         //       Therefore the generic type checking warning can be supressed.
-                                        mySerializer.serialize(aResult, (Class<Object>)aServiceMethod.getMethod().getReturnType()) :
+                                        aSerializer.serialize(aResult, (Class<Object>)aServiceMethod.getMethod().getReturnType()) :
                                         null;
                                     
                                     aResponseMessage.SerializedData = new Object[] { aSerializedReturnValue };
@@ -449,7 +480,7 @@ class ServiceStub<TServiceInterface>
             try
             {
                 // Serialize the response message.
-                Object aSerializedResponse = mySerializer.serialize(aResponseMessage, RpcMessage.class);
+                Object aSerializedResponse = aSerializer.serialize(aResponseMessage, RpcMessage.class);
                 myInputChannel.sendResponseMessage(e.getResponseReceiverId(), aSerializedResponse);
             }
             catch (Exception err)
@@ -513,6 +544,8 @@ class ServiceStub<TServiceInterface>
     private Class<TServiceInterface> myServiceClazz;
     private TServiceInterface myService;
     private ISerializer mySerializer;
+    private GetSerializerCallback myGetSerializer;
+    
     private HashSet<EventContext> myServiceEvents = new HashSet<EventContext>();
     private HashMap<String, ServiceMethod> myServiceMethods = new HashMap<String, ServiceMethod>();
     private IDuplexInputChannel myInputChannel;

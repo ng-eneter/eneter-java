@@ -10,7 +10,7 @@ package eneter.messaging.nodes.broker;
 
 import java.util.*;
 
-import eneter.messaging.dataprocessing.serializing.ISerializer;
+import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
@@ -39,13 +39,14 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         return myBrokerMessageReceivedEvent.getApi();
     }
     
-    public DuplexBroker(boolean isPublisherNotified, ISerializer serializer)
+    public DuplexBroker(boolean isPublisherNotified, ISerializer serializer, GetSerializerCallback getSerializerCallback)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myIsPublisherSelfnotified = isPublisherNotified;
             mySerializer = serializer;
+            myGetSerializerCallback = getSerializerCallback;
         }
         finally
         {
@@ -61,7 +62,14 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         try
         {
             BrokerMessage aNotifyMessage = new BrokerMessage(eventId, serializedMessage);
-            Object aSerializedNotifyMessage = mySerializer.serialize(aNotifyMessage, BrokerMessage.class);
+            
+            // If one serializer is used for the whole communication then pre-serialize the message to increase the performance.
+            // If there is SerializerProvider callback then the serialization must be performed before sending individualy
+            // for each client.
+            Object aSerializedNotifyMessage = (myGetSerializerCallback == null) ?
+                mySerializer.serialize(aNotifyMessage, BrokerMessage.class) :
+                null;
+            
             publish(myLocalReceiverId, aNotifyMessage, aSerializedNotifyMessage);
         }
         finally
@@ -153,7 +161,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
             BrokerMessage aBrokerMessage;
             try
             {
-                aBrokerMessage = mySerializer.deserialize(e.getMessage(), BrokerMessage.class);
+                ISerializer aSerializer = (myGetSerializerCallback == null) ? mySerializer : myGetSerializerCallback.invoke(e.getResponseReceiverId());
+                aBrokerMessage = aSerializer.deserialize(e.getMessage(), BrokerMessage.class);
             }
             catch (Exception err)
             {
@@ -164,7 +173,18 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
 
             if (aBrokerMessage.Request == EBrokerRequest.Publish)
             {
-                publish(e.getResponseReceiverId(), aBrokerMessage, e.getMessage());
+                if (myGetSerializerCallback == null)
+                {
+                    // If only one serializer is used for communication with all clients then
+                    // increase the performance by reusing already serialized message.
+                    publish(e.getResponseReceiverId(), aBrokerMessage, e.getMessage());
+                }
+                else
+                {
+                    // If there is a serializer per client then the message must be serialized
+                    // individually for each subscribed client.
+                    publish(e.getResponseReceiverId(), aBrokerMessage, null);
+                }
             }
             else if (aBrokerMessage.Request == EBrokerRequest.Subscribe)
             {
@@ -248,7 +268,24 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                 }
                 else
                 {
-                    send(aSubscription.ReceiverId, originalSerializedMessage);
+                    Object aSerializedMessage = originalSerializedMessage;
+                    if (aSerializedMessage == null)
+                    {
+                        try
+                        {
+                            ISerializer aSerializer = myGetSerializerCallback.invoke(aSubscription.ReceiverId);
+                            aSerializedMessage = aSerializer.serialize(message, BrokerMessage.class);
+                        }
+                        catch (Exception err)
+                        {
+                            EneterTrace.error(TracedObject() + "failed to serialize BrokerMessage using GetSerializeCallback.", err);
+                        }
+                    }
+                    
+                    if (aSerializedMessage != null)
+                    {
+                        send(aSubscription.ReceiverId, aSerializedMessage);
+                    }
                 }
             }
         }
@@ -402,6 +439,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
     private HashSet<TSubscription> mySubscribtions = new HashSet<TSubscription>();
     private boolean myIsPublisherSelfnotified;
     private ISerializer mySerializer;
+    private GetSerializerCallback myGetSerializerCallback;
     
     private final String myLocalReceiverId = "Eneter.Broker.LocalReceiver";
     

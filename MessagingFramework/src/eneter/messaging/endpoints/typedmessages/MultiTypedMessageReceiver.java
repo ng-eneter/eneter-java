@@ -11,6 +11,7 @@ package eneter.messaging.endpoints.typedmessages;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import eneter.messaging.dataprocessing.serializing.GetSerializerCallback;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
@@ -33,14 +34,17 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
     }
 
    
-    public MultiTypedMessageReceiver(ISerializer serializer)
+    public MultiTypedMessageReceiver(ISerializer serializer, GetSerializerCallback getSerializerCallback)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             mySerializer = serializer;
+            myGetSerializerCallback = getSerializerCallback;
 
-            IDuplexTypedMessagesFactory aFactory = new DuplexTypedMessagesFactory(serializer);
+            IDuplexTypedMessagesFactory aFactory = new DuplexTypedMessagesFactory(serializer)
+                .setSerializerProvider(getSerializerCallback);
+            
             myReceiver = aFactory.createDuplexTypedMessageReceiver(MultiTypedMessage.class, MultiTypedMessage.class);
             myReceiver.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
             myReceiver.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
@@ -208,9 +212,11 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            ISerializer aSerializer = getSerializer(responseReceiverId);
+            
             MultiTypedMessage aMessage = new MultiTypedMessage();
             aMessage.TypeName = MultiTypeNameProvider.getNetName(clazz);
-            aMessage.MessageData = mySerializer.serialize(responseMessage, clazz);
+            aMessage.MessageData = aSerializer.serialize(responseMessage, clazz);
 
             myReceiver.sendResponseMessage(responseReceiverId, aMessage);
         }
@@ -291,7 +297,8 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
                     Object aMessageData;
                     try
                     {
-                        aMessageData = mySerializer.deserialize(e.getRequestMessage().MessageData, aMessageHandler.Type);
+                        ISerializer aSerializer = getSerializer(e.getResponseReceiverId());
+                        aMessageData = aSerializer.deserialize(e.getRequestMessage().MessageData, aMessageHandler.Type);
 
                         try
                         {
@@ -326,8 +333,19 @@ class MultiTypedMessageReceiver implements IMultiTypedMessageReceiver
         }
     }
     
+    private ISerializer getSerializer(String responseReceiverId) throws Exception
+    {
+        if (myGetSerializerCallback != null && responseReceiverId.equals("*"))
+        {
+            throw new UnsupportedOperationException("Sending a message to all connected clients using wild character '*' is not supported when SerializerProvider is used.");
+        }
+
+        return (myGetSerializerCallback == null) ? mySerializer : myGetSerializerCallback.invoke(responseReceiverId);
+    }
+    
     
     private ISerializer mySerializer;
+    private GetSerializerCallback myGetSerializerCallback;
     private IDuplexTypedMessageReceiver<MultiTypedMessage, MultiTypedMessage> myReceiver;
     
     private HashMap<String, TMessageHandler> myMessageHandlers = new HashMap<String, TMessageHandler>();

@@ -2,6 +2,7 @@ package eneter.messaging.endpoints.rpc;
 
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
+import helper.EventWaitHandleExt;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -10,10 +11,11 @@ import java.util.concurrent.TimeoutException;
 import org.junit.*;
 import org.junit.experimental.categories.Categories.ExcludeCategory;
 
-import eneter.messaging.dataprocessing.serializing.ISerializer;
+import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
+import eneter.messaging.messagingsystems.messagingsystembase.ResponseReceiverEventArgs;
 import eneter.net.system.*;
 import eneter.net.system.internal.Cast;
 import eneter.net.system.internal.StringExt;
@@ -470,6 +472,107 @@ public abstract class RpcBaseTester
             if (anRpcClient.isDuplexOutputChannelAttached())
             {
                 anRpcClient.detachDuplexOutputChannel();
+            }
+
+            if (anRpcService.isDuplexInputChannelAttached())
+            {
+                anRpcService.detachDuplexInputChannel();
+            }
+        }
+    }
+    
+    @Test
+    public void rpcGenericEvent_SerializerPerClient() throws Exception
+    {
+        final String[] aFirstClientId = { null };
+        
+        RpcFactory anRpcClientFactory1 = new RpcFactory(new XmlStringSerializer());
+        RpcFactory anRpcClientFactory2 = new RpcFactory(new JavaBinarySerializer());
+        RpcFactory anRpcServiceFactory = new RpcFactory()
+            .setSerializerProvider(new GetSerializerCallback()
+            {
+                @Override
+                public ISerializer invoke(String responseReceiverId)
+                {
+                    return responseReceiverId.equals(aFirstClientId[0]) ? new XmlStringSerializer() : new JavaBinarySerializer();
+                }
+            });
+        
+        HelloService aService = new HelloService();
+        IRpcService<IHello> anRpcService = anRpcServiceFactory.createSingleInstanceService(aService, IHello.class);
+        anRpcService.responseReceiverConnected().subscribe(new EventHandler<ResponseReceiverEventArgs>()
+        {
+            @Override
+            public void onEvent(Object sender, ResponseReceiverEventArgs e)
+            {
+                if (aFirstClientId[0] == null)
+                {
+                    aFirstClientId[0] = e.getResponseReceiverId();
+                }
+            }
+        });
+        
+        IRpcClient<IHello> anRpcClient1 = anRpcClientFactory1.createClient(IHello.class);
+        IRpcClient<IHello> anRpcClient2 = anRpcClientFactory2.createClient(IHello.class);
+
+        try
+        {
+            anRpcService.attachDuplexInputChannel(myMessaging.createDuplexInputChannel(myChannelId));
+            anRpcClient1.attachDuplexOutputChannel(myMessaging.createDuplexOutputChannel(myChannelId, "Client1"));
+            anRpcClient2.attachDuplexOutputChannel(myMessaging.createDuplexOutputChannel(myChannelId, "Client2"));
+            
+
+            final AutoResetEvent anEvent1Received = new AutoResetEvent(false);
+            EventHandler<String> anEventHandler1 = new EventHandler<String>()
+            {
+                @Override
+                public void onEvent(Object sender, String e)
+                {
+                    anEvent1Received.set();
+                }
+            };
+            
+            final AutoResetEvent anEvent2Received = new AutoResetEvent(false);
+            EventHandler<String> anEventHandler2 = new EventHandler<String>()
+            {
+                @Override
+                public void onEvent(Object sender, String e)
+                {
+                    anEvent2Received.set();
+                }
+            };
+
+            // Subscribe.
+            anRpcClient1.getProxy().Open().subscribe(anEventHandler1);
+            anRpcClient2.getProxy().Open().subscribe(anEventHandler2);
+
+            // Raise the event in the service.
+            String anOpenArgs = "Hello";
+            aService.raiseOpen(anOpenArgs);
+
+            EventWaitHandleExt.waitIfNotDebugging(anEvent1Received, 1000);
+            EventWaitHandleExt.waitIfNotDebugging(anEvent2Received, 1000);
+
+            // Unsubscribe.
+            anRpcClient1.getProxy().Open().unsubscribe(anEventHandler1);
+            anRpcClient2.getProxy().Open().unsubscribe(anEventHandler2);
+
+            // Try to raise again.
+            aService.raiseOpen(anOpenArgs);
+
+            assertFalse(anEvent1Received.waitOne(1000));
+            assertFalse(anEvent2Received.waitOne(1000));
+        }
+        finally
+        {
+            if (anRpcClient1.isDuplexOutputChannelAttached())
+            {
+                anRpcClient1.detachDuplexOutputChannel();
+            }
+            
+            if (anRpcClient2.isDuplexOutputChannelAttached())
+            {
+                anRpcClient2.detachDuplexOutputChannel();
             }
 
             if (anRpcService.isDuplexInputChannelAttached())

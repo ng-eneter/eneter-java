@@ -11,6 +11,7 @@ package eneter.messaging.nodes.broker;
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 
+
 /**
  * Creates broker and broker client.
  * The broker is the component for publish-subscribe scenarios. It maintains the list of subscribers.
@@ -128,7 +129,7 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DuplexBroker(myIsPublisherNotified, mySerializer);
+            return new DuplexBroker(myIsPublisherNotified, mySerializer, mySerializerProvider);
         }
         finally
         {
@@ -155,6 +156,38 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
     public ISerializer getSerializer()
     {
         return mySerializer;
+    }
+    
+    /**
+     * Gets callback for retrieving serializer based on response receiver id.
+     * This callback is used by DuplexBroker when it needs to serialize/deserialize the BrokerMessage from a DuplexBrokerClient.
+     * Providing this callback allows to use a different serializer for each connected DuplexBrokerClient.
+     * This can be used e.g. if the communication with each client needs to be encrypted using a different password.<br/>
+     * <br/>
+     * The default value is null and it means SerializerProvider callback is not used and one serializer which specified in the Serializer property is used for all serialization/deserialization.<br/>
+     * If SerializerProvider is not null then the setting in the Serializer property is ignored.
+     * @return GetSerializerCallback
+     */
+    public GetSerializerCallback getSerializerProvider()
+    {
+        return mySerializerProvider;
+    }
+    
+    /**
+     * Sets callback for retrieving serializer based on response receiver id.
+     * This callback is used by DuplexBroker when it needs to serialize/deserialize the BrokerMessage from a DuplexBrokerClient.
+     * Providing this callback allows to use a different serializer for each connected DuplexBrokerClient.
+     * This can be used e.g. if the communication with each client needs to be encrypted using a different password.<br/>
+     * <br/>
+     * The default value is null and it means SerializerProvider callback is not used and one serializer which specified in the Serializer property is used for all serialization/deserialization.<br/>
+     * If SerializerProvider is not null then the setting in the Serializer property is ignored.
+     * @param serializerProvider
+     * @return GetSerializerCallback
+     */
+    public DuplexBrokerFactory setSerializerProvider(GetSerializerCallback serializerProvider)
+    {
+        mySerializerProvider = serializerProvider;
+        return this;
     }
     
     /**
@@ -193,5 +226,6 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
     
     
     private ISerializer mySerializer;
+    private GetSerializerCallback mySerializerProvider;
     private boolean myIsPublisherNotified;
 }

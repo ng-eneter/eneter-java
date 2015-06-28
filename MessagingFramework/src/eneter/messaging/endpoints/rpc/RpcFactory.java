@@ -168,6 +168,7 @@ public class RpcFactory implements IRpcFactory
         try
         {
             mySerializer = serializer;
+            mySerializerProvider = null;
 
             // Default timeout is set to infinite by default.
             myRpcTimeout = 0;
@@ -200,7 +201,7 @@ public class RpcFactory implements IRpcFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new RpcService<TServiceInterface>(service, mySerializer ,clazz);
+            return new RpcService<TServiceInterface>(service, mySerializer, mySerializerProvider, clazz);
         }
         finally
         {
@@ -216,7 +217,7 @@ public class RpcFactory implements IRpcFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new RpcService<TServiceInterface>(serviceFactoryMethod, mySerializer ,clazz);
+            return new RpcService<TServiceInterface>(serviceFactoryMethod, mySerializer, mySerializerProvider, clazz);
         }
         finally
         {
@@ -241,6 +242,39 @@ public class RpcFactory implements IRpcFactory
     public RpcFactory setSerializer(ISerializer serializer)
     {
         mySerializer = serializer;
+        return this;
+    }
+    
+    /**
+     * Gets callback for retrieving serializer based on response receiver id.
+     * This callback is used by RpcService when it needs to serialize/deserialize the communication with RpcClient.
+     * Providing this callback allows to use a different serializer for each connected client.
+     * This can be used e.g. if the communication with each client needs to be encrypted using a different password.<br/>
+     * <br/>
+     * The default value is null and it means SerializerProvider callback is not used and one serializer which specified in the Serializer property is used for all serialization/deserialization.<br/>
+     * If SerializerProvider is not null then the setting in the Serializer property is ignored.
+     * @return GetSerializerCallback
+     */
+    public GetSerializerCallback getSerializerProvider()
+    {
+        return mySerializerProvider;
+    }
+    
+    /**
+     * Sets callback for retrieving serializer based on response receiver id.
+     * This callback is used by RpcService when it needs to serialize/deserialize the communication with RpcClient.
+     * Providing this callback allows to use a different serializer for each connected client.
+     * This can be used e.g. if the communication with each client needs to be encrypted using a different password.<br/>
+     * <br/>
+     * The default value is null and it means SerializerProvider callback is not used and one serializer which specified in the Serializer property is used for all serialization/deserialization.<br/>
+     * If SerializerProvider is not null then the setting in the Serializer property is ignored.
+     * @return GetSerializerCallback
+     * @param serializerProvider
+     * @return
+     */
+    public RpcFactory setSerializerProvider(GetSerializerCallback serializerProvider)
+    {
+        mySerializerProvider = serializerProvider;
         return this;
     }
     
@@ -294,6 +328,7 @@ public class RpcFactory implements IRpcFactory
     }
     
     private ISerializer mySerializer;
+    private GetSerializerCallback mySerializerProvider;
     private IThreadDispatcherProvider myRpcClientThreading;
     private int myRpcTimeout;
 }

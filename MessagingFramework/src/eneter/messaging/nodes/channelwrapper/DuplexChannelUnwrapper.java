@@ -10,7 +10,7 @@ package eneter.messaging.nodes.channelwrapper;
 
 import java.util.*;
 
-import eneter.messaging.dataprocessing.serializing.ISerializer;
+import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
@@ -44,13 +44,14 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
         private IDuplexOutputChannel myDuplexOutputChannel;
     }
     
-    public DuplexChannelUnwrapper(IMessagingSystemFactory outputMessagingFactory, ISerializer serializer)
+    public DuplexChannelUnwrapper(IMessagingSystemFactory outputMessagingFactory, ISerializer serializer, GetSerializerCallback getSerializerCallback)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myOutputMessagingFactory = outputMessagingFactory;
             mySerializer = serializer;
+            myGetSerializerCallback = getSerializerCallback;
         }
         finally
         {
@@ -111,8 +112,10 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
 
             try
             {
+                ISerializer aSerializer = getSerializer(e.getResponseReceiverId());
+                
                 // Unwrap the incoming message.
-                aWrappedData = DataWrapper.unwrap(e.getMessage(), mySerializer);
+                aWrappedData = DataWrapper.unwrap(e.getMessage(), aSerializer);
             }
             catch (Exception err)
             {
@@ -322,7 +325,9 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
 
                 if (aConnction != null)
                 {
-                    Object aMessage = DataWrapper.wrap(e.getChannelId(), e.getMessage(), mySerializer);
+                    ISerializer aSerializer = getSerializer(aConnction.getResponseReceiverId());
+                    
+                    Object aMessage = DataWrapper.wrap(e.getChannelId(), e.getMessage(), aSerializer);
                     getAttachedDuplexInputChannel().sendResponseMessage(aConnction.getResponseReceiverId(), aMessage);
                 }
                 else
@@ -341,9 +346,20 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
         }
     }
 
+    private ISerializer getSerializer(String responseReceiverId) throws Exception
+    {
+        if (myGetSerializerCallback != null && responseReceiverId.equals("*"))
+        {
+            throw new UnsupportedOperationException("Sending a message to all connected clients using wild character '*' is not supported when SerializerProvider is used.");
+        }
+
+        return (myGetSerializerCallback == null) ? mySerializer : myGetSerializerCallback.invoke(responseReceiverId);
+    }
+    
     
     private IMessagingSystemFactory myOutputMessagingFactory;
     private ISerializer mySerializer;
+    private GetSerializerCallback myGetSerializerCallback;
 
     private HashSet<TDuplexConnection> myConnections = new HashSet<TDuplexConnection>();
     

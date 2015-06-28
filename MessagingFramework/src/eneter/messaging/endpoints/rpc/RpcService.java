@@ -11,6 +11,7 @@ package eneter.messaging.endpoints.rpc;
 import java.util.*;
 import java.util.Map.Entry;
 
+import eneter.messaging.dataprocessing.serializing.GetSerializerCallback;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
@@ -22,13 +23,13 @@ import eneter.net.system.*;
 class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
                                     implements IRpcService<TServiceInterface>
 {
-    public RpcService(TServiceInterface singletonService, ISerializer serializer, Class<TServiceInterface> clazz)
+    public RpcService(TServiceInterface singletonService, ISerializer serializer, GetSerializerCallback getSerializerCallback, Class<TServiceInterface> clazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             ServiceInterfaceChecker.check(clazz);
-            mySingletonService = new ServiceStub<TServiceInterface>(singletonService, serializer, clazz);
+            mySingletonService = new ServiceStub<TServiceInterface>(singletonService, serializer, getSerializerCallback, clazz);
         }
         finally
         {
@@ -36,7 +37,7 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
         }
     }
     
-    public RpcService(IFunction<TServiceInterface> serviceFactoryMethod, ISerializer serializer, Class<TServiceInterface> clazz)
+    public RpcService(IFunction<TServiceInterface> serviceFactoryMethod, ISerializer serializer, GetSerializerCallback getSerializerCallback, Class<TServiceInterface> clazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -45,6 +46,7 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
             
             myServiceFactoryMethod = serviceFactoryMethod;
             mySerializer = serializer;
+            myGetSerializer = getSerializerCallback;
             myServiceClazz = clazz;
         }
         finally
@@ -129,7 +131,7 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
             if (myServiceFactoryMethod != null)
             {
                 TServiceInterface aServiceInstanceForThisClient = myServiceFactoryMethod.invoke();
-                ServiceStub<TServiceInterface> aServiceStub = new ServiceStub<TServiceInterface>(aServiceInstanceForThisClient, mySerializer, myServiceClazz);
+                ServiceStub<TServiceInterface> aServiceStub = new ServiceStub<TServiceInterface>(aServiceInstanceForThisClient, mySerializer, myGetSerializer, myServiceClazz);
                 aServiceStub.attachInputChannel(getAttachedDuplexInputChannel());
 
                 synchronized (myPerConnectionServices)
@@ -239,6 +241,7 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
     private ServiceStub<TServiceInterface> mySingletonService;
     private HashMap<String, ServiceStub<TServiceInterface>> myPerConnectionServices = new HashMap<String, ServiceStub<TServiceInterface>>();
     private ISerializer mySerializer;
+    private GetSerializerCallback myGetSerializer;
     private Class<TServiceInterface> myServiceClazz;
     private IFunction<TServiceInterface> myServiceFactoryMethod;
     

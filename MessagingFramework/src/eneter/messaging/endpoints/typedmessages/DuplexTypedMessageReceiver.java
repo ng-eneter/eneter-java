@@ -20,12 +20,13 @@ import eneter.net.system.*;
 class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends AttachableDuplexInputChannelBase
                                                               implements IDuplexTypedMessageReceiver<_ResponseType, _RequestType>
 {
-    public DuplexTypedMessageReceiver(ISerializer serializer, Class<_ResponseType> responseMessageClazz, Class<_RequestType> requestMessageClazz)
+    public DuplexTypedMessageReceiver(ISerializer serializer, GetSerializerCallback getSerializerCallback, Class<_ResponseType> responseMessageClazz, Class<_RequestType> requestMessageClazz)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             mySerializer = serializer;
+            myGetSerializerCallback = getSerializerCallback;
             myResponseMessageClazz = responseMessageClazz;
             myRequestMessageClazz = requestMessageClazz;
         }
@@ -69,7 +70,9 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
 
             try
             {
-                Object aResponseMessage = mySerializer.serialize(responseMessage, myResponseMessageClazz);
+                ISerializer aSerializer = getSerializer(responseReceiverId);
+                
+                Object aResponseMessage = aSerializer.serialize(responseMessage, myResponseMessageClazz);
                 getAttachedDuplexInputChannel().sendResponseMessage(responseReceiverId, aResponseMessage);
             }
             catch (Exception err)
@@ -100,7 +103,8 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
 
             try
             {
-                _RequestType aRequestMessage = mySerializer.deserialize(e.getMessage(), myRequestMessageClazz);
+                ISerializer aSerializer = getSerializer(e.getResponseReceiverId());
+                _RequestType aRequestMessage = aSerializer.deserialize(e.getMessage(), myRequestMessageClazz);
                 aRequestReceivedEventArgs = new TypedRequestReceivedEventArgs<_RequestType>(e.getResponseReceiverId(), e.getSenderAddress(), aRequestMessage);
             }
             catch (Exception err)
@@ -172,6 +176,16 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
         }
     }
     
+    private ISerializer getSerializer(String responseReceiverId) throws Exception
+    {
+        if (myGetSerializerCallback != null && responseReceiverId.equals("*"))
+        {
+            throw new UnsupportedOperationException("Sending a message to all connected clients using wild character '*' is not supported when SerializerProvider is used.");
+        }
+
+        return (myGetSerializerCallback == null) ? mySerializer : myGetSerializerCallback.invoke(responseReceiverId);
+    }
+    
     
     private EventImpl<TypedRequestReceivedEventArgs<_RequestType>> myMessageReceivedEventImpl = new EventImpl<TypedRequestReceivedEventArgs<_RequestType>>();
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();
@@ -182,6 +196,7 @@ class DuplexTypedMessageReceiver<_ResponseType, _RequestType> extends Attachable
     private Class<_ResponseType> myResponseMessageClazz;
     
     private ISerializer mySerializer;
+    private GetSerializerCallback myGetSerializerCallback;
     
 
     @Override
