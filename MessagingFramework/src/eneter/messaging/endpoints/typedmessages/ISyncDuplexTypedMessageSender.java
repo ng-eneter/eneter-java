@@ -8,8 +8,6 @@
 
 package eneter.messaging.endpoints.typedmessages;
 
-import java.util.concurrent.TimeoutException;
-
 import eneter.messaging.infrastructure.attachable.IAttachableDuplexOutputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.net.system.Event;
