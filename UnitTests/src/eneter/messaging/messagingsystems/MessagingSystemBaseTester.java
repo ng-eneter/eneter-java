@@ -303,6 +303,8 @@ public abstract class MessagingSystemBaseTester
             aService.getInputChannel().stopListening();
             assertFalse(aService.getInputChannel().isListening());
 
+            Thread.sleep(500);
+            
             boolean isSomeException = false;
             try
             {

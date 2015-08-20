@@ -1,3 +1,10 @@
+/**
+ * Project: Eneter.Messaging.Framework
+ * Author:  Ondrej Uzovic
+ * 
+ * Copyright © Ondrej Uzovic 2015
+*/
+
 package eneter.messaging.messagingsystems.composites.messagebus;
 
 import java.io.Serializable;

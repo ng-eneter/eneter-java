@@ -1,4 +1,4 @@
-/*
+/**
  * Project: Eneter.Messaging.Framework
  * Author:  Ondrej Uzovic
  * 

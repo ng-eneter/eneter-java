@@ -1,4 +1,4 @@
-/*
+/**
  * Project: Eneter.Messaging.Framework
  * Author:  Ondrej Uzovic
  * 
@@ -14,6 +14,9 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.IThreadDispatcher;
+import eneter.messaging.threading.dispatching.SyncDispatching;
+import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.StringExt;
@@ -30,6 +33,8 @@ class MessageBus implements IMessageBus
             myClientResponseReceiverId = clientResponseReceiverId;
             myServiceId = serviceId;
             myServiceResponseReceiverId = serviceResponseReceiverId;
+            myForwardToClientThreadDispatcher = new SyncDispatching().getDispatcher();
+            myForwardToServiceThreadDispatcher = new SyncDispatching().getDispatcher();
         }
 
         public String getClientResponseReceiverId()
@@ -47,9 +52,21 @@ class MessageBus implements IMessageBus
             return myServiceResponseReceiverId;
         }
         
+        public IThreadDispatcher getForwardToClientThreadDispatcher()
+        {
+            return myForwardToClientThreadDispatcher;
+        }
+        
+        public IThreadDispatcher getForwardToServiceThreadDispatcher()
+        {
+            return myForwardToServiceThreadDispatcher;
+        }
+        
         private String myClientResponseReceiverId;
         private String myServiceId;
         private String myServiceResponseReceiverId;
+        private IThreadDispatcher myForwardToClientThreadDispatcher;
+        private IThreadDispatcher myForwardToServiceThreadDispatcher;
     }
     
     private class TServiceContext
@@ -191,6 +208,31 @@ class MessageBus implements IMessageBus
         return myServiceUnregisteredEvent.getApi();
     }
 
+    @Override
+    public Event<MessageBusClientEventArgs> clientConnected()
+    {
+        return myClientConnectedEvent.getApi();
+    }
+
+    @Override
+    public Event<MessageBusClientEventArgs> clientDisconnected()
+    {
+        return myClientDisconnectedEvent.getApi();
+    }
+
+    @Override
+    public Event<MessageBusMessageEventArgs> messageToServiceSent()
+    {
+        return myMessageToServiceSentEvent.getApi();
+    }
+
+    @Override
+    public Event<MessageBusMessageEventArgs> messageToClientSent()
+    {
+        return myMessageToClientSentEvent.getApi();
+    }
+
+    
 
     
 
@@ -254,6 +296,60 @@ class MessageBus implements IMessageBus
                 }
 
                 return aServices;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public String[] getConnectedClients(String serviceAddress)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionLock)
+            {
+                ArrayList<String> aClients = new ArrayList<String>();
+                for (TClientContext aClientContext : myConnectedClients)
+                {
+                    if (aClientContext.getServiceId().equals(serviceAddress))
+                    {
+                        aClients.add(aClientContext.getClientResponseReceiverId());
+                    }
+                }
+                
+                String[] aResult = new String[aClients.size()];
+                aResult = aClients.toArray(aResult);
+                return aResult;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    @Override
+    public int GetNumberOfConnectedClients(String serviceAddress)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            synchronized (myConnectionLock)
+            {
+                int aCount = 0;
+                for (TClientContext aClientContext : myConnectedClients)
+                {
+                    if (aClientContext.getServiceId().equals(serviceAddress))
+                    {
+                        ++aCount;
+                    }
+                }
+
+                return aCount;
             }
         }
         finally
@@ -353,7 +449,7 @@ class MessageBus implements IMessageBus
                     return;
                 }
                         
-                // If such client does not exist yet.
+                // If such client does not exist yet then create it.
                 if (aClientContext == null)
                 {
                     TServiceContext aServiceContext = null;
@@ -398,6 +494,20 @@ class MessageBus implements IMessageBus
                     if (anInputChannel != null)
                     {
                         anInputChannel.sendResponseMessage(aClientContext.getServiceResponseReceiverId(), aSerializedMessage);
+                        
+                        if (myClientConnectedEvent.isSubscribed())
+                        {
+                            MessageBusClientEventArgs anEvent = new MessageBusClientEventArgs(serviceId, aClientContext.getServiceResponseReceiverId(), clientResponseReceiverId);
+
+                            try
+                            {
+                                myClientConnectedEvent.raise(this, anEvent);
+                            }
+                            catch (Exception err)
+                            {
+                                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                            }
+                        }
                     }
                 }
                 catch (Exception err)
@@ -411,8 +521,16 @@ class MessageBus implements IMessageBus
             }
             else
             {
-                EneterTrace.warning(TracedObject() + "failed to connect the client already exists. The connection will be closed.");
-                unregisterClient(clientResponseReceiverId, true, true);
+                if (aClientContext != null)
+                {
+                    EneterTrace.warning(TracedObject() + "failed to connect the client already exists. The connection will be closed.");
+                    unregisterClient(clientResponseReceiverId, false, true);
+                }
+                else
+                {
+                    EneterTrace.warning(TracedObject() + "failed to connec the client because the service '" + serviceId + "' does not exist. The connection will be closed.");
+                    unregisterClient(clientResponseReceiverId, false, true);
+                }
             }
         }
         finally
@@ -487,6 +605,19 @@ class MessageBus implements IMessageBus
                         anInputChannel1.disconnectResponseReceiver(aClientContext[0].getClientResponseReceiverId());
                     }
                 }
+                
+                if (myClientDisconnectedEvent.isSubscribed())
+                {
+                    MessageBusClientEventArgs anEventArgs = new MessageBusClientEventArgs(aClientContext[0].getServiceId(), aClientContext[0].getServiceResponseReceiverId(), clientResponseReceiverId);
+                    try
+                    {
+                        myClientDisconnectedEvent.raise(this, anEventArgs);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                    }
+                }
             }
         }
         finally
@@ -495,22 +626,22 @@ class MessageBus implements IMessageBus
         }
     }
     
-    private void forwardMessageToService(final String clientresponseReceiverId, MessageBusMessage messageFromClient)
+    private void forwardMessageToService(final String clientResponseReceiverId, final MessageBusMessage messageFromClient)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            TClientContext aCientContext = null;
+            TClientContext aClientContext = null;
             synchronized (myConnectionLock)
             {
                 try
                 {
-                    aCientContext = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, TClientContext>()
+                    aClientContext = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, TClientContext>()
                     {
                         @Override
                         public Boolean invoke(TClientContext x) throws Exception
                         {
-                            return x.getClientResponseReceiverId().equals(clientresponseReceiverId);
+                            return x.getClientResponseReceiverId().equals(clientResponseReceiverId);
                         }
                     });
                 }
@@ -520,29 +651,59 @@ class MessageBus implements IMessageBus
                 }
             }
 
-            if (aCientContext != null)
+            if (aClientContext != null)
             {
                 // Forward the incoming message to the service.
-                IDuplexInputChannel anInputChannel = myServiceConnector.getAttachedDuplexInputChannel();
+                final IDuplexInputChannel anInputChannel = myServiceConnector.getAttachedDuplexInputChannel();
                 if (anInputChannel != null)
                 {
-                    try
+                    final TClientContext aClientContextTmp = aClientContext;
+                    aClientContext.getForwardToServiceThreadDispatcher().invoke(new Runnable()
                     {
-                        // Add the client id into the message.
-                        // Note: Because of security reasons we do not expect Ids from the client but using Ids associated with the connection session.
-                        //       Otherwise it would be possible that some client could use id of another client to pretend a different client.
-                        messageFromClient.Id = clientresponseReceiverId;
-                        Object aSerializedMessage = mySerializer.serialize(messageFromClient, MessageBusMessage.class);
-
-                        anInputChannel.sendResponseMessage(aCientContext.getServiceResponseReceiverId(), aSerializedMessage);
-                    }
-                    catch (Exception err)
-                    {
-                        String anErrorMessage = TracedObject() + "failed to send message to the service '" + aCientContext.getServiceId() + "'.";
-                        EneterTrace.error(anErrorMessage, err);
-
-                        unregisterService(aCientContext.getServiceResponseReceiverId());
-                    }
+                        @Override
+                        public void run()
+                        {
+                            EneterTrace aTrace = EneterTrace.entering();
+                            try
+                            {
+                                try
+                                {
+                                    // Add the client id into the message.
+                                    // Note: Because of security reasons we do not expect Ids from the client but using Ids associated with the connection session.
+                                    //       Otherwise it would be possible that some client could use id of another client to pretend a different client.
+                                    messageFromClient.Id = clientResponseReceiverId;
+                                    Object aSerializedMessage = mySerializer.serialize(messageFromClient, MessageBusMessage.class);
+    
+                                    anInputChannel.sendResponseMessage(aClientContextTmp.getServiceResponseReceiverId(), aSerializedMessage);
+                                    
+                                    if (myMessageToServiceSentEvent.isSubscribed())
+                                    {
+                                        MessageBusMessageEventArgs anEventArgs = new MessageBusMessageEventArgs(aClientContextTmp.getServiceId(), aClientContextTmp.getServiceResponseReceiverId(), clientResponseReceiverId, messageFromClient.MessageData);
+                                        try
+                                        {
+                                            myMessageToServiceSentEvent.raise(this, anEventArgs);
+                                        }
+                                        catch (Exception err)
+                                        {
+                                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                                        }
+                                    }
+                                }
+                                catch (Exception err)
+                                {
+                                    String anErrorMessage = TracedObject() + "failed to send message to the service '" + aClientContextTmp.getServiceId() + "'.";
+                                    EneterTrace.error(anErrorMessage, err);
+    
+                                    unregisterService(aClientContextTmp.getServiceResponseReceiverId());
+                                }
+                            }
+                            finally
+                            {
+                                EneterTrace.leaving(aTrace);
+                            }
+                        }
+                    });
+                    
                 }
             }
             else
@@ -596,17 +757,17 @@ class MessageBus implements IMessageBus
             else if (aMessageBusMessage.Request == EMessageBusRequest.SendResponseMessage)
             {
                 // Note: forward the same message - it does not have to be serialized again.
-                forwardMessageToClient(aMessageBusMessage.Id, e.getResponseReceiverId(), e.getMessage());
+                forwardMessageToClient(aMessageBusMessage.Id, e.getResponseReceiverId(), e.getMessage(), aMessageBusMessage.MessageData);
             }
             else if (aMessageBusMessage.Request == EMessageBusRequest.DisconnectClient)
             {
-                EneterTrace.debug("SERVICE DISCONNECTs CLIENT");
+                EneterTrace.debug("SERVICE DISCONNECTS CLIENT");
                 unregisterClient(aMessageBusMessage.Id, false, true);
             }
             else if (aMessageBusMessage.Request == EMessageBusRequest.ConfirmClient)
             {
                 EneterTrace.debug("SERVICE CONFIRMS CLIENT");
-                forwardMessageToClient(aMessageBusMessage.Id, e.getResponseReceiverId(), e.getMessage());
+                forwardMessageToClient(aMessageBusMessage.Id, e.getResponseReceiverId(), e.getMessage(), null);
             }
         }
         finally
@@ -793,7 +954,7 @@ class MessageBus implements IMessageBus
         }
     }
     
-    private void forwardMessageToClient(final String clientResponseReceiverId, final String serviceResponseReceiverId, Object serializedMessage)
+    private void forwardMessageToClient(final String clientResponseReceiverId, final String serviceResponseReceiverId, final Object serializedMessage, final Object originalMessage)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -827,20 +988,52 @@ class MessageBus implements IMessageBus
                 return;
             }
 
-            IDuplexInputChannel anInputChannel = myClientConnector.getAttachedDuplexInputChannel();
+            final IDuplexInputChannel anInputChannel = myClientConnector.getAttachedDuplexInputChannel();
             if (anInputChannel != null)
             {
-                try
+                // Invoke sending of the message in the client particular thread.
+                // So that e.g. if there are communication problems sending to other clients
+                // is not affected.
+                final TClientContext aClientContextTmp = aClientContext; 
+                aClientContext.getForwardToClientThreadDispatcher().invoke(new Runnable()
                 {
-                    anInputChannel.sendResponseMessage(clientResponseReceiverId, serializedMessage);
-                }
-                catch (Exception err)
-                {
-                    String anErrorMessage = TracedObject() + "failed to send message to the client.";
-                    EneterTrace.error(anErrorMessage, err);
+                    @Override
+                    public void run()
+                    {
+                        EneterTrace aTrace = EneterTrace.entering();
+                        try
+                        {
+                            try
+                            {
+                                anInputChannel.sendResponseMessage(clientResponseReceiverId, serializedMessage);
 
-                    unregisterClient(aClientContext.getClientResponseReceiverId(), true, true);
-                }
+                                if (originalMessage != null && myMessageToClientSentEvent.isSubscribed())
+                                {
+                                    MessageBusMessageEventArgs anEventArgs = new MessageBusMessageEventArgs(aClientContextTmp.getServiceId(), serviceResponseReceiverId, clientResponseReceiverId, originalMessage);
+                                    try
+                                    {
+                                        myMessageToClientSentEvent.raise(this, anEventArgs);
+                                    }
+                                    catch (Exception err)
+                                    {
+                                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                                    }
+                                }
+                            }
+                            catch (Exception err)
+                            {
+                                String anErrorMessage = TracedObject() + "failed to send message to the client.";
+                                EneterTrace.error(anErrorMessage, err);
+
+                                unregisterClient(aClientContextTmp.getClientResponseReceiverId(), true, true);
+                            }
+                        }
+                        finally
+                        {
+                            EneterTrace.leaving(aTrace);
+                        }
+                    }
+                });
             }
         }
         finally
@@ -898,6 +1091,11 @@ class MessageBus implements IMessageBus
 
     private EventImpl<MessageBusServiceEventArgs> myServiceRegisteredEvent = new EventImpl<MessageBusServiceEventArgs>();
     private EventImpl<MessageBusServiceEventArgs> myServiceUnregisteredEvent = new EventImpl<MessageBusServiceEventArgs>();
+    private EventImpl<MessageBusClientEventArgs> myClientConnectedEvent = new EventImpl<MessageBusClientEventArgs>();
+    private EventImpl<MessageBusClientEventArgs> myClientDisconnectedEvent = new EventImpl<MessageBusClientEventArgs>();
+    private EventImpl<MessageBusMessageEventArgs> myMessageToServiceSentEvent = new EventImpl<MessageBusMessageEventArgs>();
+    private EventImpl<MessageBusMessageEventArgs> myMessageToClientSentEvent = new EventImpl<MessageBusMessageEventArgs>();
+    
     
     private String TracedObject()
     {

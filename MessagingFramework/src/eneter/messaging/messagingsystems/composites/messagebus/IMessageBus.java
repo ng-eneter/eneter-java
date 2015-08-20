@@ -37,6 +37,31 @@ public interface IMessageBus
     Event<MessageBusServiceEventArgs> serviceUnregistered();
     
     /**
+     * The event is raised when a client is connected to the service.
+     * @return event
+     */
+    Event<MessageBusClientEventArgs> clientConnected();
+    
+    /**
+     * The event is raised when a client is disconnected from the service.
+     * @return event
+     */
+    Event<MessageBusClientEventArgs> clientDisconnected();
+    
+    /**
+     * The event is raised when a client sent a message to the service.
+     * @return event
+     */
+    Event<MessageBusMessageEventArgs> messageToServiceSent();
+
+    /**
+     * The event is raised when a service sent a message to the client.
+     * @return event
+     */
+    Event<MessageBusMessageEventArgs> messageToClientSent();
+    
+    
+    /**
      * Attaches input channels which are used for the communication with the message bus.
      * 
      * Once input channels are attached the message bus is listening and can be contacted by services and
@@ -58,6 +83,21 @@ public interface IMessageBus
      * @return ids of all services which are registered in the message bus.
      */
     String[] getConnectedServices();
+    
+    /**
+     * Returns list of all clients connected to the specified service.
+     * @param serviceAddress id of the service
+     * @return response receiver ids of connected clients
+     */
+    String[] getConnectedClients(String serviceAddress);
+    
+    /**
+     * Returns number of clients connected to the specified service.
+     * Using this method is faster than GetConnectedClients because it does not have to copy data.
+     * @param serviceAddress id of the service
+     * @return number of connected clients
+     */
+    int GetNumberOfConnectedClients(String serviceAddress);
 
     /**
      * Disconnect and unregisters the specified service.
