@@ -7,12 +7,15 @@
 
 package eneter.messaging.messagingsystems.composites.messagebus;
 
+import java.util.HashMap;
+
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
+import eneter.messaging.threading.dispatching.*;
 import eneter.net.system.*;
 
 class MessageBusInputConnector implements IInputConnector
@@ -161,20 +164,72 @@ class MessageBusInputConnector implements IInputConnector
                 }
 
                 ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.OpenConnectionRequest, aMessageBusMessage.Id, null);
-                MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
-                notifyMessageContext(aMessageContext);
+                final MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
+                
+                IThreadDispatcher aDispatcher = myThreadDispatcherProvider.getDispatcher();
+                synchronized (myConnectedClients)
+                {
+                    myConnectedClients.put(aProtocolMessage.ResponseReceiverId, aDispatcher);
+                }
+                aDispatcher.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyMessageContext(aMessageContext);
+                    }
+                });
             }
             else if (aMessageBusMessage.Request == EMessageBusRequest.DisconnectClient)
             {
                 ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aMessageBusMessage.Id, aMessageBusMessage.MessageData);
-                MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
-                notifyMessageContext(aMessageContext);
+                final MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
+                
+                IThreadDispatcher aDispatcher;
+                synchronized (myConnectedClients)
+                {
+                    aDispatcher = myConnectedClients.get(aProtocolMessage.ResponseReceiverId);
+                    if (aDispatcher != null)
+                    {
+                        myConnectedClients.remove(aProtocolMessage.ResponseReceiverId);
+                    }
+                    else
+                    {
+                        aDispatcher = myThreadDispatcherProvider.getDispatcher();
+                    }
+                }
+                aDispatcher.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyMessageContext(aMessageContext);
+                    }
+                });
             }
             else if (aMessageBusMessage.Request == EMessageBusRequest.SendRequestMessage)
             {
                 ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.MessageReceived, aMessageBusMessage.Id, aMessageBusMessage.MessageData);
-                MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
-                notifyMessageContext(aMessageContext);
+                final MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
+                
+                IThreadDispatcher aDispatcher;
+                synchronized (myConnectedClients)
+                {
+                    aDispatcher = myConnectedClients.get(aProtocolMessage.ResponseReceiverId);
+                    if (aDispatcher == null)
+                    {
+                        aDispatcher = myThreadDispatcherProvider.getDispatcher();
+                        myConnectedClients.put(aProtocolMessage.ResponseReceiverId, aDispatcher);
+                    }
+                }
+                aDispatcher.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyMessageContext(aMessageContext);
+                    }
+                });
             }
         }
         
@@ -214,6 +269,8 @@ class MessageBusInputConnector implements IInputConnector
     private IDuplexOutputChannel myMessageBusOutputChannel;
     private IMethod1<MessageContext> myMessageHandler;
     private Object myListeningManipulatorLock = new Object();
+    private IThreadDispatcherProvider myThreadDispatcherProvider = new SyncDispatching();
+    private HashMap<String, IThreadDispatcher> myConnectedClients = new HashMap<String, IThreadDispatcher>();
     
     private EventHandler<DuplexChannelMessageEventArgs> myOnMessageFromMessageBusReceived = new EventHandler<DuplexChannelMessageEventArgs>()
     {
