@@ -24,10 +24,31 @@ import eneter.net.system.Event;
 public interface IDuplexBroker extends IAttachableDuplexInputChannel
 {
     /**
+     * The event is invoked when the publisher published a message to subscribers.
+     * @return event
+     */
+    Event<PublishInfoEventArgs> messagePublished();
+    
+    /**
+     * The event is invoked when the broker subscribed a client for messages.
+     * @return event
+     */
+    Event<SubscribeInfoEventArgs> clientSubscribed();
+    
+    /**
+     * The event is invoked when the broker unsubscribed a client from messages.
+     * @return event
+     */
+    Event<SubscribeInfoEventArgs> clientUnsubscribed();
+    
+    /**
      * The event is invoked when the observed message is received.
      * @return event
      */
     Event<BrokerMessageReceivedEventArgs> brokerMessageReceived();
+    
+    
+    
     
     /**
      * Publishes the message.
@@ -74,4 +95,18 @@ public interface IDuplexBroker extends IAttachableDuplexInputChannel
      * @throws Exception
      */
     void unsubscribe() throws Exception;
+    
+    /**
+     * Returns messages which are subscribed by the given subscriber.
+     * @param responseReceiverId subscriber response receiver id.
+     * @return array of subscribed messages
+     */
+    String[] getSubscribedMessages(String responseReceiverId);
+    
+    /**
+     * Returns subscribers which are subscribed for the given message type id.
+     * @param messageTypeId >message type id
+     * @return array of subscribed subscribers
+     */
+    String[] GetSubscribedResponseReceivers(String messageTypeId);
 }

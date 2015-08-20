@@ -129,7 +129,7 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            return new DuplexBroker(myIsPublisherNotified, mySerializer, mySerializerProvider);
+            return new DuplexBroker(myIsPublisherNotified, mySerializer, mySerializerProvider, myBrokerRequestAuthorizer);
         }
         finally
         {
@@ -191,6 +191,41 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
     }
     
     /**
+     * Gets callback for authorizing request messages received from DuplexBrokerClient.
+     * DuplexBrokerClient can send request messages for publishing, subscribing or unsubscribing of messages.
+     * If the callback is not null it is called whenever such request is received from DuplexBrokerClient.
+     * If the callback returns true the request is considered authorized and the broker will perform it.
+     * If the callback returns false the request is considered invalid and will not be performed and DuplexBrokerClient
+     * will be disconnected.
+     * E.g. if a DuplexBrokerClient asks broker to publish a message and the callback returns false the message will not be sent
+     * to subscribers and DuplexBrokerClient will be disconnected.
+     * @return callback for authorizing requests
+     */
+    public AuthorizeBrokerRequestCallback getBrokerRequestAuthorizer()
+    {
+        return myBrokerRequestAuthorizer;
+    }
+    
+    /**
+     * Sets callback for authorizing request messages received from DuplexBrokerClient.
+     * DuplexBrokerClient can send request messages for publishing, subscribing or unsubscribing of messages.
+     * If the callback is not null it is called whenever such request is received from DuplexBrokerClient.
+     * If the callback returns true the request is considered authorized and the broker will perform it.
+     * If the callback returns false the request is considered invalid and will not be performed and DuplexBrokerClient
+     * will be disconnected.
+     * E.g. if a DuplexBrokerClient asks broker to publish a message and the callback returns false the message will not be sent
+     * to subscribers and DuplexBrokerClient will be disconnected.
+     * @param authorizeCallaback
+     * @return this DuplexBrokerFactory
+     */
+    public DuplexBrokerFactory setBrokerRequestAuthorizer(AuthorizeBrokerRequestCallback authorizeCallaback)
+    {
+        myBrokerRequestAuthorizer = authorizeCallaback;
+        return this;
+    }
+    
+    
+    /**
      * Sets the flag whether the publisher which sent a message shall be notified in case it is subscribed to the same message.
      * 
      * When a DuplexBrokerClient sent a message the broker forwards the message to all subscribed DuplexBrokerClients.
@@ -227,5 +262,6 @@ public class DuplexBrokerFactory implements IDuplexBrokerFactory
     
     private ISerializer mySerializer;
     private GetSerializerCallback mySerializerProvider;
+    private AuthorizeBrokerRequestCallback myBrokerRequestAuthorizer;
     private boolean myIsPublisherNotified;
 }

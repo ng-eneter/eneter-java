@@ -34,12 +34,32 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
     }
     
     @Override
+    public Event<PublishInfoEventArgs> messagePublished()
+    {
+        return myMessagePublishedEvent.getApi();
+    }
+
+    @Override
+    public Event<SubscribeInfoEventArgs> clientSubscribed()
+    {
+        return myClientSubscribedEvent.getApi();
+    }
+
+    @Override
+    public Event<SubscribeInfoEventArgs> clientUnsubscribed()
+    {
+        return myClientUnsubscribedEvent.getApi();
+    }
+    
+    @Override
     public Event<BrokerMessageReceivedEventArgs> brokerMessageReceived()
     {
         return myBrokerMessageReceivedEvent.getApi();
     }
     
-    public DuplexBroker(boolean isPublisherNotified, ISerializer serializer, GetSerializerCallback getSerializerCallback)
+    public DuplexBroker(boolean isPublisherNotified, ISerializer serializer,
+            GetSerializerCallback getSerializerCallback,
+            AuthorizeBrokerRequestCallback validateBrokerRequestCallback)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -47,6 +67,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
             myIsPublisherSelfnotified = isPublisherNotified;
             mySerializer = serializer;
             myGetSerializerCallback = getSerializerCallback;
+            myValidateBrokerRequestCallback = validateBrokerRequestCallback;
         }
         finally
         {
@@ -114,7 +135,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         try
         {
             String[] aEventsToUnsubscribe = { eventId };
-            unsubscribe(myLocalReceiverId, aEventsToUnsubscribe);
+            ArrayList<String> anUnsubscribedMessages = unsubscribe(myLocalReceiverId, aEventsToUnsubscribe);
+            raiseClientUnsubscribed(myLocalReceiverId, anUnsubscribedMessages);
         }
         finally
         {
@@ -128,7 +150,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            unsubscribe(myLocalReceiverId, eventIds);
+            ArrayList<String> anUnsubscribedMessages = unsubscribe(myLocalReceiverId, eventIds);
+            raiseClientUnsubscribed(myLocalReceiverId, anUnsubscribedMessages);
         }
         finally
         {
@@ -142,7 +165,66 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            unsubscribe(myLocalReceiverId, null);
+            ArrayList<String> anUnsubscribedMessages = unsubscribe(myLocalReceiverId, null);
+            raiseClientUnsubscribed(myLocalReceiverId, anUnsubscribedMessages);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public String[] getSubscribedMessages(String responseReceiverId)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ArrayList<String> aResult = new ArrayList<String>();
+            
+            synchronized (mySubscribtions)
+            {
+                for (TSubscription x : mySubscribtions)
+                {
+                    if (x.ReceiverId.equals(responseReceiverId))
+                    {
+                        aResult.add(x.MessageTypeId);
+                    }
+                }
+            }
+            
+            String[] aResultArray = new String[aResult.size()];
+            aResultArray = aResult.toArray(aResultArray);
+            return aResultArray;
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    @Override
+    public String[] GetSubscribedResponseReceivers(String messageTypeId)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ArrayList<String> aResult = new ArrayList<String>();
+            
+            synchronized (mySubscribtions)
+            {
+                for (TSubscription x : mySubscribtions)
+                {
+                    if (x.MessageTypeId.equals(messageTypeId))
+                    {
+                        aResult.add(x.MessageTypeId);
+                    }
+                }
+            }
+            
+            String[] aResultArray = new String[aResult.size()];
+            aResultArray = aResult.toArray(aResultArray);
+            return aResultArray;
         }
         finally
         {
@@ -170,6 +252,34 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                 return;
             }
 
+            if (myValidateBrokerRequestCallback != null)
+            {
+                boolean isValidated = false;
+                try
+                {
+                    isValidated = myValidateBrokerRequestCallback.invoke(e.getResponseReceiverId(), aBrokerMessage);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+
+                if (!isValidated)
+                {
+                    ArrayList<String> anUnsubscribedMessages = unsubscribe(e.getResponseReceiverId(), null);
+                    raiseClientUnsubscribed(e.getResponseReceiverId(), anUnsubscribedMessages);
+
+                    try
+                    {
+                        getAttachedDuplexInputChannel().disconnectResponseReceiver(e.getResponseReceiverId());
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + "failed to disconnect response receiver.", err);
+                    }
+                    return;
+                }
+            }
 
             if (aBrokerMessage.Request == EBrokerRequest.Publish)
             {
@@ -192,11 +302,13 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
             }
             else if (aBrokerMessage.Request == EBrokerRequest.Unsubscribe)
             {
-                unsubscribe(e.getResponseReceiverId(), aBrokerMessage.MessageTypes);
+                ArrayList<String> anUnsubscribedMessages = unsubscribe(e.getResponseReceiverId(), aBrokerMessage.MessageTypes);
+                raiseClientUnsubscribed(e.getResponseReceiverId(), anUnsubscribedMessages);
             }
             else if (aBrokerMessage.Request == EBrokerRequest.UnsubscribeAll)
             {
-                unsubscribe(e.getResponseReceiverId(), null);
+                ArrayList<String> anUnsubscribedMessages = unsubscribe(e.getResponseReceiverId(), null);
+                raiseClientUnsubscribed(e.getResponseReceiverId(), anUnsubscribedMessages);
             }
         }
         catch (Exception err)
@@ -221,7 +333,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            unsubscribe(e.getResponseReceiverId(), null);
+            ArrayList<String> anUnsubscribedMessages = unsubscribe(e.getResponseReceiverId(), null);
+            raiseClientUnsubscribed(e.getResponseReceiverId(), anUnsubscribedMessages);
         }
         finally
         {
@@ -249,6 +362,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                 }
             }
             
+            HashMap<String, ArrayList<String>> aFailedSubscribers = new HashMap<String, ArrayList<String>>();
+            int aNumberOfSentSubscribers = 0;
             for (TSubscription aSubscription : anIdetifiedSubscriptions)
             {
                 if (aSubscription.ReceiverId.equals(myLocalReceiverId))
@@ -264,6 +379,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                         {
                             EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                         }
+                        
+                        ++aNumberOfSentSubscribers;
                     }
                 }
                 else
@@ -284,9 +401,36 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                     
                     if (aSerializedMessage != null)
                     {
-                        send(aSubscription.ReceiverId, aSerializedMessage);
+                        ArrayList<String> anUnsubscribedMessagesDueToFailure = send(aSubscription.ReceiverId, aSerializedMessage);
+                        if (anUnsubscribedMessagesDueToFailure.size() > 0)
+                        {
+                            aFailedSubscribers.put(aSubscription.ReceiverId, anUnsubscribedMessagesDueToFailure);
+                        }
+                        else
+                        {
+                            ++aNumberOfSentSubscribers;
+                        }
                     }
                 }
+            }
+            
+            if (myMessagePublishedEvent.isSubscribed())
+            {
+                PublishInfoEventArgs anEvent = new PublishInfoEventArgs(publisherResponseReceiverId, message.MessageTypes[0], message.Message, aNumberOfSentSubscribers);
+                try
+                {
+                    myMessagePublishedEvent.raise(this, anEvent);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
+
+            // If sending to some subscribers failed then they were unsubscribed.
+            for(Map.Entry<String, ArrayList<String>> aFailedSubscriber : aFailedSubscribers.entrySet())
+            {
+                raiseClientUnsubscribed(aFailedSubscriber.getKey(), aFailedSubscriber.getValue());
             }
         }
         finally
@@ -295,7 +439,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         }
     }
     
-    private void send(String responseReceiverId, Object serializedMessage) throws Exception
+    private ArrayList<String> send(String responseReceiverId, Object serializedMessage) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -326,8 +470,10 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                 }
 
                 // Unsubscribe the failed client.
-                unsubscribe(responseReceiverId, null);
+                return unsubscribe(responseReceiverId, null);
             }
+            
+            return new ArrayList<String>();
         }
         finally
         {
@@ -340,10 +486,11 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            ArrayList<String> aMessagesToSubscribe = new ArrayList<String>(Arrays.asList(messageTypes));
+            
             synchronized (mySubscribtions)
             {
                 // Subscribe only messages that are not subscribed yet.
-                ArrayList<String> aMessagesToSubscribe = new ArrayList<String>(Arrays.asList(messageTypes));
                 for (TSubscription aSubscription : mySubscribtions)
                 {
                     if (aSubscription.ReceiverId.equals(responseReceiverId))
@@ -358,6 +505,21 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                     mySubscribtions.add(new TSubscription(aMessageType, responseReceiverId));
                 }
             }
+            
+            if (myClientSubscribedEvent.isSubscribed() && aMessagesToSubscribe.size() > 0)
+            {
+                String[] aMessagesToSubscribeArray = new String[aMessagesToSubscribe.size()];
+                aMessagesToSubscribeArray = aMessagesToSubscribe.toArray(aMessagesToSubscribeArray);
+                SubscribeInfoEventArgs anEvent = new SubscribeInfoEventArgs(responseReceiverId, aMessagesToSubscribeArray);
+                try
+                {
+                    myClientSubscribedEvent.raise(this, anEvent);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
+            }
         }
         finally
         {
@@ -365,11 +527,12 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         }
     }
     
-    private void unsubscribe(final String responseReceiverId, final String[] messageTypes)
+    private ArrayList<String> unsubscribe(final String responseReceiverId, final String[] messageTypes)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            final ArrayList<String> anUnsubscribedMessages = new ArrayList<String>();
             synchronized (mySubscribtions)
             {
                 // If unsubscribe from all messages
@@ -383,7 +546,13 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                                 public Boolean invoke(TSubscription x)
                                         throws Exception
                                 {
-                                    return x.ReceiverId.equals(responseReceiverId);
+                                    if (x.ReceiverId.equals(responseReceiverId))
+                                    {
+                                        anUnsubscribedMessages.add(x.MessageTypeId);
+                                        return true;
+                                    }
+                                    
+                                    return false;
                                 }
                         
                             });
@@ -412,6 +581,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                                         {
                                             if (aMessageType.equals(x.MessageTypeId))
                                             {
+                                                anUnsubscribedMessages.add(x.MessageTypeId);
                                                 return true;
                                             }
                                         }
@@ -427,6 +597,34 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                         EneterTrace.error(TracedObject() + "failed to unregister subscription.", err);
                     }
                 }
+                
+                return anUnsubscribedMessages;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void raiseClientUnsubscribed(String responseReceiverId, ArrayList<String> messageTypeIds)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (myClientUnsubscribedEvent.isSubscribed() && messageTypeIds != null && messageTypeIds.size() > 0)
+            {
+                String[] anMessageTypeIds = new String[messageTypeIds.size()];
+                anMessageTypeIds = messageTypeIds.toArray(anMessageTypeIds);
+                SubscribeInfoEventArgs anEvent = new SubscribeInfoEventArgs(responseReceiverId, anMessageTypeIds);
+                try
+                {
+                    myClientUnsubscribedEvent.raise(this, anEvent);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                }
             }
         }
         finally
@@ -440,10 +638,13 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
     private boolean myIsPublisherSelfnotified;
     private ISerializer mySerializer;
     private GetSerializerCallback myGetSerializerCallback;
+    private AuthorizeBrokerRequestCallback myValidateBrokerRequestCallback;
     
     private final String myLocalReceiverId = "Eneter.Broker.LocalReceiver";
     
-    
+    private EventImpl<PublishInfoEventArgs> myMessagePublishedEvent = new EventImpl<PublishInfoEventArgs>();
+    private EventImpl<SubscribeInfoEventArgs> myClientSubscribedEvent = new EventImpl<SubscribeInfoEventArgs>();
+    private EventImpl<SubscribeInfoEventArgs> myClientUnsubscribedEvent = new EventImpl<SubscribeInfoEventArgs>();
     private EventImpl<BrokerMessageReceivedEventArgs> myBrokerMessageReceivedEvent = new EventImpl<BrokerMessageReceivedEventArgs>();
     
     
