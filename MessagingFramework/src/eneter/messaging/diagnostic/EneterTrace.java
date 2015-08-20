@@ -107,7 +107,7 @@ public class EneterTrace
         {
             aTraceObject = new EneterTrace();
 
-            writeMessage("-->", "", 3);
+            writeMessage(3, "-->", "");
 
             aTraceObject.myEnteringTime = System.nanoTime();
         }
@@ -137,7 +137,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" I:", message, 3);
+            writeMessage(3, " I:", message);
         }
     }
     
@@ -152,7 +152,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" I:", message + "\r\nDetails: " + details, 3);
+            writeMessage(3, " I:", message + "\r\nDetails: " + details);
         }
     }
 
@@ -168,7 +168,7 @@ public class EneterTrace
         if (myDetailLevel != EDetailLevel.None)
         {
             String aDetails = getDetailsFromException(err);
-            writeMessage(" I:", message + "\r\n" + aDetails, 3);
+            writeMessage(3, " I:", message + "\r\n" + aDetails);
         }
     }
 
@@ -182,7 +182,15 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" W:", message, 3);
+            writeMessage(3, " W:", message);
+        }
+    }
+    
+    public static void warning(int skipCallstackFrames, String message)
+    {
+        if (myDetailLevel != EDetailLevel.None)
+        {
+            writeMessage(3 + skipCallstackFrames, " W:", message);
         }
     }
 
@@ -197,7 +205,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" W:", message + "\r\nDetails: " + details, 3);
+            writeMessage(3, " W:", message + "\r\nDetails: " + details);
         }
     }
 
@@ -213,7 +221,7 @@ public class EneterTrace
         if (myDetailLevel != EDetailLevel.None)
         {
             String aDetails = getDetailsFromException(err);
-            writeMessage(" W:", message + "\r\n" + aDetails, 3);
+            writeMessage(3, " W:", message + "\r\n" + aDetails);
         }
     }
 
@@ -227,7 +235,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" E:", message, 3);
+            writeMessage(3, " E:", message);
         }
     }
 
@@ -242,7 +250,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(" E:", message + "\r\nDetails: " + errorDetails, 3);
+            writeMessage(3, " E:", message + "\r\nDetails: " + errorDetails);
         }
     }
 
@@ -258,7 +266,7 @@ public class EneterTrace
         if (myDetailLevel != EDetailLevel.None)
         {
             String aDetails = getDetailsFromException(err);
-            writeMessage(" E:", message + "\r\n" + aDetails, 3);
+            writeMessage(3, " E:", message + "\r\n" + aDetails);
         }
     }
 
@@ -274,7 +282,15 @@ public class EneterTrace
     {
         if (myDetailLevel == EDetailLevel.Debug)
         {
-            writeMessage(" D:", message, 3);
+            writeMessage(3, " D:", message);
+        }
+    }
+    
+    public static void debug(int skipCallstackFrames, String message)
+    {
+        if (myDetailLevel == EDetailLevel.Debug)
+        {
+            writeMessage(3 +skipCallstackFrames, " D:", message);
         }
     }
 
@@ -429,7 +445,7 @@ public class EneterTrace
     }
     
     
-    private static void writeMessage(final String prefix, final String message, final int callStackIdx)
+    private static void writeMessage(final int callStackIdx, final String prefix, final String message)
     {
         final Date aDate = new Date();
         final StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
@@ -590,7 +606,7 @@ public class EneterTrace
                 .append(aMiliseconds).append("ms ")
                 .append(aMicroseconds).append("us]");
                 
-                writeMessage("<--", aMessage.toString(), 4);
+                writeMessage(4, "<--", aMessage.toString());
             }
         }
         catch(Exception exception)
