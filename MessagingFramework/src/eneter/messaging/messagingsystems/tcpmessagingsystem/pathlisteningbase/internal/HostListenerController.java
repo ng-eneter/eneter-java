@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.ArrayList;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.net.system.IFunction1;
 import eneter.net.system.IMethod1;
@@ -45,7 +46,8 @@ class HostListenerController
         {
             try
             {
-                synchronized (myListeners)
+                myListenersLock.lock();
+                try
                 {
                     // Get listener for the address specified in the given uri.
                     HostListenerBase aHostListener = getHostListener(address);
@@ -76,6 +78,10 @@ class HostListenerController
                         aHostListener.registerListener(address, connectionHandler);
                     }
                 }
+                finally
+                {
+                    myListenersLock.unlock();
+                }
             }
             catch (Exception err)
             {
@@ -96,7 +102,8 @@ class HostListenerController
         {
             try
             {
-                synchronized (myListeners)
+                myListenersLock.lock();
+                try
                 {
                     // Get host listener.
                     HostListenerBase aHostListener = getHostListener(uri);
@@ -115,6 +122,10 @@ class HostListenerController
                         myListeners.remove(aHostListener);
                     }
                 }
+                finally
+                {
+                    myListenersLock.unlock();
+                }
             }
             catch (Exception err)
             {
@@ -132,7 +143,8 @@ class HostListenerController
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeners)
+            myListenersLock.lock();
+            try
             {
                 // Get host listener.
                 HostListenerBase aHostListener = getHostListener(uri);
@@ -148,6 +160,10 @@ class HostListenerController
                 }
 
                 return true;
+            }
+            finally
+            {
+                myListenersLock.unlock();
             }
         }
         finally
@@ -188,6 +204,7 @@ class HostListenerController
     
     
     // List of IP address : port listeners. These listeners then maintain particular path listeners.
+    private static ThreadLock myListenersLock = new ThreadLock();
     private static ArrayList<HostListenerBase> myListeners = new ArrayList<HostListenerBase>();
     
     private static final String TracedObject = "HostListenerController ";

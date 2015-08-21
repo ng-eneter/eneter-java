@@ -12,6 +12,7 @@ import java.net.URI;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.net.system.IMethod1;
 
@@ -45,7 +46,8 @@ public abstract class PathListenerProviderBase
         {
             try
             {
-                synchronized (myListeningManipulatorLock)
+                myListeningManipulatorLock.lock();
+                try
                 {
                     if (isListening())
                     {
@@ -62,6 +64,10 @@ public abstract class PathListenerProviderBase
                     myConnectionHandler = connectionHandler;
 
                     HostListenerController.startListening(myAddress, myHostListenerFactory, myConnectionHandler, mySecurityFactory);
+                }
+                finally
+                {
+                    myListeningManipulatorLock.unlock();
                 }
             }
             catch (Exception err)
@@ -83,10 +89,15 @@ public abstract class PathListenerProviderBase
         {
             try
             {
-                synchronized (myListeningManipulatorLock)
+                myListeningManipulatorLock.lock();
+                try
                 {
                     HostListenerController.stopListening(myAddress);
                     myConnectionHandler = null;
+                }
+                finally
+                {
+                    myListeningManipulatorLock.unlock();
                 }
             }
             catch (Exception err)
@@ -105,9 +116,14 @@ public abstract class PathListenerProviderBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 return HostListenerController.isListening(myAddress);
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -126,7 +142,7 @@ public abstract class PathListenerProviderBase
     private IHostListenerFactory myHostListenerFactory;
     private IMethod1<Object> myConnectionHandler;
     private IServerSecurityFactory mySecurityFactory;
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
     
     protected abstract String TracedObject();
 }

@@ -14,6 +14,7 @@ import java.util.TimerTask;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
@@ -93,7 +94,8 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (isConnected())
                 {
@@ -119,6 +121,10 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     closeConnection();
                     throw err;
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -147,9 +153,14 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 return myUnderlyingOutputChannel.isConnected();
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -164,7 +175,8 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (!isConnected())
                 {
@@ -197,6 +209,10 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     throw err;
                 }
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -216,12 +232,17 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
 
                 // Note: timer setting is after deserialization.
                 //       reason: if deserialization fails the timer is not updated and the client will be disconnected.
-                synchronized (myConnectionManipulatorLock)
+                myConnectionManipulatorLock.lock();
+                try
                 {
                     // Cancel the current response timeout and set the new one.
                     myReceiveTimerTask.cancel();
                     myReceiveTimerTask = getReceiveTimerTask();
                     myReceiveTimer.schedule(myReceiveTimerTask, myReceiveTimeout);
+                }
+                finally
+                {
+                    myConnectionManipulatorLock.unlock();
                 }
                 
                 // If it is the response for the ping.
@@ -277,7 +298,8 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         {
             try
             {
-                synchronized (myConnectionManipulatorLock)
+                myConnectionManipulatorLock.lock();
+                try
                 {
                     // Send the ping message.
                     myUnderlyingOutputChannel.sendMessage(myPreserializedPingMessage);
@@ -285,6 +307,10 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     // Schedule the next ping.
                     myPingingTimerTask = getPingingTimerTask();
                     myPingingTimer.schedule(myPingingTimerTask, myPingFrequency);
+                }
+                finally
+                {
+                    myConnectionManipulatorLock.unlock();
                 }
             }
             catch (Exception err)
@@ -318,7 +344,8 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 // Stop timers.
                 myPingingTimerTask.cancel();
@@ -328,6 +355,10 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                 {
                     myUnderlyingOutputChannel.closeConnection();
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
 
             if (notifyConnectionClosedFlag)
@@ -428,7 +459,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
     }
     
     private IDuplexOutputChannel myUnderlyingOutputChannel;
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     
     private Timer myPingingTimer;
     private TimerTask myPingingTimerTask;

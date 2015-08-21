@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.TcpListenerProvider;
 import eneter.net.system.*;
@@ -60,7 +61,8 @@ public abstract class HostListenerBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myHandlers)
+            myHandlersLock.lock();
+            try
             {
                 // If the path listener already exists then error, because only one instance can listen.
                 if (existListener(address))
@@ -93,6 +95,10 @@ public abstract class HostListenerBase
                     }
                 }
             }
+            finally
+            {
+                myHandlersLock.unlock();
+            }
         }
         finally
         {
@@ -107,7 +113,8 @@ public abstract class HostListenerBase
         {
             try
             {
-                synchronized (myHandlers)
+                myHandlersLock.lock();
+                try
                 {
                     // Remove handler for that path.
                     HashSetExt.removeWhere(myHandlers, new IFunction1<Boolean, Entry<URI, IMethod1<Object>>>()
@@ -125,6 +132,10 @@ public abstract class HostListenerBase
                     {
                         myTcpListener.stopListening();
                     }
+                }
+                finally
+                {
+                    myHandlersLock.unlock();
                 }
             }
             catch (Exception err)
@@ -144,7 +155,8 @@ public abstract class HostListenerBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myHandlers)
+            myHandlersLock.lock();
+            try
             {
                 boolean isAny = EnumerableExt.any(myHandlers, new IFunction1<Boolean, Entry<URI, IMethod1<Object>>>()
                     {
@@ -155,6 +167,10 @@ public abstract class HostListenerBase
                         }
                     });
                 return isAny;
+            }
+            finally
+            {
+                myHandlersLock.unlock();
             }
         }
         catch (Exception err)
@@ -173,9 +189,14 @@ public abstract class HostListenerBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myHandlers)
+            myHandlersLock.lock();
+            try
             {
                 return myHandlers.size() > 0;
+            }
+            finally
+            {
+                myHandlersLock.unlock();
             }
         }
         finally
@@ -190,6 +211,7 @@ public abstract class HostListenerBase
     private InetSocketAddress myAddress;
     private TcpListenerProvider myTcpListener;
 
+    protected ThreadLock myHandlersLock = new ThreadLock();
     protected HashSet<Entry<URI, IMethod1<Object>>> myHandlers = new HashSet<Entry<URI, IMethod1<Object>>>();
     
     

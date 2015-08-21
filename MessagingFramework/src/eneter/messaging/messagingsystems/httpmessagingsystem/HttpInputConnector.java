@@ -15,6 +15,7 @@ import java.util.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
@@ -63,10 +64,15 @@ class HttpInputConnector implements IInputConnector
                     throw new IllegalStateException(getClass().getSimpleName() + " is disposed.");
                 }
 
-                synchronized (myMessages)
+                myMessagesLock.lock();
+                try
                 {
                     byte[] aMessage = (byte[])message;
                     myMessages.add(aMessage);
+                }
+                finally
+                {
+                    myMessagesLock.unlock();
                 }
             }
             finally
@@ -84,7 +90,8 @@ class HttpInputConnector implements IInputConnector
             {
                 byte[] aDequedMessages = null;
 
-                synchronized (myMessages)
+                myMessagesLock.lock();
+                try
                 {
                     // Update the polling time.
                     LastPollingActivityTime = System.currentTimeMillis();
@@ -109,6 +116,10 @@ class HttpInputConnector implements IInputConnector
                         aDequedMessages = aStreamedResponses.toByteArray();
                     }
                 }
+                finally
+                {
+                    myMessagesLock.unlock();
+                }
 
                 return aDequedMessages;
             }
@@ -123,6 +134,7 @@ class HttpInputConnector implements IInputConnector
         public long LastPollingActivityTime;
         public boolean IsDisposed;
         
+        private ThreadLock myMessagesLock = new ThreadLock();
         private Queue<byte[]> myMessages = new ArrayDeque<byte[]>();
     }
     
@@ -174,7 +186,8 @@ class HttpInputConnector implements IInputConnector
                 throw new IllegalArgumentException("messageHandler is null.");
             }
             
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -186,6 +199,10 @@ class HttpInputConnector implements IInputConnector
                     stopListening();
                     throw err;
                 }
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -200,10 +217,15 @@ class HttpInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 myHttpListenerProvider.stopListening();
                 myMessageHandler = null;
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -215,9 +237,14 @@ class HttpInputConnector implements IInputConnector
     @Override
     public boolean isListening()
     {
-        synchronized (myListeningManipulatorLock)
+        myListeningManipulatorLock.lock();
+        try
         {
             return myHttpListenerProvider.isListening();
+        }
+        finally
+        {
+            myListeningManipulatorLock.unlock();
         }
     }
 
@@ -228,7 +255,8 @@ class HttpInputConnector implements IInputConnector
         try
         {
             HttpResponseSender aClientContext;
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 aClientContext = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
                 {
@@ -239,6 +267,10 @@ class HttpInputConnector implements IInputConnector
                         return x.ResponseReceiverId.equals(outputConnectorAddress);
                     }
                 });
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
 
             if (aClientContext == null)
@@ -262,7 +294,8 @@ class HttpInputConnector implements IInputConnector
         try
         {
             HttpResponseSender aClientContext;
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 aClientContext = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
                 {
@@ -282,6 +315,10 @@ class HttpInputConnector implements IInputConnector
                 //       The client gets the close connection message. The client processes it and stops polling.
                 //       On the service side the time detects the client sopped polling and so it removes
                 //       the client context from my connected clients.
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
 
             if (aClientContext != null)
@@ -325,7 +362,8 @@ class HttpInputConnector implements IInputConnector
 
                     // Find the sender for the response receiver.
                     HttpResponseSender aResponseSender = null;
-                    synchronized (myConnectedClients)
+                    myConnectedClientsLock.lock();
+                    try
                     {
                         aResponseSender = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
                         {
@@ -336,6 +374,10 @@ class HttpInputConnector implements IInputConnector
                             }
                     
                         });
+                    }
+                    finally
+                    {
+                        myConnectedClientsLock.unlock();
                     }
 
                     if (aResponseSender != null)
@@ -378,7 +420,8 @@ class HttpInputConnector implements IInputConnector
 
                     if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
                     {
-                        synchronized (myConnectedClients)
+                        myConnectedClientsLock.lock();
+                        try
                         {
                             HttpResponseSender aClientContext = EnumerableExt.firstOrDefault(myConnectedClients,
                                 new IFunction1<Boolean, HttpResponseSender>()
@@ -419,10 +462,15 @@ class HttpInputConnector implements IInputConnector
                                 anIsProcessingOk = false;
                             }
                         }
+                        finally
+                        {
+                            myConnectedClientsLock.unlock();
+                        }
                     }
                     else if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
                     {
-                        synchronized (myConnectedClients)
+                        myConnectedClientsLock.lock();
+                        try
                         {
                             HttpResponseSender aClientContext = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
                             {
@@ -441,6 +489,10 @@ class HttpInputConnector implements IInputConnector
                                 myConnectedClients.remove(aClientContext);
                                 aClientContext.dispose();
                             }
+                        }
+                        finally
+                        {
+                            myConnectedClientsLock.unlock();
                         }
                     }
                     
@@ -478,7 +530,8 @@ class HttpInputConnector implements IInputConnector
             final ArrayList<HttpResponseSender> aClientsToNotify = new ArrayList<HttpResponseSender>();
             boolean aStartTimerFlag = false;
             
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 final long aTime = System.currentTimeMillis();
 
@@ -514,6 +567,10 @@ class HttpInputConnector implements IInputConnector
                 {
                     aStartTimerFlag = true;
                 }
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
             
             for (HttpResponseSender aClientContext : aClientsToNotify)
@@ -580,9 +637,10 @@ class HttpInputConnector implements IInputConnector
     private IProtocolFormatter myProtocolFormatter;
     private HttpListener myHttpListenerProvider;
     private IMethod1<MessageContext> myMessageHandler;
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
     private Timer myResponseReceiverInactivityTimer;
     private int myResponseReceiverInactivityTimeout;
+    private ThreadLock myConnectedClientsLock = new ThreadLock();
     private HashSet<HttpResponseSender> myConnectedClients = new HashSet<HttpResponseSender>();
     
     private IMethod1<HttpRequestContext> myHandleConnection = new IMethod1<HttpRequestContext>()

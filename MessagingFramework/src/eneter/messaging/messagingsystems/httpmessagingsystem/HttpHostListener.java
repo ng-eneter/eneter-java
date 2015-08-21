@@ -74,7 +74,8 @@ class HttpHostListener extends HostListenerBase
             // Get handler for that path.
             URI aHandlerUri;
             final IMethod1<Object> aPathHandler;
-            synchronized (myHandlers)
+            myHandlersLock.lock();
+            try
             {
                 final String anAbsolutePathFinal = anAbsolutePath;
                 Entry<URI, IMethod1<Object>> aPair =
@@ -92,6 +93,10 @@ class HttpHostListener extends HostListenerBase
                 
                 aPathHandler = aPair.getValue(); 
                 aHandlerUri = aPair.getKey();
+            }
+            finally
+            {
+                myHandlersLock.unlock();
             }
             
             // If the listener does not exist.

@@ -14,6 +14,7 @@ import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.*;
@@ -65,7 +66,8 @@ class HttpOutputConnector implements IOutputConnector
             
             try
             {
-                synchronized (myConnectionManipulatorLock)
+                myConnectionManipulatorLock.lock();
+                try
                 {
                     myStopReceivingRequestedFlag = false;
     
@@ -84,6 +86,10 @@ class HttpOutputConnector implements IOutputConnector
                     // Send open connection message.
                     Object anEncodedMessage = myProtocolFormatter.encodeOpenConnectionMessage(myResponseReceiverId);
                     sendMessage(anEncodedMessage);
+                }
+                finally
+                {
+                    myConnectionManipulatorLock.unlock();
                 }
             }
             catch (Exception err)
@@ -124,10 +130,15 @@ class HttpOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 Object anEncodedMessage = myProtocolFormatter.encodeMessage(myResponseReceiverId, message);
                 sendMessage(anEncodedMessage);
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -242,7 +253,8 @@ class HttpOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 myStopReceivingRequestedFlag = true;
                 myStopPollingWaitingEvent.set();
@@ -292,6 +304,10 @@ class HttpOutputConnector implements IOutputConnector
                 myResponseReceiverThread = null;
                 myResponseMessageHandler = null;
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -311,7 +327,7 @@ class HttpOutputConnector implements IOutputConnector
 
     private int myPollingFrequencyMiliseconds;
     private ManualResetEvent myStopPollingWaitingEvent = new ManualResetEvent(false);
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     
     private Runnable myDoPolling = new Runnable()
     {

@@ -13,6 +13,7 @@ import java.util.*;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
@@ -133,7 +134,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 if (isListening())
                 {
@@ -156,6 +158,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     stopListening();
                 }
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -169,7 +175,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -184,6 +191,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 myUnderlyingInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
                 myUnderlyingInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -197,9 +208,14 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 return myUnderlyingInputChannel != null && myUnderlyingInputChannel.isListening();
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -244,7 +260,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         {
             try
             {
-                synchronized (myResponseReceiverContexts)
+                myResponseReceiverContextsLock.lock();
+                try
                 {
                     HashSetExt.removeWhere(myResponseReceiverContexts, new IFunction1<Boolean, TResponseReceiverContext>()
                     {
@@ -255,6 +272,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                             return x.getResponseReceiverId().equals(responseReceiverId);
                         }
                     });
+                }
+                finally
+                {
+                    myResponseReceiverContextsLock.unlock();
                 }
                 
                 myUnderlyingInputChannel.disconnectResponseReceiver(responseReceiverId);
@@ -275,7 +296,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myResponseReceiverContexts)
+            myResponseReceiverContextsLock.lock();
+            try
             {
                 TResponseReceiverContext aResponseReceiver = getResponseReceiver(e.getResponseReceiverId());
                 if (aResponseReceiver != null)
@@ -287,6 +309,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 {
                     createResponseReceiver(e.getResponseReceiverId(), e.getSenderAddress());
                 }
+            }
+            finally
+            {
+                myResponseReceiverContextsLock.unlock();
             }
 
             if (myResponseReceiverConnectedEventImpl.isSubscribed())
@@ -317,7 +343,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         try
         {
             int aNumberOfRemoved = 0;
-            synchronized (myResponseReceiverContexts)
+            myResponseReceiverContextsLock.lock();
+            try
             {
                 try
                 {
@@ -336,6 +363,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 {
                     EneterTrace.error(TracedObject() + "failed in removeWhere to remove the response receiver.");
                 }
+            }
+            finally
+            {
+                myResponseReceiverContextsLock.unlock();
             }
 
             if (aNumberOfRemoved > 0)
@@ -356,7 +387,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         {
             try
             {
-                synchronized (myResponseReceiverContexts)
+                myResponseReceiverContextsLock.lock();
+                try
                 {
                     TResponseReceiverContext aResponseReceiver = getResponseReceiver(e.getResponseReceiverId());
                     if (aResponseReceiver == null)
@@ -366,6 +398,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     }
 
                     aResponseReceiver.setLastReceiveTime(System.currentTimeMillis());
+                }
+                finally
+                {
+                    myResponseReceiverContextsLock.unlock();
                 }
                 
                 // Deserialize the incoming message.
@@ -411,7 +447,8 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             final ArrayList<TResponseReceiverContext> aTimeoutedResponseReceivers = new ArrayList<TResponseReceiverContext>();
             boolean aContinueTimerFlag = false;
 
-            synchronized (myResponseReceiverContexts)
+            myResponseReceiverContextsLock.lock();
+            try
             {
                 final long aCurrentTime = System.currentTimeMillis();
 
@@ -442,6 +479,10 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                         });
 
                 aContinueTimerFlag = myResponseReceiverContexts.size() > 0;
+            }
+            finally
+            {
+                myResponseReceiverContextsLock.unlock();
             }
 
             // Send pings to all receivers which need it.
@@ -598,13 +639,14 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     }
     
     
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
     private IDuplexInputChannel myUnderlyingInputChannel;
     private ISerializer mySerializer;
 
     private long myPingFrequency;
     private long myReceiveTimeout;
     private Timer myCheckTimer;
+    private ThreadLock myResponseReceiverContextsLock = new ThreadLock();
     private HashSet<TResponseReceiverContext> myResponseReceiverContexts = new HashSet<TResponseReceiverContext>();
     
     private Object myPreserializedPingMessage;
