@@ -12,6 +12,7 @@ import java.util.*;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
@@ -205,7 +206,8 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 myInputChannel.responseReceiverConnected().subscribe(myOnResponseReceiverConnected);
                 myInputChannel.responseReceiverDisconnected().subscribe(myOnResponseReceiverDisconnected);
@@ -224,6 +226,10 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
 
                 myMaxOfflineCheckerRequestedToStop = false;
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -237,7 +243,8 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 // Indicate, that the timer responsible for checking if response receivers are timeouted (i.e. exceeded the max offline time)
                 // shall stop.
@@ -252,15 +259,24 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                     EneterTrace.warning(TracedObject() + ErrorHandler.IncorrectlyStoppedListening, err);
                 }
 
-                synchronized (myResponseReceivers)
+                myResponseReceiversLock.lock();
+                try
                 {
                     myBroadcasts.clear();
                     myResponseReceivers.clear();
+                }
+                finally
+                {
+                    myResponseReceiversLock.unlock();
                 }
 
                 myInputChannel.responseReceiverConnected().unsubscribe(myOnResponseReceiverConnected);
                 myInputChannel.responseReceiverDisconnected().unsubscribe(myOnResponseReceiverDisconnected);
                 myInputChannel.messageReceived().unsubscribe(myOnMessageReceived);
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -275,9 +291,14 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 return myInputChannel.isListening();
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -296,7 +317,8 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
          // If it is a broadcast response message.
             if (responseReceiverId.equals("*"))
             {
-                synchronized (myResponseReceivers)
+                myResponseReceiversLock.lock();
+                try
                 {
                     TBroadcast aBroadcastMessage = new TBroadcast(message);
                     myBroadcasts.add(aBroadcastMessage);
@@ -307,11 +329,16 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                         aResponseReceiver.sendResponseMessage(message);
                     }
                 }
+                finally
+                {
+                    myResponseReceiversLock.unlock();
+                }
             }
             else
             {
                 boolean aNotifyOffline = false;
-                synchronized (myResponseReceivers)
+                myResponseReceiversLock.lock();
+                try
                 {
                     TBufferedResponseReceiver aResponseReciever = getResponseReceiver(responseReceiverId);
                     if (aResponseReciever == null)
@@ -335,6 +362,10 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                         });
                     }
                 }
+                finally
+                {
+                    myResponseReceiversLock.unlock();
+                }
             }
         }
         finally
@@ -349,7 +380,8 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myResponseReceivers)
+            myResponseReceiversLock.lock();
+            try
             {
                 try
                 {
@@ -367,6 +399,10 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                 {
                     EneterTrace.error(TracedObject() + "failed in removeWhere to remove a response receiver.");
                 }
+            }
+            finally
+            {
+                myResponseReceiversLock.unlock();
             }
 
             myInputChannel.disconnectResponseReceiver(responseReceiverId);
@@ -386,7 +422,8 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
             boolean aPendingResponseReceicerConnectedEvent = false;
             boolean aNewResponseReceiverFlag = false;
             TBufferedResponseReceiver aResponseReciever;
-            synchronized (myResponseReceivers)
+            myResponseReceiversLock.lock();
+            try
             {
                 aResponseReciever = getResponseReceiver(e.getResponseReceiverId());
                 if (aResponseReciever == null)
@@ -416,6 +453,10 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                 // Send all buffered messages.
                 aResponseReciever.sendMessagesFromQueue();
             }
+            finally
+            {
+                myResponseReceiversLock.unlock();
+            }
 
 
             notifyEvent(myResponseReceiverOnlineEventImpl, e, false);
@@ -436,7 +477,8 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         try
         {
             boolean aNotify = false;
-            synchronized (myResponseReceivers)
+            myResponseReceiversLock.lock();
+            try
             {
                 TBufferedResponseReceiver aResponseReciever = getResponseReceiver(e.getResponseReceiverId());
                 if (aResponseReciever != null)
@@ -444,6 +486,10 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                     aResponseReciever.setOnline(false);
                     aNotify = true;
                 }
+            }
+            finally
+            {
+                myResponseReceiversLock.unlock();
             }
 
             if (aNotify)
@@ -545,7 +591,8 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
             final long aCurrentCheckTime = System.currentTimeMillis();
             boolean aTimerShallContinueFlag;
 
-            synchronized (myResponseReceivers)
+            myResponseReceiversLock.lock();
+            try
             {
                 // Remove all expired broadcasts.
                 ArrayListExt.removeAll(myBroadcasts, new IFunction1<Boolean, TBroadcast>()
@@ -580,6 +627,10 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
                     });
                 
                 aTimerShallContinueFlag = myResponseReceivers.size() > 0;
+            }
+            finally
+            {
+                myResponseReceiversLock.unlock();
             }
 
             // Notify disconnected response receivers.
@@ -669,13 +720,14 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
     
     
     
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
     
     private long myMaxOfflineTime;
     private Timer myMaxOfflineChecker;
     private boolean myMaxOfflineCheckerRequestedToStop;
     private IDuplexInputChannel myInputChannel;
 
+    private ThreadLock myResponseReceiversLock = new ThreadLock();
     private HashSet<TBufferedResponseReceiver> myResponseReceivers = new HashSet<TBufferedResponseReceiver>();
     private ArrayList<TBroadcast> myBroadcasts = new ArrayList<TBroadcast>();
     

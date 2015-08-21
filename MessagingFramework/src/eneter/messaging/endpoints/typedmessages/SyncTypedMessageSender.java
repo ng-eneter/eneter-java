@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
@@ -64,9 +65,14 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAttachDetachLock)
+            myAttachDetachLock.lock();
+            try
             {
                 mySender.attachDuplexOutputChannel(duplexOutputChannel);
+            }
+            finally
+            {
+                myAttachDetachLock.unlock();
             }
         }
         finally
@@ -81,12 +87,17 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAttachDetachLock)
+            myAttachDetachLock.lock();
+            try
             {
                 // Stop waiting for the response.
                 myResponseAvailableEvent.set();
                 
                 mySender.detachDuplexOutputChannel();
+            }
+            finally
+            {
+                myAttachDetachLock.unlock();
             }
         }
         finally
@@ -114,7 +125,8 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
         try
         {
             // During sending and receiving only one caller is allowed.
-            synchronized (myRequestResponseLock)
+            myRequestResponseLock.lock();
+            try
             {
                 final ArrayList<TypedResponseReceivedEventArgs<TResponse>> aReceivedResponse = new ArrayList<TypedResponseReceivedEventArgs<TResponse>>();
                 
@@ -178,6 +190,10 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
                 {
                     mySender.responseReceived().unsubscribe(aResponseHandler);
                 }
+            }
+            finally
+            {
+                myRequestResponseLock.unlock();
             }
         }
         finally
@@ -253,8 +269,8 @@ class SyncTypedMessageSender<TResponse, TRequest> implements ISyncDuplexTypedMes
     }
     
     
-    private Object myAttachDetachLock = new Object();
-    private Object myRequestResponseLock = new Object();
+    private ThreadLock myAttachDetachLock = new ThreadLock();
+    private ThreadLock myRequestResponseLock = new ThreadLock();
 
     private ManualResetEvent myResponseAvailableEvent = new ManualResetEvent(false);
 

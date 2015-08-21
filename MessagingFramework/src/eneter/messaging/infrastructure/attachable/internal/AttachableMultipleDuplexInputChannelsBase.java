@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.infrastructure.attachable.IAttachableMultipleDuplexInputChannels;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
@@ -89,7 +90,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 attach(duplexInputChannel);
 
@@ -118,6 +120,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     throw err;
                 }
             }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -130,7 +136,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 // Get the context of the requested input channel.
                 final TDuplexInputChannelContext aDuplexInputChannelContext = EnumerableExt.firstOrDefault(myDuplexInputChannelContexts,
@@ -170,6 +177,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     }
                 }
             }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -182,7 +193,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 for (TDuplexInputChannelContext aDuplexInputChannelContext : myDuplexInputChannelContexts)
                 {
@@ -204,6 +216,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
 
                 myDuplexInputChannelContexts.clear();
             }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -216,9 +232,14 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 return !myDuplexInputChannelContexts.isEmpty();
+            }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
             }
         }
         finally
@@ -234,12 +255,17 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         {
             // Note: Because of thread safety, create a new container to store the references.
             ArrayList<IDuplexInputChannel> anAttachedChannels = new ArrayList<IDuplexInputChannel>();
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 for (TDuplexInputChannelContext aContextItem : myDuplexInputChannelContexts)
                 {
                     anAttachedChannels.add(aContextItem.getAttachedDuplexInputChannel());
                 }
+            }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
             }
 
             return anAttachedChannels;
@@ -255,7 +281,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 // Go via all attached input channel contexts.
                 for (TDuplexInputChannelContext aContext : myDuplexInputChannelContexts)
@@ -279,6 +306,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
 
                 return null;
             }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -292,7 +323,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 IFunction1<Boolean, TConnection> aPredicate = new IFunction1<Boolean, TConnection>()
                 {
@@ -313,6 +345,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     HashSetExt.removeWhere(aDuplexInputChannelContext.getOpenConnections(), aPredicate);
                 }
             }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -327,7 +363,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -340,6 +377,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     EneterTrace.error(TracedObject() + "failed to send the message to the duplex output channel '" + duplexOutputChannelId + "'.", err);
                     throw err;
                 }
+            }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
             }
         }
         finally
@@ -354,7 +395,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 final TConnection[] anAssociatedConnection = {null};
                 TDuplexInputChannelContext aDuplexInputChannelContext = EnumerableExt.firstOrDefault(myDuplexInputChannelContexts,
@@ -405,6 +447,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     throw err;
                 }
             }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -418,7 +464,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 if (duplexInputChannel == null)
                 {
@@ -458,6 +505,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                 duplexInputChannel.responseReceiverDisconnected().subscribe(myResponseReceiverDisconnected);
                 duplexInputChannel.messageReceived().subscribe(myMessageReceivedHandler);
             }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -471,7 +522,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 TDuplexInputChannelContext aDuplexInputChannelContext = EnumerableExt.firstOrDefault(myDuplexInputChannelContexts,
                         new IFunction1<Boolean, TDuplexInputChannelContext>()
@@ -527,6 +579,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
 
                 return aConnection.getConnectedDuplexOutputChannel();
             }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -544,7 +600,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 for (TConnection aConnection : connections)
                 {
@@ -560,6 +617,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     aConnection.getConnectedDuplexOutputChannel().responseMessageReceived().unsubscribe(myResponseMessageReceivedHandler);
                 }
             }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -572,7 +633,8 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannelContextManipulatorLock)
+            myDuplexInputChannelContextManipulatorLock.lock();
+            try
             {
                 IFunction1<Boolean, TConnection> aPredicate = new IFunction1<Boolean, AttachableMultipleDuplexInputChannelsBase.TConnection>()
                 {
@@ -590,6 +652,10 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
                     closeConnections(aConnections);
                     HashSetExt.removeWhere(aDuplexInputChannelContext.getOpenConnections(), aPredicate);
                 }
+            }
+            finally
+            {
+                myDuplexInputChannelContextManipulatorLock.unlock();
             }
         }
         catch (Exception err)
@@ -616,7 +682,7 @@ public abstract class AttachableMultipleDuplexInputChannelsBase implements IAtta
         myMessagingSystemFactory = messagingSystem;
     }
 
-    private Object myDuplexInputChannelContextManipulatorLock = new Object();
+    private ThreadLock myDuplexInputChannelContextManipulatorLock = new ThreadLock();
     private HashSet<TDuplexInputChannelContext> myDuplexInputChannelContexts = new HashSet<TDuplexInputChannelContext>();
 
     private IMessagingSystemFactory myMessagingSystemFactory;

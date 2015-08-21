@@ -10,6 +10,7 @@ package eneter.messaging.dataprocessing.messagequeueing;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 import eneter.net.system.IMethod1;
 
@@ -32,7 +33,8 @@ public class WorkingThread<TMessage>
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myLock)
+            myLock.lock();
+            try
             {
                 if (myMessageHandler != null)
                 {
@@ -42,6 +44,10 @@ public class WorkingThread<TMessage>
                 }
                 
                 myMessageHandler = messageHandler;
+            }
+            finally
+            {
+                myLock.unlock();
             }
         }
         finally
@@ -59,9 +65,14 @@ public class WorkingThread<TMessage>
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myLock)
+            myLock.lock();
+            try
             {
                 myMessageHandler = null;
+            }
+            finally
+            {
+                myLock.unlock();
             }
         }
         finally
@@ -80,7 +91,8 @@ public class WorkingThread<TMessage>
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myLock)
+            myLock.lock();
+            try
             {
                 if (myMessageHandler == null)
                 {
@@ -108,6 +120,10 @@ public class WorkingThread<TMessage>
                     }
                 });
             }
+            finally
+            {
+                myLock.unlock();
+            }
         }
         finally
         {
@@ -117,7 +133,7 @@ public class WorkingThread<TMessage>
     
     private SyncDispatcher myWorker = new SyncDispatcher();
     private IMethod1<TMessage> myMessageHandler;
-    private Object myLock = new Object();
+    private ThreadLock myLock = new ThreadLock();
     
     private String TracedObject()
     {

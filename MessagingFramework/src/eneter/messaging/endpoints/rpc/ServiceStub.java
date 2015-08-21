@@ -6,6 +6,7 @@ import java.util.*;
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.internal.StringExt;
@@ -150,7 +151,8 @@ class ServiceStub<TServiceInterface>
                                 try
                                 {
                                     String[] aSubscribedClients = null;
-                                    synchronized (myServiceEvents)
+                                    myServiceEventsLock.lock();
+                                    try
                                     {
                                         EventContext anEventContextTmp = EnumerableExt.firstOrDefault(myServiceEvents, new IFunction1<Boolean, EventContext>()
                                         {
@@ -166,6 +168,10 @@ class ServiceStub<TServiceInterface>
                                             aSubscribedClients = anEventContextTmp.getSubscribedClients().toArray(
                                                     new String[anEventContextTmp.getSubscribedClients().size()]);
                                         }
+                                    }
+                                    finally
+                                    {
+                                        myServiceEventsLock.unlock();
                                     }
     
                                     // If some client is subscribed.
@@ -262,7 +268,8 @@ class ServiceStub<TServiceInterface>
                             throw err;
                         }
 
-                        synchronized (myServiceEvents)
+                        myServiceEventsLock.lock();
+                        try
                         {
                             if (!myServiceEvents.add(anEventContext))
                             {
@@ -271,7 +278,10 @@ class ServiceStub<TServiceInterface>
                                 throw new IllegalStateException(anErrorMessage);
                             }
                         }
-                        
+                        finally
+                        {
+                            myServiceEventsLock.unlock();
+                        }
                     }
                 }
             }
@@ -288,7 +298,8 @@ class ServiceStub<TServiceInterface>
         try
         {
             // Clean subscription for all clients.
-            synchronized (myServiceEvents)
+            myServiceEventsLock.lock();
+            try
             {
                 for (EventContext anEventContext : myServiceEvents)
                 {
@@ -303,6 +314,10 @@ class ServiceStub<TServiceInterface>
                 }
 
                 myServiceEvents.clear();
+            }
+            finally
+            {
+                myServiceEventsLock.unlock();
             }
 
             myInputChannel = null;
@@ -431,7 +446,8 @@ class ServiceStub<TServiceInterface>
             else if (aRequestMessage.Flag == RpcFlags.SubscribeEvent || aRequestMessage.Flag == RpcFlags.UnsubscribeEvent)
             {
                 EventContext anEventContext = null;
-                synchronized (myServiceEvents)
+                myServiceEventsLock.lock();
+                try
                 {
                     final String anOperationName = aRequestMessage.OperationName;
                     anEventContext = EnumerableExt.firstOrDefault(myServiceEvents, new IFunction1<Boolean, EventContext>()
@@ -460,6 +476,10 @@ class ServiceStub<TServiceInterface>
                             anEventContext.getSubscribedClients().remove(e.getResponseReceiverId());
                         }
                     }
+                }
+                finally
+                {
+                    myServiceEventsLock.unlock();
                 }
 
                 if (anEventContext == null)
@@ -503,12 +523,17 @@ class ServiceStub<TServiceInterface>
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myServiceEvents)
+            myServiceEventsLock.lock();
+            try
             {
                 for (EventContext anEventContext : myServiceEvents)
                 {
                     anEventContext.getSubscribedClients().remove(responseReceiverId);
                 }
+            }
+            finally
+            {
+                myServiceEventsLock.unlock();
             }
         }
         finally
@@ -546,6 +571,7 @@ class ServiceStub<TServiceInterface>
     private ISerializer mySerializer;
     private GetSerializerCallback myGetSerializer;
     
+    private ThreadLock myServiceEventsLock = new ThreadLock();
     private HashSet<EventContext> myServiceEvents = new HashSet<EventContext>();
     private HashMap<String, ServiceMethod> myServiceMethods = new HashMap<String, ServiceMethod>();
     private IDuplexInputChannel myInputChannel;

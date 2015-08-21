@@ -12,6 +12,7 @@ import java.util.concurrent.TimeoutException;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
@@ -51,7 +52,8 @@ class MessageBusOutputConnector implements IOutputConnector
                 throw new IllegalArgumentException("responseMessageHandler is null.");
             }
             
-            synchronized (myConnectionManipulator)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -83,6 +85,10 @@ class MessageBusOutputConnector implements IOutputConnector
                     throw err;
                 }
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -96,7 +102,8 @@ class MessageBusOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulator)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 myResponseMessageHandler = null;
 
@@ -105,6 +112,10 @@ class MessageBusOutputConnector implements IOutputConnector
                 myMessageBusOutputChannel.responseMessageReceived().unsubscribe(myOnMessageFromMessageBusReceived);
                 myMessageBusOutputChannel.connectionClosed().unsubscribe(myOnConnectionWithMessageBusClosed);
                 
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -116,9 +127,14 @@ class MessageBusOutputConnector implements IOutputConnector
     @Override
     public boolean isConnected()
     {
-        synchronized (myConnectionManipulator)
+        myConnectionManipulatorLock.lock();
+        try
         {
             return myMessageBusOutputChannel.isConnected();
+        }
+        finally
+        {
+            myConnectionManipulatorLock.unlock();
         }
     }
 
@@ -225,7 +241,7 @@ class MessageBusOutputConnector implements IOutputConnector
     private IDuplexOutputChannel myMessageBusOutputChannel;
     private String myServiceId;
     private IMethod1<MessageContext> myResponseMessageHandler;
-    private Object myConnectionManipulator = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     private ManualResetEvent myOpenConnectionConfirmed = new ManualResetEvent(false);
     
     private EventHandler<DuplexChannelMessageEventArgs> myOnMessageFromMessageBusReceived = new EventHandler<DuplexChannelMessageEventArgs>()

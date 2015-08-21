@@ -12,6 +12,7 @@ import java.util.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
@@ -129,7 +130,8 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
             
             if (responseReceiverId.equals("*"))
             {
-                synchronized (myAuthenticatedConnections)
+                myAuthenticatedConnectionsLock.lock();
+                try
                 {
                     // Send the response message to all connected clients.
                     for (String aConnectedClient : myAuthenticatedConnections)
@@ -148,10 +150,15 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
                         }
                     }
                 }
+                finally
+                {
+                    myAuthenticatedConnectionsLock.unlock();
+                }
             }
             else
             {
-                synchronized (myAuthenticatedConnections)
+                myAuthenticatedConnectionsLock.lock();
+                try
                 {
                     if (!myAuthenticatedConnections.contains(responseReceiverId))
                     {
@@ -159,6 +166,10 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
                         EneterTrace.error(aMessage);
                         throw new IllegalStateException(aMessage);
                     }
+                }
+                finally
+                {
+                    myAuthenticatedConnectionsLock.unlock();
                 }
 
                 myUnderlayingInputChannel.sendResponseMessage(responseReceiverId, message);
@@ -176,14 +187,24 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAuthenticatedConnections)
+            myAuthenticatedConnectionsLock.lock();
+            try
             {
                 myAuthenticatedConnections.remove(responseReceiverId);
             }
+            finally
+            {
+                myAuthenticatedConnectionsLock.unlock();
+            }
 
-            synchronized (myNotYetAuthenticatedConnections)
+            myNotYetAuthenticatedConnectionsLock.lock();
+            try
             {
                 myNotYetAuthenticatedConnections.remove(responseReceiverId);
+            }
+            finally
+            {
+                myNotYetAuthenticatedConnectionsLock.unlock();
             }
             
             myUnderlayingInputChannel.disconnectResponseReceiver(responseReceiverId);
@@ -200,14 +221,24 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
         try
         {
             boolean anIsAuthenticatedConnection;
-            synchronized (myAuthenticatedConnections)
+            myAuthenticatedConnectionsLock.lock();
+            try
             {
                 anIsAuthenticatedConnection = myAuthenticatedConnections.remove(e.getResponseReceiverId());
             }
+            finally
+            {
+                myAuthenticatedConnectionsLock.unlock();
+            }
 
-            synchronized (myNotYetAuthenticatedConnections)
+            myNotYetAuthenticatedConnectionsLock.lock();
+            try
             {
                 myNotYetAuthenticatedConnections.remove(e.getResponseReceiverId());
+            }
+            finally
+            {
+                myNotYetAuthenticatedConnectionsLock.unlock();
             }
 
             if (anIsAuthenticatedConnection)
@@ -228,10 +259,16 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
         {
             // If the connection has already been authenticated then this is a regular request message that will be notified.
             boolean anIsAuthenticated;
-            synchronized (myAuthenticatedConnections)
+            myAuthenticatedConnectionsLock.lock();
+            try
             {
                 anIsAuthenticated = myAuthenticatedConnections.contains(e.getResponseReceiverId());
             }
+            finally
+            {
+                myAuthenticatedConnectionsLock.unlock();
+            }
+            
             if (anIsAuthenticated)
             {
                 notifyEvent(myMessageReceivedEventImpl, e, true);
@@ -243,7 +280,8 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
             boolean aDisconnectFlag = true;
             boolean aNewResponseReceiverAuthenticated = false;
 
-            synchronized (myNotYetAuthenticatedConnections)
+            myNotYetAuthenticatedConnectionsLock.lock();
+            try
             {
                 TNotYetAuthenticatedConnection aConnection = myNotYetAuthenticatedConnections.get(e.getResponseReceiverId());
                 if (aConnection == null)
@@ -272,9 +310,14 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
 
                                 // Move the connection among authenticated connections.
                                 myNotYetAuthenticatedConnections.remove(e.getResponseReceiverId());
-                                synchronized (myAuthenticatedConnections)
+                                myAuthenticatedConnectionsLock.lock();
+                                try
                                 {
                                     myAuthenticatedConnections.add(e.getResponseReceiverId());
+                                }
+                                finally
+                                {
+                                    myAuthenticatedConnectionsLock.unlock();
                                 }
                             }
                             catch (Exception err)
@@ -332,6 +375,10 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
                 {
                     myNotYetAuthenticatedConnections.remove(e.getResponseReceiverId());
                 }
+            }
+            finally
+            {
+                myNotYetAuthenticatedConnectionsLock.unlock();
             }
 
 
@@ -395,7 +442,9 @@ class AuthenticatedDuplexInputChannel implements IDuplexInputChannel
     
     private IDuplexInputChannel myUnderlayingInputChannel;
     
+    private ThreadLock myNotYetAuthenticatedConnectionsLock = new ThreadLock();
     private HashMap<String, TNotYetAuthenticatedConnection> myNotYetAuthenticatedConnections = new HashMap<String, TNotYetAuthenticatedConnection>();
+    private ThreadLock myAuthenticatedConnectionsLock = new ThreadLock();
     private HashSet<String> myAuthenticatedConnections = new HashSet<String>();
     private IGetHandshakeMessage myGetHandshakeMessageCallback;
     private IAuthenticate myAuthenticateCallback;

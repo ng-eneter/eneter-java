@@ -12,6 +12,7 @@ import java.io.*;
 
 import eneter.messaging.dataprocessing.messagequeueing.MessageQueue;
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 
 /**
  * Stream which can be written and read at the same time.
@@ -55,7 +56,8 @@ public class DynamicInputStream extends InputStream
     @Override
     public int read() throws IOException
     {
-        synchronized (myLockDuringReading)
+        myLockDuringReading.lock();
+        try
         {
             byte[] aByte = new byte[1];
             if (read(aByte, 0, aByte.length) > 0)
@@ -64,6 +66,10 @@ public class DynamicInputStream extends InputStream
             }
             
             return -1;
+        }
+        finally
+        {
+            myLockDuringReading.unlock();
         }
     }
     
@@ -87,7 +93,8 @@ public class DynamicInputStream extends InputStream
             // Only one thread can be reading.
             // The thread waits until all data is available.
             // Note: If more threads would try to read in parallel then it would be bad because the reading removes the data from the queue.
-            synchronized (myLockDuringReading)
+            myLockDuringReading.lock();
+            try
             {
                 int aReadSize = 0;
 
@@ -145,6 +152,10 @@ public class DynamicInputStream extends InputStream
 
                 return aReadSize;
             }
+            finally
+            {
+                myLockDuringReading.unlock();
+            }
         //}
         //finally
         //{
@@ -164,7 +175,8 @@ public class DynamicInputStream extends InputStream
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myLockDuringWriting)
+            myLockDuringWriting.lock();
+            try
             {
                 if (myIsClosed)
                 {
@@ -176,6 +188,10 @@ public class DynamicInputStream extends InputStream
                 
                 ByteArrayInputStream aChunkStream = new ByteArrayInputStream(aData, 0, count);
                 myMessageQueue.enqueueMessage(aChunkStream);
+            }
+            finally
+            {
+                myLockDuringWriting.unlock();
             }
         }
         finally
@@ -199,7 +215,8 @@ public class DynamicInputStream extends InputStream
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myLockDuringWriting)
+            myLockDuringWriting.lock();
+            try
             {
                 if (myIsClosed)
                 {
@@ -208,6 +225,10 @@ public class DynamicInputStream extends InputStream
                 
                 ByteArrayInputStream aChunkStream = new ByteArrayInputStream(data, offset, count);
                 myMessageQueue.enqueueMessage(aChunkStream);
+            }
+            finally
+            {
+                myLockDuringWriting.unlock();
             }
         }
         finally
@@ -225,10 +246,15 @@ public class DynamicInputStream extends InputStream
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myLockDuringWriting)
+            myLockDuringWriting.lock();
+            try
             {
                 myMessageQueue.unblockProcessingThreads();
                 myIsClosed = true;
+            }
+            finally
+            {
+                myLockDuringWriting.unlock();
             }
         }
         finally
@@ -240,8 +266,8 @@ public class DynamicInputStream extends InputStream
     // The writing puts the byte sequences to the queue as they come.
     // The reading removes the sequences of bytes from the queue.
     private MessageQueue<ByteArrayInputStream> myMessageQueue = new MessageQueue<ByteArrayInputStream>();
-    private Object myLockDuringReading = new Object();
-    private Object myLockDuringWriting = new Object();
+    private ThreadLock myLockDuringReading = new ThreadLock();
+    private ThreadLock myLockDuringWriting = new ThreadLock();
     
     private volatile boolean myIsClosed = false;
     private ByteArrayInputStream myDataInProgress;

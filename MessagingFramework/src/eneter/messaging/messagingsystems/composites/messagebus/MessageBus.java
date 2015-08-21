@@ -11,12 +11,11 @@ import java.util.*;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.messaging.threading.dispatching.SyncDispatching;
-import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.internal.StringExt;
@@ -243,10 +242,15 @@ class MessageBus implements IMessageBus
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAttachDetachLock)
+            myAttachDetachLock.lock();
+            try
             {
                 myServiceConnector.attachDuplexInputChannel(serviceInputChannel);
                 myClientConnector.attachDuplexInputChannel(clientInputChannel);
+            }
+            finally
+            {
+                myAttachDetachLock.unlock();
             }
         }
         finally
@@ -261,16 +265,26 @@ class MessageBus implements IMessageBus
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 myConnectedClients.clear();
                 myConnectedServices.clear();
             }
+            finally
+            {
+                myConnectionLock.unlock();
+            }
 
-            synchronized (myAttachDetachLock)
+            myAttachDetachLock.lock();
+            try
             {
                 myClientConnector.detachDuplexInputChannel();
                 myServiceConnector.detachDuplexInputChannel();
+            }
+            finally
+            {
+                myAttachDetachLock.unlock();
             }
         }
         finally
@@ -285,7 +299,8 @@ class MessageBus implements IMessageBus
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized(myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 String[] aServices = new String[myConnectedServices.size()];
                 int i = 0;
@@ -296,6 +311,10 @@ class MessageBus implements IMessageBus
                 }
 
                 return aServices;
+            }
+            finally
+            {
+                myConnectionLock.unlock();
             }
         }
         finally
@@ -310,7 +329,8 @@ class MessageBus implements IMessageBus
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 ArrayList<String> aClients = new ArrayList<String>();
                 for (TClientContext aClientContext : myConnectedClients)
@@ -325,6 +345,10 @@ class MessageBus implements IMessageBus
                 aResult = aClients.toArray(aResult);
                 return aResult;
             }
+            finally
+            {
+                myConnectionLock.unlock();
+            }
         }
         finally
         {
@@ -338,7 +362,8 @@ class MessageBus implements IMessageBus
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 int aCount = 0;
                 for (TClientContext aClientContext : myConnectedClients)
@@ -350,6 +375,10 @@ class MessageBus implements IMessageBus
                 }
 
                 return aCount;
+            }
+            finally
+            {
+                myConnectionLock.unlock();
             }
         }
         finally
@@ -430,7 +459,8 @@ class MessageBus implements IMessageBus
         {
             boolean anIsNewClientConnected = false;
             TClientContext aClientContext = null;
-            synchronized (myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 try
                 {
@@ -480,6 +510,10 @@ class MessageBus implements IMessageBus
                         anIsNewClientConnected = true;
                     }
                 }
+            }
+            finally
+            {
+                myConnectionLock.unlock();
             }
 
             if (anIsNewClientConnected)
@@ -548,7 +582,8 @@ class MessageBus implements IMessageBus
         {
             // Unregistering client. 
             final TClientContext[] aClientContext = { null };
-            synchronized (myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 try
                 {
@@ -571,6 +606,10 @@ class MessageBus implements IMessageBus
                 {
                     EneterTrace.error(TracedObject() + "failed to delete the client.", err);
                 }
+            }
+            finally
+            {
+                myConnectionLock.unlock();
             }
 
             if (aClientContext[0] != null)
@@ -632,7 +671,8 @@ class MessageBus implements IMessageBus
         try
         {
             TClientContext aClientContext = null;
-            synchronized (myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 try
                 {
@@ -649,6 +689,10 @@ class MessageBus implements IMessageBus
                 {
                     EneterTrace.error(TracedObject() + "failed to search in firstOrDefault", err);
                 }
+            }
+            finally
+            {
+                myConnectionLock.unlock();
             }
 
             if (aClientContext != null)
@@ -784,7 +828,8 @@ class MessageBus implements IMessageBus
             boolean anIsNewServiceRegistered = false;
             TServiceContext aServiceContext = null;
             
-            synchronized (myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 try
                 {
@@ -809,6 +854,10 @@ class MessageBus implements IMessageBus
                     myConnectedServices.add(aServiceContext);
                     anIsNewServiceRegistered = true;
                 }
+            }
+            finally
+            {
+                myConnectionLock.unlock();
             }
             
             if (anIsNewServiceRegistered)
@@ -863,7 +912,8 @@ class MessageBus implements IMessageBus
             final ArrayList<String> aClientsToDisconnect = new ArrayList<String>();
 
             final String[] aServiceId = { null };
-            synchronized (myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 // Remove the service.
                 try
@@ -912,6 +962,10 @@ class MessageBus implements IMessageBus
                 {
                     EneterTrace.error(TracedObject() + "failed to remove clients.");
                 }
+            }
+            finally
+            {
+                myConnectionLock.unlock();
             }
 
             // Close connections with clients.
@@ -962,7 +1016,8 @@ class MessageBus implements IMessageBus
             // Check if the requested client id has a connection with the service session which forwards the message.
             // Note: this is to prevent that a sevice sends a message to a client which is not connected to it.
             TClientContext aClientContext = null;
-            synchronized (myConnectionLock)
+            myConnectionLock.lock();
+            try
             {
                 try
                 {
@@ -979,6 +1034,10 @@ class MessageBus implements IMessageBus
                 {
                     EneterTrace.error(TracedObject() + "failed to search firstOrDefault.", err);
                 }
+            }
+            finally
+            {
+                myConnectionLock.unlock();
             }
 
             if (aClientContext == null)
@@ -1043,8 +1102,8 @@ class MessageBus implements IMessageBus
     }
     
     
-    private Object myAttachDetachLock = new Object();
-    private Object myConnectionLock = new Object();
+    private ThreadLock myAttachDetachLock = new ThreadLock();
+    private ThreadLock myConnectionLock = new ThreadLock();
 
     private HashSet<TServiceContext> myConnectedServices = new HashSet<TServiceContext>();
     private HashSet<TClientContext> myConnectedClients = new HashSet<TClientContext>();

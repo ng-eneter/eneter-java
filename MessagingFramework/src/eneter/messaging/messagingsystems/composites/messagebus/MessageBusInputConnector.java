@@ -12,6 +12,7 @@ import java.util.HashMap;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
@@ -47,7 +48,8 @@ class MessageBusInputConnector implements IInputConnector
                 throw new IllegalArgumentException("messageHandler is null.");
             }
             
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -69,6 +71,10 @@ class MessageBusInputConnector implements IInputConnector
                     throw err;
                 }
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -82,9 +88,17 @@ class MessageBusInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myMessageBusOutputChannel.closeConnection();
-            myMessageBusOutputChannel.responseMessageReceived().unsubscribe(myOnMessageFromMessageBusReceived);
-            myMessageHandler = null;
+            myListeningManipulatorLock.lock();
+            try
+            {
+                myMessageBusOutputChannel.closeConnection();
+                myMessageBusOutputChannel.responseMessageReceived().unsubscribe(myOnMessageFromMessageBusReceived);
+                myMessageHandler = null;
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -95,7 +109,15 @@ class MessageBusInputConnector implements IInputConnector
     @Override
     public boolean isListening()
     {
-        return myMessageBusOutputChannel.isConnected();
+        myListeningManipulatorLock.lock();
+        try
+        {
+            return myMessageBusOutputChannel.isConnected();
+        }
+        finally
+        {
+            myListeningManipulatorLock.unlock();
+        }
     }
 
     @Override
@@ -167,9 +189,14 @@ class MessageBusInputConnector implements IInputConnector
                 final MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
                 
                 IThreadDispatcher aDispatcher = myThreadDispatcherProvider.getDispatcher();
-                synchronized (myConnectedClients)
+                myConnectedClientsLock.lock();
+                try
                 {
                     myConnectedClients.put(aProtocolMessage.ResponseReceiverId, aDispatcher);
+                }
+                finally
+                {
+                    myConnectedClientsLock.unlock();
                 }
                 aDispatcher.invoke(new Runnable()
                 {
@@ -186,7 +213,8 @@ class MessageBusInputConnector implements IInputConnector
                 final MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
                 
                 IThreadDispatcher aDispatcher;
-                synchronized (myConnectedClients)
+                myConnectedClientsLock.lock();
+                try
                 {
                     aDispatcher = myConnectedClients.get(aProtocolMessage.ResponseReceiverId);
                     if (aDispatcher != null)
@@ -197,6 +225,10 @@ class MessageBusInputConnector implements IInputConnector
                     {
                         aDispatcher = myThreadDispatcherProvider.getDispatcher();
                     }
+                }
+                finally
+                {
+                    myConnectedClientsLock.unlock();
                 }
                 aDispatcher.invoke(new Runnable()
                 {
@@ -213,7 +245,8 @@ class MessageBusInputConnector implements IInputConnector
                 final MessageContext aMessageContext = new MessageContext(aProtocolMessage, e.getSenderAddress());
                 
                 IThreadDispatcher aDispatcher;
-                synchronized (myConnectedClients)
+                myConnectedClientsLock.lock();
+                try
                 {
                     aDispatcher = myConnectedClients.get(aProtocolMessage.ResponseReceiverId);
                     if (aDispatcher == null)
@@ -221,6 +254,10 @@ class MessageBusInputConnector implements IInputConnector
                         aDispatcher = myThreadDispatcherProvider.getDispatcher();
                         myConnectedClients.put(aProtocolMessage.ResponseReceiverId, aDispatcher);
                     }
+                }
+                finally
+                {
+                    myConnectedClientsLock.unlock();
                 }
                 aDispatcher.invoke(new Runnable()
                 {
@@ -268,8 +305,9 @@ class MessageBusInputConnector implements IInputConnector
     private ISerializer mySerializer;
     private IDuplexOutputChannel myMessageBusOutputChannel;
     private IMethod1<MessageContext> myMessageHandler;
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
     private IThreadDispatcherProvider myThreadDispatcherProvider = new SyncDispatching();
+    private ThreadLock myConnectedClientsLock = new ThreadLock();
     private HashMap<String, IThreadDispatcher> myConnectedClients = new HashMap<String, IThreadDispatcher>();
     
     private EventHandler<DuplexChannelMessageEventArgs> myOnMessageFromMessageBusReceived = new EventHandler<DuplexChannelMessageEventArgs>()

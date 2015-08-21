@@ -12,6 +12,7 @@ import java.util.*;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
@@ -86,9 +87,14 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 return myConnectionIsOpenFlag;
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -103,7 +109,8 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (isConnected())
                 {
@@ -137,6 +144,10 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                 // Indicate the connection is open.
                 myConnectionIsOpenFlag = true;
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
             
             getDispatcher().invoke(new Runnable()
             {
@@ -160,7 +171,8 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 myConnectionOpeningRequestedToStopFlag = true;
                 try
@@ -184,6 +196,10 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
 
                 myConnectionIsOpenFlag = false;
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -199,7 +215,8 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (!isConnected())
                 {
@@ -210,6 +227,10 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                 
                 myMessageQueue.add(message);
                 sendMessagesFromQueue();
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -230,9 +251,14 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                 notifyEvent(myConnectionOpenedEventImpl, e, false);
             }
             
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 sendMessagesFromQueue();
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -246,7 +272,8 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 // Try to reopen the connection in a different thread.
                 if (!myConnectionOpeningActiveFlag)
@@ -263,6 +290,10 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
                         }
                     });
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
             
             notifyEvent(myConnectionOfflineEventImpl, e, false);
@@ -418,7 +449,7 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
     private long myMaxOfflineTime;
     private IDuplexOutputChannel myOutputChannel;
     
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     private boolean myIsConnectionOpenEventPendingFlag;
     private boolean myConnectionIsOpenFlag;
     private boolean myConnectionOpeningActiveFlag;

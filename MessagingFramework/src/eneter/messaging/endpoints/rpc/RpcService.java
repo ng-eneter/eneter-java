@@ -15,6 +15,7 @@ import eneter.messaging.dataprocessing.serializing.GetSerializerCallback;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
@@ -105,13 +106,18 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
             else
             {
                 // If per client mode then detach all service stubs.
-                synchronized (myPerConnectionServices)
+                myPerConnectionServicesLock.lock();
+                try
                 {
                     for (Entry<String, ServiceStub<TServiceInterface>> aServiceStub : myPerConnectionServices.entrySet())
                     {
                         aServiceStub.getValue().unsubscribeClientFromEvents(aServiceStub.getKey());
                         aServiceStub.getValue().detachInputChannel();
                     }
+                }
+                finally
+                {
+                    myPerConnectionServicesLock.unlock();
                 }
             }
         }
@@ -134,9 +140,14 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
                 ServiceStub<TServiceInterface> aServiceStub = new ServiceStub<TServiceInterface>(aServiceInstanceForThisClient, mySerializer, myGetSerializer, myServiceClazz);
                 aServiceStub.attachInputChannel(getAttachedDuplexInputChannel());
 
-                synchronized (myPerConnectionServices)
+                myPerConnectionServicesLock.lock();
+                try
                 {
                     myPerConnectionServices.put(e.getResponseReceiverId(), aServiceStub);
+                }
+                finally
+                {
+                    myPerConnectionServicesLock.unlock();
                 }
             }
             
@@ -175,7 +186,8 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
             else
             {
                 // If per client mode then remove service stub for the disconnected client.
-                synchronized (myPerConnectionServices)
+                myPerConnectionServicesLock.lock();
+                try
                 {
                     // Unsubscribe disconnected client from all events.
                     ServiceStub<TServiceInterface> aServiceStub = myPerConnectionServices.get(e.getResponseReceiverId());
@@ -185,6 +197,10 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
                         aServiceStub.detachInputChannel();
                         myPerConnectionServices.remove(e.getResponseReceiverId());
                     }
+                }
+                finally
+                {
+                    myPerConnectionServicesLock.unlock();
                 }
             }
 
@@ -221,13 +237,18 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
             {
                 // If per client mode then find the service stub associated with the client and execute the
                 // remote request.
-                synchronized (myPerConnectionServices)
+                myPerConnectionServicesLock.lock();
+                try
                 {
                     ServiceStub<TServiceInterface> aServiceStub = myPerConnectionServices.get(e.getResponseReceiverId());
                     if (aServiceStub != null)
                     {
                         aServiceStub.processRemoteRequest(e);
                     }
+                }
+                finally
+                {
+                    myPerConnectionServicesLock.unlock();
                 }
             }
         }
@@ -239,6 +260,7 @@ class RpcService<TServiceInterface> extends AttachableDuplexInputChannelBase
     
     
     private ServiceStub<TServiceInterface> mySingletonService;
+    private ThreadLock myPerConnectionServicesLock = new ThreadLock();
     private HashMap<String, ServiceStub<TServiceInterface>> myPerConnectionServices = new HashMap<String, ServiceStub<TServiceInterface>>();
     private ISerializer mySerializer;
     private GetSerializerCallback myGetSerializer;

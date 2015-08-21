@@ -15,6 +15,7 @@ import java.util.HashMap;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
 import eneter.net.system.internal.*;
@@ -123,7 +124,8 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
                 throw new IllegalArgumentException(anError);
             }
             
-            synchronized (myMessageHandlers)
+            myMessageHandlersLock.lock();
+            try
             {
                 String aNetTypeName = MultiTypeNameProvider.getNetName(clazz);
                 
@@ -162,6 +164,10 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
 
                 myMessageHandlers.put(aNetTypeName, new TMessageHandler(clazz, anEventInvoker));
             }
+            finally
+            {
+                myMessageHandlersLock.unlock();
+            }
         }
         finally
         {
@@ -175,9 +181,14 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myMessageHandlers)
+            myMessageHandlersLock.lock();
+            try
             {
                 myMessageHandlers.remove(MultiTypeNameProvider.getNetName(clazz));
+            }
+            finally
+            {
+                myMessageHandlersLock.unlock();
             }
         }
         finally
@@ -189,7 +200,8 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
     @Override
     public ArrayList<Class<?>> getRegisteredResponseMessageTypes()
     {
-        synchronized (myMessageHandlers)
+        myMessageHandlersLock.lock();
+        try
         {
             ArrayList<Class<?>> aRegisteredMessageTypes = new ArrayList<Class<?>>();
             for (TMessageHandler aHandler : myMessageHandlers.values())
@@ -197,6 +209,10 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
                 aRegisteredMessageTypes.add(aHandler.Type);
             }
             return aRegisteredMessageTypes;
+        }
+        finally
+        {
+            myMessageHandlersLock.unlock();
         }
     }
 
@@ -283,9 +299,14 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
             {
                 TMessageHandler aMessageHandler;
 
-                synchronized (myMessageHandlers)
+                myMessageHandlersLock.lock();
+                try
                 {
                     aMessageHandler = myMessageHandlers.get(e.getResponseMessage().TypeName);
+                }
+                finally
+                {
+                    myMessageHandlersLock.unlock();
                 }
 
                 if (aMessageHandler != null)
@@ -337,6 +358,7 @@ class MultiTypedMessageSender implements IMultiTypedMessageSender
     private ISerializer mySerializer;
     private IDuplexTypedMessageSender<MultiTypedMessage, MultiTypedMessage> mySender;
 
+    private ThreadLock myMessageHandlersLock = new ThreadLock(); 
     private HashMap<String, TMessageHandler> myMessageHandlers = new HashMap<String, TMessageHandler>();
     
     

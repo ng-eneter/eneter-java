@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexOutputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
@@ -97,7 +98,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             myEventName = eventName;
             myEventArgsType = eventArgsType;
             mySubscribers = new ArrayList<EventHandler<?>>();
-            mySubscribeUnsubscribeLock = new Object();
+            mySubscribeUnsubscribeLock = new ThreadLock();
         }
         
         public Class<?> getEventArgsType()
@@ -111,7 +112,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (mySubscribeUnsubscribeLock)
+                mySubscribeUnsubscribeLock.lock();
+                try
                 {
                     mySubscribers.add(eventHandler);
                     
@@ -120,6 +122,10 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                     {
                         subscribeEventAtService();
                     }
+                }
+                finally
+                {
+                    mySubscribeUnsubscribeLock.unlock();
                 }
             }
             finally
@@ -133,7 +139,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (mySubscribeUnsubscribeLock)
+                mySubscribeUnsubscribeLock.lock();
+                try
                 {
                     if (isDuplexOutputChannelAttached() && getAttachedDuplexOutputChannel().isConnected())
                     {
@@ -146,6 +153,10 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                             EneterTrace.warning(TracedObject() + "failed to subscribe '" + myEventName + "' at service. Eventhandler stays subscribed just locally in the proxy.", err);
                         }
                     }
+                }
+                finally
+                {
+                    mySubscribeUnsubscribeLock.unlock();
                 }
             }
             finally
@@ -160,7 +171,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (mySubscribeUnsubscribeLock)
+                mySubscribeUnsubscribeLock.lock();
+                try
                 {
                     mySubscribers.remove(eventHandler);
                     
@@ -185,6 +197,10 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                         }
                     }
                 }
+                finally
+                {
+                    mySubscribeUnsubscribeLock.unlock();
+                }
             }
             finally
             {
@@ -198,7 +214,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (mySubscribeUnsubscribeLock)
+                mySubscribeUnsubscribeLock.lock();
+                try
                 {
                     for (EventHandler<?> aSubscriber : mySubscribers)
                     {
@@ -212,6 +229,10 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                         }
                     }
                 }
+                finally
+                {
+                    mySubscribeUnsubscribeLock.unlock();
+                }
             }
             finally
             {
@@ -222,7 +243,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
         private String myEventName;
         private Class<?> myEventArgsType;
         private ArrayList<EventHandler<?>> mySubscribers;
-        private Object mySubscribeUnsubscribeLock;
+        private ThreadLock mySubscribeUnsubscribeLock;
     }
     
     public RpcClient(ISerializer serializer, int rpcTimeout, IThreadDispatcher threadDispatcher, Class<TServiceInterface> clazz)
@@ -488,9 +509,14 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                 
                 // Try to find if there is a pending request waiting for the response.
                 RemoteCallContext anRpcContext;
-                synchronized (myPendingRemoteCalls)
+                myPendingRemoteCallsLock.lock();
+                try
                 {
                     anRpcContext = myPendingRemoteCalls.get(aMessage.Id);
+                }
+                finally
+                {
+                    myPendingRemoteCallsLock.unlock();
                 }
 
                 if (anRpcContext != null)
@@ -735,9 +761,14 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             try
             {
                 RemoteCallContext anRpcSyncContext = new RemoteCallContext();
-                synchronized (myPendingRemoteCalls)
+                myPendingRemoteCallsLock.lock();
+                try
                 {
                     myPendingRemoteCalls.put(rpcRequest.Id, anRpcSyncContext);
+                }
+                finally
+                {
+                    myPendingRemoteCallsLock.unlock();
                 }
 
                 // Send the request.
@@ -764,9 +795,14 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             }
             finally
             {
-                synchronized (myPendingRemoteCalls)
+                myPendingRemoteCallsLock.lock();
+                try
                 {
                     myPendingRemoteCalls.remove(rpcRequest.Id);
+                }
+                finally
+                {
+                    myPendingRemoteCallsLock.unlock();
                 }
             }
         }
@@ -836,6 +872,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
     
     private ISerializer mySerializer;
     private AtomicInteger myCounter = new AtomicInteger();
+    private ThreadLock myPendingRemoteCallsLock = new ThreadLock();
     private HashMap<Integer, RemoteCallContext> myPendingRemoteCalls = new HashMap<Integer, RemoteCallContext>();
     private IThreadDispatcher myThreadDispatcher;
     private int myRpcTimeout;

@@ -12,6 +12,7 @@ import java.security.InvalidParameterException;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.infrastructure.attachable.IAttachableDuplexOutputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
@@ -29,7 +30,8 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexOutputChannelManipulatorLock)
+            myDuplexOutputChannelManipulatorLock.lock();
+            try
             {
                 attach(duplexOutputChannel);
     
@@ -53,6 +55,10 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
                     throw err;
                 }
             }
+            finally
+            {
+                myDuplexOutputChannelManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -65,7 +71,8 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexOutputChannelManipulatorLock)
+            myDuplexOutputChannelManipulatorLock.lock();
+            try
             {
                 if (myAttachedDuplexOutputChannel != null)
                 {
@@ -84,6 +91,10 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
                     }
                 }
             }
+            finally
+            {
+                myDuplexOutputChannelManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -96,9 +107,14 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexOutputChannelManipulatorLock)
+            myDuplexOutputChannelManipulatorLock.lock();
+            try
             {
                 return myAttachedDuplexOutputChannel != null;
+            }
+            finally
+            {
+                myDuplexOutputChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -112,7 +128,8 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexOutputChannelManipulatorLock)
+            myDuplexOutputChannelManipulatorLock.lock();
+            try
             {
                 if (duplexOutputChannel == null)
                 {
@@ -140,6 +157,10 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
                 myAttachedDuplexOutputChannel.connectionClosed().subscribe(myOnConnectionClosedEvent);
                 myAttachedDuplexOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceivedEvent);
             }
+            finally
+            {
+                myDuplexOutputChannelManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -158,7 +179,7 @@ public abstract class AttachableDuplexOutputChannelBase implements IAttachableDu
         return myAttachedDuplexOutputChannel;
     }
 
-    protected Object myDuplexOutputChannelManipulatorLock = new Object();
+    protected ThreadLock myDuplexOutputChannelManipulatorLock = new ThreadLock();
     
     private IDuplexOutputChannel myAttachedDuplexOutputChannel;
     

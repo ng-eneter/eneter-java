@@ -12,6 +12,7 @@ import java.util.concurrent.TimeoutException;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
@@ -86,7 +87,8 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (isConnected())
                 {
@@ -149,6 +151,10 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                     throw err;
                 }
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -162,9 +168,14 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 myUnderlyingOutputChannel.closeConnection();
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -176,9 +187,14 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
     @Override
     public boolean isConnected()
     {
-        synchronized (myConnectionManipulatorLock)
+        myConnectionManipulatorLock.lock();
+        try
         {
             return myIsConnectionAcknowledged && myUnderlyingOutputChannel.isConnected();
+        }
+        finally
+        {
+            myConnectionManipulatorLock.unlock();
         }
     }
     
@@ -194,7 +210,8 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (!isConnected())
                 {
@@ -204,6 +221,10 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                 }
 
                 myUnderlyingOutputChannel.sendMessage(message);
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -225,10 +246,15 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
 
             // If there is waiting for connection open release it.
             myConnectionAcknowledged.set();
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 myIsHandshakeResponseSent = false;
                 myIsConnectionAcknowledged = false;
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
 
             if (aCloseNotifyFlag)
@@ -393,7 +419,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
     private boolean myIsHandshakeResponseSent;
     private boolean myIsConnectionAcknowledged;
     private ManualResetEvent myConnectionAcknowledged = new ManualResetEvent(false);
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();
     private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
