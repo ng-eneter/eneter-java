@@ -15,6 +15,7 @@ import java.util.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.*;
@@ -63,10 +64,15 @@ class TcpInputConnector implements IInputConnector
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (mySenderLock)
+                mySenderLock.lock();
+                try
                 {
                     byte[] aMessage = (byte[])message;
                     myStreamWriter.write(myClientStream, aMessage, mySendTimeout);
+                }
+                finally
+                {
+                    mySenderLock.unlock();
                 }
             }
             finally
@@ -82,7 +88,7 @@ class TcpInputConnector implements IInputConnector
         
         private OutputStream myClientStream;
         private int mySendTimeout;
-        private Object mySenderLock = new Object();
+        private ThreadLock mySenderLock = new ThreadLock();
         private OutputStreamTimeoutWriter myStreamWriter = new OutputStreamTimeoutWriter();
         private boolean myIsClosedByService;
     }
@@ -120,7 +126,8 @@ class TcpInputConnector implements IInputConnector
                 throw new IllegalArgumentException("messageHandler is null.");
             }
             
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -132,6 +139,10 @@ class TcpInputConnector implements IInputConnector
                     stopListening();
                     throw err;
                 }
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -146,10 +157,15 @@ class TcpInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 myTcpListenerProvider.stopListening();
                 myMessageHandler = null;
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -161,9 +177,14 @@ class TcpInputConnector implements IInputConnector
     @Override
     public boolean isListening()
     {
-        synchronized (myListeningManipulatorLock)
+        myListeningManipulatorLock.lock();
+        try
         {
             return myTcpListenerProvider.isListening();
+        }
+        finally
+        {
+            myListeningManipulatorLock.unlock();
         }
     }
 
@@ -174,9 +195,14 @@ class TcpInputConnector implements IInputConnector
         try
         {
             TClientContext aClientContext;
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 aClientContext = myConnectedClients.get(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
 
             if (aClientContext == null)
@@ -201,9 +227,14 @@ class TcpInputConnector implements IInputConnector
         try
         {
             TClientContext aClientContext;
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 aClientContext = myConnectedClients.get(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
 
             if (aClientContext != null)
@@ -242,9 +273,14 @@ class TcpInputConnector implements IInputConnector
                 {
                     // Generate client id.
                     aClientId = UUID.randomUUID().toString();
-                    synchronized (myConnectedClients)
+                    myConnectedClientsLock.lock();
+                    try
                     {
                         myConnectedClients.put(aClientId, aClientContext);
+                    }
+                    finally
+                    {
+                        myConnectedClientsLock.unlock();
                     }
 
                     ProtocolMessage anOpenConnectionProtocolMessage = new ProtocolMessage(EProtocolMessageType.OpenConnectionRequest, aClientId, null);
@@ -285,7 +321,8 @@ class TcpInputConnector implements IInputConnector
                                 {
                                     aClientId = !StringExt.isNullOrEmpty(aProtocolMessage.ResponseReceiverId) ? aProtocolMessage.ResponseReceiverId : UUID.randomUUID().toString();
     
-                                    synchronized (myConnectedClients)
+                                    myConnectedClientsLock.lock();
+                                    try
                                     {
                                         if (!myConnectedClients.containsKey(aClientId))
                                         {
@@ -298,6 +335,10 @@ class TcpInputConnector implements IInputConnector
                                             EneterTrace.warning(TracedObject() + "could not open connection for client '" + aClientId + "' because the client with same id is already connected.");
                                             break;
                                         }
+                                    }
+                                    finally
+                                    {
+                                        myConnectedClientsLock.unlock();
                                     }
                                 }
                                 else
@@ -331,9 +372,14 @@ class TcpInputConnector implements IInputConnector
                 // Remove client from connected clients.
                 if (aClientId != null)
                 {
-                    synchronized (myConnectedClients)
+                    myConnectedClientsLock.lock();
+                    try
                     {
                         myConnectedClients.remove(aClientId);
+                    }
+                    finally
+                    {
+                        myConnectedClientsLock.unlock();
                     }
                 }
 
@@ -378,7 +424,8 @@ class TcpInputConnector implements IInputConnector
     private boolean myProtocolUsesOpenConnectionMessage;
     private IMethod1<MessageContext> myMessageHandler;
     
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
+    private ThreadLock myConnectedClientsLock = new ThreadLock();
     private HashMap<String, TClientContext> myConnectedClients = new HashMap<String, TClientContext>();
     
     private IMethod1<Socket> myHandleConnection = new IMethod1<Socket>()

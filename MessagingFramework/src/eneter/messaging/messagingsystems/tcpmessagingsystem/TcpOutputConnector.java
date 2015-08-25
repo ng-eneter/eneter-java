@@ -13,6 +13,7 @@ import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.*;
@@ -63,7 +64,8 @@ class TcpOutputConnector implements IOutputConnector
                 throw new IllegalArgumentException("responseMessageHandler is null.");
             }
             
-            synchronized (myOpenConnectionLock)
+            myOpenConnectionLock.lock();
+            try
             {
                 try
                 {
@@ -94,6 +96,10 @@ class TcpOutputConnector implements IOutputConnector
                     throw err;
                 }
             }
+            finally
+            {
+                myOpenConnectionLock.unlock();
+            }
         }
         finally
         {
@@ -107,7 +113,8 @@ class TcpOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myOpenConnectionLock)
+            myOpenConnectionLock.lock();
+            try
             {
                 myStopReceivingRequestedFlag = true;
 
@@ -157,6 +164,10 @@ class TcpOutputConnector implements IOutputConnector
                 myResponseReceiverThread = null;
                 myResponseMessageHandler = null;
             }
+            finally
+            {
+                myOpenConnectionLock.unlock();
+            }
         }
         finally
         {
@@ -182,12 +193,17 @@ class TcpOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myOpenConnectionLock)
+            myOpenConnectionLock.lock();
+            try
             {
                 OutputStream aStream = myTcpClient.getOutputStream();
                 int aSendTimeout = myClientSecurityFactory.getSendTimeout();
                 byte[] anEncodedMessage = (byte[])myProtocolFormatter.encodeMessage(myOutputConnectorAddress, message);
                 myStreamWriter.write(aStream, anEncodedMessage, aSendTimeout);
+            }
+            finally
+            {
+                myOpenConnectionLock.unlock();
             }
         }
         finally
@@ -272,7 +288,7 @@ class TcpOutputConnector implements IOutputConnector
     private IClientSecurityFactory myClientSecurityFactory;
     private IProtocolFormatter myProtocolFormatter;
     private String myIpAddress;
-    private Object myOpenConnectionLock = new Object();
+    private ThreadLock myOpenConnectionLock = new ThreadLock();
 
     private IMethod1<MessageContext> myResponseMessageHandler;
     private Thread myResponseReceiverThread;
