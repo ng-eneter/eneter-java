@@ -13,6 +13,7 @@ import java.net.*;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.NoneSecurityServerFactory;
 import eneter.net.system.IMethod1;
@@ -102,7 +103,8 @@ public class TcpListenerProvider
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 if (isListening())
                 {
@@ -147,6 +149,10 @@ public class TcpListenerProvider
                     throw err;
                 }
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -160,7 +166,8 @@ public class TcpListenerProvider
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 myStopTcpListeningRequested = true;
 
@@ -206,6 +213,10 @@ public class TcpListenerProvider
                 myTcpListeningThread = null;
 
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -218,9 +229,14 @@ public class TcpListenerProvider
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 return myServerSocket != null;
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -329,7 +345,7 @@ public class TcpListenerProvider
     private volatile boolean myStopTcpListeningRequested;
     private ManualResetEvent myListeningStartedEvent = new ManualResetEvent(false);
     
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
     
     
     private Runnable myDoTcpListeningRunnable = new Runnable()

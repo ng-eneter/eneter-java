@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.util.concurrent.TimeoutException;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.net.system.threading.internal.ManualResetEvent;
 import eneter.net.system.threading.internal.ThreadPool;
 
@@ -49,7 +50,8 @@ public class OutputStreamTimeoutWriter
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized(myWorker)
+            myWorkerLock.lock();
+            try
             {
                 // Prepare sending.
                 myOutputStream = outputStream;
@@ -71,6 +73,10 @@ public class OutputStreamTimeoutWriter
                     throw myException;
                 }
             }
+            finally
+            {
+                myWorkerLock.unlock();
+            }
         }
         finally
         {
@@ -79,6 +85,7 @@ public class OutputStreamTimeoutWriter
     }
 
     
+    private ThreadLock myWorkerLock = new ThreadLock();
     private Worker myWorker = new Worker();
     private OutputStream myOutputStream;
     private ManualResetEvent mySendCompletedEvent = new ManualResetEvent(false);
