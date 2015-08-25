@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
@@ -105,7 +106,8 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (isConnected())
                 {
@@ -138,6 +140,10 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
 
                     throw err;
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
             
             // Invoke the event notifying, the connection was opened.
@@ -173,9 +179,14 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     @Override
     public boolean isConnected()
     {
-        synchronized (myConnectionManipulatorLock)
+        myConnectionManipulatorLock.lock();
+        try
         {
             return (myOutputConnector.isConnected());
+        }
+        finally
+        {
+            myConnectionManipulatorLock.unlock();
         }
     }
 
@@ -185,7 +196,8 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (!isConnected())
                 {
@@ -205,6 +217,10 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                     cleanAfterConnection(true, true);
                     throw err;
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -276,7 +292,8 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         {
             boolean aConnectionWasCorrectlyOpen = false;
             
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (sendCloseMessageFlag)
                 {
@@ -293,6 +310,10 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                 // Note: the notification must run outside the lock because of potententional deadlock.
                 aConnectionWasCorrectlyOpen = myConnectionIsCorrectlyOpen;
                 myConnectionIsCorrectlyOpen = false;
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         
             // Notify the connection closed only if it was successfully open before.
@@ -370,7 +391,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
     private IThreadDispatcher myDispatchingAfterResponseReading;
     private IOutputConnector myOutputConnector;
     private boolean myConnectionIsCorrectlyOpen;
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     
     private String myChannelId;
     private String myResponseReceiverId;

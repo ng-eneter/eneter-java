@@ -12,6 +12,7 @@ import java.util.HashMap;
 
 import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.IMethod1;
 
@@ -27,9 +28,14 @@ class ThreadMessagingProvider implements IMessagingProvider
             // Get the thread handling the input channel.
             WorkingThread<Object> aWorkingThread = null;
 
-            synchronized (myRegisteredMessageHandlers)
+            myRegisteredMessageHandlersLock.lock();
+            try
             {
                 aWorkingThread = myRegisteredMessageHandlers.get(receiverId);
+            }
+            finally
+            {
+                myRegisteredMessageHandlersLock.unlock();
             }
 
             if (aWorkingThread != null)
@@ -57,7 +63,8 @@ class ThreadMessagingProvider implements IMessagingProvider
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myRegisteredMessageHandlers)
+            myRegisteredMessageHandlersLock.lock();
+            try
             {
                 if (myRegisteredMessageHandlers.containsKey(receiverId))
                 {
@@ -70,6 +77,10 @@ class ThreadMessagingProvider implements IMessagingProvider
                 WorkingThread<Object> aWorkingThread = new WorkingThread<Object>();
                 aWorkingThread.registerMessageHandler(messageHandler);
                 myRegisteredMessageHandlers.put(receiverId, aWorkingThread);
+            }
+            finally
+            {
+                myRegisteredMessageHandlersLock.unlock();
             }
         }
         finally
@@ -86,10 +97,15 @@ class ThreadMessagingProvider implements IMessagingProvider
         {
             WorkingThread<Object> aWorkingThread = null;
 
-            synchronized (myRegisteredMessageHandlers)
+            myRegisteredMessageHandlersLock.lock();
+            try
             {
                 aWorkingThread = myRegisteredMessageHandlers.get(receiverId);
                 myRegisteredMessageHandlers.remove(receiverId);
+            }
+            finally
+            {
+                myRegisteredMessageHandlersLock.unlock();
             }
          
             if (aWorkingThread != null)
@@ -104,5 +120,6 @@ class ThreadMessagingProvider implements IMessagingProvider
     }
 
     
+    private ThreadLock myRegisteredMessageHandlersLock = new ThreadLock(); 
     private HashMap<String, WorkingThread<Object>> myRegisteredMessageHandlers = new HashMap<String, WorkingThread<Object>>();
 }

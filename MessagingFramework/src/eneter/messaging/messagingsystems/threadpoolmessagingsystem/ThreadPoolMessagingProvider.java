@@ -11,6 +11,7 @@ package eneter.messaging.messagingsystems.threadpoolmessagingsystem;
 import java.util.HashMap;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IMessagingProvider;
 import eneter.net.system.IMethod1;
 import eneter.net.system.threading.internal.ThreadPool;
@@ -26,9 +27,14 @@ class ThreadPoolMessagingProvider implements IMessagingProvider
             // Get the message handler
             final IMethod1<Object> aMessageHandler;
 
-            synchronized (myRegisteredMessageHandlers)
+            myRegisteredMessageHandlersLock.lock();
+            try
             {
                 aMessageHandler = myRegisteredMessageHandlers.get(receiverId);
+            }
+            finally
+            {
+                myRegisteredMessageHandlersLock.unlock();
             }
 
             // If the message handler was found then send the message
@@ -70,7 +76,8 @@ class ThreadPoolMessagingProvider implements IMessagingProvider
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myRegisteredMessageHandlers)
+            myRegisteredMessageHandlersLock.lock();
+            try
             {
                 if (myRegisteredMessageHandlers.containsKey(receiverId))
                 {
@@ -80,6 +87,10 @@ class ThreadPoolMessagingProvider implements IMessagingProvider
                 }
 
                 myRegisteredMessageHandlers.put(receiverId, messageHandler);
+            }
+            finally
+            {
+                myRegisteredMessageHandlersLock.unlock();
             }
         }
         finally
@@ -93,9 +104,14 @@ class ThreadPoolMessagingProvider implements IMessagingProvider
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myRegisteredMessageHandlers)
+            myRegisteredMessageHandlersLock.lock();
+            try
             {
                 myRegisteredMessageHandlers.remove(receiverId);
+            }
+            finally
+            {
+                myRegisteredMessageHandlersLock.unlock();
             }
         }
         finally
@@ -105,5 +121,6 @@ class ThreadPoolMessagingProvider implements IMessagingProvider
     }
 
     
+    private ThreadLock myRegisteredMessageHandlersLock = new ThreadLock();
     private HashMap<String, IMethod1<Object>> myRegisteredMessageHandlers = new HashMap<String, IMethod1<Object>>();
 }

@@ -14,6 +14,7 @@ import java.util.HashMap;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.IMethod1;
@@ -114,11 +115,16 @@ class UdpInputConnector implements IInputConnector
                 throw new IllegalArgumentException("messageHandler is null.");
             }
             
-            synchronized (myListenerManipulatorLock)
+            myListenerManipulatorLock.lock();
+            try
             {
                 myMessageHandler = messageHandler;
                 myReceiver = new UdpReceiver(myServiceEndpoint, true);
                 myReceiver.startListening(myOnRequestMessageReceived);
+            }
+            finally
+            {
+                myListenerManipulatorLock.unlock();
             }
         }
         finally
@@ -133,12 +139,17 @@ class UdpInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListenerManipulatorLock)
+            myListenerManipulatorLock.lock();
+            try
             {
                 if (myReceiver != null)
                 {
                     myReceiver.stopListening();
                 }
+            }
+            finally
+            {
+                myListenerManipulatorLock.unlock();
             }
         }
         finally
@@ -150,9 +161,14 @@ class UdpInputConnector implements IInputConnector
     @Override
     public boolean isListening()
     {
-        synchronized (myListenerManipulatorLock)
+        myListenerManipulatorLock.lock();
+        try
         {
             return myReceiver != null && myReceiver.isListening();
+        }
+        finally
+        {
+            myListenerManipulatorLock.unlock();
         }
     }
 
@@ -164,9 +180,14 @@ class UdpInputConnector implements IInputConnector
         try
         {
             TClientContext aClientContext;
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 aClientContext = myConnectedClients.get(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
 
             if (aClientContext == null)
@@ -191,10 +212,15 @@ class UdpInputConnector implements IInputConnector
         try
         {
             TClientContext aClientContext;
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 aClientContext = myConnectedClients.get(outputConnectorAddress);
                 myConnectedClients.remove(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
 
             if (aClientContext != null)
@@ -238,7 +264,8 @@ class UdpInputConnector implements IInputConnector
                 {
                     if (!StringExt.isNullOrEmpty(aProtocolMessage.ResponseReceiverId))
                     {
-                        synchronized (myConnectedClients)
+                        myConnectedClientsLock.lock();
+                        try
                         {
                             if (!myConnectedClients.containsKey(aProtocolMessage.ResponseReceiverId))
                             {
@@ -250,6 +277,10 @@ class UdpInputConnector implements IInputConnector
                                 EneterTrace.warning(TracedObject() + "could not open connection for client '" + aProtocolMessage.ResponseReceiverId + "' because the client with same id is already connected.");
                             }
                         }
+                        finally
+                        {
+                            myConnectedClientsLock.unlock();
+                        }
                     }
                     else
                     {
@@ -260,9 +291,14 @@ class UdpInputConnector implements IInputConnector
                 {
                     if (!StringExt.isNullOrEmpty(aProtocolMessage.ResponseReceiverId))
                     {
-                        synchronized (myConnectedClients)
+                        myConnectedClientsLock.lock();
+                        try
                         {
                             myConnectedClients.remove(aProtocolMessage.ResponseReceiverId);
+                        }
+                        finally
+                        {
+                            myConnectedClientsLock.unlock();
                         }
                     }
                 }
@@ -288,8 +324,9 @@ class UdpInputConnector implements IInputConnector
     private IProtocolFormatter myProtocolFormatter;
     private InetSocketAddress myServiceEndpoint;
     private UdpReceiver myReceiver;
-    private Object myListenerManipulatorLock = new Object();
+    private ThreadLock myListenerManipulatorLock = new ThreadLock();
     private IMethod1<MessageContext> myMessageHandler;
+    private ThreadLock myConnectedClientsLock = new ThreadLock();
     private HashMap<String, TClientContext> myConnectedClients = new HashMap<String, TClientContext>();
     
     private IMethod2<byte[], InetSocketAddress> myOnRequestMessageReceived = new IMethod2<byte[], InetSocketAddress>()

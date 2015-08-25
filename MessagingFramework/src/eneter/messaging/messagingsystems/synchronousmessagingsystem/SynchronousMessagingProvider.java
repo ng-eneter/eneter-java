@@ -11,6 +11,7 @@ package eneter.messaging.messagingsystems.synchronousmessagingsystem;
 import java.util.HashMap;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IMessagingProvider;
 import eneter.net.system.IMethod1;
 
@@ -22,9 +23,14 @@ class SynchronousMessagingProvider implements IMessagingProvider
         // Get the message handler.
         IMethod1<Object> aMessageHandler = null;
         
-        synchronized (myRegisteredMessageHandlers)
+        myRegisteredMessageHandlersLock.lock();
+        try
         {
             aMessageHandler = myRegisteredMessageHandlers.get(receiverId);
+        }
+        finally
+        {
+            myRegisteredMessageHandlersLock.unlock();
         }
         
         // If the message handler was found then send the message
@@ -43,7 +49,8 @@ class SynchronousMessagingProvider implements IMessagingProvider
 
     public void registerMessageHandler(String receiverId, IMethod1<Object> messageHandler)
     {
-        synchronized (myRegisteredMessageHandlers)
+        myRegisteredMessageHandlersLock.lock();
+        try
         {
             if (myRegisteredMessageHandlers.containsKey(receiverId))
             {
@@ -54,17 +61,26 @@ class SynchronousMessagingProvider implements IMessagingProvider
 
             myRegisteredMessageHandlers.put(receiverId, messageHandler);
         }
+        finally
+        {
+            myRegisteredMessageHandlersLock.unlock();
+        }
     }
 
     public void unregisterMessageHandler(String receiverId)
     {
-        synchronized (myRegisteredMessageHandlers)
+        myRegisteredMessageHandlersLock.lock();
+        try
         {
             myRegisteredMessageHandlers.remove(receiverId);
         }
+        finally
+        {
+            myRegisteredMessageHandlersLock.unlock();
+        }
     }
 
-    
+    private ThreadLock myRegisteredMessageHandlersLock = new ThreadLock();
     private HashMap<String, IMethod1<Object>> myRegisteredMessageHandlers = new HashMap<String, IMethod1<Object>>();
 
 }

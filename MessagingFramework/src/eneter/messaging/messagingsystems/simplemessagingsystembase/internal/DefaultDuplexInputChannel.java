@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
@@ -83,7 +84,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 // If the channel is already listening.
                 if (isListening())
@@ -109,6 +111,10 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     throw err;
                 }
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -121,7 +127,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -142,6 +149,10 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     EneterTrace.warning(TracedObject() + ErrorHandler.IncorrectlyStoppedListening, err);
                 }
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -154,9 +165,14 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 return myInputConnector.isListening();
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -191,7 +207,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             {
                 ArrayList<String> aDisconnectedClients = new ArrayList<String>();
                 
-                synchronized (myConnectedClients)
+                myConnectedClientsLock.lock();
+                try
                 {
                     // Send the response message to all connected clients.
                     for (Entry<String, String> aConnectedClient : myConnectedClients.entrySet())
@@ -210,6 +227,10 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                             //       affect sending to other clients.
                         }
                     }
+                }
+                finally
+                {
+                    myConnectedClientsLock.unlock();
                 }
                 
                 // Disconnect failed clients.
@@ -264,7 +285,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 for (Entry<String, String> aConnection : myConnectedClients.entrySet())
                 {
@@ -280,6 +302,10 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     }
                 }
                 myConnectedClients.clear();
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
         }
         finally
@@ -356,7 +382,8 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             boolean aNewConnectionFlag = false;
 
             // If the connection is not open yet.
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 if (!myConnectedClients.containsKey(responseReceiverId))
                 {
@@ -365,6 +392,10 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     // Connection was created.
                     aNewConnectionFlag = true;
                 }
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
 
             if (aNewConnectionFlag)
@@ -397,10 +428,15 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             boolean aConnecionExisted = false;
             try
             {
-                synchronized (myConnectedClients)
+                myConnectedClientsLock.lock();
+                try
                 {
                     aSenderAddress = myConnectedClients.get(responseReceiverId);
                     aConnecionExisted = myConnectedClients.remove(responseReceiverId) != null;
+                }
+                finally
+                {
+                    myConnectedClientsLock.unlock();
                 }
 
                 if (aConnecionExisted && sendCloseMessageFlag)
@@ -501,12 +537,13 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
     }
     
     
+    private ThreadLock myConnectedClientsLock = new ThreadLock();
     private HashMap<String, String> myConnectedClients = new HashMap<String, String>();
     
     private IThreadDispatcher myDispatchingAfterMessageReading;
     private IInputConnector myInputConnector;
     
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
   
     private String myChannelId;
     private IThreadDispatcher myDispatcher;

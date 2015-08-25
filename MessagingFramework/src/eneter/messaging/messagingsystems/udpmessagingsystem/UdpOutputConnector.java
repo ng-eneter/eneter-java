@@ -12,6 +12,7 @@ import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.*;
@@ -58,7 +59,8 @@ class UdpOutputConnector implements IOutputConnector
                 throw new IllegalArgumentException("responseMessageHandler is null.");
             }
             
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -75,6 +77,10 @@ class UdpOutputConnector implements IOutputConnector
                     closeConnection();
                     throw err;
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -100,9 +106,14 @@ class UdpOutputConnector implements IOutputConnector
     @Override
     public boolean isConnected()
     {
-        synchronized (myConnectionManipulatorLock)
+        myConnectionManipulatorLock.lock();
+        try
         {
             return myResponseReceiver != null && myResponseReceiver.isListening();
+        }
+        finally
+        {
+            myConnectionManipulatorLock.unlock();
         }
     }
 
@@ -112,11 +123,16 @@ class UdpOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 byte[] anEncodedMessage = (byte[])myProtocolFormatter.encodeMessage(myOutpuConnectorAddress, message);
                 DatagramPacket aPacket = new DatagramPacket(anEncodedMessage, anEncodedMessage.length, myServiceEndpoint);
                 myResponseReceiver.getUdpSocket().send(aPacket);
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -171,7 +187,8 @@ class UdpOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 myResponseMessageHandler = null;
 
@@ -195,6 +212,10 @@ class UdpOutputConnector implements IOutputConnector
                     myResponseReceiver = null;
                 }
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -209,7 +230,7 @@ class UdpOutputConnector implements IOutputConnector
     private InetSocketAddress myServiceEndpoint;
     private IMethod1<MessageContext> myResponseMessageHandler;
     private UdpReceiver myResponseReceiver;
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
 
     private IMethod2<byte[], InetSocketAddress> myOnResponseMessageReceived = new IMethod2<byte[], InetSocketAddress>()
     {

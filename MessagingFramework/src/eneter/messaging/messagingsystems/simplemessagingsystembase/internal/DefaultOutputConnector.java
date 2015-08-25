@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.net.system.*;
 
@@ -45,7 +46,8 @@ class DefaultOutputConnector implements IOutputConnector
                 throw new IllegalArgumentException("responseMessageHandler is null.");
             }
             
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -65,6 +67,10 @@ class DefaultOutputConnector implements IOutputConnector
                     closeConnection();
                     throw err;
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -90,9 +96,14 @@ class DefaultOutputConnector implements IOutputConnector
     @Override
     public boolean isConnected()
     {
-        synchronized (myConnectionManipulatorLock)
+        myConnectionManipulatorLock.lock();
+        try
         {
             return myIsConnected;
+        }
+        finally
+        {
+            myConnectionManipulatorLock.unlock();
         }
     }
     
@@ -102,10 +113,15 @@ class DefaultOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 Object anEncodedMessage = myProtocolFormatter.encodeMessage(myOutputConnectorAddress, message);
                 myMessagingProvider.sendMessage(myInputConnectorAddress, anEncodedMessage);
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -149,7 +165,8 @@ class DefaultOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (myIsConnected)
                 {
@@ -177,6 +194,10 @@ class DefaultOutputConnector implements IOutputConnector
                     myIsResponseListenerRegistered = false;
                 }
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -193,7 +214,7 @@ class DefaultOutputConnector implements IOutputConnector
     private IProtocolFormatter myProtocolFormatter;
     private boolean myIsConnected;
     private boolean myIsResponseListenerRegistered;
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     private IMethod1<MessageContext> myResponseMessageHandler;
 
 

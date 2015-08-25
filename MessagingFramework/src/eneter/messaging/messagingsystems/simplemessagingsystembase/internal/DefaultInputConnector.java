@@ -11,6 +11,7 @@ package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.net.system.*;
 
@@ -44,7 +45,8 @@ class DefaultInputConnector implements IInputConnector
                 throw new IllegalArgumentException("messageHandler is null.");
             }
             
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -57,6 +59,10 @@ class DefaultInputConnector implements IInputConnector
                     stopListening();
                     throw err;
                 }
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -71,11 +77,16 @@ class DefaultInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 myIsListeningFlag = false;
                 myMessagingProvider.unregisterMessageHandler(myInputConnectorAddress);
                 myMessageHandler = null;
+            }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
             }
         }
         finally
@@ -87,9 +98,14 @@ class DefaultInputConnector implements IInputConnector
     @Override
     public boolean isListening()
     {
-        synchronized (myListeningManipulatorLock)
+        myListeningManipulatorLock.lock();
+        try
         {
             return myIsListeningFlag;
+        }
+        finally
+        {
+            myListeningManipulatorLock.unlock();
         }
     }
 
@@ -157,7 +173,7 @@ class DefaultInputConnector implements IInputConnector
     private String myInputConnectorAddress;
     private IMessagingProvider myMessagingProvider;
     private IProtocolFormatter myProtocolFormatter;
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
     private boolean myIsListeningFlag;
     private IMethod1<MessageContext> myMessageHandler;
     
