@@ -16,6 +16,7 @@ import eneter.messaging.dataprocessing.messagequeueing.WorkingThread;
 import eneter.messaging.dataprocessing.streaming.DynamicInputStream;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.OutputStreamTimeoutWriter;
 import eneter.net.system.*;
@@ -137,13 +138,18 @@ public class WebSocketClient
         @Override
         public void subscribe(EventHandler<T> eventHandler)
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (myResponsibleForActivatingListening == EResponseListeningResponsible.EventSubscription)
                 {
                     activateResponseListening();
                 }
                 myOriginalEvent.subscribe(eventHandler);
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
 
@@ -288,7 +294,8 @@ public class WebSocketClient
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (myTcpClient != null)
                 {
@@ -296,6 +303,10 @@ public class WebSocketClient
                 }
                 
                 return null;
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -313,10 +324,15 @@ public class WebSocketClient
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 return myTcpClient != null && isResponseSubscribed() == false ||
                        myTcpClient != null && isResponseSubscribed() == true && myIsListeningToResponses == true;
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -334,7 +350,8 @@ public class WebSocketClient
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (isConnected())
                 {
@@ -418,6 +435,10 @@ public class WebSocketClient
                     throw err;
                 }
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -434,7 +455,8 @@ public class WebSocketClient
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 myStopReceivingRequestedFlag = true;
                 myMessageInSendProgress = EMessageInSendProgress.None;
@@ -504,6 +526,10 @@ public class WebSocketClient
                 // Reset the responsibility for starting of threads looping for response messages.
                 myResponsibleForActivatingListening = EResponseListeningResponsible.OpenConnection;
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -563,7 +589,8 @@ public class WebSocketClient
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 // If there is no message that was not finalized yet then send the binary or text data frame.
                 if (myMessageInSendProgress == EMessageInSendProgress.None)
@@ -659,6 +686,10 @@ public class WebSocketClient
                         throw new IllegalArgumentException(anErrorMessage);
                     }
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -756,7 +787,8 @@ public class WebSocketClient
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (!isConnected())
                 {
@@ -778,6 +810,10 @@ public class WebSocketClient
                     EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendMessage, err);
                     throw err;
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -1123,7 +1159,7 @@ public class WebSocketClient
     
     private Random myGenerator = new Random();
     
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     private EResponseListeningResponsible myResponsibleForActivatingListening = EResponseListeningResponsible.OpenConnection;
     
     private Thread myResponseReceiverThread;

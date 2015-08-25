@@ -13,6 +13,7 @@ import java.util.*;
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexOutputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelEventArgs;
 import eneter.messaging.messagingsystems.messagingsystembase.DuplexChannelMessageEventArgs;
@@ -82,7 +83,8 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannels)
+            myDuplexInputChannelsLock.lock();
+            try
             {
                 attach(duplexInputChannel);
 
@@ -107,6 +109,10 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
                     throw err;
                 }
             }
+            finally
+            {
+                myDuplexInputChannelsLock.unlock();
+            }
         }
         finally
         {
@@ -120,7 +126,8 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannels)
+            myDuplexInputChannelsLock.lock();
+            try
             {
                 for (TDuplexInputChannel anInputChannel : myDuplexInputChannels.values())
                 {
@@ -129,6 +136,10 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
                 }
 
                 myDuplexInputChannels.clear();
+            }
+            finally
+            {
+                myDuplexInputChannelsLock.unlock();
             }
         }
         finally
@@ -143,7 +154,8 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannels)
+            myDuplexInputChannelsLock.lock();
+            try
             {
                 TDuplexInputChannel anInputChannel = myDuplexInputChannels.get(channelId);
                 if (anInputChannel != null)
@@ -153,6 +165,10 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
                 }
 
                 myDuplexInputChannels.remove(channelId);
+            }
+            finally
+            {
+                myDuplexInputChannelsLock.unlock();
             }
         }
         finally
@@ -167,9 +183,14 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannels)
+            myDuplexInputChannelsLock.lock();
+            try
             {
                 return myDuplexInputChannels.size() > 0;
+            }
+            finally
+            {
+                myDuplexInputChannelsLock.lock();
             }
         }
         finally
@@ -187,12 +208,17 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         {
             // Note: Because of thread safety, create a new container to store the references.
             ArrayList<IDuplexInputChannel> anAttachedChannels = new ArrayList<IDuplexInputChannel>();
-            synchronized (myDuplexInputChannels)
+            myDuplexInputChannelsLock.lock();
+            try
             {
                 for (TDuplexInputChannel aDuplexInputChannelItem : myDuplexInputChannels.values())
                 {
                     anAttachedChannels.add(aDuplexInputChannelItem.getDuplexInputChannel());
                 }
+            }
+            finally
+            {
+                myDuplexInputChannelsLock.unlock();
             }
 
             return anAttachedChannels;
@@ -216,9 +242,14 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
 
             try
             {
-                synchronized (myDuplexInputChannels)
+                myDuplexInputChannelsLock.lock();
+                try
                 {
                     myDuplexInputChannels.get(e.getChannelId()).setResponseReceiverId(e.getResponseReceiverId());
+                }
+                finally
+                {
+                    myDuplexInputChannelsLock.unlock();
                 }
 
                 Object aMessage = DataWrapper.wrap(e.getChannelId(), e.getMessage(), mySerializer);
@@ -252,9 +283,14 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
                     // Get the output channel according to the channel id.
                     TDuplexInputChannel aDuplexInputChannel = null;
 
-                    synchronized (myDuplexInputChannels)
+                    myDuplexInputChannelsLock.lock();
+                    try
                     {
                         aDuplexInputChannel = myDuplexInputChannels.get((String)aWrappedData.AddedData);
+                    }
+                    finally
+                    {
+                        myDuplexInputChannelsLock.unlock();
                     }
 
                     if (aDuplexInputChannel != null)
@@ -315,7 +351,8 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myDuplexInputChannels)
+            myDuplexInputChannelsLock.lock();
+            try
             {
                 if (duplexInputChannel == null)
                 {
@@ -341,6 +378,10 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
                 myDuplexInputChannels.put(duplexInputChannel.getChannelId(), new TDuplexInputChannel(duplexInputChannel));
 
                 duplexInputChannel.messageReceived().subscribe(myOnMessageReceived);
+            }
+            finally
+            {
+                myDuplexInputChannelsLock.unlock();
             }
         }
         finally
@@ -372,6 +413,7 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
         }
     }
     
+    private ThreadLock myDuplexInputChannelsLock = new ThreadLock();
     private Hashtable<String, TDuplexInputChannel> myDuplexInputChannels = new Hashtable<String, TDuplexInputChannel>();
     private ISerializer mySerializer;
     

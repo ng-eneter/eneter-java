@@ -15,6 +15,7 @@ import java.util.TimerTask;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.IClientSecurityFactory;
@@ -67,7 +68,8 @@ class WebSocketOutputConnector implements IOutputConnector
                 throw new IllegalArgumentException("responseMessageHandler is null.");
             }
             
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 myResponseMessageHandler = responseMessageHandler;
                 myClient.connectionClosed().subscribe(myOnWebSocketConnectionClosed);
@@ -87,6 +89,10 @@ class WebSocketOutputConnector implements IOutputConnector
                 {
                     myTimer.schedule(getTimerTask(), myPingFrequency);
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -128,10 +134,15 @@ class WebSocketOutputConnector implements IOutputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 Object anEncodedMessage = myProtocolFormatter.encodeMessage(myOutputConnectorAddress, message);
                 myClient.sendMessage(anEncodedMessage);
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -146,10 +157,15 @@ class WebSocketOutputConnector implements IOutputConnector
         try
         {
             IMethod1<MessageContext> aResponseHandler;
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 aResponseHandler = myResponseMessageHandler;
                 closeConnection();
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
 
             ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, myOutputConnectorAddress, null);
@@ -248,7 +264,7 @@ class WebSocketOutputConnector implements IOutputConnector
     private WebSocketClient myClient;
     private IMethod1<MessageContext> myResponseMessageHandler;
     private String myIpAddress;
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     private Timer myTimer;
     private int myPingFrequency;
 

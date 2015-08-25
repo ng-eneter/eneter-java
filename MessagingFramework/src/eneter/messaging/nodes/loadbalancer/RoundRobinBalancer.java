@@ -12,6 +12,7 @@ import java.util.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
@@ -99,10 +100,15 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAvailableReceivers)
+            myAvailableReceiversLock.lock();
+            try
             {
                 TReceiver aReceiver = new TReceiver(channelId);
                 myAvailableReceivers.add(aReceiver);
+            }
+            finally
+            {
+                myAvailableReceiversLock.unlock();
             }
         }
         finally
@@ -117,7 +123,8 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAvailableReceivers)
+            myAvailableReceiversLock.lock();
+            try
             {
                 // Find the receiver with the given channel id.
                 TReceiver aReceiver = EnumerableExt.firstOrDefault(myAvailableReceivers,
@@ -154,6 +161,10 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                     myAvailableReceivers.remove(aReceiver);
                 }
             }
+            finally
+            {
+                myAvailableReceiversLock.unlock();
+            }
         }
         finally
         {
@@ -167,7 +178,8 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAvailableReceivers)
+            myAvailableReceiversLock.lock();
+            try
             {
                 // Go via all available receivers.
                 for (TReceiver aReceiver : myAvailableReceivers)
@@ -194,6 +206,10 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                 // Clean available receivers.
                 myAvailableReceivers.clear();
             }
+            finally
+            {
+                myAvailableReceiversLock.unlock();
+            }
         }
         finally
         {
@@ -210,7 +226,8 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAvailableReceivers)
+            myAvailableReceiversLock.lock();
+            try
             {
                 if (myAvailableReceivers.size() == 0)
                 {
@@ -298,6 +315,10 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                     break;
                 }
             }
+            finally
+            {
+                myAvailableReceiversLock.unlock();
+            }
         }
         finally
         {
@@ -312,7 +333,8 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
         {
             String aResponseReceiverId = null;
 
-            synchronized (myAvailableReceivers)
+            myAvailableReceiversLock.lock();
+            try
             {
                 // The response receiver id coming with the message belongs to the duplex output channel.
                 // So we need to find the response receiver id for the duplex input channel.
@@ -364,6 +386,10 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                     }
                 }
             }
+            finally
+            {
+                myAvailableReceiversLock.unlock();
+            }
 
             if (aResponseReceiverId == null)
             {
@@ -371,7 +397,8 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                 return;
             }
 
-            synchronized (myDuplexInputChannelManipulatorLock)
+            myDuplexInputChannelManipulatorLock.lock();
+            try
             {
                 IDuplexInputChannel aDuplexInputChannel = getAttachedDuplexInputChannel(); 
                 // Send the response message via the duplex input channel to the sender.
@@ -390,6 +417,10 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                 {
                     EneterTrace.error(TracedObject() + "cannot send the response message when the duplex input channel is not attached.");
                 }
+            }
+            finally
+            {
+                myDuplexInputChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -428,7 +459,8 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myAvailableReceivers)
+            myAvailableReceiversLock.lock();
+            try
             {
                 // Go via all available receivers and close all open channels for the disconnecting response receiver.
                 for (TReceiver aReceiver : myAvailableReceivers)
@@ -482,6 +514,10 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
                     }
                 }
             }
+            finally
+            {
+                myAvailableReceiversLock.unlock();
+            }
         }
         finally
         {
@@ -493,6 +529,7 @@ class RoundRobinBalancer extends AttachableDuplexInputChannelBase
     
     
     private IMessagingSystemFactory myOutputMessagingFactory;
+    private ThreadLock myAvailableReceiversLock = new ThreadLock();
     private ArrayList<TReceiver> myAvailableReceivers = new ArrayList<TReceiver>();
 
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();

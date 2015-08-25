@@ -88,7 +88,8 @@ class WebSocketHostListener extends HostListenerBase
                 // Get handler for that path.
                 URI aHandlerUri = null;
                 final IMethod1<Object> aPathHandler;
-                synchronized (myHandlers)
+                myHandlersLock.lock();
+                try
                 {
                     final String anAbsolutePathFinal = anAbsolutePath;
                     Entry<URI, IMethod1<Object>> aPair =
@@ -113,6 +114,10 @@ class WebSocketHostListener extends HostListenerBase
                     {
                         aPathHandler = null;
                     }
+                }
+                finally
+                {
+                    myHandlersLock.unlock();
                 }
 
                 // If the listener does not exist.

@@ -13,6 +13,7 @@ import java.util.*;
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
@@ -182,7 +183,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         {
             ArrayList<String> aResult = new ArrayList<String>();
             
-            synchronized (mySubscribtions)
+            mySubscribtionsLock.lock();
+            try
             {
                 for (TSubscription x : mySubscribtions)
                 {
@@ -191,6 +193,10 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                         aResult.add(x.MessageTypeId);
                     }
                 }
+            }
+            finally
+            {
+                mySubscribtionsLock.unlock();
             }
             
             String[] aResultArray = new String[aResult.size()];
@@ -211,7 +217,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         {
             ArrayList<String> aResult = new ArrayList<String>();
             
-            synchronized (mySubscribtions)
+            mySubscribtionsLock.lock();
+            try
             {
                 for (TSubscription x : mySubscribtions)
                 {
@@ -220,6 +227,10 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                         aResult.add(x.MessageTypeId);
                     }
                 }
+            }
+            finally
+            {
+                mySubscribtionsLock.unlock();
             }
             
             String[] aResultArray = new String[aResult.size()];
@@ -350,7 +361,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         {
             ArrayList<TSubscription> anIdetifiedSubscriptions = new ArrayList<TSubscription>();
             
-            synchronized (mySubscribtions)
+            mySubscribtionsLock.lock();
+            try
             {
                 for (TSubscription aMessageSubscription : mySubscribtions)
                 {
@@ -360,6 +372,10 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                         anIdetifiedSubscriptions.add(aMessageSubscription);
                     }
                 }
+            }
+            finally
+            {
+                mySubscribtionsLock.unlock();
             }
             
             HashMap<String, ArrayList<String>> aFailedSubscribers = new HashMap<String, ArrayList<String>>();
@@ -488,7 +504,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         {
             ArrayList<String> aMessagesToSubscribe = new ArrayList<String>(Arrays.asList(messageTypes));
             
-            synchronized (mySubscribtions)
+            mySubscribtionsLock.lock();
+            try
             {
                 // Subscribe only messages that are not subscribed yet.
                 for (TSubscription aSubscription : mySubscribtions)
@@ -504,6 +521,10 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                 {
                     mySubscribtions.add(new TSubscription(aMessageType, responseReceiverId));
                 }
+            }
+            finally
+            {
+                mySubscribtionsLock.unlock();
             }
             
             if (myClientSubscribedEvent.isSubscribed() && aMessagesToSubscribe.size() > 0)
@@ -533,7 +554,8 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
         try
         {
             final ArrayList<String> anUnsubscribedMessages = new ArrayList<String>();
-            synchronized (mySubscribtions)
+            mySubscribtionsLock.lock();
+            try
             {
                 // If unsubscribe from all messages
                 if (messageTypes == null || messageTypes.length == 0)
@@ -600,6 +622,10 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                 
                 return anUnsubscribedMessages;
             }
+            finally
+            {
+                mySubscribtionsLock.unlock();
+            }
         }
         finally
         {
@@ -634,6 +660,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
     }
     
     
+    private ThreadLock mySubscribtionsLock = new ThreadLock();
     private HashSet<TSubscription> mySubscribtions = new HashSet<TSubscription>();
     private boolean myIsPublisherSelfnotified;
     private ISerializer mySerializer;

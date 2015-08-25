@@ -12,6 +12,7 @@ import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 import eneter.net.system.internal.IMethod2;
@@ -39,7 +40,8 @@ class UdpReceiver
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 if (isListening())
                 {
@@ -102,6 +104,10 @@ class UdpReceiver
                     throw err;
                 }
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -114,7 +120,8 @@ class UdpReceiver
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListeningManipulatorLock)
+            myListeningManipulatorLock.lock();
+            try
             {
                 // Stop the thread listening to messages from the shared memory.
                 myStopListeningRequested = true;
@@ -157,6 +164,10 @@ class UdpReceiver
 
                 myMessageHandler = null;
             }
+            finally
+            {
+                myListeningManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -166,9 +177,14 @@ class UdpReceiver
     
     public boolean isListening()
     {
-        synchronized (myListeningManipulatorLock)
+        myListeningManipulatorLock.lock();
+        try
         {
             return myIsListening;
+        }
+        finally
+        {
+            myListeningManipulatorLock.unlock();
         }
     }
     
@@ -268,7 +284,7 @@ class UdpReceiver
     private DatagramSocket mySocket;
     private volatile boolean myIsListening;
     private volatile boolean myStopListeningRequested;
-    private Object myListeningManipulatorLock = new Object();
+    private ThreadLock myListeningManipulatorLock = new ThreadLock();
     private Thread myListeningThread;
     private ManualResetEvent myListeningToResponsesStartedEvent = new ManualResetEvent(false);
     private IMethod2<byte[], InetSocketAddress> myMessageHandler;

@@ -15,6 +15,7 @@ import java.util.UUID;
 
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.MessageContext;
 
@@ -120,7 +121,8 @@ class WebSocketInputConnector implements IInputConnector
                 throw new IllegalArgumentException("messageHandler is null.");
             }
             
-            synchronized (myListenerManipulatorLock)
+            myListenerManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -132,6 +134,10 @@ class WebSocketInputConnector implements IInputConnector
                     stopListening();
                     throw err;
                 }
+            }
+            finally
+            {
+                myListenerManipulatorLock.unlock();
             }
         }
         finally
@@ -146,10 +152,15 @@ class WebSocketInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myListenerManipulatorLock)
+            myListenerManipulatorLock.lock();
+            try
             {
                 myListener.stopListening();
                 myMessageHandler = null;
+            }
+            finally
+            {
+                myListenerManipulatorLock.unlock();
             }
         }
         finally
@@ -161,7 +172,8 @@ class WebSocketInputConnector implements IInputConnector
     @Override
     public boolean isListening()
     {
-        synchronized (myListenerManipulatorLock)
+        myListenerManipulatorLock.lock();
+        try
         {
             try
             {
@@ -174,6 +186,10 @@ class WebSocketInputConnector implements IInputConnector
             
             return false;
         }
+        finally
+        {
+            myListenerManipulatorLock.unlock();
+        }
     }
 
     @Override
@@ -183,9 +199,14 @@ class WebSocketInputConnector implements IInputConnector
         try
         {
             TClientContext aClientContext;
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 aClientContext = myConnectedClients.get(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
 
             if (aClientContext == null)
@@ -209,9 +230,14 @@ class WebSocketInputConnector implements IInputConnector
         try
         {
             TClientContext aClientContext;
-            synchronized (myConnectedClients)
+            myConnectedClientsLock.lock();
+            try
             {
                 aClientContext = myConnectedClients.get(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
             }
 
             if (aClientContext != null)
@@ -243,9 +269,14 @@ class WebSocketInputConnector implements IInputConnector
                 if (!myProtocolUsesOpenConnectionMessage)
                 {
                     aClientId = UUID.randomUUID().toString();
-                    synchronized (myConnectedClients)
+                    myConnectedClientsLock.lock();
+                    try
                     {
                         myConnectedClients.put(aClientId, aClientContext);
+                    }
+                    finally
+                    {
+                        myConnectedClientsLock.unlock();
                     }
 
                     ProtocolMessage anOpenConnectionProtocolMessage = new ProtocolMessage(EProtocolMessageType.OpenConnectionRequest, aClientId, null);
@@ -278,7 +309,8 @@ class WebSocketInputConnector implements IInputConnector
                                 {
                                     aClientId = !StringExt.isNullOrEmpty(aProtocolMessage.ResponseReceiverId) ? aProtocolMessage.ResponseReceiverId : UUID.randomUUID().toString();
 
-                                    synchronized (myConnectedClients)
+                                    myConnectedClientsLock.lock();
+                                    try
                                     {
                                         if (!myConnectedClients.containsKey(aClientId))
                                         {
@@ -291,6 +323,10 @@ class WebSocketInputConnector implements IInputConnector
                                             EneterTrace.warning(TracedObject() + "could not open connection for client '" + aClientId + "' because the client with same id is already connected.");
                                             break;
                                         }
+                                    }
+                                    finally
+                                    {
+                                        myConnectedClientsLock.unlock();
                                     }
                                 }
                                 else
@@ -329,9 +365,14 @@ class WebSocketInputConnector implements IInputConnector
                 // Remove client from connected clients.
                 if (aClientId != null)
                 {
-                    synchronized (myConnectedClients)
+                    myConnectedClientsLock.lock();
+                    try
                     {
                         myConnectedClients.remove(aClientId);
+                    }
+                    finally
+                    {
+                        myConnectedClientsLock.unlock();
                     }
                 }
 
@@ -377,7 +418,8 @@ class WebSocketInputConnector implements IInputConnector
     
     private WebSocketListener myListener;
     private IMethod1<MessageContext> myMessageHandler;
-    private Object myListenerManipulatorLock = new Object();
+    private ThreadLock myListenerManipulatorLock = new ThreadLock();
+    private ThreadLock myConnectedClientsLock = new ThreadLock();
     private HashMap<String, TClientContext> myConnectedClients = new HashMap<String, WebSocketInputConnector.TClientContext>();
     private IServerSecurityFactory mySecurityFactory;
     

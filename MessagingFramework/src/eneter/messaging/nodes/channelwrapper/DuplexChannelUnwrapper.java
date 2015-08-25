@@ -13,6 +13,7 @@ import java.util.*;
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.infrastructure.attachable.internal.AttachableDuplexInputChannelBase;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.net.system.*;
@@ -77,7 +78,8 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnections)
+            myConnectionsLock.lock();
+            try
             {
                 TDuplexConnection aConnection = EnumerableExt.firstOrDefault(myConnections, new IFunction1<Boolean, TDuplexConnection>()
                 {
@@ -94,6 +96,10 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                 }
 
                 return null;
+            }
+            finally
+            {
+                myConnectionsLock.unlock();
             }
         }
         finally
@@ -134,7 +140,8 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
 
                 // Try to find if the output channel with the required channel id and for the incoming response receiver
                 // already exists.
-                synchronized (myConnections)
+                myConnectionsLock.lock();
+                try
                 {
                     aConectionToOutput = EnumerableExt.firstOrDefault(myConnections, new IFunction1<Boolean, TDuplexConnection>()
                     {
@@ -176,6 +183,10 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                             myConnections.add(aConectionToOutput);
                         }
                     }
+                }
+                finally
+                {
+                    myConnectionsLock.unlock();
                 }
 
                 if (aConectionToOutput != null)
@@ -236,7 +247,8 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnections)
+            myConnectionsLock.lock();
+            try
             {
                 final ResponseReceiverEventArgs ee = e;
                 
@@ -276,6 +288,10 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                     
                         });
             }
+            finally
+            {
+                myConnectionsLock.unlock();
+            }
 
             if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
             {
@@ -310,7 +326,8 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                 
                 // try to find the response receiver id where the wrapped message should be responded.
                 TDuplexConnection aConnction = null;
-                synchronized (myConnections)
+                myConnectionsLock.lock();
+                try
                 {
                     aConnction = EnumerableExt.firstOrDefault(myConnections, new IFunction1<Boolean, TDuplexConnection>()
                             {
@@ -321,6 +338,10 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
                                     return x.getDuplexOutputChannel() == (IDuplexOutputChannel)aSender;
                                 }
                             });
+                }
+                finally
+                {
+                    myConnectionsLock.unlock();
                 }
 
                 if (aConnction != null)
@@ -361,6 +382,7 @@ class DuplexChannelUnwrapper extends AttachableDuplexInputChannelBase
     private ISerializer mySerializer;
     private GetSerializerCallback myGetSerializerCallback;
 
+    private ThreadLock myConnectionsLock = new ThreadLock();
     private HashSet<TDuplexConnection> myConnections = new HashSet<TDuplexConnection>();
     
     private EventImpl<ResponseReceiverEventArgs> myResponseReceiverConnectedEventImpl = new EventImpl<ResponseReceiverEventArgs>();

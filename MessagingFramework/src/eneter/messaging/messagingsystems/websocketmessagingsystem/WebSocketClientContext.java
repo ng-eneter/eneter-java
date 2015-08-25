@@ -17,6 +17,7 @@ import eneter.messaging.dataprocessing.messagequeueing.MessageQueue;
 import eneter.messaging.dataprocessing.streaming.DynamicInputStream;
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.OutputStreamTimeoutWriter;
 import eneter.net.system.*;
 import eneter.net.system.internal.Cast;
@@ -116,9 +117,14 @@ class WebSocketClientContext implements IWebSocketClientContext
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 return myTcpClient != null && myIsListeningToResponses;
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -132,7 +138,8 @@ class WebSocketClientContext implements IWebSocketClientContext
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 myStopReceivingRequestedFlag = true;
                 myMessageInSendProgress = EMessageInSendProgress.None;
@@ -169,6 +176,10 @@ class WebSocketClientContext implements IWebSocketClientContext
 
                 myReceivedMessages.unblockProcessingThreads();
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -194,7 +205,8 @@ class WebSocketClientContext implements IWebSocketClientContext
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 // If there is no message that was not finalized yet then send the binary or text data frame.
                 if (myMessageInSendProgress == EMessageInSendProgress.None)
@@ -291,6 +303,10 @@ class WebSocketClientContext implements IWebSocketClientContext
                     }
                 }
             }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
+            }
         }
         finally
         {
@@ -357,7 +373,8 @@ class WebSocketClientContext implements IWebSocketClientContext
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myConnectionManipulatorLock)
+            myConnectionManipulatorLock.lock();
+            try
             {
                 if (!isConnected())
                 {
@@ -380,6 +397,10 @@ class WebSocketClientContext implements IWebSocketClientContext
                     EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendMessage, err);
                     throw err;
                 }
+            }
+            finally
+            {
+                myConnectionManipulatorLock.unlock();
             }
         }
         finally
@@ -588,7 +609,7 @@ class WebSocketClientContext implements IWebSocketClientContext
     
     private Map<String, String> myHeaderFields;
 
-    private Object myConnectionManipulatorLock = new Object();
+    private ThreadLock myConnectionManipulatorLock = new ThreadLock();
 
     private boolean myStopReceivingRequestedFlag;
     private boolean myIsListeningToResponses;

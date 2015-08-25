@@ -11,6 +11,7 @@ package eneter.messaging.nodes.dispatcher;
 import java.util.*;
 
 import eneter.messaging.diagnostic.*;
+import eneter.messaging.diagnostic.internal.ThreadLock;
 import eneter.messaging.infrastructure.attachable.*;
 import eneter.messaging.infrastructure.attachable.internal.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -63,7 +64,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                 IDuplexOutputChannel anOutputChannel = null;
                 try
                 {
-                    synchronized (myOutputConnectionLock)
+                    myOutputConnectionLock.lock();
+                    try
                     {
                         anOutputChannel = messaging.createDuplexOutputChannel(channelId);
                         anOutputChannel.connectionClosed().subscribe(myOnConnectionClosed);
@@ -73,6 +75,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
 
                         // Connection is successfully open so it can be stored.
                         myOpenOutputConnections.add(anOutputChannel);
+                    }
+                    finally
+                    {
+                        myOutputConnectionLock.unlock();
                     }
                 }
                 catch (Exception err)
@@ -98,7 +104,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (myOutputConnectionLock)
+                myOutputConnectionLock.lock();
+                try
                 {
                     for (int i = myOpenOutputConnections.size() - 1; i >= 0; --i)
                     {
@@ -113,6 +120,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                         }
                     }
                 }
+                finally
+                {
+                    myOutputConnectionLock.unlock();
+                }
             }
             finally
             {
@@ -126,7 +137,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (myOutputConnectionLock)
+                myOutputConnectionLock.lock();
+                try
                 {
                     for (IDuplexOutputChannel anOutputChannel : myOpenOutputConnections)
                     {
@@ -136,6 +148,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                         anOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
                     }
                     myOpenOutputConnections.clear();
+                }
+                finally
+                {
+                    myOutputConnectionLock.unlock();
                 }
             }
             finally
@@ -152,10 +168,15 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             {
                 IDuplexOutputChannel[] anOutputChannels = null;
 
-                synchronized (myOutputConnectionLock)
+                myOutputConnectionLock.lock();
+                try
                 {
                     anOutputChannels = new IDuplexOutputChannel[myOpenOutputConnections.size()];
                     anOutputChannels = myOpenOutputConnections.toArray(anOutputChannels);
+                }
+                finally
+                {
+                    myOutputConnectionLock.unlock();
                 }
 
                 // Forward the incoming message to all output channels.
@@ -186,7 +207,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                 boolean isAny = false;
                 try
                 {
-                    synchronized (myOutputConnectionLock)
+                    myOutputConnectionLock.lock();
+                    try
                     {
                         isAny = EnumerableExt.any(myOpenOutputConnections, new IFunction1<Boolean, IDuplexOutputChannel>()
                         {
@@ -197,6 +219,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                                 return x.getResponseReceiverId().equals(responseReceiverId);
                             }
                         });
+                    }
+                    finally
+                    {
+                        myOutputConnectionLock.unlock();
                     }
                 }
                 catch (Exception err)
@@ -218,13 +244,18 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (myOutputConnectionLock)
+                myOutputConnectionLock.lock();
+                try
                 {
                     IDuplexOutputChannel anOutputChannel = (IDuplexOutputChannel)sender;
                     anOutputChannel.connectionClosed().unsubscribe(myOnConnectionClosed);
                     anOutputChannel.responseMessageReceived().unsubscribe(myOnResponseMessageReceived);
 
                     myOpenOutputConnections.remove(anOutputChannel);
+                }
+                finally
+                {
+                    myOutputConnectionLock.unlock();
                 }
             }
             finally
@@ -255,7 +286,7 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         }
         
         private String myInputResponseReceiverId;
-        private Object myOutputConnectionLock = new Object();
+        private ThreadLock myOutputConnectionLock = new ThreadLock();
         private ArrayList<IDuplexOutputChannel> myOpenOutputConnections = new ArrayList<IDuplexOutputChannel>();
         private IDuplexInputChannel myInputChannel;
         
@@ -304,7 +335,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             {
                 super.detachDuplexInputChannel();
 
-                synchronized (myClientConnectionLock)
+                myClientConnectionLock.lock();
+                try
                 {
                     // Close connections of all clients.
                     for (Map.Entry<String, TClient> aClient : myConnectedClients.entrySet())
@@ -312,6 +344,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                         aClient.getValue().closeOutpuConnections();
                     }
                     myConnectedClients.clear();
+                }
+                finally
+                {
+                    myClientConnectionLock.unlock();
                 }
             }
             finally
@@ -326,12 +362,17 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (myClientConnectionLock)
+                myClientConnectionLock.lock();
+                try
                 {
                     for (Map.Entry<String, TClient> aClient : myConnectedClients.entrySet())
                     {
                         aClient.getValue().openOutputConnection(myMessaging, channelId);
                     }
+                }
+                finally
+                {
+                    myClientConnectionLock.unlock();
                 }
             }
             finally
@@ -346,12 +387,17 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (myClientConnectionLock)
+                myClientConnectionLock.lock();
+                try
                 {
                     for (Map.Entry<String, TClient> aClient : myConnectedClients.entrySet())
                     {
                         aClient.getValue().closeOutputConnection(channelId);
                     }
+                }
+                finally
+                {
+                    myClientConnectionLock.unlock();
                 }
             }
             finally
@@ -365,7 +411,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (myClientConnectionLock)
+                myClientConnectionLock.lock();
+                try
                 {
                     for (Map.Entry<String, TClient> aClient : myConnectedClients.entrySet())
                     {
@@ -376,6 +423,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                     }
 
                     return null;
+                }
+                finally
+                {
+                    myClientConnectionLock.unlock();
                 }
             }
             finally
@@ -392,9 +443,14 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             try
             {
                 TClient aClient;
-                synchronized (myClientConnectionLock)
+                myClientConnectionLock.lock();
+                try
                 {
                     aClient = myConnectedClients.get(e.getResponseReceiverId());
+                }
+                finally
+                {
+                    myClientConnectionLock.unlock();
                 }
 
                 if (aClient != null)
@@ -421,12 +477,17 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                 TClient aNewClient = new TClient(getAttachedDuplexInputChannel(), e.getResponseReceiverId());
                 Iterable<String> anOutputChannelIds = myGetOutputChannelIds.invoke();
 
-                synchronized (myClientConnectionLock)
+                myClientConnectionLock.lock();
+                try
                 {
                     // Opens connections to all available outputs.
                     aNewClient.openOutputConnections(myMessaging, anOutputChannelIds);
 
                     myConnectedClients.put(e.getResponseReceiverId(), aNewClient);
+                }
+                finally
+                {
+                    myClientConnectionLock.unlock();
                 }
             }
             catch (Exception err)
@@ -445,7 +506,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                synchronized (myClientConnectionLock)
+                myClientConnectionLock.lock();
+                try
                 {
                     TClient aClient = myConnectedClients.get(e.getResponseReceiverId());
                     if (aClient != null)
@@ -453,6 +515,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                         aClient.closeOutpuConnections();
                         myConnectedClients.remove(e.getResponseReceiverId());
                     }
+                }
+                finally
+                {
+                    myClientConnectionLock.unlock();
                 }
             }
             finally
@@ -462,7 +528,7 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         }
 
         
-        private Object myClientConnectionLock = new Object();
+        private ThreadLock myClientConnectionLock = new ThreadLock();
         private HashMap<String, TClient> myConnectedClients = new HashMap<String, TClient>();
         private IMessagingSystemFactory myMessaging;
         private IFunction<Iterable<String>> myGetOutputChannelIds;
@@ -496,7 +562,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myChannelManipulatorLock)
+            myChannelManipulatorLock.lock();
+            try
             {
                 myOutputChannelIds.add(channelId);
 
@@ -505,6 +572,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                 {
                     anInputChannelContext.openConnection(channelId);
                 }
+            }
+            finally
+            {
+                myChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -519,10 +590,15 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myChannelManipulatorLock)
+            myChannelManipulatorLock.lock();
+            try
             {
                 myOutputChannelIds.remove(channelId);
                 closeOutputChannel(channelId);
+            }
+            finally
+            {
+                myChannelManipulatorLock.unlock();
             }
             
         }
@@ -538,7 +614,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myChannelManipulatorLock)
+            myChannelManipulatorLock.lock();
+            try
             {
                 try
                 {
@@ -551,6 +628,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                 {
                     myOutputChannelIds.clear();
                 }
+            }
+            finally
+            {
+                myChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -568,7 +649,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myChannelManipulatorLock)
+            myChannelManipulatorLock.lock();
+            try
             {
                 TInputChannelContext anInpuChannelContext = new TInputChannelContext(myMessagingSystemFactory, myGetOutputChannelIds);
                 try
@@ -581,6 +663,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                     myInputChannelContexts.remove(anInpuChannelContext);
                     EneterTrace.error(TracedObject() + "failed to attach duplex input channel.", err);
                 }
+            }
+            finally
+            {
+                myChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -595,7 +681,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myChannelManipulatorLock)
+            myChannelManipulatorLock.lock();
+            try
             {
                 for (int i = myInputChannelContexts.size() - 1; i >= 0; --i)
                 {
@@ -606,6 +693,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                         break;
                     }
                 }
+            }
+            finally
+            {
+                myChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -620,7 +711,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myChannelManipulatorLock)
+            myChannelManipulatorLock.lock();
+            try
             {
                 for (TInputChannelContext anInputChannelContext : myInputChannelContexts)
                 {
@@ -628,6 +720,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                 }
 
                 myInputChannelContexts.clear();
+            }
+            finally
+            {
+                myChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -642,9 +738,14 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myChannelManipulatorLock)
+            myChannelManipulatorLock.lock();
+            try
             {
                 return myInputChannelContexts.size() > 0;
+            }
+            finally
+            {
+                myChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -660,7 +761,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myChannelManipulatorLock)
+            myChannelManipulatorLock.lock();
+            try
             {
                 ArrayList<IDuplexInputChannel> anInputChannels = new ArrayList<IDuplexInputChannel>();
 
@@ -670,6 +772,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                 }
 
                 return anInputChannels;
+            }
+            finally
+            {
+                myChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -686,7 +792,8 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            synchronized (myChannelManipulatorLock)
+            myChannelManipulatorLock.lock();
+            try
             {
                 for (TInputChannelContext anInputChannelContext : myInputChannelContexts)
                 {
@@ -698,6 +805,10 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
                 }
 
                 return null;
+            }
+            finally
+            {
+                myChannelManipulatorLock.unlock();
             }
         }
         finally
@@ -724,15 +835,20 @@ class DuplexDispatcher implements IAttachableMultipleDuplexInputChannels, IDuple
     
     private Iterable<String> getOutputChannelIds()
     {
-        synchronized (myChannelManipulatorLock)
+        myChannelManipulatorLock.lock();
+        try
         {
             ArrayList<String> aResult = new ArrayList<String>(myOutputChannelIds); 
             return aResult;
         }
+        finally
+        {
+            myChannelManipulatorLock.unlock();
+        }
     }
     
     
-    private Object myChannelManipulatorLock = new Object();
+    private ThreadLock myChannelManipulatorLock = new ThreadLock();
     private IMessagingSystemFactory myMessagingSystemFactory;
     private HashSet<String> myOutputChannelIds = new HashSet<String>();
     private ArrayList<TInputChannelContext> myInputChannelContexts = new ArrayList<TInputChannelContext>();
