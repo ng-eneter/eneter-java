@@ -217,6 +217,28 @@ class HttpInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myConnectedClientsLock.lock();
+            try
+            {
+                for (HttpResponseSender aClientContext : myConnectedClients)
+                {
+                    try
+                    {
+                        closeConnection(aClientContext);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
+                    }
+                }
+
+                myConnectedClients.clear();
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+            
             myListeningManipulatorLock.lock();
             try
             {
@@ -287,6 +309,45 @@ class HttpInputConnector implements IInputConnector
         }
     }
     
+
+    @Override
+    public void sendBroadcast(Object message)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myConnectedClientsLock.lock();
+            try
+            {
+                // Send the response message to all connected clients.
+                for (HttpResponseSender aClientContext : myConnectedClients)
+                {
+                    if (!aClientContext.IsDisposed)
+                    {
+                        try
+                        {
+                            Object anEncodedMessage = myProtocolFormatter.encodeMessage(aClientContext.ResponseReceiverId, message);
+                            aClientContext.sendResponseMessage(anEncodedMessage);
+                        }
+                        catch (Exception err)
+                        {
+                            // This should never happen because it is not called when disposed.
+                            EneterTrace.error(TracedObject() + "failed to send the broadcast message.", err);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     @Override
     public void closeConnection(final String outputConnectorAddress) throws Exception
     {
@@ -323,18 +384,7 @@ class HttpInputConnector implements IInputConnector
 
             if (aClientContext != null)
             {
-                try
-                {
-                    // Send close connection message.
-                    Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(outputConnectorAddress);
-                    aClientContext.sendResponseMessage(anEncodedMessage);
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning("failed to send the close message.", err);
-                }
-
-                aClientContext.dispose();
+                closeConnection(aClientContext);
             }
         }
         finally
@@ -343,9 +393,6 @@ class HttpInputConnector implements IInputConnector
         }
     }
 
-
-   
-    
     private void handleConnection(HttpRequestContext httpRequestContext) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -361,11 +408,11 @@ class HttpInputConnector implements IInputConnector
                     final String aResponseReceiverId = aQuery.substring(3);
 
                     // Find the sender for the response receiver.
-                    HttpResponseSender aResponseSender = null;
+                    HttpResponseSender aClientContext = null;
                     myConnectedClientsLock.lock();
                     try
                     {
-                        aResponseSender = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
+                        aClientContext = EnumerableExt.firstOrDefault(myConnectedClients, new IFunction1<Boolean, HttpResponseSender>()
                         {
                             @Override
                             public Boolean invoke(HttpResponseSender x) throws Exception
@@ -380,10 +427,10 @@ class HttpInputConnector implements IInputConnector
                         myConnectedClientsLock.unlock();
                     }
 
-                    if (aResponseSender != null)
+                    if (aClientContext != null)
                     {
                         // Response collected messages.
-                        byte[] aMessages = aResponseSender.dequeueCollectedMessages();
+                        byte[] aMessages = aClientContext.dequeueCollectedMessages();
                         if (aMessages != null)
                         {
                             httpRequestContext.response(aMessages);
@@ -498,14 +545,7 @@ class HttpInputConnector implements IInputConnector
                     
                     if (anIsProcessingOk)
                     {
-                        try
-                        {
-                            myMessageHandler.invoke(aMessageContext);
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
+                        notifyMessageContext(aMessageContext);
                     }
                 }
                 
@@ -514,6 +554,35 @@ class HttpInputConnector implements IInputConnector
                     // The request was not processed.
                     httpRequestContext.responseError(404);
                 }
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void closeConnection(HttpResponseSender clientContext)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (!clientContext.IsDisposed)
+            {
+                try
+                {
+                    // Send close connection message.
+                    Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(clientContext.ResponseReceiverId);
+                    clientContext.sendResponseMessage(anEncodedMessage);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.warning("failed to send the close message.", err);
+                }
+
+                // Note: the client context will be removed by the timer.
+                //       The reason is the client can still poll for messages which are stored in the HttpResponseSender.
+                clientContext.dispose();
             }
         }
         finally
@@ -577,18 +646,7 @@ class HttpInputConnector implements IInputConnector
             {
                 ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aClientContext.ResponseReceiverId, null);
                 MessageContext aMessageContext = new MessageContext(aProtocolMessage, aClientContext.ClientIp);
-
-                try
-                {
-                    if (myMessageHandler != null)
-                    {
-                        myMessageHandler.invoke(aMessageContext);
-                    }
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
+                notifyMessageContext(aMessageContext);
             }
             
             if (aStartTimerFlag)
@@ -604,9 +662,31 @@ class HttpInputConnector implements IInputConnector
         {
             EneterTrace.leaving(aTrace);
         }
-
     }
     
+    private void notifyMessageContext(MessageContext messageContext)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                IMethod1<MessageContext> aMessageHandler = myMessageHandler;
+                if (aMessageHandler != null)
+                {
+                    aMessageHandler.invoke(messageContext);
+                }
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     /*
      * Helper method to get the new instance of the timer task.

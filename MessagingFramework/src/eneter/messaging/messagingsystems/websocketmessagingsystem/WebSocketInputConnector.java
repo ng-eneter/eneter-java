@@ -10,7 +10,9 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 import eneter.messaging.diagnostic.EneterTrace;
@@ -152,6 +154,28 @@ class WebSocketInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myConnectedClientsLock.lock();
+            try
+            {
+                for (Entry<String, TClientContext> aClient : myConnectedClients.entrySet())
+                {
+                    try
+                    {
+                        aClient.getValue().closeConnection();
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
+                    }
+                }
+
+                myConnectedClients.clear();
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+            
             myListenerManipulatorLock.lock();
             try
             {
@@ -214,8 +238,62 @@ class WebSocketInputConnector implements IInputConnector
                 throw new IllegalStateException("The connection with client '" + outputConnectorAddress + "' is not open.");
             }
 
-            Object anEncodedMessage = myProtocolFormatter.encodeMessage(outputConnectorAddress, message);
-            aClientContext.SendResponseMessage(anEncodedMessage);
+            try
+            {
+                Object anEncodedMessage = myProtocolFormatter.encodeMessage(outputConnectorAddress, message);
+                aClientContext.SendResponseMessage(anEncodedMessage);
+            }
+            catch (Exception err)
+            {
+                closeConnection(outputConnectorAddress, true);
+                throw err;
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public void sendBroadcast(Object message)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ArrayList<String> aDisconnectedClients = new ArrayList<String>();
+
+            myConnectedClientsLock.lock();
+            try
+            {
+                // Send the response message to all connected clients.
+                for (Entry<String, TClientContext> aClientContext : myConnectedClients.entrySet())
+                {
+                    try
+                    {
+                        Object anEncodedMessage = myProtocolFormatter.encodeMessage(aClientContext.getKey(), message);
+                        aClientContext.getValue().SendResponseMessage(anEncodedMessage);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
+                        aDisconnectedClients.add(aClientContext.getKey());
+
+                        // Note: Exception is not rethrown because if sending to one client fails it should not
+                        //       affect sending to other clients.
+                    }
+                }
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+
+            // Disconnect failed clients.
+            for (String anOutputConnectorAddress : aDisconnectedClients)
+            {
+                closeConnection(anOutputConnectorAddress, true);
+            }
         }
         finally
         {
@@ -229,21 +307,7 @@ class WebSocketInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            TClientContext aClientContext;
-            myConnectedClientsLock.lock();
-            try
-            {
-                aClientContext = myConnectedClients.get(outputConnectorAddress);
-            }
-            finally
-            {
-                myConnectedClientsLock.unlock();
-            }
-
-            if (aClientContext != null)
-            {
-                aClientContext.closeConnection();
-            }
+            closeConnection(outputConnectorAddress, false);
         }
         finally
         {
@@ -256,7 +320,7 @@ class WebSocketInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            String aClientIp = (client.getClientEndPoint() != null) ? client.getClientEndPoint().getAddress().toString() : "";
+            String aClientIp = (client.getClientEndPoint() != null) ? client.getClientEndPoint().toString() : "";
             
             TClientContext aClientContext = new TClientContext(client);
             String aClientId = null;
@@ -281,7 +345,7 @@ class WebSocketInputConnector implements IInputConnector
 
                     ProtocolMessage anOpenConnectionProtocolMessage = new ProtocolMessage(EProtocolMessageType.OpenConnectionRequest, aClientId, null);
                     MessageContext aMessageContext = new MessageContext(anOpenConnectionProtocolMessage, aClientIp);
-                    myMessageHandler.invoke(aMessageContext);
+                    notifyMessageContext(aMessageContext);
                 }
                 
                 while (true)
@@ -336,17 +400,9 @@ class WebSocketInputConnector implements IInputConnector
                             }
 
                             // Notify message.
-                            try
-                            {
-                                // Ensure that nobody will try to use id of somebody else.
-                                aMessageContext.getProtocolMessage().ResponseReceiverId = aClientId;
-
-                                myMessageHandler.invoke(aMessageContext);
-                            }
-                            catch (Exception err)
-                            {
-                                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                            }
+                            // Ensure that nobody will try to use id of somebody else.
+                            aMessageContext.getProtocolMessage().ResponseReceiverId = aClientId;
+                            notifyMessageContext(aMessageContext);
                         }
                         else if (aProtocolMessage == null)
                         {
@@ -382,16 +438,7 @@ class WebSocketInputConnector implements IInputConnector
                 {
                     ProtocolMessage aCloseProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, aClientId, null);
                     MessageContext aMessageContext = new MessageContext(aCloseProtocolMessage, aClientIp);
-
-                    // Notify duplex input channel about the disconnection.
-                    try
-                    {
-                        myMessageHandler.invoke(aMessageContext);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                    }
+                    notifyMessageContext(aMessageContext);
                 }
 
                 client.closeConnection();
@@ -403,6 +450,64 @@ class WebSocketInputConnector implements IInputConnector
         }
     }
     
+    private void closeConnection(String outputConnectorAddress, boolean notifyFlag)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            TClientContext aClientContext;
+            myConnectedClientsLock.lock();
+            try
+            {
+                aClientContext = myConnectedClients.get(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+
+            if (aClientContext != null)
+            {
+                aClientContext.closeConnection();
+            }
+
+            if (notifyFlag)
+            {
+                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, outputConnectorAddress, null);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, "");
+
+                notifyMessageContext(aMessageContext);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void notifyMessageContext(MessageContext messageContext)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                IMethod1<MessageContext> aMessageHandler = myMessageHandler;
+                if (aMessageHandler != null)
+                {
+                    aMessageHandler.invoke(messageContext);
+                }
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     private IMethod1<IWebSocketClientContext> myHandleConnection = new IMethod1<IWebSocketClientContext>()
     {

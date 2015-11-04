@@ -8,13 +8,8 @@
 
 package eneter.messaging.messagingsystems.simplemessagingsystembase.internal;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map.Entry;
-
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
@@ -132,16 +127,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             {
                 try
                 {
-                    // Try to close connected clients.
-                    disconnectClients();
-                }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + "failed to disconnect connected clients.", err);
-                }
-
-                try
-                {
                     myInputConnector.stopListening();
                 }
                 catch (Exception err)
@@ -205,39 +190,7 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
             // If broadcast to all connected response receivers.
             if (responseReceiverId.equals("*"))
             {
-                ArrayList<String> aDisconnectedClients = new ArrayList<String>();
-                
-                myConnectedClientsLock.lock();
-                try
-                {
-                    // Send the response message to all connected clients.
-                    for (Entry<String, String> aConnectedClient : myConnectedClients.entrySet())
-                    {
-                        try
-                        {
-                            // Send the response message.
-                            myInputConnector.sendResponseMessage(aConnectedClient.getKey(), message);
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
-                            aDisconnectedClients.add(aConnectedClient.getKey());
-
-                            // Note: Exception is not rethrown because if sending to one client fails it should not
-                            //       affect sending to other clients.
-                        }
-                    }
-                }
-                finally
-                {
-                    myConnectedClientsLock.unlock();
-                }
-                
-                // Disconnect failed clients.
-                for (String aResponseReceiverId : aDisconnectedClients)
-                {
-                    closeConnection(aResponseReceiverId, true, true);
-                }
+                myInputConnector.sendBroadcast(message);
             }
             else
             {
@@ -249,7 +202,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                 catch (Exception err)
                 {
                     EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
-                    closeConnection(responseReceiverId, true, true);
                     throw err;
                 }
             }
@@ -266,7 +218,14 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            closeConnection(responseReceiverId, true, false);
+            try
+            {
+                myInputConnector.closeConnection(responseReceiverId);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
+            }
         }
         finally
         {
@@ -280,40 +239,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         return myDispatcher;
     }
 
-    private void disconnectClients()
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            myConnectedClientsLock.lock();
-            try
-            {
-                for (Entry<String, String> aConnection : myConnectedClients.entrySet())
-                {
-                    final String aResponseReceiverId = aConnection.getKey();
-                    
-                    try
-                    {
-                        myInputConnector.closeConnection(aResponseReceiverId);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
-                    }
-                }
-                myConnectedClients.clear();
-            }
-            finally
-            {
-                myConnectedClientsLock.unlock();
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
     private void handleMessage(final MessageContext messageContext) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -347,7 +272,14 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     @Override
                     public void run()
                     {
-                        openConnection(messageContext.getProtocolMessage().ResponseReceiverId, messageContext.getSenderAddress());
+                        myDispatcher.invoke(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                notifyEvent(myResponseReceiverConnected, messageContext.getProtocolMessage().ResponseReceiverId, messageContext.getSenderAddress());
+                            }
+                        });
                     }
                 });
             }
@@ -359,119 +291,20 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
                     @Override
                     public void run()
                     {
-                        closeConnection(messageContext.getProtocolMessage().ResponseReceiverId, false, true);
+                        myDispatcher.invoke(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                notifyEvent(myResponseReceiverDisconnected, messageContext.getProtocolMessage().ResponseReceiverId, messageContext.getSenderAddress());
+                            }
+                        });
                     }
                 });
             }
             else
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.FailedToReceiveMessageBecauseIncorrectFormat);
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    private void openConnection(final String responseReceiverId, final String senderAddress)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            boolean aNewConnectionFlag = false;
-
-            // If the connection is not open yet.
-            myConnectedClientsLock.lock();
-            try
-            {
-                if (!myConnectedClients.containsKey(responseReceiverId))
-                {
-                    myConnectedClients.put(responseReceiverId, senderAddress);
-
-                    // Connection was created.
-                    aNewConnectionFlag = true;
-                }
-            }
-            finally
-            {
-                myConnectedClientsLock.unlock();
-            }
-
-            if (aNewConnectionFlag)
-            {
-                // Notify the connection was open.
-                myDispatcher.invoke(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        notifyEvent(myResponseReceiverConnected, responseReceiverId, senderAddress);
-                    }
-                });
-            }
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    private void closeConnection(final String responseReceiverId,
-            boolean sendCloseMessageFlag,
-            boolean notifyDisconnectFlag)
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            String aSenderAddress = "";
-            boolean aConnecionExisted = false;
-            try
-            {
-                myConnectedClientsLock.lock();
-                try
-                {
-                    aSenderAddress = myConnectedClients.get(responseReceiverId);
-                    aConnecionExisted = myConnectedClients.remove(responseReceiverId) != null;
-                }
-                finally
-                {
-                    myConnectedClientsLock.unlock();
-                }
-
-                if (aConnecionExisted && sendCloseMessageFlag)
-                {
-                    try
-                    {
-                        // Try to send close connection message.
-                        myInputConnector.closeConnection(responseReceiverId);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
-                    }
-                }
-            }
-            catch (Exception err)
-            {
-                EneterTrace.warning(TracedObject() + "failed to close connection with response receiver.", err);
-            }
-
-            // If a connection was closed and notification event is required.
-            if (aConnecionExisted && notifyDisconnectFlag)
-            {
-                // Notify the connection was closed.
-                final String aSenderAddressTmp = (aSenderAddress != null) ? aSenderAddress : "";
-                
-                // Notify the connection was closed.
-                myDispatcher.invoke(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        notifyEvent(myResponseReceiverDisconnected, responseReceiverId, aSenderAddressTmp);
-                    }
-                });
             }
         }
         finally
@@ -536,9 +369,6 @@ public class DefaultDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    
-    private ThreadLock myConnectedClientsLock = new ThreadLock();
-    private HashMap<String, String> myConnectedClients = new HashMap<String, String>();
     
     private IThreadDispatcher myDispatchingAfterMessageReading;
     private IInputConnector myInputConnector;

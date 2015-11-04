@@ -7,12 +7,12 @@
 
 package eneter.messaging.messagingsystems.composites.messagebus;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
@@ -137,6 +137,51 @@ class MessageBusInputConnector implements IInputConnector
         }
     }
 
+    @Override
+    public void sendBroadcast(Object message)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ArrayList<String> aDisconnectedClients = new ArrayList<String>();
+
+            myConnectedClientsLock.lock();
+            try
+            {
+                for (String aClientId : myConnectedClients.keySet())
+                {
+                    try
+                    {
+                        MessageBusMessage aMessage = new MessageBusMessage(EMessageBusRequest.SendResponseMessage, aClientId, message);
+                        Object aSerializedMessage = mySerializer.serialize(aMessage, MessageBusMessage.class);
+                        myMessageBusOutputChannel.sendMessage(aSerializedMessage);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
+                        aDisconnectedClients.add(aClientId);
+
+                        // Note: Exception is not rethrown because if sending to one client fails it should not
+                        //       affect sending to other clients.
+                    }
+                }
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+
+            // Disconnect failed clients.
+            for (String anOutputConnectorAddress : aDisconnectedClients)
+            {
+                closeConnection(anOutputConnectorAddress, true);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     @Override
     public void closeConnection(String clientId) throws Exception
@@ -144,10 +189,7 @@ class MessageBusInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            MessageBusMessage aMessage = new MessageBusMessage(EMessageBusRequest.DisconnectClient, clientId, null);
-            Object aSerializedMessage = mySerializer.serialize(aMessage, MessageBusMessage.class);
-
-            myMessageBusOutputChannel.sendMessage(aSerializedMessage);
+            closeConnection(clientId, false);
         }
         finally
         {
@@ -230,6 +272,7 @@ class MessageBusInputConnector implements IInputConnector
                 {
                     myConnectedClientsLock.unlock();
                 }
+                
                 aDispatcher.invoke(new Runnable()
                 {
                     @Override
@@ -259,6 +302,7 @@ class MessageBusInputConnector implements IInputConnector
                 {
                     myConnectedClientsLock.unlock();
                 }
+                
                 aDispatcher.invoke(new Runnable()
                 {
                     @Override
@@ -276,6 +320,36 @@ class MessageBusInputConnector implements IInputConnector
         }
     }
     
+    private void closeConnection(String clientId, boolean notifyFlag)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                MessageBusMessage aMessage = new MessageBusMessage(EMessageBusRequest.DisconnectClient, clientId, null);
+                Object aSerializedMessage = mySerializer.serialize(aMessage, MessageBusMessage.class);
+
+                myMessageBusOutputChannel.sendMessage(aSerializedMessage);
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
+            }
+
+            if (notifyFlag)
+            {
+                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, clientId, null);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, "");
+
+                notifyMessageContext(aMessageContext);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     private void notifyMessageContext(MessageContext messageContext)
     {
@@ -306,6 +380,7 @@ class MessageBusInputConnector implements IInputConnector
     private IDuplexOutputChannel myMessageBusOutputChannel;
     private IMethod1<MessageContext> myMessageHandler;
     private ThreadLock myListeningManipulatorLock = new ThreadLock();
+    
     private IThreadDispatcherProvider myThreadDispatcherProvider = new SyncDispatching();
     private ThreadLock myConnectedClientsLock = new ThreadLock();
     private HashMap<String, IThreadDispatcher> myConnectedClients = new HashMap<String, IThreadDispatcher>();
@@ -324,4 +399,5 @@ class MessageBusInputConnector implements IInputConnector
     {
         return getClass().getSimpleName() + " ";
     }
+
 }

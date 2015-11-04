@@ -26,12 +26,23 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
 {
     private class UdpConnectorFactory implements IOutputConnectorFactory, IInputConnectorFactory
     {
-        public UdpConnectorFactory(IProtocolFormatter protocolFormatter)
+        public UdpConnectorFactory(IProtocolFormatter protocolFormatter, boolean reuseAddressFlag, int responseReceivingPort,
+                boolean isUnicast,
+                boolean allowReceivingBroadcasts, int ttl, String multicastGroup, boolean multicastLoopbackFlag)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
                 myProtocolFormatter = protocolFormatter;
+                myReuseAddressFlag = reuseAddressFlag;
+                myResponseReceivingPort = responseReceivingPort;
+
+                myIsUnicastFlag = isUnicast;
+
+                myAllowReceivingBroadcasts = allowReceivingBroadcasts;
+                myTtl = ttl;
+                myMulticastGroup = multicastGroup;
+                myMulticastLoopbackFlag = multicastLoopbackFlag;
             }
             finally
             {
@@ -45,7 +56,17 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new UdpOutputConnector(inputConnectorAddress, outputConnectorAddress, myProtocolFormatter);
+                IOutputConnector anOutputConnector;
+                if (!myIsUnicastFlag)
+                {
+                    anOutputConnector = new UdpSessionlessOutputConnector(inputConnectorAddress, outputConnectorAddress, myProtocolFormatter, myReuseAddressFlag, myTtl, myAllowReceivingBroadcasts, myMulticastGroup, myMulticastLoopbackFlag);
+                }
+                else
+                {
+                    anOutputConnector = new UdpOutputConnector(inputConnectorAddress, outputConnectorAddress, myProtocolFormatter, myReuseAddressFlag, myResponseReceivingPort, myTtl);
+                }
+
+                return anOutputConnector;
             }
             finally
             {
@@ -59,7 +80,17 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                return new UdpInputConnector(inputConnectorAddress, myProtocolFormatter);
+                IInputConnector anInputConnector;
+                if (!myIsUnicastFlag)
+                {
+                    anInputConnector = new UdpSessionlessInputConnector(inputConnectorAddress, myProtocolFormatter, myReuseAddressFlag, myTtl, myAllowReceivingBroadcasts, myMulticastGroup, myMulticastLoopbackFlag);
+                }
+                else
+                {
+                    anInputConnector = new UdpInputConnector(inputConnectorAddress, myProtocolFormatter, myReuseAddressFlag, myTtl);
+                }
+
+                return anInputConnector;
             }
             finally
             {
@@ -68,6 +99,13 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         }
         
         private IProtocolFormatter myProtocolFormatter;
+        private boolean myReuseAddressFlag;
+        private int myResponseReceivingPort;
+        private boolean myIsUnicastFlag;
+        private boolean myAllowReceivingBroadcasts;
+        private int myTtl;
+        private String myMulticastGroup;
+        private boolean myMulticastLoopbackFlag;
     }
     
     /**
@@ -87,10 +125,12 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myConnectorFactory = new UdpConnectorFactory(protocolFromatter);
-            
+            myProtocolFormatter = protocolFromatter;
             myInputChannelThreading = new SyncDispatching();
             myOutputChannelThreading = myInputChannelThreading;
+            myTtl = 128;
+            myResponseReceiverPort = -1;
+            myUnicastCommunication = true;
         }
         finally
         {
@@ -157,6 +197,8 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     
+    
+    
     /**
      * Sets threading mode for input channels.
      * @param inputChannelThreading threading model
@@ -198,9 +240,29 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
     }
     
     
+    
+    public boolean getReuseAddress()
+    {
+        return myReuseAddress;
+    }
+    
+    public UdpMessagingSystemFactory setReuseAddress(boolean allowReuseAddressFlag)
+    {
+        myReuseAddress = allowReuseAddressFlag;
+        return this;
+    }
+    
+    
     private UdpConnectorFactory myConnectorFactory;
     private IThreadDispatcher myDispatcherAfterMessageDecoded = new NoDispatching().getDispatcher();
     
     private IThreadDispatcherProvider myInputChannelThreading;
     private IThreadDispatcherProvider myOutputChannelThreading;
+    private boolean myReuseAddress;
+    private int myResponseReceiverPort;
+    private boolean myMulticastLoopback;
+    private boolean myAllowReceivingBroadcasts;
+    private String myMulticastGroupToReceive;
+    private int myTtl;
+    private boolean myUnicastCommunication;
 }

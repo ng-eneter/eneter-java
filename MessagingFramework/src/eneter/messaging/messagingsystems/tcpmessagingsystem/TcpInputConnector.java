@@ -11,11 +11,10 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem;
 import java.io.*;
 import java.net.Socket;
 import java.util.*;
-
+import java.util.Map.Entry;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.messagingsystems.tcpmessagingsystem.internal.*;
@@ -157,6 +156,28 @@ class TcpInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myConnectedClientsLock.lock();
+            try
+            {
+                for (Entry<String, TClientContext> aClientContext : myConnectedClients.entrySet())
+                {
+                    try
+                    {
+                        aClientContext.getValue().closeConnection();
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
+                    }
+                }
+
+                myConnectedClients.clear();
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+            
             myListeningManipulatorLock.lock();
             try
             {
@@ -210,8 +231,16 @@ class TcpInputConnector implements IInputConnector
                 throw new IllegalStateException("The connection with client '" + outputConnectorAddress + "' is not open.");
             }
 
-            Object anEncodedMessage = myProtocolFormatter.encodeMessage(outputConnectorAddress, message);
-            aClientContext.sendResponseMessage(anEncodedMessage);
+            try
+            {
+                Object anEncodedMessage = myProtocolFormatter.encodeMessage(outputConnectorAddress, message);
+                aClientContext.sendResponseMessage(anEncodedMessage);
+            }
+            catch (Exception err)
+            {
+                closeConnection(outputConnectorAddress, true);
+                throw err;
+            }
         }
         finally
         {
@@ -219,6 +248,53 @@ class TcpInputConnector implements IInputConnector
         }
     }
 
+    @Override
+    public void sendBroadcast(Object message)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ArrayList<String> aDisconnectedClients = new ArrayList<String>();
+
+            myConnectedClientsLock.lock();
+            try
+            {
+                // Send the response message to all connected clients.
+                for (Entry<String, TClientContext> aClientContext : myConnectedClients.entrySet())
+                {
+                    try
+                    {
+                        // Send the response message.
+                        Object anEncodedMessage = myProtocolFormatter.encodeMessage(aClientContext.getKey(), message);
+                        aClientContext.getValue().sendResponseMessage(anEncodedMessage);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
+                        aDisconnectedClients.add(aClientContext.getKey());
+
+                        // Note: Exception is not rethrown because if sending to one client fails it should not
+                        //       affect sending to other clients.
+                    }
+                }
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+            
+
+            // Disconnect failed clients.
+            for (String anOutputConnectorAddress : aDisconnectedClients)
+            {
+                closeConnection(anOutputConnectorAddress, true);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
 
     @Override
     public void closeConnection(String outputConnectorAddress) throws Exception
@@ -226,21 +302,7 @@ class TcpInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            TClientContext aClientContext;
-            myConnectedClientsLock.lock();
-            try
-            {
-                aClientContext = myConnectedClients.get(outputConnectorAddress);
-            }
-            finally
-            {
-                myConnectedClientsLock.unlock();
-            }
-
-            if (aClientContext != null)
-            {
-                aClientContext.closeConnection();
-            }
+            closeConnection(outputConnectorAddress, false);
         }
         finally
         {
@@ -285,15 +347,7 @@ class TcpInputConnector implements IInputConnector
 
                     ProtocolMessage anOpenConnectionProtocolMessage = new ProtocolMessage(EProtocolMessageType.OpenConnectionRequest, aClientId, null);
                     MessageContext aMessageContext = new MessageContext(anOpenConnectionProtocolMessage, aClientIp);
-
-                    try
-                    {
-                        myMessageHandler.invoke(aMessageContext);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                    }
+                    notifyMessageContext(aMessageContext);
                 }
                 
                 // While the stop of listening is not requested and the connection is not closed.
@@ -347,18 +401,9 @@ class TcpInputConnector implements IInputConnector
                                 }
                             }
     
-                            try
-                            {
-                                // Ensure that nobody will try to use id of somebody else.
-                                aMessageContext.getProtocolMessage().ResponseReceiverId = aClientId;
-    
-                                // Notify message.
-                                myMessageHandler.invoke(aMessageContext);
-                            }
-                            catch (Exception err)
-                            {
-                                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                            }
+                            // Ensure that nobody will try to use id of somebody else.
+                            aMessageContext.getProtocolMessage().ResponseReceiverId = aClientId;
+                            notifyMessageContext(aMessageContext);
                         }
                     }
                     else
@@ -390,14 +435,7 @@ class TcpInputConnector implements IInputConnector
                     MessageContext aMessageContext = new MessageContext(aCloseProtocolMessage, aClientIp);
 
                     // Notify duplex input channel about the disconnection.
-                    try
-                    {
-                        myMessageHandler.invoke(aMessageContext);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                    }
+                    notifyMessageContext(aMessageContext);
                 }
 
                 if (anInputStream != null)
@@ -416,6 +454,66 @@ class TcpInputConnector implements IInputConnector
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    private void closeConnection(String outputConnectorAddress, boolean notifyFlag)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            TClientContext aClientContext;
+            myConnectedClientsLock.lock();
+            try
+            {
+                aClientContext = myConnectedClients.get(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+
+            if (aClientContext != null)
+            {
+                aClientContext.closeConnection();
+            }
+
+            if (notifyFlag)
+            {
+                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, outputConnectorAddress, null);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, "");
+
+                notifyMessageContext(aMessageContext);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void notifyMessageContext(MessageContext messageContext)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                IMethod1<MessageContext> aMessageHandler = myMessageHandler;
+                if (aMessageHandler != null)
+                {
+                    aMessageHandler.invoke(messageContext);
+                }
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     
     private TcpListenerProvider myTcpListenerProvider;
     private IServerSecurityFactory mySecurityFactory;

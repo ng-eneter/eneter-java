@@ -8,11 +8,11 @@
 
 package eneter.messaging.messagingsystems.udpmessagingsystem;
 
+import java.io.IOException;
 import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.messaging.threading.dispatching.internal.SyncDispatcher;
 import eneter.net.system.internal.IMethod2;
@@ -20,13 +20,49 @@ import eneter.net.system.threading.internal.ManualResetEvent;
 
 class UdpReceiver
 {
-    public UdpReceiver(InetSocketAddress serviceEndPoint, boolean isService)
+    public static UdpReceiver createBoundReceiver(InetSocketAddress endPointToBind, boolean reuseAddressFlag, int ttl, boolean allowBroadcast, InetAddress multicastGroup, boolean multicastLoopbackFlag)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            myServiceEndpoint = serviceEndPoint;
-            myIsService = isService;
+            return new UdpReceiver(null, -1, endPointToBind, reuseAddressFlag, ttl, allowBroadcast, multicastGroup, multicastLoopbackFlag);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+
+    public static UdpReceiver createConnectedReceiver(InetSocketAddress endPointToConnect, boolean reuseAddressFlag, int responseReceivingPort,
+        int ttl)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return new UdpReceiver(endPointToConnect, responseReceivingPort, null, reuseAddressFlag, ttl, false, null, false);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private UdpReceiver(InetSocketAddress endPointToConnect, int responseReceivingPort,
+            InetSocketAddress endPointToBind,
+            boolean reuseAddressFlag, int ttl, boolean allowBroadcast, InetAddress multicastGroup, boolean multicastLoopbackFlag)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            myEndPointToConnect = endPointToConnect;
+            myResponseReceivingPort = responseReceivingPort;
+            myEndPointToBind = endPointToBind;
+            myReuseAddressFlag = reuseAddressFlag;
+            myTtl = ttl;
+            myAllowBroadcastFlag = allowBroadcast;
+            myMulticastGroup = multicastGroup;
+            myMulticastLoopbackFlag = multicastLoopbackFlag;
+            
             myWorkingThreadDispatcher = new SyncDispatcher();
         }
         finally
@@ -61,17 +97,34 @@ class UdpReceiver
                     myMessageHandler = messageHandler;
 
                     // Create unbound socket.
-                    mySocket = new DatagramSocket(null);
-                            
+                    mySocket = new MulticastSocket(null);
+
+                    mySocket.setBroadcast(myAllowBroadcastFlag);
+                    mySocket.setTimeToLive(myTtl);
+                    mySocket.setReuseAddress(myReuseAddressFlag);
+                    
                     // Note: bigger buffer increases the chance the datagram is not lost.
                     mySocket.setReceiveBufferSize(1048576);
-                    if (myIsService)
+                    if (myEndPointToBind != null)
                     {
-                        mySocket.bind(myServiceEndpoint);
+                        mySocket.bind(myEndPointToBind);
+                        
+                        // Note:  Joining the multicast group must be done after Bind.
+                        // Note: There is no need to drop the multicast group before closing the socket.
+                        //       When the socket is closed the multicast groups are dropped automatically.
+                        joinMulticastGroup();
                     }
                     else
                     {
-                        mySocket.connect(myServiceEndpoint);
+                        // If the client shall bind incoming responses to a specified port.
+                        if (myResponseReceivingPort > 0)
+                        {
+                            // Note: IPAddress.Any will be updated once the connection is established.
+                            InetSocketAddress anAnyAddress = new InetSocketAddress(myResponseReceivingPort);
+                            mySocket.bind(anAnyAddress);
+                        }
+                        
+                        mySocket.connect(myEndPointToConnect);
                     }
 
                     myListeningThread = new Thread(new Runnable()
@@ -81,7 +134,7 @@ class UdpReceiver
                         {
                             doListening();
                         }
-                    }, (myIsService) ? "Eneter.UdpServiceListener" : "Eneter.UdpClientListener");
+                    }, mySocket.getLocalSocketAddress().toString());
                     myListeningThread.start();
 
                     // Wait until the listening thread is ready.
@@ -138,7 +191,7 @@ class UdpReceiver
                 {
                     try
                     {
-                        myListeningThread.join(1000);
+                        myListeningThread.join(3000);
                     }
                     catch (Exception err)
                     {
@@ -163,6 +216,7 @@ class UdpReceiver
                 myListeningThread = null;
 
                 myMessageHandler = null;
+                myIsListening = false;
             }
             finally
             {
@@ -188,9 +242,13 @@ class UdpReceiver
         }
     }
     
-    public DatagramSocket getUdpSocket()
-    { 
-        return mySocket;
+    public void sendTo(byte[] datagram, SocketAddress endPoint) throws IOException
+    {
+        //using (EneterTrace.Entering())
+        {
+            DatagramPacket aDatagramPacket = new DatagramPacket(datagram, datagram.length, endPoint);
+            mySocket.send(aDatagramPacket);
+        }
     }
     
     private void doListening()
@@ -279,9 +337,35 @@ class UdpReceiver
         }
     }
     
-    private boolean myIsService;
-    private SocketAddress myServiceEndpoint;
-    private DatagramSocket mySocket;
+    private void joinMulticastGroup() throws IOException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            if (myMulticastGroup != null)
+            {
+                mySocket.setInterface(mySocket.getLocalAddress());
+                mySocket.setLoopbackMode(myMulticastLoopbackFlag);
+                mySocket.joinGroup(myMulticastGroup);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    
+    private SocketAddress myEndPointToBind;
+    private SocketAddress myEndPointToConnect;
+    private InetAddress myMulticastGroup;
+    private MulticastSocket mySocket;
+    private boolean myReuseAddressFlag;
+    private boolean myAllowBroadcastFlag;
+    private int myResponseReceivingPort;
+    private int myTtl;
+    private boolean myMulticastLoopbackFlag;
+    
     private volatile boolean myIsListening;
     private volatile boolean myStopListeningRequested;
     private ThreadLock myListeningManipulatorLock = new ThreadLock();
@@ -292,6 +376,6 @@ class UdpReceiver
     
     private String TracedObject()
     {
-        return (myIsService) ? "UdpReceiver (request receiver) " : "UdpReceiver (response receiver) ";
+        return getClass().getSimpleName() + ' ';
     }
 }

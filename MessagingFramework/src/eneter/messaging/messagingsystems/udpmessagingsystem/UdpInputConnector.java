@@ -10,11 +10,12 @@ package eneter.messaging.messagingsystems.udpmessagingsystem;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.IMethod1;
@@ -25,12 +26,12 @@ class UdpInputConnector implements IInputConnector
 {
     private class TClientContext
     {
-        public TClientContext(DatagramSocket udpSocket, InetSocketAddress clientAddress)
+        public TClientContext(UdpReceiver udpSocket, InetSocketAddress clientAddress)
         {
             EneterTrace aTrace = EneterTrace.entering();
             try
             {
-                myUdpSocket = udpSocket;
+                myUdpReceiver = udpSocket;
                 myClientAddress = clientAddress;
             }
             finally
@@ -58,8 +59,7 @@ class UdpInputConnector implements IInputConnector
             try
             {
                 byte[] aMessageData = (byte[])message;
-                DatagramPacket aPacket = new DatagramPacket(aMessageData, aMessageData.length, myClientAddress);
-                myUdpSocket.send(aPacket);
+                myUdpReceiver.sendTo(aMessageData, myClientAddress);
             }
             finally
             {
@@ -67,11 +67,12 @@ class UdpInputConnector implements IInputConnector
             }
         }
 
-        private DatagramSocket myUdpSocket;
+        private UdpReceiver myUdpReceiver;
         private InetSocketAddress myClientAddress;
     }
     
-    public UdpInputConnector(String ipAddressAndPort, IProtocolFormatter protocolFormatter) throws Exception
+    public UdpInputConnector(String ipAddressAndPort, IProtocolFormatter protocolFormatter, boolean reuseAddress, int ttl)
+            throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -96,6 +97,8 @@ class UdpInputConnector implements IInputConnector
 
             myServiceEndpoint = new InetSocketAddress(aUri.getHost(), aUri.getPort());
             myProtocolFormatter = protocolFormatter;
+            myReuseAddressFlag = reuseAddress;
+            myTtl = ttl;
         }
         finally
         {
@@ -119,8 +122,13 @@ class UdpInputConnector implements IInputConnector
             try
             {
                 myMessageHandler = messageHandler;
-                myReceiver = new UdpReceiver(myServiceEndpoint, true);
+                myReceiver = UdpReceiver.createBoundReceiver(myServiceEndpoint, myReuseAddressFlag, myTtl, false, null, false);
                 myReceiver.startListening(myOnRequestMessageReceived);
+            }
+            catch (Exception err)
+            {
+                stopListening();
+                throw err;
             }
             finally
             {
@@ -139,6 +147,28 @@ class UdpInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myConnectedClientsLock.lock();
+            try
+            {
+                for (Entry<String, TClientContext> aClient : myConnectedClients.entrySet())
+                {
+                    try
+                    {
+                        closeConnection(aClient.getKey(), aClient.getValue());
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
+                    }
+                }
+
+                myConnectedClients.clear();
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+            
             myListenerManipulatorLock.lock();
             try
             {
@@ -195,8 +225,16 @@ class UdpInputConnector implements IInputConnector
                 throw new IllegalStateException("The connection with client '" + outputConnectorAddress + "' is not open.");
             }
 
-            Object anEncodedMessage = myProtocolFormatter.encodeMessage(outputConnectorAddress, message);
-            aClientContext.sendResponseMessage(anEncodedMessage);
+            try
+            {
+                Object anEncodedMessage = myProtocolFormatter.encodeMessage(outputConnectorAddress, message);
+                aClientContext.sendResponseMessage(anEncodedMessage);
+            }
+            catch (Exception err)
+            {
+                closeConnection(outputConnectorAddress, true);
+                throw err;
+            }
         }
         finally
         {
@@ -204,35 +242,60 @@ class UdpInputConnector implements IInputConnector
         }
     }
 
-    
+
     @Override
-    public void closeConnection(String outputConnectorAddress) throws Exception
+    public void sendBroadcast(Object message)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            TClientContext aClientContext;
+            ArrayList<String> aDisconnectedClients = new ArrayList<String>();
+
             myConnectedClientsLock.lock();
             try
             {
-                aClientContext = myConnectedClients.get(outputConnectorAddress);
-                myConnectedClients.remove(outputConnectorAddress);
+                // Send the response message to all connected clients.
+                for (Entry<String, TClientContext> aClientContext : myConnectedClients.entrySet())
+                {
+                    try
+                    {
+                        Object anEncodedMessage = myProtocolFormatter.encodeMessage(aClientContext.getKey(), message);
+                        aClientContext.getValue().sendResponseMessage(anEncodedMessage);
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
+                        aDisconnectedClients.add(aClientContext.getKey());
+
+                        // Note: Exception is not rethrown because if sending to one client fails it should not
+                        //       affect sending to other clients.
+                    }
+                }
             }
             finally
             {
                 myConnectedClientsLock.unlock();
             }
 
-            if (aClientContext != null)
+            // Disconnect failed clients.
+            for (String anOutputConnectorAddress : aDisconnectedClients)
             {
-                Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(outputConnectorAddress);
-                aClientContext.sendResponseMessage(anEncodedMessage);
-                aClientContext.closeConnection();
+                closeConnection(anOutputConnectorAddress, true);
             }
-            else
-            {
-                throw new IllegalStateException("Could not send close connection message because the response receiver '" + outputConnectorAddress + "' was not found.");
-            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public void closeConnection(String outputConnectorAddress)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            closeConnection(outputConnectorAddress, false);
         }
         finally
         {
@@ -252,7 +315,7 @@ class UdpInputConnector implements IInputConnector
             }
 
             // Get the sender IP address.
-            String aClientIp = (clientAddress != null) ? clientAddress.getAddress().toString() : "";
+            String aClientIp = (clientAddress != null) ? clientAddress.toString() : "";
 
             ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(datagram);
 
@@ -269,7 +332,7 @@ class UdpInputConnector implements IInputConnector
                         {
                             if (!myConnectedClients.containsKey(aProtocolMessage.ResponseReceiverId))
                             {
-                                TClientContext aClientContext = new TClientContext(myReceiver.getUdpSocket(), clientAddress);
+                                TClientContext aClientContext = new TClientContext(myReceiver, clientAddress);
                                 myConnectedClients.put(aProtocolMessage.ResponseReceiverId, aClientContext);
                             }
                             else
@@ -303,15 +366,94 @@ class UdpInputConnector implements IInputConnector
                     }
                 }
 
-                try
+                aMessageContext = new MessageContext(aProtocolMessage, aClientIp);
+                notifyMessageContext(aMessageContext);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void closeConnection(String outputConnectorAddress, boolean notifyFlag)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            TClientContext aClientContext;
+            myConnectedClientsLock.lock();
+            try
+            {
+                aClientContext = myConnectedClients.get(outputConnectorAddress);
+                myConnectedClients.remove(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+
+            if (aClientContext != null)
+            {
+                closeConnection(outputConnectorAddress, aClientContext);
+            }
+
+            if (notifyFlag)
+            {
+                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, outputConnectorAddress, null);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, "");
+
+                notifyMessageContext(aMessageContext);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void closeConnection(String outputConnectorAddress, TClientContext clientContext)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(outputConnectorAddress);
+                if (anEncodedMessage != null)
                 {
-                    aMessageContext = new MessageContext(aProtocolMessage, aClientIp);
-                    myMessageHandler.invoke(aMessageContext);
+                    clientContext.sendResponseMessage(anEncodedMessage);
                 }
-                catch (Exception err)
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
+            }
+            
+            clientContext.closeConnection();
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void notifyMessageContext(MessageContext messageContext)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            try
+            {
+                IMethod1<MessageContext> aMessageHandler = myMessageHandler;
+                if (aMessageHandler != null)
                 {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
+                    aMessageHandler.invoke(messageContext);
                 }
+            }
+            catch (Exception err)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
             }
         }
         finally
@@ -323,6 +465,8 @@ class UdpInputConnector implements IInputConnector
 
     private IProtocolFormatter myProtocolFormatter;
     private InetSocketAddress myServiceEndpoint;
+    private boolean myReuseAddressFlag;
+    private int myTtl;
     private UdpReceiver myReceiver;
     private ThreadLock myListenerManipulatorLock = new ThreadLock();
     private IMethod1<MessageContext> myMessageHandler;

@@ -48,20 +48,20 @@ public class IpAddressUtil
         }
     }
     
-    public static String getIpAddress(InetSocketAddress address)
-    {
-        return (address != null) ? getIpAddress(address.getAddress()) : "";
-    }
+    //public static String getIpAddress(InetSocketAddress address)
+    //{
+    //    return (address != null) ? getIpAddress(address.getAddress()) : "";
+    //}
     
-    public static String getIpAddress(InetAddress address)
-    {
-        String anIpAddress = (address != null) ? address.toString() : "";
-        return anIpAddress;
-    }
+    //public static String getIpAddress(InetAddress address)
+    //{
+    //    String anIpAddress = (address != null) ? address.toString() : "";
+    //    return anIpAddress;
+    //}
     
     private static String getIpAddress(SocketAddress socketAddress)
     {
         InetSocketAddress aInetSocketAddress = Cast.as(socketAddress, InetSocketAddress.class);
-        return getIpAddress(aInetSocketAddress);
+        return aInetSocketAddress.toString();
     }
 }

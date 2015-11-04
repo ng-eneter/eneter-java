@@ -11,8 +11,7 @@ package eneter.messaging.messagingsystems.udpmessagingsystem;
 import java.net.*;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.net.system.*;
@@ -20,7 +19,8 @@ import eneter.net.system.internal.IMethod2;
 
 class UdpOutputConnector implements IOutputConnector
 {
-    public UdpOutputConnector(String ipAddressAndPort, String outpuConnectorAddress, IProtocolFormatter protocolFormatter) throws Exception
+    public UdpOutputConnector(String ipAddressAndPort, String outpuConnectorAddress, IProtocolFormatter protocolFormatter,
+            boolean reuseAddressFlag, int responseReceivingPort, int ttl) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -40,6 +40,9 @@ class UdpOutputConnector implements IOutputConnector
             myServiceEndpoint = new InetSocketAddress(aUri.getHost(), aUri.getPort());
             myOutpuConnectorAddress = outpuConnectorAddress;
             myProtocolFormatter = protocolFormatter;
+            myReuseAddressFlag = reuseAddressFlag;
+            myResponseReceivingPort = responseReceivingPort;
+            myTtl = ttl;
         }
         finally
         {
@@ -65,12 +68,14 @@ class UdpOutputConnector implements IOutputConnector
                 try
                 {
                     myResponseMessageHandler = responseMessageHandler;
-                    myResponseReceiver = new UdpReceiver(myServiceEndpoint, false);
+                    myResponseReceiver = UdpReceiver.createConnectedReceiver(myServiceEndpoint, myReuseAddressFlag, myResponseReceivingPort, myTtl);
                     myResponseReceiver.startListening(myOnResponseMessageReceived);
 
                     byte[] anEncodedMessage = (byte[])myProtocolFormatter.encodeOpenConnectionMessage(myOutpuConnectorAddress);
-                    DatagramPacket aPacket = new DatagramPacket(anEncodedMessage, anEncodedMessage.length, myServiceEndpoint);
-                    myResponseReceiver.getUdpSocket().send(aPacket);
+                    if (anEncodedMessage != null)
+                    {
+                        myResponseReceiver.sendTo(anEncodedMessage, myServiceEndpoint);
+                    }
                 }
                 catch (Exception err)
                 {
@@ -127,8 +132,7 @@ class UdpOutputConnector implements IOutputConnector
             try
             {
                 byte[] anEncodedMessage = (byte[])myProtocolFormatter.encodeMessage(myOutpuConnectorAddress, message);
-                DatagramPacket aPacket = new DatagramPacket(anEncodedMessage, anEncodedMessage.length, myServiceEndpoint);
-                myResponseReceiver.getUdpSocket().send(aPacket);
+                myResponseReceiver.sendTo(anEncodedMessage, myServiceEndpoint);
             }
             finally
             {
@@ -199,8 +203,10 @@ class UdpOutputConnector implements IOutputConnector
                         try
                         {
                             byte[] anEncodedMessage = (byte[])myProtocolFormatter.encodeCloseConnectionMessage(myOutpuConnectorAddress);
-                            DatagramPacket aPacket = new DatagramPacket(anEncodedMessage, anEncodedMessage.length, myServiceEndpoint);
-                            myResponseReceiver.getUdpSocket().send(aPacket);
+                            if (anEncodedMessage != null)
+                            {
+                                myResponseReceiver.sendTo(anEncodedMessage, myServiceEndpoint);
+                            }
                         }
                         catch (Exception err)
                         {
@@ -228,6 +234,9 @@ class UdpOutputConnector implements IOutputConnector
     private IProtocolFormatter myProtocolFormatter;
     private String myOutpuConnectorAddress;
     private InetSocketAddress myServiceEndpoint;
+    private boolean myReuseAddressFlag;
+    private int myTtl;
+    private int myResponseReceivingPort;
     private IMethod1<MessageContext> myResponseMessageHandler;
     private UdpReceiver myResponseReceiver;
     private ThreadLock myConnectionManipulatorLock = new ThreadLock();

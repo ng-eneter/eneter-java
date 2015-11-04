@@ -17,6 +17,8 @@ public interface IInputConnector
     boolean isListening();
 
     void sendResponseMessage(String outputConnectorAddress, Object message) throws Exception;
+    
+    void sendBroadcast(Object message);
 
     void closeConnection(String outputConnectorAddress) throws Exception;
 }
