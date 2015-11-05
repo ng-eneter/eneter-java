@@ -148,8 +148,16 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            String aResponseReceiverId = null;
+
+            if (!myUnicastCommunication)
+            {
+                aResponseReceiverId = "udp://0.0.0.0/";
+            }
+            
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, null, aDispatcher, myDispatcherAfterMessageDecoded, myConnectorFactory);
+            IOutputConnectorFactory aConnectorFactory = new UdpConnectorFactory(myProtocolFormatter, myReuseAddress, myResponseReceiverPort, myUnicastCommunication, myAllowReceivingBroadcasts, myTtl, myMulticastGroupToReceive, myMulticastLoopback);
+            return new DefaultDuplexOutputChannel(channelId, aResponseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, aConnectorFactory);
         }
         finally
         {
@@ -168,7 +176,8 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
-            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, myConnectorFactory);
+            IOutputConnectorFactory aConnectorFactory = new UdpConnectorFactory(myProtocolFormatter, myReuseAddress, myResponseReceiverPort, myUnicastCommunication, myAllowReceivingBroadcasts, myTtl, myMulticastGroupToReceive, myMulticastLoopback);
+            return new DefaultDuplexOutputChannel(channelId, responseReceiverId, aDispatcher, myDispatcherAfterMessageDecoded, aConnectorFactory);
         }
         finally
         {
@@ -187,7 +196,10 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         try
         {
             IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
-            IInputConnector anInputConnector = myConnectorFactory.createInputConnector(channelId);
+            
+            IInputConnectorFactory aConnectorFactory = new UdpConnectorFactory(myProtocolFormatter, myReuseAddress, -1, myUnicastCommunication, myAllowReceivingBroadcasts, myTtl, myMulticastGroupToReceive, myMulticastLoopback);
+            IInputConnector anInputConnector = aConnectorFactory.createInputConnector(channelId);
+ 
             return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector);
         }
         finally
@@ -196,6 +208,73 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
 
+    
+    public UdpMessagingSystemFactory setUnicastCommunication(boolean isUnicast)
+    {
+        myUnicastCommunication = isUnicast;
+        return this;
+    }
+    
+    public boolean getUnicastCommunication()
+    {
+        return myUnicastCommunication;
+    }
+    
+    public UdpMessagingSystemFactory setTtl(int ttl)
+    {
+        myTtl = ttl;
+        return this;
+    }
+    
+    public int getTtl()
+    {
+        return myTtl;
+    }
+    
+    
+    public UdpMessagingSystemFactory setMulticastGroupToReceive(String multicastGroup)
+    {
+        myMulticastGroupToReceive = multicastGroup;
+        return this;
+    }
+    
+    public String getMulticastGroupToReceive()
+    {
+        return myMulticastGroupToReceive;
+    }
+    
+    public UdpMessagingSystemFactory setAllowReceivingBroadcasts(boolean allowBroadcasts)
+    {
+        myAllowReceivingBroadcasts = allowBroadcasts;
+        return this;
+    }
+    
+    public boolean getAllowReceivingBroadcasts()
+    {
+        return myAllowReceivingBroadcasts;
+    }
+    
+    public UdpMessagingSystemFactory setMulticastLoopback(boolean allowMulticastLoopback)
+    {
+        myMulticastLoopback = allowMulticastLoopback;
+        return this;
+    }
+    
+    public boolean getMulticastLoopback()
+    {
+        return myMulticastLoopback;
+    }
+    
+    public UdpMessagingSystemFactory setResponseReceiverPort(int port)
+    {
+        myResponseReceiverPort = port;
+        return this;
+    }
+    
+    public int getResponseReceiverPort()
+    {
+        return myResponseReceiverPort;
+    }
     
     
     
@@ -253,7 +332,7 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
     }
     
     
-    private UdpConnectorFactory myConnectorFactory;
+    private IProtocolFormatter myProtocolFormatter;
     private IThreadDispatcher myDispatcherAfterMessageDecoded = new NoDispatching().getDispatcher();
     
     private IThreadDispatcherProvider myInputChannelThreading;
