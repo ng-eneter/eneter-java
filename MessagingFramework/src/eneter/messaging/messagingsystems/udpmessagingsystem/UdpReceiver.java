@@ -344,8 +344,17 @@ class UdpReceiver
         {
             if (myMulticastGroup != null)
             {
-                mySocket.setInterface(mySocket.getLocalAddress());
-                mySocket.setLoopbackMode(myMulticastLoopbackFlag);
+                // If the address is not 0.0.0.0 then set network interface for the address.
+                InetAddress aBoundAddress = mySocket.getLocalAddress();
+                if (!aBoundAddress.isAnyLocalAddress())
+                {
+                    mySocket.setInterface(aBoundAddress);
+                }
+                
+                // Note: Java API: true means disable loopback.
+                boolean aDisableLoopbackFlag = !myMulticastLoopbackFlag;
+                mySocket.setLoopbackMode(aDisableLoopbackFlag);
+                
                 mySocket.joinGroup(myMulticastGroup);
             }
         }
