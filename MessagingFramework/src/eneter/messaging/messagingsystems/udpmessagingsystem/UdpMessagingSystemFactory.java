@@ -8,11 +8,14 @@
 
 package eneter.messaging.messagingsystems.udpmessagingsystem;
 
+import java.net.SocketException;
+
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
 import eneter.messaging.threading.dispatching.*;
 
 
@@ -207,7 +210,19 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace.leaving(aTrace);
         }
     }
-
+    
+    public static String[] getAvailableIpAddresses() throws SocketException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return TcpMessagingSystemFactory.getAvailableIpAddresses();
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     public UdpMessagingSystemFactory setUnicastCommunication(boolean isUnicast)
     {

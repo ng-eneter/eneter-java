@@ -8,6 +8,8 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
+import java.net.SocketException;
+
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -188,6 +190,18 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
+    public static String[] getAvailableIpAddresses() throws SocketException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return TcpMessagingSystemFactory.getAvailableIpAddresses();
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
     
     /**
      * Sets the factory that will be used for creation of server sockets.

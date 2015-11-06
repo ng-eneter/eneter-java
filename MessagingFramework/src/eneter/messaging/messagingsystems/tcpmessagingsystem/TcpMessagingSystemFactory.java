@@ -8,6 +8,12 @@
 
 package eneter.messaging.messagingsystems.tcpmessagingsystem;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -215,6 +221,35 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
             EneterTrace.leaving(aTrace);
         }
     }
+    
+    public static String[] getAvailableIpAddresses() throws SocketException
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            ArrayList<String> anIpAddresses = new ArrayList<String>();
+            for (Enumeration<NetworkInterface> i = NetworkInterface.getNetworkInterfaces(); i.hasMoreElements();)
+            {
+                NetworkInterface aNetworkInterface = i.nextElement();
+                if (aNetworkInterface != null)
+                {
+                    for (Enumeration<InetAddress> j = aNetworkInterface.getInetAddresses(); j.hasMoreElements();)
+                    {
+                        String anAddress = j.nextElement().toString();
+                        anIpAddresses.add(anAddress);
+                    }
+                }
+            }
+            
+            String[] aResult = new String[anIpAddresses.size()];
+            return anIpAddresses.toArray(aResult);
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
     
     /**
      * Sets the factory that will be used for creation of server sockets.
