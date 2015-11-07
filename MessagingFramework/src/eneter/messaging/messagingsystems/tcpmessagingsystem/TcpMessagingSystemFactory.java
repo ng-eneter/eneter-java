@@ -235,7 +235,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
                 {
                     for (Enumeration<InetAddress> j = aNetworkInterface.getInetAddresses(); j.hasMoreElements();)
                     {
-                        String anAddress = j.nextElement().toString();
+                        String anAddress = j.nextElement().getHostAddress();
                         anIpAddresses.add(anAddress);
                     }
                 }
