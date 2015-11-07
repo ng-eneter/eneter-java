@@ -8,8 +8,6 @@
 
 package eneter.messaging.messagingsystems.websocketmessagingsystem;
 
-import java.net.SocketException;
-
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
@@ -183,19 +181,6 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
             IInputConnector anInputConnector = aFactory.createInputConnector(channelId);
             
             return new DefaultDuplexInputChannel(channelId, aDispatcher, myDispatcherAfterMessageDecoded, anInputConnector);
-        }
-        finally
-        {
-            EneterTrace.leaving(aTrace);
-        }
-    }
-    
-    public static String[] getAvailableIpAddresses() throws SocketException
-    {
-        EneterTrace aTrace = EneterTrace.entering();
-        try
-        {
-            return TcpMessagingSystemFactory.getAvailableIpAddresses();
         }
         finally
         {
