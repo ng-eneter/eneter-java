@@ -37,5 +37,14 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
         ChannelId = "tcp://[::1]:" + aPort + "/";
     }
     
-    
+    @Test
+    public void TestAvailableIpAddresses() throws SocketException
+    {
+        System.out.println("Available IP addresses:");
+        String[] anAvailableIpAddresses = TcpMessagingSystemFactory.getAvailableIpAddresses();
+        for (String anIpAddress : anAvailableIpAddresses)
+        {
+            System.out.println(anIpAddress);
+        }
+    }
 }
