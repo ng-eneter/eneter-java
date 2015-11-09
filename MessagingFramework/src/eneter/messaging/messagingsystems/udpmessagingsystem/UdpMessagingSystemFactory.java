@@ -131,6 +131,7 @@ public class UdpMessagingSystemFactory implements IMessagingSystemFactory
             myTtl = 128;
             myResponseReceiverPort = -1;
             myUnicastCommunication = true;
+            myMulticastLoopback = true;
         }
         finally
         {
