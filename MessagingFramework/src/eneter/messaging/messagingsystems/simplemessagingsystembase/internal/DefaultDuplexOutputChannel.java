@@ -268,7 +268,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
                             @Override
                             public void run()
                             {
-                                notifyResponseMessageReceived(messageContext.getProtocolMessage().Message);
+                                notifyResponseMessageReceived(messageContext.getProtocolMessage().Message, messageContext.getSenderAddress());
                             }
                         });
                     }
@@ -336,7 +336,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void notifyResponseMessageReceived(Object message)
+    private void notifyResponseMessageReceived(Object message, String senderAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -345,7 +345,7 @@ public class DefaultDuplexOutputChannel implements IDuplexOutputChannel
             {
                 try
                 {
-                    myResponseMessageReceived.raise(this, new DuplexChannelMessageEventArgs(myChannelId, message, myResponseReceiverId, ""));
+                    myResponseMessageReceived.raise(this, new DuplexChannelMessageEventArgs(myChannelId, message, myResponseReceiverId, senderAddress));
                 }
                 catch (Exception err)
                 {

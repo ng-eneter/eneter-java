@@ -16,6 +16,7 @@ import java.net.URI;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
 import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.messagingsystems.connectionprotocols.EProtocolMessageType;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.ProtocolMessage;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.IOutputConnector;
@@ -168,26 +169,32 @@ class UdpSessionlessOutputConnector implements IOutputConnector
         }
     }
     
-    private void onResponseMessageReceived(byte[] datagram, InetSocketAddress clientAddress)
+    private void onResponseMessageReceived(byte[] datagram, InetSocketAddress senderAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (datagram == null && clientAddress == null)
+            if (datagram == null && senderAddress == null)
             {
                 // The listening got interrupted so nothing to do.
                 return;
             }
 
             // Get the sender IP address.
-            String aClientIp = (clientAddress != null) ? clientAddress.toString() : "";
+            String aSenderAddressStr = (senderAddress != null) ? senderAddress.toString() : "";
 
             ProtocolMessage aProtocolMessage = myProtocolFormatter.decodeMessage(datagram);
 
             if (aProtocolMessage != null)
             {
-                aProtocolMessage.ResponseReceiverId = "udp://" + aClientIp + "/";
-                MessageContext aMessageContext = new MessageContext(aProtocolMessage, aClientIp);
+                if (aProtocolMessage.MessageType == EProtocolMessageType.CloseConnectionRequest)
+                {
+                    // Note: this output connector is used for multicast or broadcast communication.
+                    //       Therefore the closing the connection by one of input channels has no sense in this context.
+                    return;
+                }
+                
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, aSenderAddressStr);
 
                 try
                 {

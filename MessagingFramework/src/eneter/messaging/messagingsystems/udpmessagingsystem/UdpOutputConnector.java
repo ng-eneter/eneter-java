@@ -145,11 +145,20 @@ class UdpOutputConnector implements IOutputConnector
         }
     }
 
-    private void onResponseMessageReceived(byte[] datagram, InetSocketAddress dummy)
+    private void onResponseMessageReceived(byte[] datagram, InetSocketAddress senderAddress)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            if (datagram == null && senderAddress == null)
+            {
+                // The listening got interrupted so nothing to do.
+                return;
+            }
+            
+            // Get the sender IP address.
+            String aSenderAddressStr = (senderAddress != null) ? senderAddress.toString() : "";
+            
             IMethod1<MessageContext> aResponseHandler = myResponseMessageHandler;
 
             ProtocolMessage aProtocolMessage = null;
@@ -171,7 +180,7 @@ class UdpOutputConnector implements IOutputConnector
             {
                 try
                 {
-                    MessageContext aMessageContext = new MessageContext(aProtocolMessage, "");
+                    MessageContext aMessageContext = new MessageContext(aProtocolMessage, aSenderAddressStr);
                     aResponseHandler.invoke(aMessageContext);
                 }
                 catch (Exception err)
