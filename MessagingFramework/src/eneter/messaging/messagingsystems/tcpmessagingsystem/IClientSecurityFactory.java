@@ -86,4 +86,12 @@ public interface IClientSecurityFactory
      * @return size of the receiving buffer
      */
     int getReceiveBufferSize();
+    
+    void setReuseAddress(boolean allowReuseAddress);
+    
+    boolean getReuseAddress();
+    
+    void setResponseReceiverPort(int port);
+    
+    int getResponseReceiverPort();
 }

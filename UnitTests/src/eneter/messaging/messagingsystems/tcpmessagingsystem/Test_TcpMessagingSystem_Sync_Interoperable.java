@@ -24,7 +24,9 @@ public class Test_TcpMessagingSystem_Sync_Interoperable extends MessagingSystemB
         // Generate random number for the port.
         String aPort = RandomPortGenerator.generate();
 
-        MessagingSystemFactory = new TcpMessagingSystemFactory(new EasyProtocolFormatter());
+        TcpMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory(new EasyProtocolFormatter());
+        //aMessaging.getClientSecurity().setResponseReceiverPort(8044);
+        MessagingSystemFactory = aMessaging;
         //ChannelId = "tcp://127.0.0.1:" + aPort + "/";
         ChannelId = "tcp://[::1]:" + aPort + "/";
 

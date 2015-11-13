@@ -35,6 +35,8 @@ public class NoneSecurityClientFactory implements IClientSecurityFactory
         myReceiveTimeout = 0; // infinite
         mySendBuffer = 8192;
         myReceiveBuffer = 8192;
+        myReuseAddressFlag = false;
+        myResponseReceivingPort = -1;
     }
     
     
@@ -52,6 +54,13 @@ public class NoneSecurityClientFactory implements IClientSecurityFactory
             aClientSocket.setSendBufferSize(mySendBuffer);
             aClientSocket.setReceiveBufferSize(myReceiveBuffer);
             aClientSocket.setSoTimeout(myReceiveTimeout);
+            aClientSocket.setReuseAddress(myReuseAddressFlag);
+            
+            if (myResponseReceivingPort > 0)
+            {
+                InetSocketAddress aDummyIpAddress = new InetSocketAddress("0.0.0.0", myResponseReceivingPort);
+                aClientSocket.bind(aDummyIpAddress);
+            }
             
             // Connect with the timeout.
             aClientSocket.connect(socketAddress, myConnectionTimeout);
@@ -134,10 +143,35 @@ public class NoneSecurityClientFactory implements IClientSecurityFactory
         return myReceiveBuffer;
     }
     
+    @Override
+    public void setReuseAddress(boolean allowReuseAddress)
+    {
+        myReuseAddressFlag = allowReuseAddress;
+    }
+
+    @Override
+    public boolean getReuseAddress()
+    {
+        return myReuseAddressFlag;
+    }
+
+    @Override
+    public void setResponseReceiverPort(int port)
+    {
+        myResponseReceivingPort = port;
+    }
+
+    @Override
+    public int getResponseReceiverPort()
+    {
+        return myResponseReceivingPort;
+    }
+    
     private int myConnectionTimeout;
     private int mySendTimeout;
     private int myReceiveTimeout;
     private int mySendBuffer;
     private int myReceiveBuffer;
-    
+    private boolean myReuseAddressFlag;
+    private int myResponseReceivingPort;
 }

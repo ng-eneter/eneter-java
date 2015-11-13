@@ -73,4 +73,8 @@ public interface IServerSecurityFactory
      * @return size of the receiving buffer 
      */
     int getReceiveBufferSize();
+    
+    void setReuseAddress(boolean allowReuseAddress);
+    
+    boolean getReuseAddress();
 }

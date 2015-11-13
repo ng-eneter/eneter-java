@@ -57,6 +57,7 @@ public class SslServerFactory implements IServerSecurityFactory
             myReceiveTimeout = 0; // infinite
             mySendBuffer = 8192;
             myReceiveBuffer = 8192;
+            myReuseAddressFlag = false;
         }
         finally
         {
@@ -75,6 +76,8 @@ public class SslServerFactory implements IServerSecurityFactory
         {
             SSLServerSocket aServerSocket = (SSLServerSocket)mySslServerSocketFactory.createServerSocket();
             aServerSocket.setReceiveBufferSize(myReceiveBuffer);
+            aServerSocket.setReuseAddress(myReuseAddressFlag);
+            
             aServerSocket.bind(socketAddress, 1000);
             
             aServerSocket.setNeedClientAuth(myIsClientCertificateRequired);
@@ -143,6 +146,18 @@ public class SslServerFactory implements IServerSecurityFactory
         return myReceiveBuffer;
     }
     
+    @Override
+    public void setReuseAddress(boolean allowReuseAddress)
+    {
+        myReuseAddressFlag = allowReuseAddress;
+    }
+
+    @Override
+    public boolean getReuseAddress()
+    {
+        return myReuseAddressFlag;
+    }
+    
     private boolean myIsClientCertificateRequired;
     private SSLServerSocketFactory mySslServerSocketFactory;
     
@@ -150,4 +165,5 @@ public class SslServerFactory implements IServerSecurityFactory
     private int myReceiveTimeout;
     private int mySendBuffer;
     private int myReceiveBuffer;
+    private boolean myReuseAddressFlag;
 }
