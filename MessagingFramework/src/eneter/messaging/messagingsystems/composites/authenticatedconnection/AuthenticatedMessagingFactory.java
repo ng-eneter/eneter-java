@@ -279,7 +279,14 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
             IGetLoginMessage getLoginMessageCallback,
             IGetHandshakeResponseMessage getHandshakeResponseMessageCallback)
     {
-        this(underlyingMessagingSystem, getLoginMessageCallback, getHandshakeResponseMessageCallback, null, null);
+        this(underlyingMessagingSystem, getLoginMessageCallback, getHandshakeResponseMessageCallback, null, null, null);
+    }
+    
+    public AuthenticatedMessagingFactory(IMessagingSystemFactory underlyingMessagingSystem,
+            IGetHandshakeMessage getHandshakeMessageCallback,
+            IAuthenticate authenticateCallback)
+    {
+        this(underlyingMessagingSystem, null, null, getHandshakeMessageCallback, authenticateCallback, null);
     }
     
     /**
@@ -294,9 +301,10 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
      */
     public AuthenticatedMessagingFactory(IMessagingSystemFactory underlyingMessagingSystem,
             IGetHandshakeMessage getHandshakeMessageCallback,
-            IAuthenticate authenticateCallback)
+            IAuthenticate authenticateCallback,
+            IHandleAuthenticationCancelled handleAuthenticationCancelledCallback)
     {
-        this(underlyingMessagingSystem, null, null, getHandshakeMessageCallback, authenticateCallback);
+        this(underlyingMessagingSystem, null, null, getHandshakeMessageCallback, authenticateCallback, handleAuthenticationCancelledCallback);
     }
     
     /**
@@ -315,7 +323,8 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
             IGetLoginMessage getLoginMessageCallback,
             IGetHandshakeResponseMessage getHandshakeResponseMessageCallback,
             IGetHandshakeMessage getHandshakeMessageCallback,
-            IAuthenticate authenticateCallback)
+            IAuthenticate authenticateCallback,
+            IHandleAuthenticationCancelled handleAuthenticationCancelledCallback)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -327,6 +336,7 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
             myGetHandShakeMessageCallback = getHandshakeMessageCallback;
             myGetHandshakeResponseMessageCallback = getHandshakeResponseMessageCallback;
             myAuthenticateCallback = authenticateCallback;
+            myHandleAuthenticationCancelled = handleAuthenticationCancelledCallback;
             
             myOutputChannelThreading = new SyncDispatching();
         }
@@ -429,7 +439,7 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
             }
 
             IDuplexInputChannel anUnderlyingInputChannel = myUnderlyingMessaging.createDuplexInputChannel(channelId);
-            return new AuthenticatedDuplexInputChannel(anUnderlyingInputChannel, myGetHandShakeMessageCallback, myAuthenticateCallback);
+            return new AuthenticatedDuplexInputChannel(anUnderlyingInputChannel, myGetHandShakeMessageCallback, myAuthenticateCallback, myHandleAuthenticationCancelled);
         }
         finally
         {
@@ -498,6 +508,7 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
     private IGetHandshakeResponseMessage myGetHandshakeResponseMessageCallback;
     private IAuthenticate myAuthenticateCallback;
     private IThreadDispatcherProvider myOutputChannelThreading;
+    private IHandleAuthenticationCancelled myHandleAuthenticationCancelled;
     
     private long myAuthenticationTimeout;
     

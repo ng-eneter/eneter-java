@@ -1,7 +1,6 @@
 package eneter.messaging.messagingsystems;
 
 import static org.junit.Assert.*;
-import junit.framework.Assert;
 
 import helper.*;
 

@@ -11,8 +11,7 @@ package eneter.messaging.messagingsystems.composites.authenticatedconnection;
 import java.util.concurrent.TimeoutException;
 
 import eneter.messaging.diagnostic.EneterTrace;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
@@ -66,8 +65,6 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
             EneterTrace.leaving(aTrace);
         }
     }
-    
-    
 
     @Override
     public String getChannelId()
@@ -102,7 +99,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                     // Reset internal states.
                     myIsHandshakeResponseSent = false;
                     myIsConnectionAcknowledged = false;
-                    myConnectionAcknowledged.reset();
+                    myAuthenticationEnded.reset();
 
                     myUnderlyingOutputChannel.openConnection();
 
@@ -130,8 +127,8 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                         throw err;
                     }
 
-                    // Wait until the hanshake is completed.
-                    if (!myConnectionAcknowledged.waitOne(myAuthenticationTimeout))
+                    // Wait until the handshake is completed.
+                    if (!myAuthenticationEnded.waitOne(myAuthenticationTimeout))
                     {
                         String anErrorMessage = TracedObject() + "failed to process authentication within defined timeout " + Long.toString(myAuthenticationTimeout) + " ms.";
                         EneterTrace.error(anErrorMessage);
@@ -140,7 +137,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                     
                     if (!isConnected())
                     {
-                        String anErrorMessage = TracedObject() + ErrorHandler.FailedToOpenConnection;
+                        String anErrorMessage = TracedObject() + "failed to authenticate '" + aLoginMessage + "'.";
                         EneterTrace.error(anErrorMessage);
                         throw new IllegalStateException(anErrorMessage);
                     }
@@ -234,30 +231,16 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
     }
     
     
-
-    
     private void onConnectionClosed(Object sender, final DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            // If the connection was authenticated then notify that it was closed.
-            boolean aCloseNotifyFlag = myIsConnectionAcknowledged;
-
             // If there is waiting for connection open release it.
-            myConnectionAcknowledged.set();
-            myConnectionManipulatorLock.lock();
-            try
-            {
-                myIsHandshakeResponseSent = false;
-                myIsConnectionAcknowledged = false;
-            }
-            finally
-            {
-                myConnectionManipulatorLock.unlock();
-            }
-
-            if (aCloseNotifyFlag)
+            myAuthenticationEnded.set();
+            
+            // If the connection was authenticated then notify that it was closed.
+            if (myIsConnectionAcknowledged)
             {
                 myThreadDispatcher.invoke(new Runnable()
                 {
@@ -300,40 +283,8 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
             
             boolean aCloseConnectionFlag = false;
             
-            if (myIsHandshakeResponseSent)
-            {
-                EneterTrace.debug("CONNECTION ACKNOWLEDGE RECEIVED");
-                
-                // If the handshake was sent then this message must be acknowledgement.
-                String anAcknowledgeMessage = Cast.as(e.getMessage(), String.class);
-
-                // If the acknowledge message is wrong then disconnect.
-                if (StringExt.isNullOrEmpty(anAcknowledgeMessage) || !anAcknowledgeMessage.equals("OK"))
-                {
-                    String anErrorMessage = TracedObject() + "detected incorrect acknowledge message. The connection will be closed.";
-                    EneterTrace.error(anErrorMessage);
-
-                    aCloseConnectionFlag = true;
-                }
-                else
-                {
-                    myIsConnectionAcknowledged = true;
-                    myConnectionAcknowledged.set();
-    
-                    // Notify the connection is open.
-                    final DuplexChannelEventArgs anEventArgs = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), e.getSenderAddress());
-                    myThreadDispatcher.invoke(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            notifyEvent(myConnectionOpenedEventImpl, anEventArgs, false);
-                        }
-                    });
-                }
-            }
-            else
-                // This is the handshake message.
+            // This is the handshake message.
+            if (!myIsHandshakeResponseSent)
             {
                 EneterTrace.debug("HANDSHAKE RECEIVED");
 
@@ -348,6 +299,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                 {
                     String anErrorMessage = TracedObject() + "failed to get the handshake response message. The connection will be closed.";
                     EneterTrace.error(anErrorMessage, err);
+                    
                     aCloseConnectionFlag = true;
                 }
 
@@ -371,10 +323,45 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
                     }
                 }
             }
+            else
+            {
+                EneterTrace.debug("CONNECTION ACKNOWLEDGE RECEIVED");
+                
+                // If the handshake was sent then this message must be acknowledgement.
+                String anAcknowledgeMessage = Cast.as(e.getMessage(), String.class);
+
+                // If the acknowledge message is wrong then disconnect.
+                if (StringExt.isNullOrEmpty(anAcknowledgeMessage) || !anAcknowledgeMessage.equals("OK"))
+                {
+                    String anErrorMessage = TracedObject() + "detected incorrect acknowledge message. The connection will be closed.";
+                    EneterTrace.error(anErrorMessage);
+
+                    aCloseConnectionFlag = true;
+                }
+                else
+                {
+                    myIsConnectionAcknowledged = true;
+                    myAuthenticationEnded.set();
+    
+                    // Notify the connection is open.
+                    final DuplexChannelEventArgs anEventArgs = new DuplexChannelEventArgs(getChannelId(), getResponseReceiverId(), e.getSenderAddress());
+                    myThreadDispatcher.invoke(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            notifyEvent(myConnectionOpenedEventImpl, anEventArgs, false);
+                        }
+                    });
+                }
+            }
             
             if (aCloseConnectionFlag)
             {
                 myUnderlyingOutputChannel.closeConnection();
+                
+                // Release the waiting in OpenConnection(..).
+                myAuthenticationEnded.set();
             }
         }
         finally
@@ -418,7 +405,7 @@ class AuthenticatedDuplexOutputChannel implements IDuplexOutputChannel
     private long myAuthenticationTimeout;
     private boolean myIsHandshakeResponseSent;
     private boolean myIsConnectionAcknowledged;
-    private ManualResetEvent myConnectionAcknowledged = new ManualResetEvent(false);
+    private ManualResetEvent myAuthenticationEnded = new ManualResetEvent(false);
     private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     
     private EventImpl<DuplexChannelMessageEventArgs> myResponseMessageReceivedEventImpl = new EventImpl<DuplexChannelMessageEventArgs>();

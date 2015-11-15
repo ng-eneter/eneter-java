@@ -25,7 +25,8 @@ public class Test_AuthenticatedConnection_Tcp extends AuthenticatedConnectionBas
             this, // get login
             this, // get handshake response
             this, // get handshake
-            this) // authenticate
+            this, // authenticate
+            this) // handle authentication cancel
         .setAuthenticationTimeout(2000);
 
         myHandshakeSerializer = new AesSerializer("Password123");
