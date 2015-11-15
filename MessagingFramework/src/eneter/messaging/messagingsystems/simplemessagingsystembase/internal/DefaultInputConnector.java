@@ -84,14 +84,7 @@ class DefaultInputConnector implements IInputConnector
             {
                 for (String anOutputConnectorAddress : myConnectedClients)
                 {
-                    try
-                    {
-                        closeConnection(anOutputConnectorAddress, false);
-                    }
-                    catch (Exception err)
-                    {
-                        EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
-                    }
+                    sendCloseConnection(anOutputConnectorAddress);
                 }
 
                 myConnectedClients.clear();
@@ -282,6 +275,37 @@ class DefaultInputConnector implements IInputConnector
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            myConnectedClientsLock.lock();
+            try
+            {
+                myConnectedClients.remove(outputConnectorAddress);
+            }
+            finally
+            {
+                myConnectedClientsLock.unlock();
+            }
+
+            sendCloseConnection(outputConnectorAddress);
+
+            if (notifyFlag)
+            {
+                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, outputConnectorAddress, null);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, "");
+
+                notifyMessageContext(aMessageContext);
+            }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    private void sendCloseConnection(String outputConnectorAddress)
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
             try
             {
                 Object anEncodedMessage = myProtocolFormatter.encodeCloseConnectionMessage(outputConnectorAddress);
@@ -290,14 +314,6 @@ class DefaultInputConnector implements IInputConnector
             catch (Exception err)
             {
                 EneterTrace.warning(TracedObject() + ErrorHandler.FailedToCloseConnection, err);
-            }
-
-            if (notifyFlag)
-            {
-                ProtocolMessage aProtocolMessage = new ProtocolMessage(EProtocolMessageType.CloseConnectionRequest, outputConnectorAddress, null);
-                MessageContext aMessageContext = new MessageContext(aProtocolMessage, "");
-
-                notifyMessageContext(aMessageContext);
             }
         }
         finally
