@@ -282,6 +282,16 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
         this(underlyingMessagingSystem, getLoginMessageCallback, getHandshakeResponseMessageCallback, null, null, null);
     }
     
+    /**
+     * Constructs factory that will be used only by a service.
+     * 
+     * The constructor takes only callbacks which are used by the service. Therefore if you use this constructor
+     * you can create only duplex input channels. 
+     * 
+     * @param underlyingMessagingSystem underlying messaging upon which the authentication will work.
+     * @param getHandshakeMessageCallback callback returning the handshake message.
+     * @param authenticateCallback callback performing the authentication.
+     */
     public AuthenticatedMessagingFactory(IMessagingSystemFactory underlyingMessagingSystem,
             IGetHandshakeMessage getHandshakeMessageCallback,
             IAuthenticate authenticateCallback)
@@ -298,6 +308,9 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
      * @param underlyingMessagingSystem underlying messaging upon which the authentication will work.
      * @param getHandshakeMessageCallback callback returning the handshake message.
      * @param authenticateCallback callback performing the authentication.
+     * @param handleAuthenticationCancelledCallback callback called by the input channel to indicate the output channel closed the connection during the authentication procedure.
+     * Can be null if your authentication code does not need to handle it.
+     * 
      */
     public AuthenticatedMessagingFactory(IMessagingSystemFactory underlyingMessagingSystem,
             IGetHandshakeMessage getHandshakeMessageCallback,
@@ -453,8 +466,8 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
      * TimeoutException is thrown.<br/>
      * Timeout is set to 30 seconds by default.
      *  
-     * @param authenticationTimeout
-     * @return
+     * @param authenticationTimeout timeout in milliseconds
+     * @return this messaging factory
      */
     public AuthenticatedMessagingFactory setAuthenticationTimeout(long authenticationTimeout)
     {
@@ -464,7 +477,7 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
     
     /**
      * Gets maximum time until the authentication procedure must be performed.
-     * @return
+     * @return timeout in milliseconds
      */
     public long getAuthenticationTimeout()
     {
@@ -483,7 +496,7 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
      * Therefore it is possible to set the threading mode of the authenticated output channel independently.  
      * 
      * @param threadingMode threading mode for the authenticated output channel
-     * @return
+     * @return this messaging factory
      */
     public AuthenticatedMessagingFactory setOutputChannelThreading(IThreadDispatcherProvider threadingMode)
     {
@@ -494,7 +507,7 @@ public class AuthenticatedMessagingFactory implements IMessagingSystemFactory
     /**
      * Gets the threading mode used by authenticated output channel.
      * 
-     * @return
+     * @return thread dispatcher
      */
     public IThreadDispatcherProvider getOutputChannelThreading()
     {

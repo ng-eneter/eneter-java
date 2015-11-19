@@ -10,12 +10,15 @@ package eneter.messaging.messagingsystems.composites.authenticatedconnection;
 
 /**
  * Callback method to authenticate the connection.
+ * 
+ * When AuthenticatedDuplexInputChannel receives the handshake response message it performs the authentication of the connection.
  *
  */
 public interface IAuthenticate
 {
     /**
      * Performs the authentication.
+     * When AuthenticatedDuplexInputChannel receives the handshake response message it performs the authentication of the connection.<br/>
      * If it returns true the connection will be established.
      * If it returns false the connection will be closed.
      * 
