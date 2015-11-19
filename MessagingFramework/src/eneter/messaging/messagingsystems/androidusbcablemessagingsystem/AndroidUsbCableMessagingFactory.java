@@ -15,13 +15,13 @@ import eneter.messaging.messagingsystems.tcpmessagingsystem.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 
 /**
- * Factory creating duplex output channels for the communication with Android device via the USB cable.
+ * Messaging system interacting with an Android device via the USB cable.
  * 
  *
  * When Android device is connected to the computer via the USB cable the process adb (Android Debug Bridge) is started
  * on the computer and adbd (Android Debug Bridge Daemon) is started on the Android device.
- * These processes then communicate via the USB cable.<br/>
- * <br/>
+ * These processes then communicate via the USB cable.<br>
+ * <br>
  * How this messaging works:
  * <ol>
  * <li>Your desktop application sends a message via the output channel created by AndroidUsbCableMessagingFactory</li>
@@ -30,9 +30,9 @@ import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
  * <li>adbd in the Android device receives data and forwards it via TCP to the desired port.</li>
  * <li>Android application listening on that port receives the message and processes it.</li>
  * </ol>
- * Notice there is a restrction for this type of communication:<br/>
+ * Notice there is a restriction for this type of communication:<br>
  * The Android application must be a listener (service) and the computer application must be the client.<br/>
- * <br/>
+ * <br>
  * The example shows a service on the Android side that will receive messages
  * via the USB cable.
  * <pre>
@@ -157,8 +157,10 @@ import eneter.messaging.threading.dispatching.IThreadDispatcherProvider;
 public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
 {
     /**
-     * Constructs the Android messaging via the USB cable.
-     * It expects the adb service listens on default port 5037.
+     * Constructs the messaging which communicates with Android via the USB cable.
+     * 
+     * It expects the adb service is running and listening on default port 5037.
+     * The adb service typically starts automatically when you connect the Android device via the USB cable.
      */
     public AndroidUsbCableMessagingFactory()
     {
@@ -166,7 +168,9 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     }
     
     /**
-     * Constructs the Android messaging via the USB cable with specified parameters.
+     * Constructs the messaging which communicates with Android via the USB cable.
+     * 
+     * The adb service typically starts automatically when you connect the Android device via the USB cable.
      * 
      * @param adbHostPort Port where adb service is listening to commands. Default value is 5037.
      * @param protocolFormatter Low level formatting used for encoding messages between channels.
@@ -187,7 +191,7 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages via the USB cable to the duplex input channel on Android device.
+     * Creates duplex output channel which can send and receive messages from the duplex input channel using Android USB cable.
      * 
      * @param channelId Port number where the Android application is listening.
      */
@@ -207,7 +211,62 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages via the USB cable to the duplex input channel on Android device.
+     * Creates duplex output channel which can send and receive messages from the duplex input channel using Android USB cable.
+     * 
+     * Using AndroidUsbCableMessagingFactory to create a client on the computer.
+     * <pre>
+     * // Create messaging using Android USB cable.
+     * IMessagingSystemFactory aMessaging = new AndroidUsbCableMessagingFactory();
+     * 
+     * // Create duplex output channel that will communicate via the port 7634.
+     * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("7634");
+     * 
+     * // Create message sender that will send messages.
+     * ISyncTypedMessagesFactory aSenderFactory = new SyncTypedMessagesFactory();
+     * ISyncTypedMessageSender aSender = aSenderFactory.createSyncMessageSender&lt;string,string&gt;();
+     * 
+     * // Attach the output channel and be able to send messages and receive responses.
+     * // Note: It will configure adb to listen on the port 7634 and forward incoming data via the cable
+     * //       to Android where adbd will forward it to the port 7634.
+     * aSender.attachDuplexOutputChannel(anOutputChannel);
+     * 
+     * // Send message and wait for the response.
+     * string aResponse = aSender.sendRequestMessage("Hello.");
+     * ...
+     * </pre>
+     * 
+     * Service code on the Android side.
+     * <pre>
+     * Create TCP messaging listening on the same port 7634.
+     * // Note: Use standard TCP messaging, just listen to the specified port.
+     * IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+     * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:7634/");
+     * 
+     * // Create message receiver.
+     * IDuplexTypedMessagesFactory aReceiverFactory = new DuplexTypedMessagesFactory();
+     * myReceiver = aReceiverFactory.createDuplexTypedMessageReceiver(String.class, String.class);
+     * 
+     * // Subscribe to receive messages.
+     * myReceiver.messageReceived().subscribe(new EventHandler&lt;TypedRequestReceivedEventArgs&lt;String&gt;&gt;()
+     * {
+     *    {@literal @}Override
+     *    public void onEvent(Object sender, TypedRequestReceivedEventArgs&lt;String&gt; e)
+     *    {
+     *       // Response back with the same message.
+     *       try
+     *       {
+     *           myReceiver.sendResponseMessage(e.getResponseReceiverId(), e.getRequestMessage());
+     *       }
+     *       catch (Exception err)
+     *       {
+     *           EneterTrace.error("Sending echo response failed.", err);
+     *       }
+     *   }
+     * });
+     *  
+     * // Attach the input channel to the receiver and start listening.
+     * myReceiver.attachDuplexInputChannel(anInputChannel);
+     * </pre>
      * 
      * @param channelId Port number where the Android application is listening.
      * @param responseReceiverId Identifies the response receiver of this duplex output channel.
@@ -228,7 +287,9 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Not supported. The known restriction is that Android cannot be client. Therefore, .NET or Java application
+     * Not supported.
+     * 
+     * The known restriction is that Android cannot be client. Therefore, .NET or Java application
      * running on PC cannot be a service using the duplex input chanel for listening. :-(
      */
     @Override
@@ -241,8 +302,8 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     
 
     /**
-     * Gets the socket factory allowing so to set the communication timeouts.
-     * @return
+     * Gets the socket factory allowing to set the communication timeouts with the adb service.
+     * @return client security factory
      */
     public IClientSecurityFactory getClientSecurity()
     {
@@ -251,8 +312,10 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     
     /**
      * Sets threading mode for output channels.
-     * @param outputChannelThreading
-     * @return
+     * Default setting is that received response messages are routed into one working thread.
+     * 
+     * @param outputChannelThreading thread dispatcher
+     * @return this factory
      */
     public AndroidUsbCableMessagingFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
     {
@@ -262,7 +325,9 @@ public class AndroidUsbCableMessagingFactory implements IMessagingSystemFactory
     
     /**
      * Gets threading mode used for output channels.
-     * @return
+     * Default setting is that received response messages are routed into one working thread.
+     * 
+     * @return thread dispatcher
      */
     public IThreadDispatcherProvider getOutputChannelThreading()
     {
