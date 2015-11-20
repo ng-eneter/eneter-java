@@ -30,7 +30,7 @@ public interface IMessagingSystemFactory
      * Creates the output channel which can sends and receive messages from the input channel.
      * 
      * @param channelId address of the input channel.
-     * @param responseReceiverId unique identifier of the output channel.
+     * @param responseReceiverId unique identifier of the output channel. If the value is null then the identifier is genearated automatically
      * @return duplex output channel
      */
     IDuplexOutputChannel createDuplexOutputChannel(String channelId, String responseReceiverId) throws Exception;

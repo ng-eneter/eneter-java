@@ -12,7 +12,7 @@ import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.Event;
 
 /**
- * Accepts connections from output channels and receives/sends messages from/to connected output channels.
+ * Duplex input channel which can receive messages from the duplex output channel and send response messages.
  * 
  */
 public interface IDuplexInputChannel
@@ -34,7 +34,7 @@ public interface IDuplexInputChannel
     Event<DuplexChannelMessageEventArgs> messageReceived();
     
     /**
-     * Returns address of the input channel.
+     * Returns address of this duplex input channel.
      */
     String getChannelId();
 
@@ -55,7 +55,7 @@ public interface IDuplexInputChannel
     boolean isListening();
 
     /**
-     * Sends the message back to the connected IDuplexOutputChannel.
+     * Sends a message to a connected output channel.
      * 
      * The following example shows how to send a broadcast message to all connected output channels:
      * <pre>
@@ -67,7 +67,7 @@ public interface IDuplexInputChannel
      * </pre>
      * 
      * @param responseReceiverId Identifies the response receiver. The identifier comes with received messages.
-     *                           If the identifier is * then the broadcast message to all connected output channels is sent. 
+     *                           If the value is * then the input channel sends the message to all connected output channels. 
      * @param message response message
      * @throws Exception
      * 
@@ -76,14 +76,14 @@ public interface IDuplexInputChannel
     void sendResponseMessage(String responseReceiverId, Object message) throws Exception;
 
     /**
-     * Disconnects the response receiver.
-     * @param responseReceiverId response receiver to be disconnected.
+     * Disconnects the output channel.
+     * @param responseReceiverId Identifies output channel which shall be disconnected.
      * @throws Exception 
      */
     void disconnectResponseReceiver(String responseReceiverId);
     
     /**
-     * Returns dispatcher that defines the threading model for received messages and raised events.
+     * Returns dispatcher that defines the threading model for raising events.
      * 
      * Dispatcher provides the threading model for responseReceiverConnected, responseReceiverDisconnected and messageReceived events.
      * E.g. you can specify that received messages and raised events invoked always in one particular thread. 

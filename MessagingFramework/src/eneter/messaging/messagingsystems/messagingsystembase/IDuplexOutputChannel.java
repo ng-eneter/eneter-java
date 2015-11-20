@@ -12,26 +12,26 @@ import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.Event;
 
 /**
- * Connects the input channel and sends/receives messages to/from the input channel. 
+ * Duplex output channel which can send messages to the duplex input channel and receive response messages.
  * 
  */
 public interface IDuplexOutputChannel
 {
-    /**
-     * The event is raised when a response message was received.
-     */
-    Event<DuplexChannelMessageEventArgs> responseMessageReceived();
-    
     /**
      * The event is raised when the connection with the input channel was opened.
      */
     Event<DuplexChannelEventArgs> connectionOpened();
 
     /**
-     * The event is raised when the connection was closed from the input channel or the connection was closed due to a broken connection. 
+     * The event is raised when the connection was closed from the input channel or the it was closed due to a broken connection. 
      * The event is not raised if the connection was closed by the output channel by calling closeConnection().
      */
     Event<DuplexChannelEventArgs> connectionClosed();
+    
+    /**
+     * The event is raised when a response message was received.
+     */
+    Event<DuplexChannelMessageEventArgs> responseMessageReceived();
     
     
     /**
@@ -45,13 +45,12 @@ public interface IDuplexOutputChannel
     
     /**
      * Returns the unique identifier of this output channel.
-     * Depending on the used protocol formatter (e.g. {@link eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter})
-     * this id can be transferred to the input channel where it is used to identify the connected output channel.
      */
     String getResponseReceiverId();
     
     /**
      * Sends the message to the input channel.
+     * @param message message to be sent. It can be String or byte[] or some other type depending on used protocol formatter. 
      * @throws Exception
      */
     void sendMessage(Object message) throws Exception;

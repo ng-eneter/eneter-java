@@ -7,7 +7,7 @@
  */
 
 /**
- * Messaging system declarations.
+ * Messaging system interfaces.
  * 
  * The messaging system is responsible for transferring messages via channels.<br/>
  * The input channel represents the service which is identified by its address.
