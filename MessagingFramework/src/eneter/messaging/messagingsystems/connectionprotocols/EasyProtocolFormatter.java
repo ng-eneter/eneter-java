@@ -14,23 +14,29 @@ import eneter.messaging.dataprocessing.serializing.internal.EncoderDecoder;
 import eneter.messaging.diagnostic.EneterTrace;
 
 /**
- * Simple and very fast encoding/decoding (only for TCP and WebSocket).
+ * Simple and very fast encoding/decoding for TCP, WebSocket and multicast/broadcast UDP.
  * 
- * This protocol can be used only for TCP or WebSocket communication.
- * The simplicity of this formatting provides a high performance and easy portability to various platforms allowing so
- * to communicate with Eneter even without Eneter.<br/>
- * However this formatting has certain limitations:
+ * This protocol formatter is stripped to the bare minimum. It does not encode OpenConnection and CloseConnection
+ * messages but it encodes only data messages.<br/>
+ * Therefore it can be used only with communication protocols which have own mechanisms to open and close the
+ * communication (TCP and WebSockets) or opening and closing the connection is not needed (multicast/broadcast UDP).<br/> 
+ * <br/>
+ * The simplicity of this formatter provides a high performance and easy portability to various platforms allowing so
+ * to communicate with Eneter even without having the Eneter framework.<br/>
+ * Here is the list of limitation when using this protocol formatter:
  * <ul>
- * <li>It can be used only for TCP or WebSocket based communication.</li>
- * <li>It cannot be used if the reconnect is needed. It means it cannot be used in buffered messaging.</li>
+ * <li>It can be used only with TCP, WebSockets or multicast/broadcast UDP.</li>
+ * <li>It cannot be used if automatic reconnect is needed. It means it cannot be used in buffered messaging.</li>
  * </ul>
- * <b>Encoding of open connection message:</b><br/>
+ * <br/>
+ * Here is how this formatter encodes messages between channels:
+ * <b>Open connection message:</b><br/>
  * N.A. - the open connection message is not used. The connection is considered open when the socket is open.<br/>
  * <br/>
- * <b>Encoding of close connection message:</b><br/>
+ * <b>Close connection message:</b><br/>
  * N.A. = the close connection message is not used. The connection is considered closed then the socket is closed.<br/>
  * <br/>
- * <b>Encoding of data message:</b><br/>
+ * <b>Data message:</b><br/>
  * 1 byte - type of data: 10 string in UTF8, 40 bytes<br/>
  * 4 bytes - length: 32 bit integer indicating the size (in bytes) of message data.<br/>
  * x bytes - message data<br/>

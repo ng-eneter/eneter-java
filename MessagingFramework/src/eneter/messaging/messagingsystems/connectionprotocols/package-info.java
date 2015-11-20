@@ -7,15 +7,19 @@
  */
 
 /**
- * Encoding/decoding the communication between channels.
+ * Encoding/decoding the communication between output and input channels.
  * 
- * The protocol formatter is responsible for encoding/decoding the communication between output and input channel.
- * There are three messages the protocol formatter needs to encode/decode:
+ * The protocol formatter encodes low-level messages sent between output and input channels.
+ * The output channel can send following messages to the input channel:
  * <ul>
- * <li><b>Open Connection</b> - when output channel asks input channel to open the connection.</li>
- * <li><b>Close Connection</b> - when output channel asks input channel to close the connection. Or when input channel
- *                               disconnects the output channel.</li>
- * <li><b>Message</b> - when output and input channel sends request or response message.</li>
- * </ul> 
+ * <li><b>Open Connection</b> - Output channel sends this message to the input channel when it opens the connection.</li>
+ * <li><b>Close Connection</b> - Output channel sends this message to the input channel when it closes the connection.</li>
+ * <li><b>Message</b> - output channel uses this message when it sends a data message to the input channel.</li>
+ * </ul>
+ * The input channel can send following messages to the input channel:
+ * <ul>
+ * <li><b>Close Connection</b> - The input channel sends this message to the output channel when it disconnects the output channel. </li>
+ * <li><b>Message</b> - The input channel sends this message when it sends a data message to the output channel.</li>
+ * </ul>
  */
 package eneter.messaging.messagingsystems.connectionprotocols;

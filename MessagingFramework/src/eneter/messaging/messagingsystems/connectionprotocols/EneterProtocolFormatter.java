@@ -18,9 +18,10 @@ import eneter.messaging.diagnostic.EneterTrace;
 /**
  * Default Eneter encoding/decoding.
  * 
- * It is the default Eneter protocol formatter which can be used in all types of communication.<br/>
+ * This is the default protocol formatter which can be used in all types of communication.<br/>
  * <br/>
- * <b>Encoding of open connection message:</b><br/>
+ * Here is how this formatter encodes messages between channels:<br/>
+ * <b>Open connection message:</b><br/>
  * 6 bytes - header: ENETER<br/>
  * 1 byte  - endianess: 10 little endian, 20 big endian<br/>
  * 1 byte  - string encoding: 10 UTF8, 20 UTF16<br/>
@@ -28,7 +29,7 @@ import eneter.messaging.diagnostic.EneterTrace;
  * 4 bytes - length: 32 bit integer indicating the size (in bytes) of the following string<br/>
  * x bytes - responseReceiverId: client id string<br/>
  * <br/>
- * <b>Encoding of close connection message:</b><br/>
+ * <b>Close connection message:</b><br/>
  * 6 bytes - header: ENETER<br/>
  * 1 byte  - endianess: 10 little endian, 20 big endian<br/>
  * 1 byte  - string encoding: 10 UTF8, 20 UTF16<br/>
@@ -36,7 +37,7 @@ import eneter.messaging.diagnostic.EneterTrace;
  * 4 bytes - length: 32 bit integer indicating the size (in bytes) of the following string<br/>
  * x bytes - responseReceiverId: client id string<br/>
  * <br/>
- * <b>Encoding of data message:</b><br/>
+ * <b>Data message:</b><br/>
  * 6 bytes - header: ENETER<br/>
  * 1 byte  - endianess: 10 little endian, 20 big endian<br/>
  * 1 byte  - string encoding: 10 UTF8, 20 UTF16<br/>
