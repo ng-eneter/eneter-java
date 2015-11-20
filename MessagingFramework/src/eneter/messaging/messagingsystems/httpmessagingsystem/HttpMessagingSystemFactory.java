@@ -19,7 +19,7 @@ import eneter.messaging.threading.dispatching.*;
 import eneter.messaging.threading.dispatching.SyncDispatching;
 
 /**
- * Implements the messaging system delivering messages via HTTP.
+ * Messaging system delivering messages via HTTP.
  * 
  * It creates the communication channels using HTTP for sending and receiving messages.
  * The channel id must be a valid URI address. E.g.: http://127.0.0.1/something/ or https://127.0.0.1/something/. <br/>
@@ -180,7 +180,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
     
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using HTTP.
+     * Creates duplex output channel which can send and receive messages from the duplex input channel using HTTP.
      * 
      * The channel id must be a valid URI address e.g. http://127.0.0.1:8090/something/<br/>
      * <br/>
@@ -211,7 +211,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using HTTP.
+     * Creates duplex output channel which can send and receive messages from the duplex input channel using HTTP.
      * 
      * The channel id must be a valid URI address e.g. http://127.0.0.1:8090/something/<br/>
      * <br/>
@@ -243,7 +243,7 @@ public class HttpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex input channel receiving messages from the duplex output channel and sending back response messages by using HTTP.
+     * Creates the duplex input channel which can receive and send messages to the duplex output channel using UDP.
      * 
      * The channel id must be a valid URI address e.g. http://127.0.0.1:8090/something/<br/>
      * <br/>
