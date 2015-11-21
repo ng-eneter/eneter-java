@@ -22,11 +22,51 @@ import eneter.messaging.threading.dispatching.*;
 
 
 /**
- * Creates output and input channels which use TCP.
+ * Messaging system delivering messages via TCP.
  * 
  * It creates the communication channels which use TCP for sending and receiving messages.
- * The channel id must be a valid URI address. E.g.: tcp://127.0.0.1:6080/.
- *
+ * The channel id must be a valid URI address. E.g.: tcp://127.0.0.1:6080/.<br/>
+ * <br/>
+ * Creating input channel for TCP messaging.
+ * <pre>
+ * <code>
+ * IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+ * 
+ * // Create duplex input channel which can receive messages on the address 127.0.0.1 and the port 9043
+ * // and which can send response messages to connected output channels.
+ * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:9043/");
+ * 
+ * // Subscribe to handle messages.
+ * anInputChannel.messageReceived().subscribe(myOnMessageReceived);
+ * 
+ * // Start listening and be able to receive messages.
+ * anInputChannel.startListening();
+ * 
+ * ...
+ * 
+ * // Stop listening.
+ * anInputChannel.stopListeing();
+ * </code>
+ * </pre>
+ * Creating output channel for TCP messaging.
+ * <pre>
+ * <code>
+ * // Create duplex output channel which can send messages to 127.0.0.1 on the port 9043 and
+ * // receive response messages.
+ * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:9043/");
+ * 
+ * // Subscribe to handle messages.
+ * anOutputChannel.responseMessageReceived().subscribe(myOnMessageReceived);
+ * 
+ * // Open connection to the input channel which listens to tcp://127.0.0.1:9043/.
+ * anOutputChannel.openConnection();
+ * 
+ * ...
+ * 
+ * // Close connection.
+ * anOutputChannel.closeConnection();
+ * </code>
+ * </pre>
  */
 public class TcpMessagingSystemFactory implements IMessagingSystemFactory
 {
@@ -112,7 +152,7 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     /**
      * Constructs the TCP messaging factory.
      * 
-     * @param protocolFormatter formatter used for low-level messages between duplex output and duplex input channels.
+     * @param protocolFormatter formats OpenConnection, CloseConnection and Message messages between channels.
      */
     public TcpMessagingSystemFactory(IProtocolFormatter protocolFormatter)
     {
@@ -132,15 +172,14 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
 
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using TCP.
+     * Creates duplex output channel which can send and receive messages from the duplex input channel using TCP.
      * 
-     * The duplex output channel is intended for the bidirectional communication.
-     * Therefore, it can send messages to the duplex input channel and receive response messages.<br/>
+     * Creating the duplex output channel.<br/>
      * <br/>
-     * The duplex input channel distinguishes duplex output channels according to the response receiver id.
-     * This method generates the unique response receiver id automatically.<br/>
-     * <br/>
-     * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
+     * <pre>
+     * IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+     * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8765/");
+     * </pre>
      * 
      * @param channelId Identifies the receiving duplex input channel. The channel id must be a valid URI address e.g. tcp://127.0.0.1:8090/
      */
@@ -162,18 +201,17 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using TCP.
+     * Creates duplex output channel which can send and receive messages from the duplex input channel using TCP.
+     * <br/>
+     * Creating the duplex output channel with specified client id.
+     * <pre>
+     * <code>
+     * IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+     * IDuplexOutputChannel anOutputChannel = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8765/", "MyUniqueClientId_1");
+     * </code>
+     * </pre>
      * 
-     * The duplex output channel is intended for the bidirectional communication.
-     * Therefore, it can send messages to the duplex input channel and receive response messages.
-     * <br/><br/>
-     * The duplex input channel distinguishes duplex output channels according to the response receiver id.
-     * This method allows to specified a desired response receiver id. Please notice, the response receiver
-     * id is supposed to be unique.
-     * <br/><br/>
-     * The duplex output channel can communicate only with the duplex input channel and not with the input channel.
-     * 
-     * @param channelId Identifies the receiving duplex input channel. The channel id must be a valid URI address e.g. tcp://127.0.0.1:8090/
+     * @param channelId Identifies the input channel which shall be connected. The channel id must be a valid URI address e.g. tcp://127.0.0.1:8090/
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
@@ -194,14 +232,20 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the duplex input channel receiving messages from the duplex output channel and sending back response messages by using TCP.
+     * Creates the duplex input channel which can receive and send messages to the duplex output channel using TCP.
+     * <br/>
+     * Creating duplex input channel.
+     * <pre>
+     * <code>
+     * IMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+     * IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:9876/");
+     * </code>
+     * </pre>
      * 
-     * The duplex input channel is intended for the bidirectional communication.
-     * It can receive messages from the duplex output channel and send back response messages.
-     * <br/><br/>
-     * The duplex input channel can communicate only with the duplex output channel and not with the output channel.
-     * 
-     * @param channelId Identifies this duplex input channel. The channel id must be a valid Ip address (e.g. 127.0.0.1:8090) the input channel will listen to.
+     * @param channelId The IP address and port which shall be used for listening.
+     *  The channel id must be a valid URI address (e.g. tcp://127.0.0.1:8090/).<br/>
+     *  If the IP address is 0.0.0.0 then it will listen to all available IP addresses.
+     *  E.g. if the address is tcp://0.0.0.0:8033/ then it will listen to all available IP addresses on the port 8033.
      */
     @Override
     public IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception
@@ -222,6 +266,12 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
+    /**
+     * Returns IP addresses assigned to the device which can be used for the listening.
+     * 
+     * @return IP addresses which can be used for the listening.
+     * @throws SocketException
+     */
     public static String[] getAvailableIpAddresses() throws SocketException
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -253,6 +303,10 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Sets the factory that will be used for creation of server sockets.
+     * 
+     * Except security (e.g. using encrypted SSL communication) the factory also allows to specify other communication
+     * parameters e.g. timeouts, buffers, etc.  
+     * 
      * @param serverSecurityFactory
      */
     public TcpMessagingSystemFactory setServerSecurity(IServerSecurityFactory serverSecurityFactory)
@@ -263,6 +317,10 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets the factory that is used for creation of server sockets.
+     * 
+     * Except security (e.g. using encrypted SSL communication) the factory also allows to specify other communication
+     * parameters e.g. timeouts, buffers, etc.
+     * 
      * @return
      */
     public IServerSecurityFactory getServerSecurity()
@@ -272,6 +330,10 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Sets the factory that will be used for creation of secured client socket.
+     * 
+     * Except security (e.g. using encrypted SSL communication) the factory also allows to specify other communication
+     * parameters e.g. timeouts, buffers, etc.
+     * 
      * @param clientSecurityFactory
      */
     public TcpMessagingSystemFactory setClientSecurity(IClientSecurityFactory clientSecurityFactory)
@@ -282,6 +344,10 @@ public class TcpMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets the factory that is used for creation of client sockets.
+     * 
+     * Except security (e.g. using encrypted SSL communication) the factory also allows to specify other communication
+     * parameters e.g. timeouts, buffers, etc.
+     * 
      * @return client socket factory
      */
     public IClientSecurityFactory getClientSecurity()

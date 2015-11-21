@@ -74,7 +74,15 @@ public interface IServerSecurityFactory
      */
     int getReceiveBufferSize();
     
+    /**
+     * Sets the flag indicating whether the socket can be bound to the address which is already in use.
+     * @param allowReuseAddress true if the socket can be bound to the address which is already in use.
+     */
     void setReuseAddress(boolean allowReuseAddress);
     
+    /**
+     * Gets the flag indicating whether the socket can be bound to the address which is already in use.
+     * @return true if the socket can be bound to the address which is already in use.
+     */
     boolean getReuseAddress();
 }

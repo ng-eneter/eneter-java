@@ -18,6 +18,7 @@ import eneter.messaging.threading.dispatching.*;
 
 /**
  * Messaging system delivering messages via websockets.
+ * 
  * It creates the communication channels using WebSockets for sending and receiving messages.
  * The channel id must be a valid URI address. E.g.: ws://127.0.0.1:6080/MyService/. <br/>
  *
@@ -131,7 +132,11 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
         }
     }
     
- 
+    /**
+     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using WebSocket.
+     * 
+     * @param channelId Identifies the receiving duplex input channel. The channel id must be a valid URI address e.g. ws://127.0.0.1:8090/MyService/
+     */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId) throws Exception
     {
@@ -150,6 +155,12 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     }
     
 
+    /**
+     * Creates the duplex output channel sending messages to the duplex input channel and receiving response messages by using WebSocket.
+     * 
+     * @param channelId Identifies the receiving duplex input channel. The channel id must be a valid URI address e.g. ws://127.0.0.1:8090/
+     * @param responseReceiverId Identifies the response receiver of this duplex output channel.
+     */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
             String responseReceiverId) throws Exception
@@ -169,6 +180,11 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     }
     
 
+    /**
+     * Creates the duplex input channel receiving messages from the duplex output channel and sending back response messages by using WebSocket.
+     * 
+     * @param channelId Identifies this duplex input channel. The channel id must be a valid URI address (e.g. ws://127.0.0.1:8090/MyService/) the input channel will listen to.
+     */
     @Override
     public IDuplexInputChannel createDuplexInputChannel(String channelId) throws Exception
     {
@@ -190,6 +206,10 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Sets the factory that will be used for creation of server sockets.
+     * 
+     * Except security (e.g. using encrypted SSL communication) the factory also allows to specify other communication
+     * parameters e.g. timeouts, buffers, etc.
+     * 
      * @param serverSecurityFactory
      */
     public WebSocketMessagingSystemFactory setServerSecurity(IServerSecurityFactory serverSecurityFactory)
@@ -200,6 +220,10 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets the factory that is used for creation of server sockets.
+     * 
+     * Except security (e.g. using encrypted SSL communication) the factory also allows to specify other communication
+     * parameters e.g. timeouts, buffers, etc.
+     * 
      * @return
      */
     public IServerSecurityFactory getServerSecurity()
@@ -209,6 +233,10 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Sets the factory that will be used for creation of secured client socket.
+     * 
+     * Except security (e.g. using encrypted SSL communication) the factory also allows to specify other communication
+     * parameters e.g. timeouts, buffers, etc.
+     * 
      * @param clientSecurityFactory
      */
     public WebSocketMessagingSystemFactory setClientSecurity(IClientSecurityFactory clientSecurityFactory)
@@ -219,6 +247,10 @@ public class WebSocketMessagingSystemFactory implements IMessagingSystemFactory
     
     /**
      * Gets the factory that is used for creation of client sockets.
+     * 
+     * Except security (e.g. using encrypted SSL communication) the factory also allows to specify other communication
+     * parameters e.g. timeouts, buffers, etc.
+     * 
      * @return
      */
     public IClientSecurityFactory getClientSecurity()

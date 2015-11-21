@@ -87,11 +87,36 @@ public interface IClientSecurityFactory
      */
     int getReceiveBufferSize();
     
+    /**
+     * Sets the flag indicating whether the socket can be bound to the address which is already in use.
+     * @param allowReuseAddress true if the socket can be bound to the address which is already in use.
+     */
     void setReuseAddress(boolean allowReuseAddress);
     
+    /**
+     * Gets the flag indicating whether the socket can be bound to the address which is already in use.
+     * @return true if the socket can be bound to the address which is already in use.
+     */
     boolean getReuseAddress();
     
+    /**
+     * Sets or gets the port which shall be used for receiving response messages in output channels.
+     * 
+     * When a client connects an IP address and port a random free port is assigned for receiving messages.
+     * This property allows to use a specific port instead of random one.<br/>
+     * <br/>
+     * Default value is -1 which means a random free port is chosen for receiving response messages.
+     * 
+     * @param port port which shall be used for receiving response messages in the output channel.
+     */
     void setResponseReceiverPort(int port);
     
+    /**
+     * Gets the port which shall be used for receiving response messages in output channels.
+     * 
+     * If the value is -1 it means a random free port is chosen for receiving response messages.
+     * 
+     * @return port which shall be used for receiving response messages in the output channel.
+     */
     int getResponseReceiverPort();
 }
