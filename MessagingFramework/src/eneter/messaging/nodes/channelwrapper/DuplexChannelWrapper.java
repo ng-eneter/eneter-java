@@ -414,7 +414,7 @@ class DuplexChannelWrapper extends AttachableDuplexOutputChannelBase
     }
     
     private ThreadLock myDuplexInputChannelsLock = new ThreadLock();
-    private Hashtable<String, TDuplexInputChannel> myDuplexInputChannels = new Hashtable<String, TDuplexInputChannel>();
+    private HashMap<String, TDuplexInputChannel> myDuplexInputChannels = new HashMap<String, TDuplexInputChannel>();
     private ISerializer mySerializer;
     
     private EventImpl<DuplexChannelEventArgs> myConnectionOpenedEventImpl = new EventImpl<DuplexChannelEventArgs>();
