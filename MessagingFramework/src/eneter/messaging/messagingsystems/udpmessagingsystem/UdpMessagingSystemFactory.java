@@ -8,15 +8,12 @@
 
 package eneter.messaging.messagingsystems.udpmessagingsystem;
 
-import java.util.UUID;
-
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.connectionprotocols.EneterProtocolFormatter;
 import eneter.messaging.messagingsystems.connectionprotocols.IProtocolFormatter;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.messagingsystems.simplemessagingsystembase.internal.*;
 import eneter.messaging.threading.dispatching.*;
-import eneter.net.system.EventHandler;
 
 
 /**
