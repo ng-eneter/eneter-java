@@ -187,9 +187,9 @@ class ServiceStub<TServiceInterface>
                                                 // Serialize the event and send it to subscribed clients.
                                                 RpcMessage anEventMessage = new RpcMessage();
                                                 anEventMessage.Id = 0; // dummy - because we do not need to track it.
-                                                anEventMessage.Flag = RpcFlags.RaiseEvent;
+                                                anEventMessage.Request = ERpcRequest.RaiseEvent;
                                                 anEventMessage.OperationName = aTmpEventInfo.getName();
-                                                anEventMessage.SerializedData = (anEventArgsType == EventArgs.class) ?
+                                                anEventMessage.SerializedParams = (anEventArgsType == EventArgs.class) ?
                                                         null : // EventArgs is a known type without parameters - we do not need to serialize it.
                                                         new Object[] { mySerializer.serialize(e, (Class<Object>)anEventArgsType) };
         
@@ -216,9 +216,9 @@ class ServiceStub<TServiceInterface>
                                                     
                                                     RpcMessage anEventMessage = new RpcMessage();
                                                     anEventMessage.Id = 0; // dummy - because we do not need to track it.
-                                                    anEventMessage.Flag = RpcFlags.RaiseEvent;
+                                                    anEventMessage.Request = ERpcRequest.RaiseEvent;
                                                     anEventMessage.OperationName = aTmpEventInfo.getName();
-                                                    anEventMessage.SerializedData = (anEventArgsType == EventArgs.class) ?
+                                                    anEventMessage.SerializedParams = (anEventArgsType == EventArgs.class) ?
                                                             null : // EventArgs is a known type without parameters - we do not need to serialize it.
                                                             new Object[] { aSerializer.serialize(e, (Class<Object>)anEventArgsType) };
             
@@ -349,10 +349,10 @@ class ServiceStub<TServiceInterface>
 
             RpcMessage aResponseMessage = new RpcMessage();
             aResponseMessage.Id = aRequestMessage.Id;
-            aResponseMessage.Flag = RpcFlags.MethodResponse;
+            aResponseMessage.Request = ERpcRequest.Response;
 
             // If it is a remote call of a method/function.
-            if (aRequestMessage.Flag == RpcFlags.InvokeMethod)
+            if (aRequestMessage.Request == ERpcRequest.InvokeMethod)
             {
                 EneterTrace.debug("RPC RECEIVED");
                 
@@ -360,7 +360,7 @@ class ServiceStub<TServiceInterface>
                 ServiceMethod aServiceMethod = myServiceMethods.get(aRequestMessage.OperationName);
                 if (aServiceMethod != null)
                 {
-                    if (aRequestMessage.SerializedData != null && aRequestMessage.SerializedData.length == aServiceMethod.getInputParameterTypes().length)
+                    if (aRequestMessage.SerializedParams != null && aRequestMessage.SerializedParams.length == aServiceMethod.getInputParameterTypes().length)
                     {
                         // Deserialize input parameters.
                         Object[] aDeserializedInputParameters = new Object[aServiceMethod.getInputParameterTypes().length];
@@ -368,7 +368,7 @@ class ServiceStub<TServiceInterface>
                         {
                             for (int i = 0; i < aServiceMethod.getInputParameterTypes().length; ++i)
                             {
-                                aDeserializedInputParameters[i] = aSerializer.deserialize(aRequestMessage.SerializedData[i], aServiceMethod.getInputParameterTypes()[i]);
+                                aDeserializedInputParameters[i] = aSerializer.deserialize(aRequestMessage.SerializedParams[i], aServiceMethod.getInputParameterTypes()[i]);
                             }
                         }
                         catch (Exception err)
@@ -407,14 +407,18 @@ class ServiceStub<TServiceInterface>
                                 try
                                 {
                                     // Serialize the result.
-                                    @SuppressWarnings("unchecked")
-                                    Object aSerializedReturnValue = (aServiceMethod.getMethod().getReturnType() != Void.class) ?
+                                    if (aServiceMethod.getMethod().getReturnType() != Void.class)
+                                    {
                                         // Note: aResult is of type aServiceMethod.getMethod().getReturnType().
-                                        //       Therefore the generic type checking warning can be supressed.
-                                        aSerializer.serialize(aResult, (Class<Object>)aServiceMethod.getMethod().getReturnType()) :
-                                        null;
-                                    
-                                    aResponseMessage.SerializedData = new Object[] { aSerializedReturnValue };
+                                        //       Therefore the generic type checking warning can be suppressed.
+                                        @SuppressWarnings("unchecked")
+                                        Object aSerializedReturn = aSerializer.serialize(aResult, (Class<Object>)aServiceMethod.getMethod().getReturnType());
+                                        aResponseMessage.SerializedReturn = aSerializedReturn;
+                                    }
+                                    else
+                                    {
+                                        aResponseMessage.SerializedReturn = null;
+                                    }
                                 }
                                 catch (Exception err)
                                 {
@@ -443,7 +447,7 @@ class ServiceStub<TServiceInterface>
                 }
             }
             // If it is a request to subscribe/unsubcribe an event.
-            else if (aRequestMessage.Flag == RpcFlags.SubscribeEvent || aRequestMessage.Flag == RpcFlags.UnsubscribeEvent)
+            else if (aRequestMessage.Request == ERpcRequest.SubscribeEvent || aRequestMessage.Request == ERpcRequest.UnsubscribeEvent)
             {
                 EventContext anEventContext = null;
                 myServiceEventsLock.lock();
@@ -461,7 +465,7 @@ class ServiceStub<TServiceInterface>
 
                     if (anEventContext != null)
                     {
-                        if (aRequestMessage.Flag == RpcFlags.SubscribeEvent)
+                        if (aRequestMessage.Request == ERpcRequest.SubscribeEvent)
                         {
                             EneterTrace.debug("SUBSCRIBE REMOTE EVENT RECEIVED");
                             

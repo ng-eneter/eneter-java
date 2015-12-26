@@ -23,9 +23,9 @@ public class RpcMessage implements Serializable
 
     /**
      * Identifies the type of the request/response message.
-     * e.g. if it is InvokeMethod, MethodResponse, SubscribeEvent, UnsubscribeEvent, RaiseEvent.
+     * e.g. if it is InvokeMethod, SubscribeEvent, UnsubscribeEvent, RaiseEvent or Response.
      */
-    public int Flag;
+    public ERpcRequest Request;
 
     /**
      * The name of the operation that shall be performed.
@@ -37,8 +37,14 @@ public class RpcMessage implements Serializable
      * Message data.
      * e.g. in case of InvokeMethod it contains input parameters data.
      */
-    public Object[] SerializedData;
+    public Object[] SerializedParams;
 
+    /**
+     * Serialized return value.
+     * If it is method returning void then the return value is null.
+     */
+    public Object SerializedReturn;
+    
     /**
      * If an error occurred in the service.
      */

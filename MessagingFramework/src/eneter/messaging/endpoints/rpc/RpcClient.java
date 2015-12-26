@@ -184,7 +184,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                         // Create message asking the service to unsubscribe from the event.
                         RpcMessage aRequestMessage = new RpcMessage();
                         aRequestMessage.Id = myCounter.incrementAndGet();
-                        aRequestMessage.Flag = RpcFlags.UnsubscribeEvent;
+                        aRequestMessage.Request = ERpcRequest.UnsubscribeEvent;
                         aRequestMessage.OperationName = myEventName;
     
                         try
@@ -503,7 +503,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             }
 
             // If it is a response for a call.
-            if (aMessage.Flag == RpcFlags.MethodResponse)
+            if (aMessage.Request == ERpcRequest.Response)
             {
                 EneterTrace.debug("RETURN FROM RPC RECEIVED");
                 
@@ -523,14 +523,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                 {
                     if (StringExt.isNullOrEmpty(aMessage.ErrorType))
                     {
-                        if (aMessage.SerializedData != null && aMessage.SerializedData.length > 0)
-                        {
-                            anRpcContext.setSerializedReturnValue(aMessage.SerializedData[0]);
-                        }
-                        else
-                        {
-                            anRpcContext.setSerializedReturnValue(null);
-                        }
+                        anRpcContext.setSerializedReturnValue(aMessage.SerializedReturn);
                     }
                     else
                     {
@@ -542,14 +535,14 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                     anRpcContext.getRpcCompleted().set();
                 }
             }
-            else if (aMessage.Flag == RpcFlags.RaiseEvent)
+            else if (aMessage.Request == ERpcRequest.RaiseEvent)
             {
                 EneterTrace.debug("EVENT FROM SERVICE RECEIVED");
                 
-                if (aMessage.SerializedData != null && aMessage.SerializedData.length > 0)
+                if (aMessage.SerializedParams != null && aMessage.SerializedParams.length > 0)
                 {
                     final String anOpertationName = aMessage.OperationName;
-                    final Object aSerializedData = aMessage.SerializedData[0];
+                    final Object aSerializedParam = aMessage.SerializedParams[0];
                     
                     // Try to raise an event.
                     // The event is raised in its own thread so that the receiving thread is not blocked.
@@ -568,7 +561,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                                 @Override
                                 public void run()
                                 {
-                                    raiseEvent(anOpertationName, aSerializedData);
+                                    raiseEvent(anOpertationName, aSerializedParam);
                                 }
                             });
                         }
@@ -643,9 +636,9 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             // Create message asking the service to execute the method.
             RpcMessage aRequestMessage = new RpcMessage();
             aRequestMessage.Id = myCounter.incrementAndGet();
-            aRequestMessage.Flag = RpcFlags.InvokeMethod;
+            aRequestMessage.Request = ERpcRequest.InvokeMethod;
             aRequestMessage.OperationName = methodName;
-            aRequestMessage.SerializedData = aSerialzedMethodParameters;
+            aRequestMessage.SerializedParams = aSerialzedMethodParameters;
 
             Object aSerializedReturnValue = callService(aRequestMessage);
 
@@ -728,7 +721,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                 // Create message asking the service to subscribe for the event.
                 RpcMessage aSubscribeMessage = new RpcMessage();
                 aSubscribeMessage.Id = myCounter.incrementAndGet();
-                aSubscribeMessage.Flag = RpcFlags.SubscribeEvent;
+                aSubscribeMessage.Request = ERpcRequest.SubscribeEvent;
                 aSubscribeMessage.OperationName = eventName;
 
                 // Send the subscribing request to the service.
