@@ -430,14 +430,14 @@ class ServiceStub<TServiceInterface>
                     }
                     else
                     {
-                        aRequestMessage.ErrorType = IllegalStateException.class.getSimpleName();
-                        aRequestMessage.ErrorMessage = TracedObject() + "failed to process '" + aRequestMessage.OperationName + "' because it has incorrect number of input parameters.";
-                        EneterTrace.error(aRequestMessage.ErrorMessage);
+                        aResponseMessage.ErrorType = IllegalStateException.class.getSimpleName();
+                        aResponseMessage.ErrorMessage = TracedObject() + "failed to process '" + aRequestMessage.OperationName + "' because it has incorrect number of input parameters.";
+                        EneterTrace.error(aResponseMessage.ErrorMessage);
                     }
                 }
                 else
                 {
-                    aRequestMessage.ErrorType = IllegalStateException.class.getSimpleName();
+                    aResponseMessage.ErrorType = IllegalStateException.class.getSimpleName();
                     aResponseMessage.ErrorMessage = "Method '" + aRequestMessage.OperationName + "' does not exist in the service.";
                     EneterTrace.error(aResponseMessage.ErrorMessage);
                 }
