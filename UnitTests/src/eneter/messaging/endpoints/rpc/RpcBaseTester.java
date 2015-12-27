@@ -35,6 +35,7 @@ public abstract class RpcBaseTester
         int Sum(int a, int b);
         String CreateString(String src);
         String GetInstanceId() throws Exception;
+        void HelloVoid();
         void Fail() throws IllegalStateException;
         void Timeout() throws TimeoutException;
     }
@@ -79,6 +80,12 @@ public abstract class RpcBaseTester
             }
             
             return myInstanceId;
+        }
+        
+        @Override
+        public void HelloVoid()
+        {
+            // this is just a void method - to test null input and null return.
         }
 
         @Override
@@ -157,6 +164,8 @@ public abstract class RpcBaseTester
             int k = aServiceProxy.Sum(1, 2);
 
             assertEquals(3, k);
+            
+            anRpcClient.getProxy().HelloVoid();
         }
         finally
         {
