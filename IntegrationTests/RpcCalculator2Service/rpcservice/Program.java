@@ -3,7 +3,10 @@ package rpcservice;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+import eneter.messaging.dataprocessing.serializing.ISerializer;
+import eneter.messaging.dataprocessing.serializing.XmlStringSerializer;
 import eneter.messaging.endpoints.rpc.IRpcService;
+import eneter.messaging.endpoints.rpc.RpcCustomSerializer;
 import eneter.messaging.endpoints.rpc.RpcFactory;
 import eneter.messaging.messagingsystems.messagingsystembase.IDuplexInputChannel;
 import eneter.messaging.messagingsystems.messagingsystembase.IMessagingSystemFactory;
@@ -15,6 +18,8 @@ public class Program
     {
         // Instantiating the calculator.
         Calculator aCalculator = new Calculator();
+        
+        //ISerializer aSerializer = new RpcCustomSerializer(new XmlStringSerializer());
         
         // Exposing the calculator as a service.
         RpcFactory anRpcFactory = new RpcFactory();
