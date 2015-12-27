@@ -71,13 +71,13 @@ public class RpcCustomSerializer implements ISerializer
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (serializedData instanceof byte[] == false)
-            {
-                throw new IllegalArgumentException("Input parameter 'serializedData' is not byte[].");
-            }
-
             if (clazz == RpcMessage.class)
             {
+                if (serializedData instanceof byte[] == false)
+                {
+                    throw new IllegalStateException("Failed to deserialize RpcMessage because the input parameter 'serializedData' is not byte[].");
+                }
+                
                 return (T)deserializeRpcMessage((byte[])serializedData);
             }
             else
