@@ -186,6 +186,12 @@ public class EneterTrace
         }
     }
     
+    /**
+     * Traces the warning message.
+     * @param skipCallstackFrames indicates how many fames from the stack shall be ignored
+     * when evaluating the position in the stack. 
+     * @param message warning message
+     */
     public static void warning(int skipCallstackFrames, String message)
     {
         if (myDetailLevel != EDetailLevel.None)
@@ -286,6 +292,11 @@ public class EneterTrace
         }
     }
     
+    /**
+     * Traces the debug message.
+     * @param skipCallstackFrames indicates how many frames shall be skipped when evaluating the callstack.
+     * @param message debug message
+     */
     public static void debug(int skipCallstackFrames, String message)
     {
         if (myDetailLevel == EDetailLevel.Debug)
