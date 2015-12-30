@@ -2,13 +2,11 @@
  * Project: Eneter.Messaging.Framework
  * Author: Ondrej Uzovic
  * 
- * Copyright © 2012 Ondrej Uzovic
+ * Copyright 2012 Ondrej Uzovic
  * 
  */
 package eneter.messaging.diagnostic;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.regex.Pattern;
 
@@ -62,7 +60,7 @@ public class EneterTrace
         {
             aTraceObject = new EneterTrace();
 
-            writeMessage(Log.DEBUG, "--> ", 3);
+            writeMessage(3, Log.DEBUG, "--> ");
 
             aTraceObject.myEnteringTime = System.nanoTime();
         }
@@ -92,7 +90,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(Log.INFO, message, 3);
+            writeMessage(3, Log.INFO, message);
         }
     }
     
@@ -107,7 +105,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(Log.INFO, message + "\r\nDetails: " + details, 3);
+            writeMessage(3, Log.INFO, message + "\r\nDetails: " + details);
         }
     }
 
@@ -123,7 +121,7 @@ public class EneterTrace
         if (myDetailLevel != EDetailLevel.None)
         {
             String aDetails = getDetailsFromException(err);
-            writeMessage(Log.INFO, message + "\r\n" + aDetails, 3);
+            writeMessage(3, Log.INFO, message + "\r\n" + aDetails);
         }
     }
 
@@ -137,7 +135,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(Log.WARN, message, 3);
+            writeMessage(3, Log.WARN, message);
         }
     }
 
@@ -152,10 +150,23 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(Log.WARN, message + "\r\nDetails: " + details, 3);
+            writeMessage(3, Log.WARN, message + "\r\nDetails: " + details);
         }
     }
 
+    /**
+     * Traces the warning message.
+     * @param skipCallstackFrames indicates how many fames from the stack shall be ignored
+     * when evaluating the position in the stack.
+     * @param message warning message
+     */
+    public static void warning(int skipCallstackFrames, String message)
+    {
+        if (myDetailLevel != EDetailLevel.None)
+        {
+            writeMessage(3 + skipCallstackFrames, Log.WARN, message);
+        }
+    }
     
     /**
      * Traces the warning message.
@@ -168,7 +179,7 @@ public class EneterTrace
         if (myDetailLevel != EDetailLevel.None)
         {
             String aDetails = getDetailsFromException(err);
-            writeMessage(Log.WARN, message + "\r\n" + aDetails, 3);
+            writeMessage(3, Log.WARN, message + "\r\n" + aDetails);
         }
     }
 
@@ -182,7 +193,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(Log.ERROR, message, 3);
+            writeMessage(3, Log.ERROR, message);
         }
     }
 
@@ -197,7 +208,7 @@ public class EneterTrace
     {
         if (myDetailLevel != EDetailLevel.None)
         {
-            writeMessage(Log.ERROR, message + "\r\nDetails: " + errorDetails, 3);
+            writeMessage(3, Log.ERROR, message + "\r\nDetails: " + errorDetails);
         }
     }
 
@@ -213,7 +224,7 @@ public class EneterTrace
         if (myDetailLevel != EDetailLevel.None)
         {
             String aDetails = getDetailsFromException(err);
-            writeMessage(Log.ERROR, message + "\r\n" + aDetails, 3);
+            writeMessage(3, Log.ERROR, message + "\r\n" + aDetails);
         }
     }
 
@@ -229,7 +240,20 @@ public class EneterTrace
     {
         if (myDetailLevel == EDetailLevel.Debug)
         {
-            writeMessage(Log.DEBUG, message, 3);
+            writeMessage(3, Log.DEBUG, message);
+        }
+    }
+
+    /**
+     * Traces the debug message.
+     * @param skipCallstackFrames indicates how many frames shall be skipped when evaluating the callstack.
+     * @param message debug message
+     */
+    public static void debug(int skipCallstackFrames, String message)
+    {
+        if (myDetailLevel == EDetailLevel.Debug)
+        {
+            writeMessage(3 +skipCallstackFrames, Log.DEBUG, message);
         }
     }
 
@@ -355,7 +379,7 @@ public class EneterTrace
     }
     
     
-    private static void writeMessage(final int priorityLevel, final String message, final int callStackIdx)
+    private static void writeMessage(final int callStackIdx, final int priorityLevel, final String message)
     {
         // Get the calling method
         final StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
@@ -427,7 +451,7 @@ public class EneterTrace
                 .append(aMiliseconds).append("ms ")
                 .append(aMicroseconds).append("us]");
 
-                writeMessage(Log.DEBUG, aMessage.toString(), 4);
+                writeMessage(4, Log.DEBUG, aMessage.toString());
             }
         }
         catch(Exception exception)
