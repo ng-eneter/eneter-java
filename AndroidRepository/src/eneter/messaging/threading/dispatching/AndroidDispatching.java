@@ -6,7 +6,7 @@ import android.os.Handler;
 /**
  * Invokes one by one using Android Handler mechanism (e.g. to invoke in the UI thread).
  * 
- * This dispatcher is available only for the Android android platform.
+ * This dispatcher is available only for the Android platform.
  *
  */
 public class AndroidDispatching implements IThreadDispatcherProvider
