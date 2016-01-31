@@ -21,14 +21,5 @@ public final class ThreadPool
         myThreadPool.execute(callback);
     }
     
-    private static ScalableThreadPool myThreadPool = new ScalableThreadPool(10, 400, 5000, new ThreadFactory()
-    {
-        @Override
-        public Thread newThread(Runnable r)
-        {
-            Thread aThread = new Thread(r, "Eneter.Pool");
-            aThread.setDaemon(true);
-            return aThread;
-        }
-    });
+    private static ScalableThreadPool myThreadPool = new ScalableThreadPool(10, 400, 5000);
 }
