@@ -8,8 +8,6 @@
 
 package eneter.net.system.threading.internal;
 
-import java.util.concurrent.ThreadFactory;
-
 /**
  * Provides .NET style thread pool for Eneter Messaging needs.
  * The class provides one single thread pool for the Eneter Messaging Framework.
