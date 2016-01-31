@@ -236,10 +236,14 @@ class ServiceStub<TServiceInterface>
                                             }
                                             catch (Exception err)
                                             {
-                                                EneterTrace.error(TracedObject() + "failed to send event to the client.", err);
+                                                EneterTrace.error(TracedObject() + "failed to send event '" + aTmpEventInfo.getName() + "' to the client.", err);
     
                                                 // Suppose the client is disconnected so unsubscribe it from all events.
                                                 unsubscribeClientFromEvents(aClient);
+                                                
+                                                // Note: do not rethrow the exception because other subscribed clients would not be notified.
+                                                //       E.g. if the exception occured because the client disconnected other clients should
+                                                //       not be affected.
                                             }
                                         }
                                     }
@@ -509,7 +513,7 @@ class ServiceStub<TServiceInterface>
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendResponseMessage, err);
+                EneterTrace.error(TracedObject() + "." + aRequestMessage.OperationName + " " + ErrorHandler.FailedToSendResponseMessage, err);
             }
         }
         catch (Exception err)
@@ -582,6 +586,6 @@ class ServiceStub<TServiceInterface>
     
     private String TracedObject()
     {
-        return getClass().getSimpleName() + " ";
+        return getClass().getSimpleName() + "<" + myServiceClazz.getSimpleName() + "> ";
     }
 }

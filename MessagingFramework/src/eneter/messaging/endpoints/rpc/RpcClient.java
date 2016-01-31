@@ -30,7 +30,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                 implements IRpcClient<TServiceInterface>, InvocationHandler
 {
     // Represents the context of an active remote call.
-    private class RemoteCallContext
+    private static class RemoteCallContext
     {
         public RemoteCallContext()
         {
@@ -255,6 +255,8 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             
             mySerializer = serializer;
             myRpcTimeout = rpcTimeout;
+            
+            myServiceClazz = clazz;
 
             // Dynamically implement and instantiate the given interface as the proxy.
             myProxy = ProxyProvider.createInstance(this, clazz);
@@ -469,6 +471,29 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
+            // Release all pending RPC calls.
+            RemoteCallContext[] aPendingCalls;
+            myPendingRemoteCallsLock.lock();
+            try
+            {
+                aPendingCalls = new RemoteCallContext[myPendingRemoteCalls.size()];
+                aPendingCalls = myPendingRemoteCalls.values().toArray(aPendingCalls);
+            }
+            finally
+            {
+                myPendingRemoteCallsLock.unlock();
+            }
+            
+            if (aPendingCalls != null)
+            {
+                RpcException anException = new RpcException("Connection was broken or closed.", "", "");
+                for (RemoteCallContext aRemoteCallContext : aPendingCalls)
+                {
+                    aRemoteCallContext.setError(anException);
+                    aRemoteCallContext.getRpcCompleted().set();
+                }
+            }
+            
             // Forward the event.
             myThreadDispatcher.invoke(new Runnable()
             {
@@ -771,7 +796,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
                 // Wait for the response.
                 if (!anRpcSyncContext.getRpcCompleted().waitOne(myRpcTimeout))
                 {
-                    throw new TimeoutException("Remote call to '" + rpcRequest.OperationName + "' has not returned within the specified timeout " + myRpcTimeout + ".");
+                    throw new TimeoutException("Remote call has not returned within the specified timeout " + myRpcTimeout + ".");
                 }
 
                 if (anRpcSyncContext.getError() != null)
@@ -783,7 +808,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
             }
             catch (Exception err)
             {
-                EneterTrace.error(TracedObject() + ErrorHandler.FailedToSendMessage, err);
+                EneterTrace.error(TracedObject() + "." + rpcRequest.OperationName + "(..) " + ErrorHandler.FailedToSendMessage, err);
                 throw err;
             }
             finally
@@ -870,6 +895,7 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
     private IThreadDispatcher myThreadDispatcher;
     private int myRpcTimeout;
     
+    private Class<TServiceInterface> myServiceClazz;
     private TServiceInterface myProxy;
 
     private HashMap<String, RemoteMethod> myRemoteMethods = new HashMap<String, RemoteMethod>();
@@ -883,6 +909,6 @@ class RpcClient<TServiceInterface> extends AttachableDuplexOutputChannelBase
     @Override
     protected String TracedObject()
     {
-        return getClass().getSimpleName() + " ";
+        return getClass().getSimpleName() + "<" + myServiceClazz.getSimpleName() + "> ";
     }
 }
