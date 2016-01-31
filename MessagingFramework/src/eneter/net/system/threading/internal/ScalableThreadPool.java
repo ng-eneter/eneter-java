@@ -142,6 +142,33 @@ public class ScalableThreadPool
         private Thread myThread;
     }
 
+    private static class DefaultThreadPoolFactory implements ThreadFactory
+    {
+        public DefaultThreadPoolFactory(String threadName)
+        {
+            myThreadName = threadName;
+        }
+        
+        @Override
+        public Thread newThread(Runnable r)
+        {
+            Thread aThread = new Thread(r, myThreadName);
+            aThread.setDaemon(true);
+            return aThread;
+        }
+        
+        private String myThreadName;
+    }
+    
+    public ScalableThreadPool(int minThreads, int maxThreads, int maxIdleTime)
+    {
+        this (minThreads, maxThreads, maxIdleTime, "Eneter.Pool");
+    }
+    
+    public ScalableThreadPool(int minThreads, int maxThreads, int maxIdleTime, String threadName)
+    {
+        this (minThreads, maxThreads, maxIdleTime, new DefaultThreadPoolFactory(threadName));
+    }
     
     public ScalableThreadPool(int minThreads, int maxThreads, int maxIdleTime, ThreadFactory threadFactory)
     {
