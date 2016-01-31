@@ -12,13 +12,13 @@ import java.util.*;
 
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.HashSetExt;
 import eneter.net.system.linq.internal.EnumerableExt;
+import eneter.net.system.threading.internal.EneterTimer;
 
 
 class MonitoredDuplexInputChannel implements IDuplexInputChannel
@@ -72,17 +72,33 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     
     public MonitoredDuplexInputChannel(IDuplexInputChannel underlyingInputChannel, ISerializer serializer,
             long pingFrequency,
-            long receiveTimeout) throws Exception
+            long receiveTimeout,
+            IThreadDispatcher dispatcher) throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
             myUnderlyingInputChannel = underlyingInputChannel;
             mySerializer = serializer;
-            
             myPingFrequency = pingFrequency;
             myReceiveTimeout = receiveTimeout;
-            myCheckTimer = new Timer("Eneter.ServiceMonitorReceiveTimer", true);
+            myDispatcher = dispatcher;
+            
+            myCheckTimer = new EneterTimer(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        onCheckerTick();
+                    }
+                    catch (Exception err)
+                    {
+                        EneterTrace.warning(TracedObject() + "failed when checking timeouted connections.");
+                    }
+                }
+            }, "Eneter.ServiceMonitorReceiveTimer");
 
             MonitorChannelMessage aPingMessage = new MonitorChannelMessage(MonitorChannelMessageType.Ping, null);
             myPreserializedPingMessage = mySerializer.serialize(aPingMessage, MonitorChannelMessage.class);
@@ -123,7 +139,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     @Override
     public IThreadDispatcher getDispatcher()
     {
-        return myUnderlyingInputChannel.getDispatcher();
+        return myDispatcher;
     }
 
 
@@ -291,7 +307,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void onResponseReceiverConnected(Object sender, ResponseReceiverEventArgs e)
+    private void onResponseReceiverConnected(Object sender, final ResponseReceiverEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -315,17 +331,14 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                 myResponseReceiverContextsLock.unlock();
             }
 
-            if (myResponseReceiverConnectedEventImpl.isSubscribed())
+            myDispatcher.invoke(new Runnable()
             {
-                try
+                @Override
+                public void run()
                 {
-                    myResponseReceiverConnectedEventImpl.raise(this, e);
+                    notifyEventGeneric(myResponseReceiverConnectedEventImpl, e, false);
                 }
-                catch (Exception err)
-                {
-                    EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                }
-            }
+            });
         }
         catch (Exception err)
         {
@@ -371,7 +384,15 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
 
             if (aNumberOfRemoved > 0)
             {
-                notifyResponseReceiverDisconnected(e);
+                // Notify response receiver disconnected.
+                myDispatcher.invoke(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyEventGeneric(myResponseReceiverDisconnectedEventImpl, e, false);
+                    }
+                });
             }
         }
         finally
@@ -413,16 +434,15 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
                     // Notify the incoming message.
                     if (myMessageReceivedEventImpl.isSubscribed())
                     {
-                        DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
-
-                        try
+                        final DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
+                        myDispatcher.invoke(new Runnable()
                         {
-                            myMessageReceivedEventImpl.raise(this, aMsg);
-                        }
-                        catch (Exception err)
-                        {
-                            EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
-                        }
+                            @Override
+                            public void run()
+                            {
+                                notifyEventGeneric(myMessageReceivedEventImpl, aMsg, true);
+                            }
+                        });
                     }
                 }
             }
@@ -515,12 +535,12 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
 
                 // Notify that the response receiver was disconected.
                 final ResponseReceiverEventArgs e = new ResponseReceiverEventArgs(aResponseReceiver.getResponseReceiverId(), aResponseReceiver.getClientAddress());
-                myUnderlyingInputChannel.getDispatcher().invoke(new Runnable()
+                myDispatcher.invoke(new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        notifyResponseReceiverDisconnected(e);
+                        notifyEventGeneric(myResponseReceiverDisconnectedEventImpl, e, false);
                     }
                 });
             }
@@ -528,7 +548,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
             // If the timer chall continue.
             if (aContinueTimerFlag)
             {
-                myCheckTimer.schedule(getTimerTask(), myPingFrequency);
+                myCheckTimer.change(myPingFrequency);
             }
         }
         finally
@@ -570,6 +590,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
     }
     
     private TResponseReceiverContext createResponseReceiver(String responseReceiverId, String clientAddress)
+            throws InterruptedException
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
@@ -579,7 +600,7 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
 
             if (myResponseReceiverContexts.size() == 1)
             {
-                myCheckTimer.schedule(getTimerTask(), myPingFrequency);
+                myCheckTimer.change(myPingFrequency);
             }
 
             return aResponseReceiver;
@@ -590,21 +611,25 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    private void notifyResponseReceiverDisconnected(ResponseReceiverEventArgs e)
+    private <T> void notifyEventGeneric(EventImpl<T> handler, T event, boolean isNobodySubscribedWarning)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            if (myResponseReceiverDisconnectedEventImpl.isSubscribed())
+            if (handler != null)
             {
                 try
                 {
-                    myResponseReceiverDisconnectedEventImpl.raise(this, e);
+                    handler.raise(this, event);
                 }
                 catch (Exception err)
                 {
                     EneterTrace.warning(TracedObject() + ErrorHandler.DetectedException, err);
                 }
+            }
+            else if (isNobodySubscribedWarning)
+            {
+                EneterTrace.warning(TracedObject() + ErrorHandler.NobodySubscribedForMessage);
             }
         }
         finally
@@ -613,39 +638,15 @@ class MonitoredDuplexInputChannel implements IDuplexInputChannel
         }
     }
     
-    /*
-     * Helper method to get the new instance of the timer task.
-     * The problem is, the timer does not allow to reschedule the same instance of the TimerTask
-     * and the exception is thrown.
-     */
-    private TimerTask getTimerTask()
-    {
-        TimerTask aTimerTask = new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    onCheckerTick();
-                }
-                catch (Exception e)
-                {
-                }
-            }
-        };
-        
-        return aTimerTask;
-    }
-    
     
     private ThreadLock myListeningManipulatorLock = new ThreadLock();
     private IDuplexInputChannel myUnderlyingInputChannel;
     private ISerializer mySerializer;
 
+    private IThreadDispatcher myDispatcher;
     private long myPingFrequency;
     private long myReceiveTimeout;
-    private Timer myCheckTimer;
+    private EneterTimer myCheckTimer;
     private ThreadLock myResponseReceiverContextsLock = new ThreadLock();
     private HashSet<TResponseReceiverContext> myResponseReceiverContexts = new HashSet<TResponseReceiverContext>();
     

@@ -8,23 +8,21 @@
 
 package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 import eneter.messaging.dataprocessing.serializing.ISerializer;
 import eneter.messaging.diagnostic.*;
-import eneter.messaging.diagnostic.internal.ErrorHandler;
-import eneter.messaging.diagnostic.internal.ThreadLock;
+import eneter.messaging.diagnostic.internal.*;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
 import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
+import eneter.net.system.threading.internal.EneterTimer;
 
 
 class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
 {
     public MonitoredDuplexOutputChannel(IDuplexOutputChannel underlyingOutputChannel, ISerializer serializer,
             long pingFrequency,
-            long receiveTimeout)
+            long receiveTimeout,
+            IThreadDispatcher dispatcher)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -35,12 +33,27 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
             mySerializer = serializer;
             myPingFrequency = pingFrequency;
             myReceiveTimeout = receiveTimeout;
+            myDispatcher = dispatcher;
             
             MonitorChannelMessage aPingMessage = new MonitorChannelMessage(MonitorChannelMessageType.Ping, null);
             myPreserializedPingMessage = mySerializer.serialize(aPingMessage, MonitorChannelMessage.class);
             
-            myPingingTimer = new Timer("Eneter.ClientPingTimer", true);
-            myReceiveTimer = new Timer("Eneter.ClientMonitorReceiveTimer", true);
+            myPingingTimer = new EneterTimer(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    onPingingTimerTick();
+                }
+            }, "Eneter.ClientPingTimer");
+            myReceiveTimer = new EneterTimer(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    onResponseTimerTick();
+                }
+            }, "Eneter.ClientMonitorReceiveTimer");
             
             myUnderlyingOutputChannel.responseMessageReceived().subscribe(myOnResponseMessageReceived);
             myUnderlyingOutputChannel.connectionOpened().subscribe(myOnConnectionOpened);
@@ -85,7 +98,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
     @Override
     public IThreadDispatcher getDispatcher()
     {
-        return myUnderlyingOutputChannel.getDispatcher();
+        return myDispatcher;
     }
 
     @Override
@@ -107,10 +120,8 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                 try
                 {
                     // Start timers.
-                    myPingingTimerTask = getPingingTimerTask();
-                    myReceiveTimerTask = getReceiveTimerTask();
-                    myPingingTimer.schedule(myPingingTimerTask, myPingFrequency);
-                    myReceiveTimer.schedule(myReceiveTimerTask, myReceiveTimeout);
+                    myPingingTimer.change(myPingFrequency);
+                    myReceiveTimer.change(myReceiveTimeout);
 
                     // Open connection in the underlying channel.
                     myUnderlyingOutputChannel.openConnection();
@@ -195,9 +206,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     myUnderlyingOutputChannel.sendMessage(aSerializedMessage);
                     
                     // Reschedule the ping.
-                    myPingingTimerTask.cancel();
-                    myPingingTimerTask = getPingingTimerTask();
-                    myPingingTimer.schedule(myPingingTimerTask, myPingFrequency);
+                    myPingingTimer.change(myPingFrequency);
                 }
                 catch (Exception err)
                 {
@@ -236,21 +245,25 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                 try
                 {
                     // Cancel the current response timeout and set the new one.
-                    myReceiveTimerTask.cancel();
-                    myReceiveTimerTask = getReceiveTimerTask();
-                    myReceiveTimer.schedule(myReceiveTimerTask, myReceiveTimeout);
+                    myReceiveTimer.change(myReceiveTimeout);
                 }
                 finally
                 {
                     myConnectionManipulatorLock.unlock();
                 }
                 
-                // If it is the response for the ping.
+                // If it is a message.
                 if (aMessage.MessageType == MonitorChannelMessageType.Message)
                 {
-                    // Notify the event to the subscriber.
-                    DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
-                    notifyEvent(myResponseMessageReceivedEventImpl, aMsg, true);
+                    final DuplexChannelMessageEventArgs aMsg = new DuplexChannelMessageEventArgs(e.getChannelId(), aMessage.MessageContent, e.getResponseReceiverId(), e.getSenderAddress());
+                    myDispatcher.invoke(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            notifyEvent(myResponseMessageReceivedEventImpl, aMsg, true);
+                        }
+                    }); 
                 }
             }
             catch (Exception err)
@@ -264,12 +277,19 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
         }
     }
     
-    private void onConnectionOpened(Object sender, DuplexChannelEventArgs e)
+    private void onConnectionOpened(Object sender, final DuplexChannelEventArgs e)
     {
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            notifyEvent(myConnectionOpenedEventImpl, e, false);
+            myDispatcher.invoke(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    notifyEvent(myConnectionOpenedEventImpl, e, false);
+                }
+            });
         }
         finally
         {
@@ -305,8 +325,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
                     myUnderlyingOutputChannel.sendMessage(myPreserializedPingMessage);
 
                     // Schedule the next ping.
-                    myPingingTimerTask = getPingingTimerTask();
-                    myPingingTimer.schedule(myPingingTimerTask, myPingFrequency);
+                    myPingingTimer.change(myPingFrequency);
                 }
                 finally
                 {
@@ -348,8 +367,22 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
             try
             {
                 // Stop timers.
-                myPingingTimerTask.cancel();
-                myReceiveTimerTask.cancel();
+                try
+                {
+                    myPingingTimer.change(-1);
+                }
+                catch (Exception err)
+                {
+                    // n.a.
+                }
+                try
+                {
+                    myReceiveTimer.change(-1);
+                }
+                catch (Exception err)
+                {
+                    // n.a.
+                }
                 
                 if (sendCloseMessageFlag)
                 {
@@ -363,7 +396,7 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
 
             if (notifyConnectionClosedFlag)
             {
-                getDispatcher().invoke(new Runnable()
+                myDispatcher.invoke(new Runnable()
                 {
                     @Override
                     public void run()
@@ -407,66 +440,14 @@ class MonitoredDuplexOutputChannel implements IDuplexOutputChannel
     }
     
     
-    
-    /*
-     * Helper method to get the new instance of the timer task.
-     * The problem is, the timer does not allow to reschedule the same instance of the TimerTask
-     * and the exception is thrown.
-     */
-    private TimerTask getPingingTimerTask()
-    {
-        TimerTask aTimerTask = new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    onPingingTimerTick();
-                }
-                catch (Exception e)
-                {
-                }
-            }
-        };
-        
-        return aTimerTask;
-    }
-    
-    /*
-     * Helper method to get the new instance of the timer task.
-     * The problem is, the timer does not allow to reschedule the same instance of the TimerTask
-     * and the exception is thrown.
-     */
-    private TimerTask getReceiveTimerTask()
-    {
-        TimerTask aTimerTask = new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    onResponseTimerTick();
-                }
-                catch (Exception e)
-                {
-                }
-            }
-        };
-        
-        return aTimerTask;
-    }
-    
     private IDuplexOutputChannel myUnderlyingOutputChannel;
     private ThreadLock myConnectionManipulatorLock = new ThreadLock();
     
-    private Timer myPingingTimer;
-    private TimerTask myPingingTimerTask;
+    private EneterTimer myPingingTimer;
     private long myPingFrequency;
+    private IThreadDispatcher myDispatcher;
     
-    private Timer myReceiveTimer;
-    private TimerTask myReceiveTimerTask;
+    private EneterTimer myReceiveTimer;
     private long myReceiveTimeout;
     
     private ISerializer mySerializer;

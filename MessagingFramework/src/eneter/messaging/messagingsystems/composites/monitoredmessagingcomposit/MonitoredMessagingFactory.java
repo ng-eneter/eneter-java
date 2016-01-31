@@ -11,6 +11,8 @@ package eneter.messaging.messagingsystems.composites.monitoredmessagingcomposit;
 import eneter.messaging.dataprocessing.serializing.*;
 import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.threading.dispatching.*;
+
 
 /**
  * Extension providing the connection monitoring.
@@ -100,6 +102,9 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
             mySerializer = new MonitoredMessagingCustomSerializer();
             myPingFrequency = pingFrequency;
             myReceiveTimeout = pingReceiveTimeout;
+            
+            myInputChannelThreading = new SyncDispatching();
+            myOutputChannelThreading = myInputChannelThreading;
         }
         finally
         {
@@ -122,7 +127,8 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         try
         {
             IDuplexOutputChannel anUnderlyingChannel = myUnderlyingMessaging.createDuplexOutputChannel(channelId);
-            return new MonitoredDuplexOutputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myReceiveTimeout);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            return new MonitoredDuplexOutputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myReceiveTimeout, aDispatcher);
         }
         finally
         {
@@ -144,7 +150,8 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         try
         {
             IDuplexOutputChannel anUnderlyingChannel = myUnderlyingMessaging.createDuplexOutputChannel(channelId, responseReceiverId);
-            return new MonitoredDuplexOutputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myReceiveTimeout);
+            IThreadDispatcher aDispatcher = myOutputChannelThreading.getDispatcher();
+            return new MonitoredDuplexOutputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myReceiveTimeout, aDispatcher);
         }
         finally
         {
@@ -166,7 +173,8 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
         try
         {
             IDuplexInputChannel anUnderlyingChannel = myUnderlyingMessaging.createDuplexInputChannel(channelId);
-            return new MonitoredDuplexInputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myReceiveTimeout);
+            IThreadDispatcher aDispatcher = myInputChannelThreading.getDispatcher();
+            return new MonitoredDuplexInputChannel(anUnderlyingChannel, mySerializer, myPingFrequency, myReceiveTimeout, aDispatcher);
         }
         finally
         {
@@ -226,6 +234,46 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
     }
     
     /**
+     * Sets threading mode for input channels.
+     * @param inputChannelThreading threading model
+     * @return this TcpMessagingSystemFactory
+     */
+    public MonitoredMessagingFactory setInputChannelThreading(IThreadDispatcherProvider inputChannelThreading)
+    {
+        myInputChannelThreading = inputChannelThreading;
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for input channels.
+     * @return thread dispatcher 
+     */
+    public IThreadDispatcherProvider getInputChannelThreading()
+    {
+        return myInputChannelThreading;
+    }
+    
+    /**
+     * Sets threading mode for output channels.
+     * @param outputChannelThreading
+     * @return this TcpMessagingSystemFactory
+     */
+    public MonitoredMessagingFactory setOutputChannelThreading(IThreadDispatcherProvider outputChannelThreading)
+    {
+        myOutputChannelThreading = outputChannelThreading;
+        return this;
+    }
+    
+    /**
+     * Gets threading mode used for output channels.
+     * @return thread dispatcher
+     */
+    public IThreadDispatcherProvider getOutputChannelThreading()
+    {
+        return myOutputChannelThreading;
+    }
+    
+    /**
      * Gets the serializer which is used to serialize/deserialize MonitorChannelMessage.
      * @return serializer
      */
@@ -238,4 +286,6 @@ public class MonitoredMessagingFactory implements IMessagingSystemFactory
     private long myPingFrequency;
     private long myReceiveTimeout;
     private ISerializer mySerializer;
+    private IThreadDispatcherProvider myInputChannelThreading;
+    private IThreadDispatcherProvider myOutputChannelThreading;
 }
