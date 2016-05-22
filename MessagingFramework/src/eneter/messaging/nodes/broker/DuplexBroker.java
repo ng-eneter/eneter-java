@@ -224,7 +224,7 @@ class DuplexBroker extends AttachableDuplexInputChannelBase implements IDuplexBr
                 {
                     if (x.MessageTypeId.equals(messageTypeId))
                     {
-                        aResult.add(x.MessageTypeId);
+                        aResult.add(x.ReceiverId);
                     }
                 }
             }
