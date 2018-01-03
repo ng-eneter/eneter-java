@@ -19,5 +19,5 @@ public final class ThreadPool
         myThreadPool.execute(callback);
     }
     
-    private static ScalableThreadPool myThreadPool = new ScalableThreadPool(10, 400, 5000);
+    private static ScalableThreadPool myThreadPool = new ScalableThreadPool(10, Integer.MAX_VALUE, 5000);
 }
