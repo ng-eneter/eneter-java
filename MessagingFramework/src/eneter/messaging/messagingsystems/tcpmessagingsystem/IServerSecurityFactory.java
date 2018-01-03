@@ -85,4 +85,18 @@ public interface IServerSecurityFactory
      * @return true if the socket can be bound to the address which is already in use.
      */
     boolean getReuseAddress();
+    
+    /**
+     * Gets the maximum amount of connections the TCP listener can handle.
+     * The default value is -1 which means the the amount of connections is not restricted.
+     * @return amount of connections
+     */
+    int getMaxAmountOfConnections();
+    
+    /**
+     * Sets the maximum amount of connections the TCP listener can handle.
+     * If the value is -1 the amount of connections is not restricted.
+     * @param maxAmountOfConnections
+     */
+    void setMaxAmountOfConnections(int maxAmountOfConnections);
 }

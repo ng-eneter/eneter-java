@@ -3,6 +3,10 @@ package eneter.messaging.messagingsystems.websocketmessagingsystem;
 import helper.EventWaitHandleExt;
 import helper.RandomPortGenerator;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.net.SocketTimeoutException;
 
 import org.junit.Before;
@@ -12,6 +16,8 @@ import eneter.messaging.diagnostic.EneterTrace;
 import eneter.messaging.diagnostic.EneterTrace.EDetailLevel;
 import eneter.messaging.messagingsystems.MessagingSystemBaseTester;
 import eneter.messaging.messagingsystems.messagingsystembase.*;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.TcpMessagingSystemFactory;
 import eneter.net.system.EventHandler;
 import eneter.net.system.threading.internal.ManualResetEvent;
 import eneter.net.system.threading.internal.ThreadPool;
@@ -153,6 +159,56 @@ public class Test_WebSocketMessaging extends MessagingSystemBaseTester
         finally
         {
             anOutputChannel.closeConnection();
+            anInputChannel.stopListening();
+        }
+    }
+    
+    @Test
+    public void MaxAmountOfConnections() throws Exception
+    {
+        WebSocketMessagingSystemFactory aMessaging = new WebSocketMessagingSystemFactory();
+        IServerSecurityFactory aSecurityFactory = aMessaging.getServerSecurity();
+        aSecurityFactory.setMaxAmountOfConnections(2);
+            
+        IDuplexOutputChannel anOutputChannel1 = aMessaging.createDuplexOutputChannel("ws://127.0.0.1:8049/");
+        IDuplexOutputChannel anOutputChannel2 = aMessaging.createDuplexOutputChannel("ws://127.0.0.1:8049/");
+        IDuplexOutputChannel anOutputChannel3 = aMessaging.createDuplexOutputChannel("ws://127.0.0.1:8049/");
+        IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("ws://127.0.0.1:8049/");
+
+        try
+        {
+            final ManualResetEvent aConnectionClosed = new ManualResetEvent(false);
+            anOutputChannel3.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
+            {
+                @Override
+                public void onEvent(Object sender, DuplexChannelEventArgs e)
+                {
+                    EneterTrace.info("Connection closed.");
+                    aConnectionClosed.set();
+                }
+            });
+            
+
+            anInputChannel.startListening();
+            anOutputChannel1.openConnection();
+            anOutputChannel2.openConnection();
+            
+            try
+            {
+                anOutputChannel3.openConnection();
+            }
+            catch (Exception err)
+            {
+                return;
+            }
+
+            fail("The third connection did not throw the expected exception.");
+        }
+        finally
+        {
+            anOutputChannel1.closeConnection();
+            anOutputChannel2.closeConnection();
+            anOutputChannel3.closeConnection();
             anInputChannel.stopListening();
         }
     }

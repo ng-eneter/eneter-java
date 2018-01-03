@@ -33,6 +33,7 @@ public class NoneSecurityServerFactory implements IServerSecurityFactory
         mySendBuffer = 8192;
         myReceiveBuffer = 8192;
         myReuseAddressFlag = false;
+        myMaxAmountOfConnections = -1;
     }
     
     /**
@@ -126,9 +127,23 @@ public class NoneSecurityServerFactory implements IServerSecurityFactory
         return myReuseAddressFlag;
     }
     
+    @Override
+    public int getMaxAmountOfConnections()
+    {
+        return myMaxAmountOfConnections;
+    }
+    
+    @Override
+    public void setMaxAmountOfConnections(int maxAmountOfConnections)
+    {
+        myMaxAmountOfConnections = maxAmountOfConnections;
+    }
+    
+    
     private int mySendTimeout;
     private int myReceiveTimeout;
     private int mySendBuffer;
     private int myReceiveBuffer;
     private boolean myReuseAddressFlag;
+    private int myMaxAmountOfConnections;
 }

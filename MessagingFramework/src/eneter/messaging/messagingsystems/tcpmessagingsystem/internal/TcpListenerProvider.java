@@ -10,6 +10,7 @@ package eneter.messaging.messagingsystems.tcpmessagingsystem.internal;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import eneter.messaging.diagnostic.*;
 import eneter.messaging.diagnostic.internal.ErrorHandler;
@@ -123,7 +124,7 @@ public class TcpListenerProvider
                     myServerSocket = myServerSecurityFactory.createServerSocket(mySocketAddress);
                     
                     // Listen in another thread.
-                    myTcpListeningThread = new Thread(myDoTcpListeningRunnable, "Eneter.TcpServiceListener");
+                    myTcpListeningThread = new Thread(myDoTcpListeningRunnable, "Eneter.TcpListenerProvider");
                     myTcpListeningThread.start();
                     
                     // Wait until the thread really started the listening.
@@ -298,35 +299,58 @@ public class TcpListenerProvider
         EneterTrace aTrace = EneterTrace.entering();
         try
         {
-            try
+            boolean aHandleConnectionFlag = false;
+            
+            // Check maximum amount of connections.
+            if (myServerSecurityFactory.getMaxAmountOfConnections() > -1)
             {
-                // Setup timeouts and buffers for the client socket.
-                int aReceiveTimeout = myServerSecurityFactory.getReceiveTimeout();
-                int aSendBufferSize = myServerSecurityFactory.getSendBufferSize();
-                tcpClient.setSoTimeout(aReceiveTimeout);
-                tcpClient.setSendBufferSize(aSendBufferSize);
-                
-                // Call user provided connection handler.
-                myConnectionHandler.invoke(tcpClient);
-            }
-            catch (Exception err)
-            {
-                EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
-            }
-            finally
-            {
-                if (tcpClient != null)
+                int aAmountOfConnections = myAmountOfConnections.incrementAndGet();
+                if (aAmountOfConnections <= myServerSecurityFactory.getMaxAmountOfConnections())
                 {
-                    try
-                    {
-                        tcpClient.close();
-                    }
-                    catch (IOException e)
-                    {
-                        EneterTrace.warning(TracedObject() + "failed to close the client socket.");
-                    }
+                    aHandleConnectionFlag = true;
                 }
             }
+            else
+            {
+                aHandleConnectionFlag = true;
+            }
+            
+            if (aHandleConnectionFlag)
+            {
+                try
+                {
+                    // Setup timeouts and buffers for the client socket.
+                    int aReceiveTimeout = myServerSecurityFactory.getReceiveTimeout();
+                    int aSendBufferSize = myServerSecurityFactory.getSendBufferSize();
+                    tcpClient.setSoTimeout(aReceiveTimeout);
+                    tcpClient.setSendBufferSize(aSendBufferSize);
+                    
+                    // Call user provided connection handler.
+                    myConnectionHandler.invoke(tcpClient);
+                }
+                catch (Exception err)
+                {
+                    EneterTrace.error(TracedObject() + ErrorHandler.ProcessingTcpConnectionFailure, err);
+                }
+            }
+            else
+            {
+                EneterTrace.warning(TracedObject() + "could not open the connection because the number of maximum connections '" + myServerSecurityFactory.getMaxAmountOfConnections() + "' was excedded.");
+            }
+            
+            if (tcpClient != null)
+            {
+                try
+                {
+                    tcpClient.close();
+                }
+                catch (IOException e)
+                {
+                    EneterTrace.warning(TracedObject() + "failed to close the client socket.");
+                }
+            }
+            
+            myAmountOfConnections.decrementAndGet();
         }
         finally
         {
@@ -338,6 +362,8 @@ public class TcpListenerProvider
     private InetSocketAddress mySocketAddress;
     private IServerSecurityFactory myServerSecurityFactory;
     private IMethod1<Socket> myConnectionHandler;
+    
+    private AtomicInteger myAmountOfConnections = new AtomicInteger();
     
     
     private ServerSocket myServerSocket;

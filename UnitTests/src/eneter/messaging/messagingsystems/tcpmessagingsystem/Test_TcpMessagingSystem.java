@@ -47,4 +47,54 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
             System.out.println(anIpAddress);
         }
     }
+    
+    
+    @Test
+    public void MaxAmountOfConnections() throws Exception
+    {
+        TcpMessagingSystemFactory aMessaging = new TcpMessagingSystemFactory();
+        IServerSecurityFactory aSecurityFactory = aMessaging.getServerSecurity();
+        aSecurityFactory.setMaxAmountOfConnections(2);
+            
+        IDuplexOutputChannel anOutputChannel1 = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8049/");
+        IDuplexOutputChannel anOutputChannel2 = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8049/");
+        IDuplexOutputChannel anOutputChannel3 = aMessaging.createDuplexOutputChannel("tcp://127.0.0.1:8049/");
+        IDuplexInputChannel anInputChannel = aMessaging.createDuplexInputChannel("tcp://127.0.0.1:8049/");
+
+        try
+        {
+            final ManualResetEvent aConnectionClosed = new ManualResetEvent(false);
+            anOutputChannel3.connectionClosed().subscribe(new EventHandler<DuplexChannelEventArgs>()
+            {
+                @Override
+                public void onEvent(Object sender, DuplexChannelEventArgs e)
+                {
+                    EneterTrace.info("Connection closed.");
+                    aConnectionClosed.set();
+                }
+            });
+            
+
+            anInputChannel.startListening();
+            anOutputChannel1.openConnection();
+            anOutputChannel2.openConnection();
+            anOutputChannel3.openConnection();
+
+            if (!aConnectionClosed.waitOne(1000))
+            {
+                fail("Third connection was not closed.");
+            }
+
+            assertTrue(anOutputChannel1.isConnected());
+            assertTrue(anOutputChannel2.isConnected());
+            assertFalse(anOutputChannel3.isConnected());
+        }
+        finally
+        {
+            anOutputChannel1.closeConnection();
+            anOutputChannel2.closeConnection();
+            anOutputChannel3.closeConnection();
+            anInputChannel.stopListening();
+        }
+    }
 }

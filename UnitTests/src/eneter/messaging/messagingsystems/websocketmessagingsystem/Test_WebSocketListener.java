@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
 import org.junit.Test;
 
 import eneter.messaging.diagnostic.EneterTrace;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.IServerSecurityFactory;
+import eneter.messaging.messagingsystems.tcpmessagingsystem.NoneSecurityServerFactory;
 import eneter.net.system.EventHandler;
 import eneter.net.system.IMethod1;
 import eneter.net.system.threading.internal.AutoResetEvent;
@@ -593,6 +595,49 @@ public class Test_WebSocketListener
         {
             aService1.stopListening();
             aService2.stopListening();
+        }
+
+    }
+    
+    @Test
+    public void MaxAmountOfClients() throws Exception
+    {
+        URI anAddress = new URI("ws://127.0.0.1:8081/MyService/");
+        IServerSecurityFactory aSecurityFactory = new NoneSecurityServerFactory();
+        aSecurityFactory.setMaxAmountOfConnections(2);
+        WebSocketListener aService = new WebSocketListener(anAddress, aSecurityFactory);
+
+        // Client will connect with the query.
+        WebSocketClient aClient1 = new WebSocketClient(anAddress);
+        WebSocketClient aClient2 = new WebSocketClient(anAddress);
+        WebSocketClient aClient3 = new WebSocketClient(anAddress);
+
+        try
+        {
+            // Start listening.
+            aService.startListening(clientContext -> { });
+
+            aClient1.openConnection();
+            aClient2.openConnection();
+
+            try
+            {
+                // This opening shall fail with the exception.
+                aClient3.openConnection();
+            }
+            catch (Exception err)
+            {
+                return;
+            }
+            
+            fail("The third opening did not fail with expected exception.");
+        }
+        finally
+        {
+            aClient1.closeConnection();
+            aClient2.closeConnection();
+            aClient3.closeConnection();
+            aService.stopListening();
         }
 
     }

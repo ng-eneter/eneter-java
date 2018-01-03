@@ -71,7 +71,8 @@ class UdpInputConnector implements IInputConnector
         private InetSocketAddress myClientAddress;
     }
     
-    public UdpInputConnector(String ipAddressAndPort, IProtocolFormatter protocolFormatter, boolean reuseAddress, int ttl)
+    public UdpInputConnector(String ipAddressAndPort, IProtocolFormatter protocolFormatter, boolean reuseAddress, int ttl,
+            int maxAmountOfConnections)
             throws Exception
     {
         EneterTrace aTrace = EneterTrace.entering();
@@ -99,6 +100,7 @@ class UdpInputConnector implements IInputConnector
             myProtocolFormatter = protocolFormatter;
             myReuseAddressFlag = reuseAddress;
             myTtl = ttl;
+            myMaxAmountOfConnections = maxAmountOfConnections;
         }
         finally
         {
@@ -321,8 +323,6 @@ class UdpInputConnector implements IInputConnector
 
             if (aProtocolMessage != null)
             {
-                MessageContext aMessageContext = null;
-
                 if (aProtocolMessage.MessageType == EProtocolMessageType.OpenConnectionRequest)
                 {
                     if (!StringExt.isNullOrEmpty(aProtocolMessage.ResponseReceiverId))
@@ -330,6 +330,15 @@ class UdpInputConnector implements IInputConnector
                         myConnectedClientsLock.lock();
                         try
                         {
+                            if (myMaxAmountOfConnections > -1 && myConnectedClients.size() >= myMaxAmountOfConnections)
+                            {
+                                TClientContext aClientContext = new TClientContext(myReceiver, clientAddress);
+                                closeConnection(aProtocolMessage.ResponseReceiverId, aClientContext);
+
+                                EneterTrace.warning(TracedObject() + "could not open connection for client '" + aProtocolMessage.ResponseReceiverId + "' because the maximum number of connections = '" + myMaxAmountOfConnections + "' was exceeded.");
+                                return;
+                            }
+                            
                             if (!myConnectedClients.containsKey(aProtocolMessage.ResponseReceiverId))
                             {
                                 TClientContext aClientContext = new TClientContext(myReceiver, clientAddress);
@@ -366,7 +375,7 @@ class UdpInputConnector implements IInputConnector
                     }
                 }
 
-                aMessageContext = new MessageContext(aProtocolMessage, aClientIp);
+                MessageContext aMessageContext = new MessageContext(aProtocolMessage, aClientIp);
                 notifyMessageContext(aMessageContext);
             }
         }
@@ -467,6 +476,7 @@ class UdpInputConnector implements IInputConnector
     private InetSocketAddress myServiceEndpoint;
     private boolean myReuseAddressFlag;
     private int myTtl;
+    private int myMaxAmountOfConnections;
     private UdpReceiver myReceiver;
     private ThreadLock myListenerManipulatorLock = new ThreadLock();
     private IMethod1<MessageContext> myMessageHandler;
