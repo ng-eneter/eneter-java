@@ -168,13 +168,17 @@ public class XmlStringSerializer implements ISerializer
             {
                 if (aSerializedType.getFields().length > 0)
                 {
-                    // If the object has some members then serialize them.
-                    Field[] aFields = aSerializedType.getFields();
-                    for (Field aField : aFields)
+                    // If the object has public members then serialize them.
+                    Field[] aPublicFields = aSerializedType.getFields();
+                    for (Field aField : aPublicFields)
                     {
-                        Object aToSerialize = aField.get(dataToSerialize);
-                        String anAttributes = getAttributes(aToSerialize, aField.getType());
-                        serializeElement(aField.getName(), anAttributes, aToSerialize, xmlResult);
+                        // If the field is not an artificial field created by the compiler.
+                        if (!aField.isSynthetic())
+                        {
+                            Object aToSerialize = aField.get(dataToSerialize);
+                            String anAttributes = getAttributes(aToSerialize, aField.getType());
+                            serializeElement(aField.getName(), anAttributes, aToSerialize, xmlResult);
+                        }
                     }
                 }
             }
@@ -267,61 +271,65 @@ public class XmlStringSerializer implements ISerializer
                 T aDeserializedObject = (T) clazz.newInstance();
     
                 // Get public fields of the deserialized object.
-                Field[] aFields = clazz.getFields();
+                Field[] aPublicFields = clazz.getFields();
     
                 // Go through fields and deserialize them.
                 int aSearchIdx = 0;
-                for (Field aField : aFields)
+                for (Field aField : aPublicFields)
                 {
-                    String aFieldName = aField.getName();
-    
-                    // Find the element containing the value.
-                    // Note: To avoid the looping complexity - searching again and
-                    // again from the very beginning,
-                    // the loop behaves as cycle. The last position is remembered
-                    // and the next search starts from this position.
-                    XmlDataBrowser.TElement anElement = null;
-                    for (int aSearchedLength = 0; aSearchedLength < anElements.size(); ++aSearchedLength)
+                    // If it is not a field created by compiler.
+                    if (!aField.isSynthetic())
                     {
-                        XmlDataBrowser.TElement anTmpElement = anElements.get(aSearchIdx);
-    
-                        if (anTmpElement.myName.equals(aFieldName))
+                        String aFieldName = aField.getName();
+        
+                        // Find the element containing the value.
+                        // Note: To avoid the looping complexity - searching again and
+                        // again from the very beginning,
+                        // the loop behaves as cycle. The last position is remembered
+                        // and the next search starts from this position.
+                        XmlDataBrowser.TElement anElement = null;
+                        for (int aSearchedLength = 0; aSearchedLength < anElements.size(); ++aSearchedLength)
                         {
-                            // Store found element.
-                            anElement = anTmpElement;
-    
-                            // Next search start from the next position.
+                            XmlDataBrowser.TElement anTmpElement = anElements.get(aSearchIdx);
+        
+                            if (anTmpElement.myName.equals(aFieldName))
+                            {
+                                // Store found element.
+                                anElement = anTmpElement;
+        
+                                // Next search start from the next position.
+                                ++aSearchIdx;
+        
+                                // If we are at the end, then the next search will start
+                                // from the beginning.
+                                if (aSearchIdx == anElements.size())
+                                {
+                                    aSearchIdx = 0;
+                                }
+        
+                                break;
+                            }
+        
                             ++aSearchIdx;
-    
-                            // If we are at the end, then the next search will start
-                            // from the beginning.
+        
+                            // If we are at the end, then start from the beginning.
                             if (aSearchIdx == anElements.size())
                             {
                                 aSearchIdx = 0;
                             }
-    
-                            break;
                         }
-    
-                        ++aSearchIdx;
-    
-                        // If we are at the end, then start from the beginning.
-                        if (aSearchIdx == anElements.size())
-                        {
-                            aSearchIdx = 0;
-                        }
-                    }
-    
-                    // If the element was found then deserialize it.
-                    // Note: If the element is not found ignore it and keep there the default value.
-                    //       It will be null for referenced types. .NET has the same behaviour.
-                    if (anElement != null)
-                    {
-                        // Recursively deserialize the object for the field.
-                        Object aValue = deserializeElement(xmlBrowser, anElement, aField.getType());
         
-                        // Set the created object to the field.
-                        aDeserializedObject.getClass().getField(aFieldName).set(aDeserializedObject, aValue);
+                        // If the element was found then deserialize it.
+                        // Note: If the element is not found ignore it and keep there the default value.
+                        //       It will be null for referenced types. .NET has the same behaviour.
+                        if (anElement != null)
+                        {
+                            // Recursively deserialize the object for the field.
+                            Object aValue = deserializeElement(xmlBrowser, anElement, aField.getType());
+            
+                            // Set the created object to the field.
+                            aDeserializedObject.getClass().getField(aFieldName).set(aDeserializedObject, aValue);
+                        }
                     }
                 }
     
