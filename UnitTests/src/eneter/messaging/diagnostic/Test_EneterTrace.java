@@ -21,7 +21,6 @@ public class Test_EneterTrace
 		EneterTrace.info("This is info.");
 		EneterTrace.warning("This is warning.");
 		EneterTrace.error("This is error.");
-		EneterTrace.error("This is error.", "detail error info");
 
 		// Trace exception
 		try
@@ -83,6 +82,8 @@ public class Test_EneterTrace
 		    EneterTrace.leaving(aTrace);
 		}
 
+		Thread.sleep(200);
+		
 		EneterTrace.setDetailLevel(EneterTrace.EDetailLevel.Short);
 		EneterTrace.setTraceLog(null);
 	}
@@ -141,7 +142,7 @@ public class Test_EneterTrace
 			// Eneter trace.
 			EneterTrace.setNameSpaceFilter(Pattern.compile("^eneter.*"));
 			EneterTrace.debug("This message shall be traced.");
-			Thread.sleep(100);
+			Thread.sleep(500);
 			assertTrue(aLog.toString().contains("This message shall be traced."));
 			
 			// Create the new "log".
@@ -179,7 +180,7 @@ public class Test_EneterTrace
     	    
     	    // With traceing.
     	    EneterTrace.setDetailLevel(EDetailLevel.Debug);
-    	    EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
+    	    EneterTrace.setTraceLog(new PrintStream("c:\\tmp\\Trace.txt"));
     	    
             aStartTime = System.currentTimeMillis();
             calculatePi();

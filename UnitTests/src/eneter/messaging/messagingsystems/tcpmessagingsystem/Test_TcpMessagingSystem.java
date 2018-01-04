@@ -10,6 +10,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -28,6 +29,7 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
     {
         //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
         //EneterTrace.setDetailLevel(EDetailLevel.Debug);
+        EneterTrace.startProfiler();
         
         String aPort = RandomPortGenerator.generate();
         
@@ -35,6 +37,12 @@ public class Test_TcpMessagingSystem extends MessagingSystemBaseTester
         
         //ChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
         ChannelId = "tcp://[::1]:" + aPort + "/";
+    }
+    
+    @After
+    public void Clean()
+    {
+        EneterTrace.stopProfiler();
     }
     
     @Test

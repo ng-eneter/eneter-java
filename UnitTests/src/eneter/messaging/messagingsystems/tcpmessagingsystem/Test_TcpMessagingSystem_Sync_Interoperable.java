@@ -5,6 +5,7 @@ import java.io.PrintStream;
 
 import helper.*;
 
+import org.junit.After;
 import org.junit.Before;
 
 import eneter.messaging.diagnostic.*;
@@ -19,7 +20,7 @@ public class Test_TcpMessagingSystem_Sync_Interoperable extends MessagingSystemB
     {
         //EneterTrace.setTraceLog(new PrintStream("D:\\Trace.txt"));
         //EneterTrace.setDetailLevel(EDetailLevel.Debug);
-        //EneterTrace.StartProfiler();
+        //EneterTrace.startProfiler();
 
         // Generate random number for the port.
         String aPort = RandomPortGenerator.generate();
@@ -35,4 +36,10 @@ public class Test_TcpMessagingSystem_Sync_Interoperable extends MessagingSystemB
         this.myResponseMessage = new byte[] { (byte)'R', (byte)'E', (byte)'S', (byte)'P', (byte)'O', (byte)'N', (byte)'S', (byte)'E' };
         this.myMessage_10MB = RandomDataGenerator.getBytes(10000000);
     }
+    
+    //@After
+    //public void Clean()
+    //{
+    //    EneterTrace.stopProfiler();
+    //}
 }
