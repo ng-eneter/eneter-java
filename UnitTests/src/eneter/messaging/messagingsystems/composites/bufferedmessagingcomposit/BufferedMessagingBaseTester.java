@@ -475,6 +475,121 @@ public abstract class BufferedMessagingBaseTester
         }
     }
     
+    @Test
+    public void A17_Online_Offline_Events() throws Exception
+    {
+        // Duplex output channel without queue - it will not try to reconnect.
+        IBufferedDuplexOutputChannel aDuplexOutputChannel = (IBufferedDuplexOutputChannel)MessagingSystem.createDuplexOutputChannel(ChannelId);
+        IBufferedDuplexInputChannel aDuplexInputChannel = (IBufferedDuplexInputChannel)MessagingSystem.createDuplexInputChannel(ChannelId);
+
+        AutoResetEvent aConnectionsCompletedEvent = new AutoResetEvent(false);
+        aDuplexInputChannel.responseReceiverConnected().subscribe((x, y) -> aConnectionsCompletedEvent.set());
+        
+        AutoResetEvent aResponseReceiverOnline = new AutoResetEvent(false);
+        aDuplexInputChannel.responseReceiverOnline().subscribe((x, y) -> aResponseReceiverOnline.set());
+
+        AutoResetEvent aResponseReceiverOffline = new AutoResetEvent(false);
+        aDuplexInputChannel.responseReceiverOffline().subscribe((x, y) -> aResponseReceiverOffline.set());
+
+        AutoResetEvent aOnlineIsRaised = new AutoResetEvent(false);
+        final boolean[] aOnlineStateAfterOnline = { false };
+        aDuplexOutputChannel.connectionOnline().subscribe((x, y) ->
+        {
+            aOnlineStateAfterOnline[0] = aDuplexOutputChannel.isOnline();
+            aOnlineIsRaised.set();   
+        });
+
+        AutoResetEvent aOfflineIsRaised = new AutoResetEvent(false);
+        final boolean[] aOnlineStateAfterOffline = { false };
+        aDuplexOutputChannel.connectionOffline().subscribe((x, y) ->
+        {
+            aOnlineStateAfterOffline[0] = aDuplexOutputChannel.isOnline();
+            aOfflineIsRaised.set();
+        });
+
+        try
+        {
+            aDuplexOutputChannel.openConnection();
+
+            if (!aOfflineIsRaised.waitOne(1000))
+            {
+                fail("Offline event was not raised.");
+            }
+            assertFalse(aOnlineStateAfterOffline[0]);
+
+            // start listening
+            aDuplexInputChannel.startListening();
+
+            if (!aOnlineIsRaised.waitOne(1000))
+            {
+                fail("Online event was not raised.");
+            }
+            assertTrue(aOnlineStateAfterOnline[0]);
+
+            if (!aResponseReceiverOnline.waitOne(1000))
+            {
+                fail("ResponseReceiverOnline event was not raised.");
+            }
+
+            // Wait until the connection is open.
+            if (!aConnectionsCompletedEvent.waitOne(1000))
+            {
+                fail("Connection was not open.");
+            }
+
+            // Disconnect the response receiver.
+            aDuplexInputChannel.disconnectResponseReceiver(aDuplexOutputChannel.getResponseReceiverId());
+
+            if (!aOfflineIsRaised.waitOne(1000))
+            {
+                fail("Offline event was not raised after disconnection.");
+            }
+            assertFalse(aOnlineStateAfterOffline[0]);
+
+            if (aResponseReceiverOffline.waitOne(500))
+            {
+                fail("ResponseReceiverOffline event shall NOT be raised if DisconnectResponseReceiver was called.");
+            }
+
+
+            // The duplex output channel will try to connect again, therefore wait until connected.
+            aConnectionsCompletedEvent.waitOne();
+
+
+            if (!aOnlineIsRaised.waitOne(1000))
+            {
+                fail("Online event was not raised after reconnection.");
+            }
+            assertTrue(aOnlineStateAfterOnline[0]);
+
+            if (!aResponseReceiverOnline.waitOne(1000))
+            {
+                fail("ResponseReceiverOnline event was not raised.");
+            }
+
+            // duplex output channel closes the connection.
+            aDuplexOutputChannel.closeConnection();
+
+
+            if (!aResponseReceiverOffline.waitOne(1000))
+            {
+                fail("ResponseReceiverOffline event was not raised.");
+            }
+
+            if (aOfflineIsRaised.waitOne(500))
+            {
+                fail("Offline event shall NOT be raised after CloseConnection().");
+            }
+            assertFalse(aOnlineStateAfterOffline[0]);
+
+        }
+        finally
+        {
+            aDuplexOutputChannel.closeConnection();
+            aDuplexInputChannel.stopListening();
+        }
+    }
+    
     private void sendOfflineMessageReceiveResponse(String channelId, Object message, Object responseMessage,
             int numberOfClients, int numberOfMessages,
             int openConnectionTimeout,

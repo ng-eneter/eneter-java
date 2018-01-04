@@ -19,7 +19,7 @@ import eneter.net.system.*;
 import eneter.net.system.collections.generic.internal.*;
 import eneter.net.system.linq.internal.EnumerableExt;
 
-class BufferedDuplexInputChannel implements IDuplexInputChannel
+class BufferedDuplexInputChannel implements IBufferedDuplexInputChannel
 {
     private class TBufferedResponseReceiver
     {
@@ -177,11 +177,13 @@ class BufferedDuplexInputChannel implements IDuplexInputChannel
         return myMessageReceivedEventImpl.getApi();
     }
     
+    @Override
     public Event<ResponseReceiverEventArgs> responseReceiverOnline()
     {
         return myResponseReceiverOnlineEventImpl.getApi();
     }
     
+    @Override
     public Event<ResponseReceiverEventArgs> responseReceiverOffline()
     {
         return myResponseReceiverOfflineEventImpl.getApi();

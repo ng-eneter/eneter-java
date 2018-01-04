@@ -89,13 +89,16 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the output channel which can send messages to the input channel and receive response messages.
+     * Creates IBufferedDuplexOutputChannel which can send messages to the input channel and receive response messages.
      * 
      * If the connection is not available it puts sent messages to the buffer while trying to reconnect.
      * Then when the connection is established the messages are sent from the buffer.
      * If the reconnect is not successful within the maximum offline time it notifies
      * IDuplexOutputChannel.connectionClosed()
-     * and messages are deleted from the buffer.
+     * and messages are deleted from the buffer.<br/>
+     * The return value can be casted to IBufferedDuplexOutputChannel.
+     * 
+     * @return IBufferedDuplexOutputChannel
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId)
@@ -114,13 +117,16 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the output channel which can send messages to the input channel and receive response messages.
+     * Creates IBufferedDuplexOutputChannel which can send messages to the input channel and receive response messages.
      * 
      * If the connection is not available it puts sent messages to the buffer while trying to reconnect.
      * Then when the connection is established the messages are sent from the buffer.
      * If the reconnect is not successful within the maximum offline time it notifies
      * IDuplexOutputChannel.connectionClosed()
-     * and messages are deleted from the buffer.
+     * and messages are deleted from the buffer.<br/>
+     * The return value can be casted to IBufferedDuplexOutputChannel.
+     * 
+     * @return IBufferedDuplexOutputChannel
      */
     @Override
     public IDuplexOutputChannel createDuplexOutputChannel(String channelId,
@@ -139,12 +145,15 @@ public class BufferedMessagingFactory implements IMessagingSystemFactory
     }
 
     /**
-     * Creates the input channel which can receive messages from the output channel and send response messages.
+     * Creates IBufferedDuplexInputChannel which can receive messages from the output channel and send response messages.
      * 
      * If the connection with the duplex output channel is not established, it puts sent response messages to the buffer.
      * Then, when the duplex input channel is connected, the response messages are sent.
      * If the duplex output channel does not connect within the specified maximum offline time, the event
-     * IDuplexInputChannel.responseReceiverDisconnected() is invoked and response messages are deleted from the buffer.
+     * IDuplexInputChannel.responseReceiverDisconnected() is invoked and response messages are deleted from the buffer.<br/>
+     * The return value can be casted to IBufferedDuplexInputChannel.
+     * 
+     * @return IBufferedDuplexInputChannel
      */
     @Override
     public IDuplexInputChannel createDuplexInputChannel(String channelId)

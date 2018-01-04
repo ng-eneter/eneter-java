@@ -18,7 +18,7 @@ import eneter.messaging.threading.dispatching.IThreadDispatcher;
 import eneter.net.system.*;
 import eneter.net.system.threading.internal.*;
 
-class BufferedDuplexOutputChannel implements IDuplexOutputChannel
+class BufferedDuplexOutputChannel implements IBufferedDuplexOutputChannel
 {
     public BufferedDuplexOutputChannel(IDuplexOutputChannel underlyingDuplexOutputChannel, long maxOfflineTime)
     {
@@ -52,11 +52,13 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
         return myConnectionClosedEventImpl.getApi();
     }
     
+    @Override
     public Event<DuplexChannelEventArgs> connectionOnline()
     {
         return myConnectionOnlineEventImpl.getApi();
     }
     
+    @Override
     public Event<DuplexChannelEventArgs> connectionOffline()
     {
         return myConnectionOfflineEventImpl.getApi();
@@ -96,6 +98,20 @@ class BufferedDuplexOutputChannel implements IDuplexOutputChannel
             {
                 myConnectionManipulatorLock.unlock();
             }
+        }
+        finally
+        {
+            EneterTrace.leaving(aTrace);
+        }
+    }
+    
+    @Override
+    public boolean isOnline()
+    {
+        EneterTrace aTrace = EneterTrace.entering();
+        try
+        {
+            return myOutputChannel.isConnected();
         }
         finally
         {

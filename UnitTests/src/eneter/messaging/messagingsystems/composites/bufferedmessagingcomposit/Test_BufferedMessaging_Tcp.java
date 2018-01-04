@@ -22,7 +22,9 @@ public class Test_BufferedMessaging_Tcp extends BufferedMessagingBaseTester
         int aPort = 7000 + aRandomPort.nextInt(1000);
         ChannelId = "tcp://127.0.0.1:" + Integer.toString(aPort) + "/";
         
-        IMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
+        TcpMessagingSystemFactory anUnderlyingMessaging = new TcpMessagingSystemFactory();
+        anUnderlyingMessaging.getClientSecurity().setConnectionTimeout(200);
+        
         long aMaxOfflineTime = 1000;
         MessagingSystem = new BufferedMessagingFactory(anUnderlyingMessaging, aMaxOfflineTime);
         ConnectionInterruptionFrequency = 80;
