@@ -8,14 +8,23 @@
 
 package eneter.messaging.diagnostic;
 
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.io.PrintStream;
 import java.util.concurrent.ThreadFactory;
 import java.util.regex.Pattern;
 
+import eneter.net.system.threading.internal.ManualResetEvent;
 import eneter.net.system.threading.internal.ScalableThreadPool;
 
 
@@ -103,15 +112,26 @@ public class EneterTrace
     {
         EneterTrace aTraceObject = null;
 
-        if (myDetailLevel == EDetailLevel.Debug)
+        if (myDetailLevel == EDetailLevel.Debug || myProfilerIsRunning)
         {
+            long aEnteringTimeTicks = new Date().getTime();
+            
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            
             aTraceObject = new EneterTrace();
-
-            writeMessage(3, "-->", "");
-
-            aTraceObject.myEnteringTime = System.nanoTime();
+            aTraceObject.myCallStack = aStackTraceElements[2];
+            aTraceObject.myEnteringTicks = System.nanoTime();
+           
+            if (myProfilerIsRunning)
+            {
+                updateProfilerForEntering(aTraceObject);
+            }
+            else
+            {
+                writeMessage(aTraceObject.myCallStack, aEnteringTimeTicks, "-->", "", -1);
+            }
         }
-
+        
         return aTraceObject;
     }
     
@@ -135,27 +155,17 @@ public class EneterTrace
      */
     public static void info(String message)
     {
-        if (myDetailLevel != EDetailLevel.None)
+        if (myDetailLevel == EDetailLevel.None)
         {
-            writeMessage(3, " I:", message);
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            if (aStackTraceElements.length >= 3)
+            {
+                long aTimeTicks = new Date().getTime();
+                writeMessage(aStackTraceElements[2], aTimeTicks, " I:", message, -1);
+            }
         }
     }
     
-    
-    /**
-     * Traces the information message and details.
-     * 
-     * @param message info message
-     * @param details additional details
-     */
-    public static void info(String message, String details)
-    {
-        if (myDetailLevel != EDetailLevel.None)
-        {
-            writeMessage(3, " I:", message + "\r\nDetails: " + details);
-        }
-    }
-
     
     /**
      * Traces the info message.
@@ -165,10 +175,15 @@ public class EneterTrace
      */
     public static void info(String message, Throwable err)
     {
-        if (myDetailLevel != EDetailLevel.None)
+        if (myDetailLevel == EDetailLevel.None)
         {
-            String aDetails = getDetailsFromException(err);
-            writeMessage(3, " I:", message + "\r\n" + aDetails);
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            if (aStackTraceElements.length >= 3)
+            {
+                String aDetails = getDetailsFromException(err);
+                long aTimeTicks = new Date().getTime();
+                writeMessage(aStackTraceElements[2], aTimeTicks, " I:", message + "\r\n" + aDetails, -1);
+            }
         }
     }
 
@@ -180,41 +195,36 @@ public class EneterTrace
      */
     public static void warning(String message)
     {
-        if (myDetailLevel != EDetailLevel.None)
+        if (myDetailLevel == EDetailLevel.None)
         {
-            writeMessage(3, " W:", message);
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            if (aStackTraceElements.length >= 3)
+            {
+                long aTimeTicks = new Date().getTime();
+                writeMessage(aStackTraceElements[2], aTimeTicks, " W:", message, -1);
+            }
         }
     }
     
     /**
-     * Traces the warning message.
-     * @param skipCallstackFrames indicates how many fames from the stack shall be ignored
-     * when evaluating the position in the stack. 
-     * @param message warning message
-     */
-    public static void warning(int skipCallstackFrames, String message)
-    {
-        if (myDetailLevel != EDetailLevel.None)
-        {
-            writeMessage(3 + skipCallstackFrames, " W:", message);
-        }
-    }
-
-    
-    /**
-     * Traces the warning message and details
+     * Traces the warning message. (internal eneter method)
      * 
+     * @param callstackIndex
      * @param message warning message
-     * @param details additional details
      */
-    public static void warning(String message, String details)
+    public static void warning(int callstackIndex, String message)
     {
-        if (myDetailLevel != EDetailLevel.None)
+        if (myDetailLevel == EDetailLevel.None)
         {
-            writeMessage(3, " W:", message + "\r\nDetails: " + details);
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            if (aStackTraceElements.length >= 3 + callstackIndex)
+            {
+                long aTimeTicks = new Date().getTime();
+                writeMessage(aStackTraceElements[2 + callstackIndex], aTimeTicks, " W:", message, -1);
+            }
         }
     }
-
+    
     
     /**
      * Traces the warning message.
@@ -224,10 +234,15 @@ public class EneterTrace
      */
     public static void warning(String message, Throwable err)
     {
-        if (myDetailLevel != EDetailLevel.None)
+        if (myDetailLevel == EDetailLevel.None)
         {
-            String aDetails = getDetailsFromException(err);
-            writeMessage(3, " W:", message + "\r\n" + aDetails);
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            if (aStackTraceElements.length >= 3)
+            {
+                String aDetails = getDetailsFromException(err);
+                long aTimeTicks = new Date().getTime();
+                writeMessage(aStackTraceElements[2], aTimeTicks, " W:", message + "\r\n" + aDetails, -1);
+            }
         }
     }
 
@@ -239,28 +254,17 @@ public class EneterTrace
      */
     public static void error(String message)
     {
-        if (myDetailLevel != EDetailLevel.None)
+        if (myDetailLevel == EDetailLevel.None)
         {
-            writeMessage(3, " E:", message);
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            if (aStackTraceElements.length >= 3)
+            {
+                long aTimeTicks = new Date().getTime();
+                writeMessage(aStackTraceElements[2], aTimeTicks, " E:", message, -1);
+            }
         }
     }
 
-
-    /**
-     * Traces the error message and details for the error.
-     * 
-     * @param message error message
-     * @param errorDetails additional details
-     */
-    public static void error(String message, String errorDetails)
-    {
-        if (myDetailLevel != EDetailLevel.None)
-        {
-            writeMessage(3, " E:", message + "\r\nDetails: " + errorDetails);
-        }
-    }
-
-        
     /**
      * Traces the error message.
      * 
@@ -269,13 +273,38 @@ public class EneterTrace
      */
     public static void error(String message, Throwable err)
     {
-        if (myDetailLevel != EDetailLevel.None)
+        if (myDetailLevel == EDetailLevel.None)
         {
-            String aDetails = getDetailsFromException(err);
-            writeMessage(3, " E:", message + "\r\n" + aDetails);
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            if (aStackTraceElements.length >= 3)
+            {
+                String aDetails = getDetailsFromException(err);
+                long aTimeTicks = new Date().getTime();
+                writeMessage(aStackTraceElements[2], aTimeTicks, " E:", message + "\r\n" + aDetails, -1);
+            }
         }
     }
 
+    
+    /**
+     * Traces the warning message. (internal eneter method)
+     * 
+     * @param callstackIndex
+     * @param message warning message
+     */
+    public static void debug(int callstackIndex, String message)
+    {
+        if (myDetailLevel == EDetailLevel.Debug)
+        {
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            if (aStackTraceElements.length >= 3 + callstackIndex)
+            {
+                long aTimeTicks = new Date().getTime();
+                writeMessage(aStackTraceElements[2 + callstackIndex], aTimeTicks, " D:", message, -1);
+            }
+        }
+    }
+    
 
     /**
      * Traces the debug message.
@@ -288,23 +317,85 @@ public class EneterTrace
     {
         if (myDetailLevel == EDetailLevel.Debug)
         {
-            writeMessage(3, " D:", message);
+            StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
+            if (aStackTraceElements.length >= 3)
+            {
+                long aTimeTicks = new Date().getTime();
+                writeMessage(aStackTraceElements[2], aTimeTicks, " D:", message, -1);
+            }
         }
     }
     
     /**
-     * Traces the debug message.
-     * @param skipCallstackFrames indicates how many frames shall be skipped when evaluating the callstack.
-     * @param message debug message
+     * Starts the profiler measurement.
      */
-    public static void debug(int skipCallstackFrames, String message)
+    public static void startProfiler()
     {
-        if (myDetailLevel == EDetailLevel.Debug)
+        synchronized (myProfilerData)
         {
-            writeMessage(3 +skipCallstackFrames, " D:", message);
+            writeToTrace("Profiler is running...\r\n");
+            myProfilerIsRunning = true;
         }
     }
+    
+    /**
+     * Stops the profiler measurement and writes results to the trace.
+     */
+    public static void stopProfiler()
+    {
+        // Wait until all items are processed.
+        try
+        {
+            myQueueThreadEndedEvent.waitOne();
+            
+            synchronized (myProfilerData)
+            {
+                myProfilerIsRunning = false;
 
+                Collection<Entry<String, ProfilerData>> aProfilerDataCollection = myProfilerData.entrySet();
+                List<Entry<String, ProfilerData>> aOrderedProfilerData = new ArrayList<Entry<String, ProfilerData>>(aProfilerDataCollection);
+                Collections.sort(aOrderedProfilerData, new Comparator<Entry<String, ProfilerData>>()
+                    {
+                        // Order descending
+                        @Override
+                        public int compare(Entry<String, ProfilerData> o1, Entry<String, ProfilerData> o2)
+                        {
+                            if (o1.getValue().Ticks < o2.getValue().Ticks)
+                            {
+                                return 1;
+                            }
+                            
+                            if (o1.getValue().Ticks > o2.getValue().Ticks)
+                            {
+                                return -1;
+                            }
+                            
+                            return 0;
+                        }
+                    });
+                
+                for (Entry<String, ProfilerData> anItem : aOrderedProfilerData)
+                {
+                    String aElapsedTime = nanoSecondsToTimeStamp(anItem.getValue().Ticks);
+                    String aTimePerCall = nanoSecondsToTimeStamp((long)Math.round(((double)anItem.getValue().Ticks) / anItem.getValue().Calls));
+
+                    StringBuilder aMessageBuilder = new StringBuilder()
+                            .append(aElapsedTime).append(" ").append(anItem.getValue().Calls).append("x |").append(anItem.getValue().MaxConcurency).append("| #").append(anItem.getValue().MaxRecursion).append(" ").append(aTimePerCall).append(" ").append(anItem.getKey()).append("\r\n");
+                    String aMessage = aMessageBuilder.toString();
+
+                    writeToTrace(aMessage);
+                }
+
+                myProfilerData.clear();
+
+                writeToTrace("Profiler has ended.\r\n");
+            }
+        }
+        catch (InterruptedException e)
+        {
+        }
+    }
+    
     
     /**
      * Gets the user defined trace.
@@ -456,10 +547,8 @@ public class EneterTrace
     }
     
     
-    private static void writeMessage(final int callStackIdx, final String prefix, final String message)
+    private static void writeMessage(final StackTraceElement stack, final long milliTicks, final String prefix, final String message, final long elapsedNanoTicks)
     {
-        final Date aDate = new Date();
-        final StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
         final long aThreadId = Thread.currentThread().getId();
         
         
@@ -469,36 +558,43 @@ public class EneterTrace
             @Override
             public void run()
             {
-                StackTraceElement aCaller = aStackTraceElements[callStackIdx];
-                String aMethodName = aCaller.getClassName() + "." + aCaller.getMethodName();        
+                String aMethodName = stack.getClassName() + "." + stack.getMethodName();   
                 
-                
-                
-                // Check if the message matches with the filter.
-                // Note: If the filter is not set or string matches.
-                if (myNameSpaceFilter == null || myNameSpaceFilter.matcher(aMethodName).matches())
+                // Check the filter.
+                if (myNameSpaceFilter != null && !myNameSpaceFilter.matcher(aMethodName).matches())
                 {
-                    synchronized (myTraceBufferLock)
+                    return;
+                }
+                
+                String aTimeStr = milliTicks > -1 ? milliSecondsToTimeStamp(milliTicks) : null;
+                String aElapsedTicksStr = (elapsedNanoTicks > -1) ? nanoSecondsToTimeStamp(elapsedNanoTicks) : null;
+                
+                synchronized (myTraceBufferLock)
+                {
+                    boolean aStartTimerFlag = myTraceBuffer.length() == 0;
+                    
+                    myTraceBuffer
+                    .append(aTimeStr)
+                    .append(" ~")
+                    .append(aThreadId).append(" ")
+                    .append(prefix).append(" ")
+                    .append(aMethodName);
+                    
+                    if (aElapsedTicksStr != null)
                     {
-                        boolean aStartTimerFlag = myTraceBuffer.length() == 0;
-                        
-                        myTraceBuffer
-                        .append(myDateFormatter.format(aDate))
-                        .append(" ~")
-                        .append(aThreadId)
-                        .append(" ")
-                        .append(prefix)
-                        .append(" ")
-                        .append(aMethodName)
-                        .append(" ")
-                        .append(message)
-                        .append("\r\n");
+                        myTraceBuffer.append(" [").append(aElapsedTicksStr).append("]\r\n");
+                    }
+                    else
+                    {
+                        myTraceBuffer.append(" ").append(message).append("\r\n");
+                    }
+                    
+                    
 
-                        if (aStartTimerFlag)
-                        {
-                            // The buffer will be flushed to the trace in 50 ms. 
-                            myTraceBufferFlushTimer.schedule(getTimerTask(), 50);
-                        }
+                    if (aStartTimerFlag)
+                    {
+                        // Flush the buffer in the specified time.
+                        myTraceBufferFlushTimer.schedule(getTimerTask(), 100);
                     }
                 }
             }
@@ -507,26 +603,136 @@ public class EneterTrace
         myWritingThread.execute(aDoWrite);
     }
     
+    private static void updateProfilerForEntering(final EneterTrace trace)
+    {
+        final long aThreadId = Thread.currentThread().getId();
+
+        Runnable aProfilerJob = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                String aMethod = trace.myCallStack.getClassName() + "." + trace.myCallStack.getMethodName();
+
+                synchronized (myProfilerData)
+                {
+                    ProfilerData aProfileData = myProfilerData.get(aMethod);
+                    if (aProfileData == null)
+                    {
+                        aProfileData = new ProfilerData();
+                        aProfileData.Calls = 1;
+                        aProfileData.MaxConcurency = 1;
+                        aProfileData.MaxRecursion = 1;
+                        
+                        MutableInt aIntValue = new MutableInt();
+                        aIntValue.Value = 1;
+                                
+                        aProfileData.Threads.put(aThreadId, aIntValue);
+
+                        myProfilerData.put(aMethod, aProfileData);
+                    }
+                    else
+                    {
+                        ++aProfileData.Calls;
+
+                        // If this thread is already inside then it is a recursion.
+                        if (aProfileData.Threads.containsKey(aThreadId))
+                        {
+                            int aRecursion = ++aProfileData.Threads.get(aThreadId).Value;
+                            if (aRecursion > aProfileData.MaxRecursion)
+                            {
+                                aProfileData.MaxRecursion = aRecursion;
+                            }
+                        }
+                        // ... else it is another thread which is parallel inside.
+                        else
+                        {
+                            MutableInt aIntValue = new MutableInt();
+                            aIntValue.Value = 1;
+                            
+                            aProfileData.Threads.put(aThreadId, aIntValue);
+                            if (aProfileData.Threads.size() > aProfileData.MaxConcurency)
+                            {
+                                aProfileData.MaxConcurency = aProfileData.Threads.size();
+                            }
+                        }
+                    }
+
+                    trace.myBufferedProfileData = aProfileData;
+                }
+            }
+        };
+        
+        myWritingThread.execute(aProfilerJob);
+    }
+    
+    private static void updateProfilerForLeaving(final EneterTrace trace, final long ticks)
+    {
+        final long aThreadId = Thread.currentThread().getId();
+
+        Runnable aProfilerJob = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                synchronized (myProfilerData)
+                {
+                    trace.myBufferedProfileData.Ticks += ticks;
+                    int aRecursion = --trace.myBufferedProfileData.Threads.get(aThreadId).Value;
+                    
+                    if (aRecursion < 1)
+                    {
+                        String aMethod = trace.myCallStack.getClassName() + "." + trace.myCallStack.getMethodName();
+                        ProfilerData aProfileData = myProfilerData.get(aMethod);
+                        aProfileData.Threads.remove(aThreadId);
+                    }
+                }
+            }
+        };
+        
+        myWritingThread.execute(aProfilerJob);
+    }
+    
+    private static String milliSecondsToTimeStamp(long milliTicks)
+    {
+        Date aDateTime = new Date(milliTicks);
+        String aResult = myDateFormatter.format(aDateTime);
+        return aResult;
+    }
+    
+    private static String nanoSecondsToTimeStamp(long elapsedNanoTicks)
+    {
+        long aHours = (long) (elapsedNanoTicks / (60.0 * 60.0 * 1000000000.0));
+        elapsedNanoTicks -= aHours * 60 * 60 * 1000000000;
+        
+        long aMinutes = (long) (elapsedNanoTicks / (60.0 * 1000000000.0));
+        elapsedNanoTicks -= aMinutes * 60 * 1000000000;
+        
+        double aSeconds = elapsedNanoTicks / 1000000000.0;
+        
+        String aSecondsStr = new DecimalFormat("0.000000").format(aSeconds);
+        
+        StringBuilder aTimeStampBuilder = new StringBuilder()
+                .append(aHours).append(":").append(aMinutes).append(":").append(aSecondsStr);
+        
+        String aResult = aTimeStampBuilder.toString();
+        return aResult;
+    }
     
     // Invoked by timer.
     private static void onFlushTraceBufferTick()
     {
-        String aBufferedTraceMessages;
+        StringBuilder aNewBuffer = new StringBuilder(myTraceBufferCapacity);
+        StringBuilder aBufferToFlush;
 
+        // Keep the lock for the shortest possible time.
         synchronized (myTraceBufferLock)
         {
-            aBufferedTraceMessages = myTraceBuffer.toString();
-            
-            if (myTraceBuffer.capacity() <= myTraceBufferCapacity)
-            {
-                myTraceBuffer.setLength(0);
-            }
-            else
-            {
-                // The allocated capacity is too big. So instantiate the new buffer and the old one can be garbage collected.
-                myTraceBuffer = new StringBuilder();
-            }
+            aBufferToFlush = myTraceBuffer;
+            myTraceBuffer = aNewBuffer;
         }
+
+        String aBufferedTraceMessages = aBufferToFlush.toString();
 
         // Flush buffered messages to the trace.
         writeToTrace(aBufferedTraceMessages);
@@ -593,41 +799,33 @@ public class EneterTrace
     {
         try
         {
-            if (myEnteringTime != Long.MIN_VALUE)
+            if (myEnteringTicks != 0)
             {
-                long anElapsedTime = System.nanoTime() - myEnteringTime;
+                long aLeavingTimeTicks = new Date().getTime();
                 
-                long aHours = (long) (anElapsedTime / (60.0 * 60.0 * 1000000000.0));
-                anElapsedTime -= aHours * 60 * 60 * 1000000000;
-                
-                long aMinutes = (long) (anElapsedTime / (60.0 * 1000000000.0));
-                anElapsedTime -= aMinutes * 60 * 1000000000;
-                
-                long aSeconds = anElapsedTime / 1000000000;
-                anElapsedTime -= aSeconds * 1000000000;
-                
-                long aMiliseconds = anElapsedTime / 1000000;
-                anElapsedTime -= aMiliseconds * 1000000;
-                
-                // Microseconds rounded to one digit place.
-                double aMicroseconds = Math.round(anElapsedTime / 100.0) / 10.0;
+                long aLeavingTicks = System.nanoTime();
+                long aElapsedTicks = aLeavingTicks - myEnteringTicks;
 
-                StringBuilder aMessage = new StringBuilder()
-                .append("[").append(aHours).append(":").append(aMinutes).append(":").append(aSeconds).append(" ")
-                .append(aMiliseconds).append("ms ")
-                .append(aMicroseconds).append("us]");
-                
-                writeMessage(4, "<--", aMessage.toString());
+                if (myProfilerIsRunning)
+                {
+                    updateProfilerForLeaving(this, aElapsedTicks);
+                }
+                else if (myDetailLevel == EDetailLevel.Debug)
+                {
+                    writeMessage(myCallStack, aLeavingTimeTicks, "<--", null, aElapsedTicks);
+                }
             }
         }
-        catch(Exception exception)
+        catch (Exception err)
         {
             // Any exception in this Dispose method is irrelevant.
         }
     }
     
     
-    private long myEnteringTime = Long.MIN_VALUE;
+    private long myEnteringTicks = Long.MIN_VALUE;
+    private StackTraceElement myCallStack;
+    private ProfilerData myBufferedProfileData;
     
     
     // Trace Info, Warning and Error by default.
@@ -636,12 +834,31 @@ public class EneterTrace
     private static PrintStream myTraceLog;
     private static Pattern myNameSpaceFilter;
     
-    private static SimpleDateFormat myDateFormatter = new SimpleDateFormat("HH:mm:ss.SSS");
+    private static SimpleDateFormat myDateFormatter = new SimpleDateFormat("HH:mm:ss.SSSSSS");
     
+    private static ManualResetEvent myQueueThreadEndedEvent = new ManualResetEvent(true);
     private static Object myTraceBufferLock = new Object();
     private static int myTraceBufferCapacity = 16384;
     private static StringBuilder myTraceBuffer = new StringBuilder(myTraceBufferCapacity);
     private static Timer myTraceBufferFlushTimer = new Timer("Eneter.TraceFlushTimer", true);
+    
+    private static class MutableInt
+    {
+        public int Value;
+    }
+    
+    private static class ProfilerData
+    {
+        public long Calls;
+        public long Ticks;
+        public int MaxConcurency;
+        public int MaxRecursion;
+
+        public HashMap<Long, MutableInt> Threads = new HashMap<Long, MutableInt>();
+    }
+    
+    private static HashMap<String, ProfilerData> myProfilerData = new HashMap<String, ProfilerData>();
+    private static volatile boolean myProfilerIsRunning;
     
     // Ensures sequential writing of messages.
     //private static ExecutorService myWritingThread = Executors.newSingleThreadExecutor(new ThreadFactory()
