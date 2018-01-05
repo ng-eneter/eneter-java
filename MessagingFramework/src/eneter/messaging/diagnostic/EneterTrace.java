@@ -114,12 +114,12 @@ public class EneterTrace
 
         if (myDetailLevel == EDetailLevel.Debug || myProfilerIsRunning)
         {
-            long aEnteringTimeTicks = new Date().getTime();
-            
             StackTraceElement[] aStackTraceElements = Thread.currentThread().getStackTrace();
             
             aTraceObject = new EneterTrace();
             aTraceObject.myCallStack = aStackTraceElements[2];
+            
+            long aEnteringTimeTicks = new Date().getTime();
             aTraceObject.myEnteringTicks = System.nanoTime();
            
             if (myProfilerIsRunning)
@@ -801,9 +801,9 @@ public class EneterTrace
         {
             if (myEnteringTicks != 0)
             {
+                long aLeavingTicks = System.nanoTime();
                 long aLeavingTimeTicks = new Date().getTime();
                 
-                long aLeavingTicks = System.nanoTime();
                 long aElapsedTicks = aLeavingTicks - myEnteringTicks;
 
                 if (myProfilerIsRunning)
