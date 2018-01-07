@@ -31,12 +31,6 @@ public class Program
 
     public static void main(String[] args) throws Exception
     {
-        // Start the TCP Policy server.
-        // Note: Silverlight requests the policy xml to check if the connection
-        //       can be established.
-        TcpPolicyServer aPolicyServer = new TcpPolicyServer();
-        aPolicyServer.startPolicyServer();
-        
         // Digitally signed messages.
         CertificateFactory aCertificateFactory = CertificateFactory.getInstance("X.509");
         FileInputStream aCertificateStream = new FileInputStream("d:/EneterSigner.cer");
@@ -74,9 +68,6 @@ public class Program
         // Detach the duplex input channel and stop the listening.
         // Note: it releases the thread listening to messages.
         myReceiver.detachDuplexInputChannel();
-        
-        // Stop the TCP policy server.
-        aPolicyServer.stopPolicyServer();
         
         System.out.println("Calculator service stopped.");
     }
