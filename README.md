@@ -1,7 +1,21 @@
 # eneter-java
 Lightweight but comprehensive framework for interprocess communication.
 
-Here is a summary of features provided by the framework:
+* [API Documentation](https://ng-eneter.github.io/eneter-java/index.html)
+
+Java Examples:
+* [Live Video from Raspberry Pi to .NET](http://eneter.blogspot.com/2014/08/live-video-from-raspberry-pi-to-net.html)
+* [Remote Procedure Calls between .NET and Java using TCP](http://eneter.blogspot.com/2014/06/remote-procedure-calls-between-net-and.html)
+
+Android Examples:
+* [Android: How to communicate with .NET application via TCP](https://www.codeproject.com/Articles/340714/Android-How-to-communicate-with-NET-application-vi)
+* [Remote Procedure Calls between Android and .NET](https://www.codeproject.com/Articles/749534/Remote-Procedure-Calls-between-Android-and-NET)
+* [Android: Fast Communication with .NET Using Protocol Buffers](https://www.codeproject.com/Articles/640249/Android-Fast-Communication-with-NET-Using-Protocol)
+* [Android: How to Receive Notification Messages from Multiple .NET Applications via Websockets](https://www.codeproject.com/Articles/433513/Android-How-to-Receive-Notification-Messages-from)
+
+
+## Summary
+Features provided by the framework:
 
 ![Communication Scheme](https://github.com/ng-eneter/eneter-net/blob/master/enetercomponents.svg)
 
