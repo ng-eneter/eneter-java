@@ -4,7 +4,7 @@ Lightweight but comprehensive framework for interprocess communication.
 * [API Documentation](https://ng-eneter.github.io/eneter-java/index.html)
 
 Java Examples:
-* [Live Video from Raspberry Pi to .NET](http://eneter.blogspot.com/2014/08/live-video-from-raspberry-pi-to-net.html)
+* [Live Video from Raspberry Pi to .NET](https://www.codeproject.com/Articles/810004/Live-Video-from-Raspberry-Pi-to-NET)
 * [Remote Procedure Calls between .NET and Java using TCP](http://eneter.blogspot.com/2014/06/remote-procedure-calls-between-net-and.html)
 
 Android Examples:
